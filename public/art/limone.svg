@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <pattern id="grain" width="31" height="29" patternUnits="userSpaceOnUse"><circle cx="8" cy="7" r=".7" fill="#74572d" opacity=".15"/><circle cx="25" cy="21" r=".8" fill="#74572d" opacity=".12"/></pattern>
+    <pattern id="cloth" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M0 0h50M0 0v50" stroke="#c47756" stroke-width="2" opacity=".28"/></pattern>
+  </defs>
+  <path fill="#f3e9d5" d="M0 0h800v600H0z"/>
+  <circle cx="419" cy="266" r="209" fill="#e4dac3"/>
+  <path d="M0 449 800 402v198H0z" fill="#e5a080"/>
+  <path d="M0 449 800 402v198H0z" fill="url(#cloth)"/>
+  <ellipse cx="400" cy="442" rx="244" ry="51" fill="#a8563a" opacity=".16"/>
+  <ellipse cx="403" cy="409" rx="247" ry="60" fill="#f6efe1"/>
+  <ellipse cx="403" cy="403" rx="219" ry="42" fill="none" stroke="#163d37" stroke-width="3"/>
+  <path d="M234 273c21-59 80-92 149-88 60-33 150-6 183 45 23 37 26 102-10 140-26 28-72 31-88 52-60 19-148-2-176-49-50-10-84-46-58-100Z" fill="#edc164"/>
+  <path d="M266 297c17-57 74-85 128-77 46-27 114-6 141 37-11-56-81-89-151-65-66-6-120 37-118 105Z" fill="#f5d787"/>
+  <path d="M267 340c45 49 115 51 168 31 39-14 78-14 109-38-8 19-14 27-31 37-31 10-37 25-49 36-72 23-154-1-176-45Z" fill="#d5a440" opacity=".65"/>
+  <path d="M392 195c-4-34 1-64 20-91" stroke="#81613a" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M404 147c38-73 108-59 150-37-30 46-102 78-150 37Z" fill="#285c49"/>
+  <path d="M411 145c41-24 74-26 117-29" stroke="#80a77a" stroke-width="3" fill="none"/>
+  <path d="M398 164c-42-48-97-40-118-17 35 44 72 51 118 17Z" fill="#163d37"/>
+  <path d="M391 165c-34-7-58-11-83-10" stroke="#658b66" stroke-width="3" fill="none"/>
+  <g fill="#c39836" opacity=".7"><circle cx="323" cy="276" r="2"/><circle cx="347" cy="309" r="2.5"/><circle cx="384" cy="256" r="2"/><circle cx="422" cy="281" r="2"/><circle cx="460" cy="254" r="2"/><circle cx="483" cy="299" r="2.5"/><circle cx="307" cy="326" r="2"/><circle cx="399" cy="336" r="2"/><circle cx="444" cy="320" r="2.3"/><circle cx="509" cy="273" r="2"/><circle cx="367" cy="365" r="2"/></g>
+  <path d="m152 143 9 17 18 9-18 9-9 18-9-18-18-9 18-9Z" fill="#c47756"/>
+  <circle cx="640" cy="287" r="5" fill="#285c49"/><circle cx="656" cy="310" r="3" fill="#285c49"/>
+  <path fill="url(#grain)" d="M0 0h800v600H0z"/>
+</svg>

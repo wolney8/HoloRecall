@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs><pattern id="grain" width="31" height="29" patternUnits="userSpaceOnUse"><circle cx="8" cy="7" r=".7" fill="#74572d" opacity=".15"/><circle cx="25" cy="21" r=".8" fill="#74572d" opacity=".12"/></pattern><pattern id="tile" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><path fill="#dfc6a8" d="M0 0h60v60H0zM60 60h60v60H60z"/></pattern></defs>
+  <path fill="#e6d7bd" d="M0 0h800v600H0z"/><path d="M107 409V240a160 160 0 0 1 320 0v169Z" fill="#c47756"/><path d="M132 409V241a135 135 0 0 1 270 0v168Z" fill="#e7a485"/>
+  <path d="M0 408 800 351v249H0Z" fill="#f6efe1"/><path d="M0 408 800 351v249H0Z" fill="url(#tile)"/>
+  <ellipse cx="423" cy="469" rx="214" ry="44" fill="#816b55" opacity=".18"/>
+  <ellipse cx="407" cy="443" rx="221" ry="51" fill="#163d37"/><ellipse cx="407" cy="434" rx="200" ry="43" fill="#386153"/><ellipse cx="407" cy="433" rx="158" ry="26" fill="#163d37"/>
+  <path d="M518 275c89-16 117 36 82 88-20 29-55 36-87 27l7-32c26 10 48 0 54-17 9-24-15-36-52-26Z" fill="#edc164"/>
+  <path d="M250 267h291l-25 106c-10 43-54 65-121 65s-110-22-119-65Z" fill="#edc164"/>
+  <path d="m257 296 20 72c11 40 50 60 108 64-49-14-70-41-76-83l-9-44Z" fill="#d1a345"/>
+  <ellipse cx="395" cy="269" rx="146" ry="47" fill="#f5d993"/><ellipse cx="395" cy="271" rx="123" ry="32" fill="#663e2c"/><ellipse cx="395" cy="274" rx="117" ry="27" fill="#80513a"/>
+  <path d="M303 272c20-17 103-21 151-5-39-3-73 3-103 10-27 7-57 8-48-5Z" fill="#bd8b54"/><path d="M362 282c41-9 78-10 109-2-40-1-71 15-102 14-17 0-25-7-7-12Z" fill="#e1b97d"/>
+  <g fill="none" stroke="#fff7e5" stroke-width="6" stroke-linecap="round" opacity=".75"><path d="M370 202c-30-24 22-34-1-63s5-39 5-39"/><path d="M425 188c-21-19 19-34 0-57"/></g>
+  <path d="m632 147 9 17 18 9-18 9-9 18-9-18-18-9 18-9Z" fill="#163d37"/>
+  <path d="m153 480 30 8" stroke="#b8986d" stroke-width="7" stroke-linecap="round"/><path fill="url(#grain)" d="M0 0h800v600H0z"/>
+</svg>
