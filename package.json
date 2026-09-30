@@ -24,8 +24,10 @@
     "@angular/platform-browser": "21.2.24",
     "@fontsource/roboto": "5.3.0",
     "exceljs": "4.4.0",
+    "fzstd": "0.1.1",
     "jszip": "3.10.2",
     "rxjs": "7.8.2",
+    "sql.js": "1.14.2",
     "ts-fsrs": "5.4.2",
     "tslib": "2.8.1"
   },
@@ -41,6 +43,7 @@
     "@angular/compiler-cli": "21.2.24",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
+    "@types/sql.js": "1.4.11",
     "fake-indexeddb": "6.2.5",
     "postcss": "8.5.28",
     "tailwindcss": "4.3.3",

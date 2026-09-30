@@ -37,7 +37,7 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
 | --- | --- | --- | --- |
-| HR-AUTH-01 | Not started | Existing deck/card editor, renderer preview and XLSX/ZIP exchange recovered intact. | Improve entry points, presets, save-and-add, draft protection, duplicate/bulk workflows and validation without creating a second editor. |
+| HR-AUTH-01 | Complete | Existing editor now has obvious deck/card entry points, basic/image-first/reversible presets, shared-renderer face preview, atomic Save and add another, draft navigation guard, duplicate, selection and atomic bulk rarity/design assignment. Chromium and WebKit authoring journeys pass; reviews/rewards remain unchanged. | Bulk finish assignment follows HR-DESIGN-02 because the stored finish model is not yet present. |
 | HR-IMPORT-01 | Not started | No `.apkg` parser or UI exists. Existing content-import transaction and durable media boundaries are available for reuse. | Research and implement bounded legacy/modern package analysis, preview/mapping, deterministic styling and atomic content-only import with real-format fixtures. |
 | HR-DESIGN-02 | Not started | Existing seven rarity IDs, layered renderer and declarative raster design sets recovered intact. | Add distinct finish presets/design families and portable validated custom textures without changing scheduling or unlock meaning. |
 | HR-GAME-01 | Not started | Existing reward events can derive real next-unlock progress and recent unlocks. | Add compact next-unlock and recently-unlocked views using current event data only. |

@@ -49,13 +49,38 @@ export class LocalStudyStore {
   }
 
   async saveCard(card: CardContent): Promise<void> {
+    await this.saveCards([card]);
+  }
+
+  async saveCards(cards: CardContent[]): Promise<void> {
     await this.change(data => {
-      if (!data.decks.some(deck => deck.id === card.deckId)) throw new Error('Choose an existing deck.');
-      const previous = data.cards.find(item => item.id === card.id);
-      if (previous && previous.revision !== card.revision) throw new Error('This card was edited elsewhere. Reopen the editor before saving.');
-      const next = structuredClone({ ...card, revision: previous ? previous.revision + 1 : 1 });
-      validateCard(next);
-      return reconcileSession({ ...data, version: data.version + 1, cards: previous ? data.cards.map(item => item.id === card.id ? next : item) : [...data.cards, next] }, data);
+      if (!cards.length) return data;
+      if (new Set(cards.map(card => card.id)).size !== cards.length) throw new Error('Each card being saved needs a unique ID.');
+      let nextCards = data.cards;
+      for (const card of cards) {
+        if (!data.decks.some(deck => deck.id === card.deckId)) throw new Error('Choose an existing deck.');
+        const previous = data.cards.find(item => item.id === card.id);
+        if (previous && previous.revision !== card.revision) throw new Error('This card was edited elsewhere. Reopen the editor before saving.');
+        const next = structuredClone({ ...card, revision: previous ? previous.revision + 1 : 1 });
+        validateCard(next);
+        nextCards = previous ? nextCards.map(item => item.id === card.id ? next : item) : [...nextCards, next];
+      }
+      return reconcileSession({ ...data, version: data.version + 1, cards: nextCards }, data);
+    });
+  }
+
+  async bulkUpdateCards(ids: string[], patch: Pick<CardContent, 'rarity' | 'designSetId'>): Promise<void> {
+    await this.change(data => {
+      const selected = new Set(ids);
+      if (!selected.size) throw new Error('Select at least one card.');
+      if ([...selected].some(id => !data.cards.some(card => card.id === id))) throw new Error('A selected card no longer exists. Refresh the library.');
+      const cards = data.cards.map(card => {
+        if (!selected.has(card.id)) return card;
+        const next = { ...card, rarity: patch.rarity, designSetId: patch.designSetId, revision: card.revision + 1 };
+        if (!next.designSetId) delete next.designSetId;
+        validateCard(next); return next;
+      });
+      return reconcileSession({ ...data, version: data.version + 1, cards }, data);
     });
   }
 
