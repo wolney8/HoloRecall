@@ -81,9 +81,9 @@ This remains one local learner in browser IndexedDB. There is no authentication,
 
 ### iOS-readiness batch 2
 
-- Branch/commit: `main`; runtime seams checkpoint `98600ea`; WebKit gate/lifecycle fixes and this handoff are the final readiness checkpoint.
+- Branch/commit: `main`; runtime seams checkpoint `98600ea`; WebKit gate/lifecycle implementation checkpoint `d97937b`.
 - Changes: shared Chromium/WebKit test matrix, compact/large/landscape phone projects, safe-area/text-size/viewport/interruption/offline checks, authoritative flip settlement, Results interruption settlement and visibility-first focus initialization for WebKit.
-- Checks: 33/33 Chromium desktop journeys; 33/33 WebKit desktop journeys; 5/5 WebKit phone-profile checks; 65/65 unit/domain tests; production build passed. No tests were skipped.
+- Checks: 33/33 Chromium desktop journeys; 33/33 WebKit desktop journeys; 5/5 WebKit phone-profile checks; 65/65 unit/domain tests; production build passed without warnings at 722.70 kB initial / 164.40 kB estimated transfer. No tests were skipped.
 - Evidence: patched WebKit 26.6 build 2359 and Chromium 153.0.8010.12 on macOS arm64. Short videos and screenshot are in ignored `test-results/hr-ios-webkit-evidence-20260930/`.
 - Cross-platform note: safe-area values remain zero in this desktop-hosted automation, and viewport presets do not emulate WKWebView, hardware cutouts, the iOS keyboard, VoiceOver or Dynamic Type. Native storage, Files/share, lifecycle plugin binding and device profiling remain explicitly unimplemented.
 - Exact next action: review this local checkpoint at `http://127.0.0.1:4200/`. The prior local product milestone is complete; the next proposed milestone is a separately authorized minimal Capacitor native-feasibility build with storage/plugin decisions and simulator/device evidence.
