@@ -1,6 +1,6 @@
 # Project status and durable handoff
 
-Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Verified local implementation checkpoint: `f7ed8d7` (`Complete visual design and focused study milestone`). Nothing has been pushed or deployed.
+Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
 ## Recovery snapshot
 
@@ -51,8 +51,8 @@ This remains one local learner in browser IndexedDB. There is no authentication,
 
 ## Current batch handoff
 
-- Branch/commit: `main` at `3ad5afd` before the local HR-UX-07–11 checkpoint; nothing is pushed or deployed.
-- Relevant worktree: Study/result presentation code, Playwright configuration/tests and this handoff comprise the coherent local batch. `git diff --check` passes.
+- Branch/commit: `main`; HR-UX-07–11 application and test changes are checkpointed at `268fd78`; nothing is pushed or deployed.
+- Relevant worktree: clean after the implementation checkpoint except for this final handoff reconciliation. `git diff --check` passes.
 - Checks completed: `npm test` passes **65 tests across six files**; `npm run build` passes without warnings at **716.65 kB initial / 162.57 kB estimated transfer**; the full suite passes **32 Chromium tests** with two workers; `npm audit` reports **0 vulnerabilities**.
 - Browser coverage: desktop/mobile, Light/Dark/System startup, keyboard/touch-equivalent pointer interaction, reduced motion, reload recovery, stale-write error handling, offline loaded-page review, all illustrations, uploads/backups, migration, reports and content exchange. Browser emulation is not physical iPhone evidence.
 - Visual evidence inspected: centered 390 px Study in Light/Dark, System-theme results at intermediate progress, and a five-second Chromium video covering reveal, rating-4 feedback, results intro, scroll and bar growth. Evidence is under ignored `test-results/hr-ux-07-11-final/` and `test-results/ux-review-video-final/`.
