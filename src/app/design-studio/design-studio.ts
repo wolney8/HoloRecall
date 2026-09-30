@@ -8,7 +8,7 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { LocalStudyStore } from '../data/study-store';
 import { FlashcardComponent } from '../card';
 import { RARITIES } from '../../domain/rewards';
-import type { DesignSet, Rarity } from '../../domain/models';
+import type { DesignSet, FinishPreset, Rarity } from '../../domain/models';
 import { readArtwork } from '../upload';
 import { PageRevealDirective } from '../motion/page-reveal';
 
@@ -20,6 +20,11 @@ import { PageRevealDirective } from '../motion/page-reveal';
 export class DesignStudioComponent {
   readonly store = inject(LocalStudyStore);
   readonly tiers = RARITIES;
+  readonly finishes: { id: FinishPreset; label: string }[] = [
+    { id: 'matte', label: 'Matte' }, { id: 'metallic', label: 'Soft metallic foil' }, { id: 'holographic', label: 'Directional holographic' },
+    { id: 'prismatic', label: 'Prismatic rainbow' }, { id: 'etched', label: 'Etched metallic' }, { id: 'starfield', label: 'Sparse starfield' },
+    { id: 'crystal', label: 'Faceted crystal' }, { id: 'gilded', label: 'Gilded edges' }, { id: 'aurora', label: 'Aurora premium' },
+  ];
   readonly busy = signal(false);
   readonly notice = signal('');
   readonly selected = signal('');
@@ -32,7 +37,7 @@ export class DesignStudioComponent {
   deckId = '';
   readonly cards = computed(() => this.store.data()?.cards ?? []);
   blank(): DesignSet {
-    return { id: crypto.randomUUID(), name: '', backgroundFit: 'cover', backgroundPositionX: 50, backgroundPositionY: 50, frameFit: 'contain', credit: '', source: '', license: '', frames: {} };
+    return { id: crypto.randomUUID(), name: '', backgroundFit: 'cover', backgroundPositionX: 50, backgroundPositionY: 50, frameFit: 'contain', finish: 'matte', layout: 'clean', credit: '', source: '', license: '', frames: {}, finishes: {} };
   }
   card() { return this.cards().find(card => card.id === this.cardId) ?? this.cards()[0]; }
   choose(id: string): void {
@@ -41,7 +46,7 @@ export class DesignStudioComponent {
     this.notice.set('');
   }
   frameRef(): string | undefined { return this.editor.frames?.[this.rarity] || this.editor.frame; }
-  async upload(event: Event, kind: 'background' | 'frame'): Promise<void> {
+  async upload(event: Event, kind: 'background' | 'frame' | 'texture'): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0]; if (!file) return;
     this.busy.set(true);
@@ -50,6 +55,7 @@ export class DesignStudioComponent {
       await this.store.saveAsset(asset);
       const ref = `asset:${asset.id}`;
       if (kind === 'background') this.editor.background = ref;
+      else if (kind === 'texture') this.editor.texture = ref;
       else if (this.frameSlot === 'base') this.editor.frame = ref;
       else this.editor.frames = { ...this.editor.frames, [this.frameSlot]: ref };
       this.editor = { ...this.editor };
@@ -57,12 +63,15 @@ export class DesignStudioComponent {
     } catch (error) { this.notice.set(String(error)); }
     finally { this.busy.set(false); input.value = ''; }
   }
-  remove(kind: 'background' | 'frame'): void {
+  remove(kind: 'background' | 'frame' | 'texture'): void {
     if (kind === 'background') delete this.editor.background;
+    else if (kind === 'texture') delete this.editor.texture;
     else if (this.frameSlot === 'base') delete this.editor.frame;
     else { this.editor.frames = { ...this.editor.frames }; delete this.editor.frames[this.frameSlot]; }
     this.editor = { ...this.editor };
   }
+  finishForPreview(): FinishPreset { return this.editor.finishes?.[this.rarity] ?? this.editor.finish ?? 'matte'; }
+  setTierFinish(value: FinishPreset): void { this.editor.finishes = { ...this.editor.finishes, [this.rarity]: value }; this.editor = { ...this.editor }; }
   async save(assign = false): Promise<void> {
     if (!this.editor.name.trim()) { this.notice.set('Give this design a name.'); return; }
     this.busy.set(true);

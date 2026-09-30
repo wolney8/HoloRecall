@@ -59,6 +59,12 @@ The local prototype has one local learner. It does not establish cloud identity,
 
 ## Local implementation details
 
+### Decision 004: bounded local Anki conversion and versioned finishes
+
+Anki deck packages are converted locally into the validated HoloRecall content model, then applied through the existing atomic content-import boundary. The parser selects the database from package metadata, lazy-loads pinned `sql.js` 1.14.2 and `fzstd` 0.1.1, and never executes source HTML, CSS, JavaScript or SVG. Stable note GUID plus template/cloze ordinal identities drive reimport and deterministic authored rarity. Anki scheduling, history and reward state remain outside the conversion. Unsupported content is counted and requires an explicit exclusion choice. The exact verified and pending variants live in `docs/anki-import.md`.
+
+Content exchange format v2 adds card finish overrides and reusable design finish/layout/texture fields while retaining version-1 import compatibility. Finish presets remain app-owned declarative behavior over the renderer layers; user uploads remain bounded raster data. Rarity, finish, design, unlock state and FSRS state are separate fields and responsibilities.
+
 - **Material 3:** `src/theme.scss` uses the supported `mat.theme` and `mat.theme-overrides` APIs, a generated forest-green tonal palette, Roboto and density 0. Custom components consume `--mat-sys-*` color, shape and typography roles. No private Material component selectors are overridden. The early theme script applies the cached preference before styles paint; IndexedDB remains authoritative. System uses CSS `color-scheme`/`light-dark` and follows device changes.
 - **Presentation:** the renderer keeps background, illustration, frame and effect layers separate. Protected text areas are opaque; decoration ignores input. Pointer/drag transforms wrap the card, and reveal/deal effects do not mutate scheduler order. Intersection/visibility observers and reduced motion control animation. No Lottie asset or Jitter service is required.
 - **Page entrances:** `ViewportRevealService` owns reusable viewport observation and one observer per scrolling root. The standalone `hrReveal` directive applies the shared 460 ms / 10 px settle tokens to meaningful wrappers, settles on focus, reduced motion, disabled effects or backgrounding, and cleans up on removal. Results reuses the visibility service but retains its run-specific balances, Skip/Replay and timers. Card transforms, Study controls, expansion transitions and urgent status/error content are explicit exclusions.

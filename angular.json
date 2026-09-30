@@ -21,6 +21,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "sql-wasm-browser.wasm",
+                "input": "node_modules/sql.js/dist",
+                "output": "runtime"
               }
             ],
             "styles": [

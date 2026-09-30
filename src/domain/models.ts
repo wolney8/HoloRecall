@@ -1,6 +1,7 @@
 import type { Card as FsrsCard, FSRSParameters, Grade } from 'ts-fsrs';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'holo-rare' | 'ultra-rare' | 'secret-rare' | 'relic';
+export type FinishPreset = 'matte' | 'metallic' | 'holographic' | 'prismatic' | 'etched' | 'starfield' | 'crystal' | 'gilded' | 'aurora';
 export type ThemePreference = 'light' | 'dark' | 'system';
 
 export interface CardContent {
@@ -19,6 +20,7 @@ export interface CardContent {
   backImage?: string;
   rarity?: Rarity;
   designSetId?: string;
+  finish?: FinishPreset;
   imageDescription?: string;
 }
 
@@ -94,6 +96,10 @@ export interface DesignSet {
   background?: string;
   frame?: string;
   frames?: Partial<Record<Rarity, string>>;
+  texture?: string;
+  finish?: FinishPreset;
+  finishes?: Partial<Record<Rarity, FinishPreset>>;
+  layout?: 'clean' | 'ornate' | 'showcase';
   backgroundFit: 'cover' | 'contain';
   backgroundPositionX: number;
   backgroundPositionY: number;

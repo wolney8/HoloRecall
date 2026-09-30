@@ -14,8 +14,8 @@ const asset: LocalAsset = { id: 'test-art', name: 'test.png', mime: 'image/png',
 function sample(): ContentBundle {
   return {
     decks: [{ id: 'exchange-italian', name: 'Italiano: caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame' }],
-    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', image: 'asset:test-art', backImage: 'asset:test-art', designSetId: 'warm-frame', tags: ['caffè', 'Due parole'] }],
-    designs: [{ id: 'warm-frame', name: 'Warm frame', background: 'asset:test-art', frames: { 'secret-rare': 'asset:test-art' }, backgroundFit: 'cover', backgroundPositionX: 25, backgroundPositionY: 60, frameFit: 'contain', credit: 'Artist', source: 'Local', license: 'Original' }],
+    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', designSetId: 'warm-frame', tags: ['caffè', 'Due parole'] }],
+    designs: [{ id: 'warm-frame', name: 'Warm frame', background: 'asset:test-art', texture: 'asset:test-art', frames: { 'secret-rare': 'asset:test-art' }, finish: 'metallic', finishes: { 'secret-rare': 'starfield' }, layout: 'ornate', backgroundFit: 'cover', backgroundPositionX: 25, backgroundPositionY: 60, frameFit: 'contain', credit: 'Artist', source: 'Local', license: 'Original' }],
     assets: [asset],
   };
 }

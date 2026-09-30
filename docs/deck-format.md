@@ -1,8 +1,8 @@
-# HoloRecall deck-content format, version 1
+# HoloRecall deck-content format, version 2
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Download the [blank workbook](/downloads/holorecall-blank-v1.xlsx), [16-card Italian example](/downloads/holorecall-italian-v1.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v1.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export.
+Download the [blank workbook](/downloads/holorecall-blank-v2.xlsx), [16-card Italian example](/downloads/holorecall-italian-v2.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v2.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 2 adds finish and reusable design-family fields; version 1 remains import-compatible.
 
 ## Workbook contract
 
@@ -16,7 +16,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 1
+format_version | 2
 content_only | true
 ```
 
@@ -39,7 +39,7 @@ deck_id | title | description | design_set_id | suspended
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish
 ```
 
 | Field | Meaning and validation |
@@ -59,14 +59,15 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `back_media` | Optional media reference; blank reuses the front image. |
 | `image_description` | Required for visual cards; maximum 1,000 characters. Describe visible shapes/actions without spelling out the Italian answer. |
 | `suspended` | `true` or `false`; blank means `false`. |
+| `finish` | Optional card-level override: `matte`, `metallic`, `holographic`, `prismatic`, `etched`, `starfield`, `crystal`, `gilded`, or `aurora`. |
 
 ### Designs
 
 ```text
-design_set_id | name | background | frame | common_frame | uncommon_frame | rare_frame | holo_rare_frame | ultra_rare_frame | secret_rare_frame | relic_frame | background_fit | background_position_x | background_position_y | frame_fit | credit | source | license
+design_set_id | name | background | frame | common_frame | uncommon_frame | rare_frame | holo_rare_frame | ultra_rare_frame | secret_rare_frame | relic_frame | background_fit | background_position_x | background_position_y | frame_fit | credit | source | license | base_finish | rarity_finishes | layout | texture
 ```
 
-`design_set_id` and nonblank `name` (maximum 160 characters) are required. `background`, `frame` and tier-specific frame columns are optional media references. An absent tier frame falls back to `frame`, then the application frame. `background_fit` is `cover` (default) or `contain`; `frame_fit` is `contain` (default) or `cover`. Position coordinates are numbers 0–100, default 50. `credit`, `source` and `license` are optional plain text, maximum 2,000 characters each. A source URL is attribution text, never fetched or executed. Designs are declarative settings only; HTML, JavaScript, CSS, active SVG and custom animation code are unsupported. Portrait card layout is 2:3; use the Design Studio frame guide and transparent PNG frames for openings and safe areas.
+`design_set_id` and nonblank `name` (maximum 160 characters) are required. `background`, `frame`, `texture` and tier-specific frame columns are optional media references. An absent tier frame falls back to `frame`, then the application frame. `background_fit` is `cover` (default) or `contain`; `frame_fit` is `contain` (default) or `cover`. Position coordinates are numbers 0–100, default 50. `base_finish` uses a finish ID above; `rarity_finishes` is a JSON object from rarity ID to finish ID; `layout` is `clean`, `ornate` or `showcase`. Attribution fields are optional plain text. Designs remain declarative: HTML, JavaScript, CSS, active SVG and custom animation code are unsupported.
 
 ### Assets
 

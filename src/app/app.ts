@@ -14,7 +14,7 @@ import { LocalStudyStore } from './data/study-store';
 import { ThemeService, ThemeChoice } from './theme.service';
 import { activeReviews, dayKey, dueCards, RATING_OPTIONS } from '../domain/study';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../domain/rewards';
-import type { CardContent, Deck, DesignSet, Rarity } from '../domain/models';
+import type { CardContent, Deck, DesignSet, FinishPreset, Rarity } from '../domain/models';
 import { FlashcardComponent } from './card';
 import { DesignStudioComponent } from './design-studio/design-studio';
 import { CollectionComponent } from './collection/collection';
@@ -69,7 +69,7 @@ export class AppComponent {
   ];
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
-  selectedCardIds=new Set<string>();bulkRarity:Rarity='common';bulkDesignSetId='';
+  selectedCardIds=new Set<string>();bulkRarity:Rarity='common';bulkDesignSetId='';bulkFinish:FinishPreset='matte';
   private editorBaseline='';
   settings={newCardLimit:10,reviewLimit:100,timeZone:'Europe/London'};
   rewardSettings:Record<Rarity,number>={common:1,uncommon:2,rare:3,'holo-rare':5,'ultra-rare':8,'secret-rare':12,relic:20};
@@ -223,7 +223,7 @@ export class AppComponent {
   async saveCard(addAnother=false):Promise<void>{if(!this.editor||this.busy())return;this.busy.set(true);try{const card={...this.editor,front:this.editor.front.trim(),answer:this.editor.answer.trim(),tags:this.tagInput.split(',').map(s=>s.trim()).filter(Boolean)};if(!card.designSetId)delete card.designSetId;const cards=[card];if(this.authorPreset==='reversible'&&!card.revision)cards.push({...card,id:crypto.randomUUID(),front:card.answer,answer:card.front,pronunciation:'',meaning:card.meaning,revision:0});await this.store.saveCards(cards);this.message.set(cards.length===2?'Two reversible cards saved. Review history was not changed.':'Card saved. Review history preserved.');if(addAnother){const deckId=card.deckId,designSetId=card.designSetId,preset=this.authorPreset;this.editor=this.blankCard(deckId,designSetId);this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.tagInput='';this.authorPreviewRevealed=false;this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}else{this.editor=null;this.editorBaseline='';}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   toggleCardSelection(id:string,selected:boolean):void{const next=new Set(this.selectedCardIds);selected?next.add(id):next.delete(id);this.selectedCardIds=next;}
   clearCardSelection():void{this.selectedCardIds=new Set();}
-  async applyBulkCards():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkUpdateCards([...this.selectedCardIds],{rarity:this.bulkRarity,designSetId:this.bulkDesignSetId||undefined});this.message.set(`${this.selectedCardIds.size} cards updated. Review history and earned cosmetics were preserved.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async applyBulkCards():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkUpdateCards([...this.selectedCardIds],{rarity:this.bulkRarity,designSetId:this.bulkDesignSetId||undefined,finish:this.bulkFinish});this.message.set(`${this.selectedCardIds.size} cards updated. Review history and earned cosmetics were preserved.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   private blankCard(deckId?:string,designSetId?:string):CardContent{return{id:crypto.randomUUID(),deckId:deckId||this.selectedDeck||this.data()?.decks[0]?.id||'',kind:'text',front:'',answer:'',pronunciation:'',meaning:'',notes:'',tags:[],revision:0,suspended:false,rarity:'common',...(designSetId?{designSetId}:{})};}
   private editorSnapshot():string{return JSON.stringify({editor:this.editor,tags:this.tagInput});}
   private hasUnsavedCard():boolean{return !!this.editor&&this.editorSnapshot()!==this.editorBaseline;}

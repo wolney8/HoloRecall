@@ -1,7 +1,8 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
-import type { CardContent, DesignSet, Rarity } from '../domain/models';
+import type { CardContent, DesignSet, FinishPreset, Rarity } from '../domain/models';
 import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
+import { LocalStudyStore } from './data/study-store';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -16,12 +17,12 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
           <div class="frame-layer" aria-hidden="true">@if (frameUrl && !failedFrame()) { <img [src]="frameUrl" [style.object-fit]="design?.frameFit || 'contain'" alt="" (error)="failedFrame.set(true)"> }</div>
-          <div class="effects-layer" aria-hidden="true"><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
+          <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
           <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
           <div class="illustration-layer" [class.no-illustration]="!hasIllustrationReference && card.kind !== 'visual'" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
@@ -62,6 +63,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() backImageUrl?: string;
   @Input() backgroundUrl?: string;
   @Input() frameUrl?: string;
+  @Input() textureUrl?: string;
   @Input() themePreview?: 'light' | 'dark';
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
   @ViewChild('turn') private turn?: ElementRef<HTMLElement>;
@@ -85,10 +87,14 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private pointerStart?: { x: number; y: number };
   private flipSequence = 0;
   private readonly lifecycle = inject(AppLifecycle);
+  private readonly store = inject(LocalStudyStore);
   private unsubscribeLifecycle?: () => void;
   private readonly motionChanged = () => { this.updateMotion(); this.settle(); };
 
   get shownRarity(): Rarity { return this.rarity ?? (this.treatment ? ({ matte: 'common', foil: 'uncommon', holo: 'holo-rare', relic: 'relic' } as const)[this.treatment] : this.card?.rarity ?? 'common'); }
+  get shownFinish(): FinishPreset { return this.card?.finish ?? this.design?.finishes?.[this.shownRarity] ?? this.design?.finish ?? ({ common: 'matte', uncommon: 'metallic', rare: 'etched', 'holo-rare': 'holographic', 'ultra-rare': 'prismatic', 'secret-rare': 'starfield', relic: 'gilded' } as const)[this.shownRarity]; }
+  get finishLabel(): string { return this.shownFinish.replace(/(^|-)([a-z])/g, (_, lead, letter) => `${lead ? ' ' : ''}${letter.toUpperCase()}`); }
+  get resolvedTexture(): string { return this.textureUrl || this.store.mediaUrl(this.design?.texture); }
   get rarityLabel(): string { return RARITIES.find(item => item.id === this.shownRarity)?.label ?? 'Common'; }
   get raritySymbol(): string { return RARITIES.find(item => item.id === this.shownRarity)?.symbol ?? '○'; }
   get illustration(): string {

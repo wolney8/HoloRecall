@@ -4,7 +4,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { FlashcardComponent } from '../card';
 import { LocalStudyStore } from '../data/study-store';
 import type { CardContent, Rarity } from '../../domain/models';
-import { RARITIES, rewardProgress } from '../../domain/rewards';
+import { activeRewardEvents, RARITIES, rewardProgress } from '../../domain/rewards';
 import { PageRevealDirective } from '../motion/page-reveal';
 
 @Component({
@@ -16,7 +16,7 @@ import { PageRevealDirective } from '../motion/page-reveal';
     @if (selected(); as card) {
       <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
-          <hr-card [card]="card" [dragTilt]="true" [flippable]="true" (flipped)="revealed.set($event)" [revealed]="revealed()" [rarity]="displayRarity()" [demo]="isPreview()" [effects]="store.data()?.preferences?.effects ?? true" [design]="store.designFor(card)" [imageUrl]="store.mediaUrl(card.image)" [backImageUrl]="store.mediaUrl(card.backImage || card.image)" [backgroundUrl]="store.mediaUrl(store.designFor(card)?.background)" [frameUrl]="store.mediaUrl(store.designFor(card)?.frames?.[displayRarity()] || store.designFor(card)?.frame)"/>
+          <hr-card [card]="card" [dragTilt]="true" [flippable]="true" (flipped)="revealed.set($event)" [revealed]="revealed()" [rarity]="displayRarity()" [demo]="isPreview()" [effects]="store.data()?.preferences?.effects ?? true" [design]="store.designFor(card)" [imageUrl]="store.mediaUrl(card.image)" [backImageUrl]="store.mediaUrl(card.backImage || card.image)" [backgroundUrl]="store.mediaUrl(store.designFor(card)?.background)" [frameUrl]="store.mediaUrl(store.designFor(card)?.frames?.[displayRarity()] || store.designFor(card)?.frame)" [textureUrl]="store.mediaUrl(store.designFor(card)?.texture)"/>
         </div>
         <div class="inspection-details">
           <span class="status-chip">{{ sampleTier() ? 'Design sample · not earned' : progress(card).earned ? 'Cosmetic earned' : 'Cosmetic locked · study available' }}</span>
@@ -33,6 +33,8 @@ import { PageRevealDirective } from '../motion/page-reveal';
         </div>
       </section>
     }
+    @if(nextUnlock();as next){<section class="unlock-panel next-unlock" hrReveal aria-labelledby="next-unlock-title"><div><p class="eyebrow">NEXT UNLOCK</p><h2 id="next-unlock-title">{{next.card.answer}} · {{tierName(next.card.rarity || 'common')}}</h2><p>{{next.remaining}} more eligible {{next.remaining===1?'study day':'study days'}}. Current progress {{next.progress.days}} of {{next.progress.required}}.</p></div><div class="next-unlock-symbol" aria-hidden="true">{{tierSymbol(next.card.rarity || 'common')}}</div><mat-progress-bar mode="determinate" [value]="percent(next.card)" [attr.aria-label]="next.card.answer+' unlock progress '+next.progress.days+' of '+next.progress.required"/><details><summary>How to unlock</summary><p>Scheduled ratings 4 or 5 contribute on distinct study days at least 20 hours apart. Honest lower ratings keep scheduling accurate and never remove an earned cosmetic.</p></details></section>}
+    @if(recentlyUnlocked().length){<section class="recent-unlocks" hrReveal aria-labelledby="recent-title"><div class="section-title"><h2 id="recent-title">Recently unlocked</h2><span>Earned from real scheduled reviews</span></div><div class="collection-grid">@for(item of recentlyUnlocked();track item.event.id){<button class="collection-item" (click)="inspect(item.card)"><span class="sample-symbol" aria-hidden="true">{{tierSymbol(item.event.rarity)}}</span><span class="item-copy"><strong>{{item.card.answer}}</strong><span>{{tierName(item.event.rarity)}}</span><small>{{item.event.timestamp.slice(0,10)}}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button>}</div></section>}
     <section class="owned-section" aria-labelledby="cards-title"><div class="section-title" hrReveal><h2 id="cards-title">Your cards</h2><span>{{ store.cards().length }} cards · {{ earnedCount() }} authored cosmetics earned</span></div>
       <div class="collection-grid">@for (card of store.cards(); track card.id; let index = $index) { <button class="collection-item" hrReveal [hrRevealDelay]="index * 45" [class.selected]="selectedId() === card.id && !sampleTier()" (click)="inspect(card)" [attr.aria-label]="'Inspect ' + card.answer"><span class="thumbnail">@if (store.mediaUrl(card.image)) {<img [src]="store.mediaUrl(card.image)" alt="" loading="lazy">}@else {<span aria-hidden="true">▧</span>}</span><span class="item-copy"><strong>{{ card.answer }}</strong><span>{{ tierSymbol(card.rarity || 'common') }} {{ tierName(card.rarity || 'common') }}</span><small>{{ progress(card).earned ? 'Earned' : progress(card).days + '/' + progress(card).required + ' qualifying days' }}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button> }</div>
     </section>
@@ -49,6 +51,8 @@ export class CollectionComponent {
   readonly revealed = signal(true);
   readonly selected = computed(() => this.store.cards().find(card => card.id === this.selectedId()) ?? this.store.cards()[0]);
   readonly earnedCount = computed(() => this.store.cards().filter(card => this.progress(card).earned).length);
+  readonly recentlyUnlocked = computed(() => { const state = this.store.data(); if (!state) return []; return activeRewardEvents(state).filter(event => event.kind === 'unlock').sort((a,b) => b.timestamp.localeCompare(a.timestamp)).slice(0,4).flatMap(event => { const card = state.cards.find(item => item.id === event.cardId); return card ? [{ event, card }] : []; }); });
+  readonly nextUnlock = computed(() => { const candidates = this.store.cards().map(card => ({ card, progress: this.progress(card) })).filter(item => !item.progress.earned).map(item => ({ ...item, remaining: Math.max(0,item.progress.required-item.progress.days) })).sort((a,b) => a.remaining-b.remaining || a.card.answer.localeCompare(b.card.answer)); return candidates[0]; });
   readonly displayRarity = computed<Rarity>(() => {
     const card = this.selected();
     if (!card) return 'common';

@@ -69,14 +69,14 @@ export class LocalStudyStore {
     });
   }
 
-  async bulkUpdateCards(ids: string[], patch: Pick<CardContent, 'rarity' | 'designSetId'>): Promise<void> {
+  async bulkUpdateCards(ids: string[], patch: Pick<CardContent, 'rarity' | 'designSetId' | 'finish'>): Promise<void> {
     await this.change(data => {
       const selected = new Set(ids);
       if (!selected.size) throw new Error('Select at least one card.');
       if ([...selected].some(id => !data.cards.some(card => card.id === id))) throw new Error('A selected card no longer exists. Refresh the library.');
       const cards = data.cards.map(card => {
         if (!selected.has(card.id)) return card;
-        const next = { ...card, rarity: patch.rarity, designSetId: patch.designSetId, revision: card.revision + 1 };
+        const next = { ...card, rarity: patch.rarity, designSetId: patch.designSetId, finish: patch.finish, revision: card.revision + 1 };
         if (!next.designSetId) delete next.designSetId;
         validateCard(next); return next;
       });

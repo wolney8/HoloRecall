@@ -10,6 +10,7 @@ const id = (value: unknown): value is string => text(value, 120) && /^[a-zA-Z0-9
 const integer = (value: unknown, min = 0): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= min;
 const finite = (value: unknown, min = 0): value is number => typeof value === 'number' && Number.isFinite(value) && value >= min;
 const instant = (value: unknown): value is string => text(value, 40) && /^\d{4}-\d{2}-\d{2}T.+Z$/.test(value) && Number.isFinite(Date.parse(value));
+const FINISHES = ['matte', 'metallic', 'holographic', 'prismatic', 'etched', 'starfield', 'crystal', 'gilded', 'aurora'];
 
 export function validatePreferences(value: unknown): asserts value is Preferences {
   const prefs = object(value);
@@ -33,6 +34,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (card['imageDescription'] !== undefined && !text(card['imageDescription'], 1000)) fail('invalid image description.');
   if (card['rarity'] !== undefined && !RARITIES.some(tier => tier.id === card['rarity'])) fail('invalid card rarity.');
   if (card['designSetId'] !== undefined && !id(card['designSetId'])) fail('invalid card design reference.');
+  if (card['finish'] !== undefined && !FINISHES.includes(String(card['finish']))) fail('invalid card finish.');
   for (const key of ['image', 'backImage']) if (card[key] !== undefined) validateMediaRef(card[key]);
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
 }
@@ -137,9 +139,15 @@ export function validateDesign(value: unknown): asserts value is DesignSet {
   for (const field of ['backgroundPositionX', 'backgroundPositionY']) if (!finite(design[field]) || design[field] > 100) fail('invalid image position.');
   for (const field of ['credit', 'source', 'license']) if (!text(design[field], 2000)) fail('invalid design attribution.');
   for (const field of ['frame', 'background']) if (design[field] !== undefined) validateMediaRef(design[field]);
+  if (!FINISHES.includes(String(design['finish'] ?? 'matte'))) fail('invalid design finish.');
+  if (design['layout'] !== undefined && !['clean', 'ornate', 'showcase'].includes(String(design['layout']))) fail('invalid design layout.');
+  if (design['texture'] !== undefined) validateMediaRef(design['texture']);
   if (design['frames'] !== undefined) for (const [rarity, ref] of Object.entries(object(design['frames']))) {
     if (!RARITIES.some(tier => tier.id === rarity)) fail('invalid frame rarity.');
     validateMediaRef(ref);
+  }
+  if (design['finishes'] !== undefined) for (const [rarity, finish] of Object.entries(object(design['finishes']))) {
+    if (!RARITIES.some(tier => tier.id === rarity) || !FINISHES.includes(String(finish))) fail('invalid rarity finish.');
   }
 }
 export function validateRewardConfig(value: unknown): asserts value is Record<Rarity, number> {
@@ -173,7 +181,7 @@ function validateExtensions(data: Record<string, unknown>): void {
 }
 export function validateReferences(data: State): void {
   const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id));
-  const refs = [...data.cards.flatMap(card => [card.image, card.backImage]), ...data.designs.flatMap(design => [design.background, design.frame, ...Object.values(design.frames ?? {})])];
+  const refs = [...data.cards.flatMap(card => [card.image, card.backImage]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])];
   // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
   if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
