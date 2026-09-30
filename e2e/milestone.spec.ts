@@ -79,7 +79,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: /Download JSON backup/ }).click();
   const backupPath = await (await download).path();
   const backup = JSON.parse((await readFile(backupPath!)).toString()) as { version: number; state: State };
-  expect(backup.version).toBe(2); expect(backup.state.assets).toEqual(saved.assets); expect(backup.state.designs).toEqual(saved.designs);
+  expect(backup.version).toBe(3); expect(backup.state.assets).toEqual(saved.assets); expect(backup.state.designs).toEqual(saved.designs);
 });
 
 test('revealed session and selected scheduler order recover from reload without double reviews', async ({ page }) => {
@@ -128,7 +128,7 @@ test('real IndexedDB v1 upgrade preserves its original snapshot and review histo
   await openApp(page); await page.getByRole('button', { name: /Start studying/ }).click(); await confidentReview(page); await navigate(page, 'Dashboard');
   const reviewed = await snapshot(page);
   const legacy = structuredClone(reviewed) as unknown as Record<string, unknown>; legacy['schemaVersion'] = 1;
-  for (const key of ['assets', 'designs', 'rewardEvents', 'rewardConfig', 'session']) delete legacy[key];
+  for (const key of ['assets', 'designs', 'rewardEvents', 'rewardConfig', 'session', 'ankiMappings']) delete legacy[key];
   for (const card of legacy['cards'] as State['cards']) { delete card.rarity; if (card.kind === 'text') { delete card.image; delete card.imageDescription; } }
   await page.evaluate(value => new Promise<void>((resolve, reject) => {
     const open = indexedDB.open('holorecall-local-v1', 1); open.onerror = () => reject(open.error);
@@ -136,7 +136,7 @@ test('real IndexedDB v1 upgrade preserves its original snapshot and review histo
   }), legacy);
   await page.reload(); await expect(page.getByTestId('today-count')).toContainText('1');
   const upgraded = await snapshot(page);
-  expect(upgraded.schemaVersion).toBe(2); expect(upgraded.events).toEqual(reviewed.events); expect(upgraded.states).toEqual(reviewed.states);
+  expect(upgraded.schemaVersion).toBe(3); expect(upgraded.ankiMappings).toEqual([]); expect(upgraded.events).toEqual(reviewed.events); expect(upgraded.states).toEqual(reviewed.states);
   expect(upgraded.rewardEvents).toEqual([]); expect(upgraded.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
   expect(upgraded.cards.every(card => card.revision === 1)).toBe(true);
   const preserved = await page.evaluate(() => new Promise<unknown>((resolve, reject) => {

@@ -1,4 +1,4 @@
-import { expect, test, openApp, snapshot } from './helpers';
+import { expect, test, expectNoOverflow, openApp, snapshot } from './helpers';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
 import { readFile } from 'node:fs/promises';
@@ -41,6 +41,8 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
   await expect(page.getByText('7', { exact: true }).first()).toBeVisible();
   await page.getByText('Custom field mapping').click();
   await expect(page.getByRole('heading', { name: 'HoloRecall Custom Audio' })).toBeVisible();
+  await page.getByRole('radio', { name: 'Dark', exact: true }).click(); await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await expectNoOverflow(page); await page.evaluate(() => document.documentElement.style.fontSize = '100%');
   await page.getByRole('button', { name: 'Save presets and preview' }).click();
   await expect(page.getByText('Mapping presets saved for these exact source schemas.')).toBeVisible();
   await expect(page.getByText('Saved exact match').last()).toBeVisible();
@@ -80,6 +82,15 @@ test('HR-IMPORT-01 keeps the interface responsive and cancels background analysi
   await expect(page.getByRole('button', { name: 'Cancel analysis' })).toHaveCount(0);
   await expect(page.getByText(/Detected:/)).toHaveCount(0);
   expect(await snapshot(page)).toEqual(before);
+});
+
+test('HR-IMPORT-01 mapping reflows at enlarged text on phone profiles @ios-compact @ios-large @ios-landscape', async ({ page }) => {
+  await openApp(page); await page.getByRole('button', { name: 'Import / export' }).click();
+  await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
+  await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByText('Custom field mapping').click();
+  await page.evaluate(() => document.documentElement.style.fontSize = '200%');
+  await expect(page.getByRole('button', { name: 'Save presets and preview' })).toBeVisible();
+  await expectNoOverflow(page);
 });
 
 test('HR-DESIGN-02 previews distinct finish/layout settings and HR-GAME-01 shows real next progress', async ({ page }) => {

@@ -23,12 +23,18 @@ function sample(): ContentBundle {
 
 describe('versioned content exchange', () => {
   it('ships valid downloadable workbooks and a self-contained sixteen-illustration example', async () => {
-    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v1.xlsx')), 'blank.xlsx', state());
+    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v3.xlsx')), 'blank.xlsx', state());
     expect(blank.errors).toEqual([]); expect(blank.bundle.cards).toHaveLength(0);
-    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v1.xlsx')), 'example.xlsx', state());
+    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v3.xlsx')), 'example.xlsx', state());
     expect(example.errors).toEqual([]); expect(example.bundle.cards).toHaveLength(16); expect(example.bundle.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
-    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v1.zip')), 'portable.zip', state());
+    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v3.zip')), 'portable.zip', state());
     expect(portable.errors).toEqual([]); expect(portable.bundle.assets).toHaveLength(16); expect(portable.bundle.cards.every(card => card.image?.startsWith('asset:'))).toBe(true);
+  });
+  it.each(['v1', 'v2'])('keeps published %s content packages readable', async version => {
+    const workbook = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.xlsx`)), `${version}.xlsx`, state());
+    const portable = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.zip`)), `${version}.zip`, state());
+    expect(workbook.errors).toEqual([]); expect(workbook.bundle.cards).toHaveLength(16);
+    expect(portable.errors).toEqual([]); expect(portable.bundle.cards).toHaveLength(16);
   });
   it('exports only content and identifies unchanged cards by stable IDs, ignoring revision', async () => {
     const data = state(); const bundle = contentFromState(data); bundle.cards[0].revision += 4;

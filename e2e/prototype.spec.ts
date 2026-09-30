@@ -182,7 +182,7 @@ test('JSON download restores cards and review history into an untouched browser 
   expect(path).toBeTruthy();
   const buffer = await readFile(path!);
   const backup = JSON.parse(buffer.toString()) as { format: string; version: number; state: State };
-  expect(backup).toMatchObject({ format: 'holorecall-backup', version: 2 });
+  expect(backup).toMatchObject({ format: 'holorecall-backup', version: 3 });
   expect(backup.state.events).toEqual(source.events);
   expect(backup.state.cards).toEqual(source.cards);
 

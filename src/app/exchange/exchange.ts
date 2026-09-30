@@ -71,9 +71,11 @@ import { CAPABILITY_POLICY } from '../platform/capability-policy';
   styles: [`
     .mapping-model{padding:1rem 0;border-bottom:1px solid var(--mat-sys-outline-variant)}
     .mapping-model>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:1rem}.mapping-model h3{margin:0;text-align:start}
-    .mapping-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}.mapping-grid mat-form-field,.mapping-model>mat-form-field{width:100%}
+    .mapping-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:.75rem}.mapping-grid mat-form-field,.mapping-model>mat-form-field{width:100%;min-width:0}
     .actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1rem}
-    @media(max-width:760px){.exchange-heading{flex-direction:column}.mapping-grid{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}}
+    .anki-import code{overflow-wrap:anywhere;word-break:break-word}
+    .preview-counts span{overflow-wrap:anywhere}
+    @media(max-width:760px){.exchange-heading{flex-direction:column}.mapping-grid{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}.preview-counts{grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr))}}
   `],
 })
 export class ExchangeComponent implements OnDestroy {

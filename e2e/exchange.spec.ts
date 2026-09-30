@@ -42,7 +42,7 @@ test('portable ZIP packages all sixteen illustrations and imports decodable dura
   const bytes = await readFile((await download.path())!);
   await page.getByLabel('Workbook or portable archive').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/zip', buffer: bytes });
   await expect(page.getByRole('heading', { name: 'Import preview' })).toBeVisible();
-  await expect(page.getByText(/16 bundled images/)).toBeVisible();
+  await expect(page.getByText(/16 bundled media files/)).toBeVisible();
   await page.getByRole('button', { name: 'Apply 16 card changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('updated 16 cards');
   await page.reload(); await expect(page.getByRole('heading', { name: 'Import & export', exact: true })).toBeVisible();
