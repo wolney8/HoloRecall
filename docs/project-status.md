@@ -2,6 +2,27 @@
 
 Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
+## Charter, import and entitlement milestone tracker
+
+| ID | Status | Acceptance evidence | Remaining issue / exact next action |
+| --- | --- | --- | --- |
+| HR-GOV-01 | In progress | Charter adopted at its authoritative path; root guidance links maintained records and adds the proportional learning/UI/platform/portability/entitlement and layout gates. Two repository-local skills validate successfully. | Exercise both skills against the implementation and reconcile roadmap/platform evidence. |
+| HR-GOV-02 | In progress | Two native Codex delegates are running bounded read-only import-integrity and UI/platform acceptance investigations with shared interfaces fixed by the lead. Lead retains schema, dependencies, migrations and integration. | Inspect delegate findings, record evidence, then run an independent acceptance follow-up. |
+| HR-IMPORT-01A | Not started | Existing parser accepts cancellation signals but still executes ZIP/zstd/SQLite work on the main thread. | Add typed lazy worker jobs, exact-stage reporting, cancellation and production-path evidence. |
+| HR-IMPORT-01B | Not started | Existing importer reports bundled audio as unsupported. | Add bounded durable audio assets, side-specific controls, editing and portability. |
+| HR-IMPORT-01C | Not started | Existing conversion uses template substitution and preserves unmapped fields as notes, but has no saved mapping step. | Add source-signature mapping presets, preview/remap and schema-change review. |
+| HR-COM-01 | Not started | Charter defines the separation but no capability-policy interface exists. | Add an allow-all development policy and exercise real entry points without restrictions. |
+| HR-PLAN-01 | Not started | Product brief has delivery checkpoints but no maintained capability matrix. | Extend that record with stable capability IDs, evidence, acceptance, dependencies and proposed commercial classification. |
+
+### Charter adoption handoff
+
+- Branch/commit: `main` at `958060f`; prior application handoff `5bdf7a4`. The only subsequent change is this tracker reconciliation. Nothing is pushed or deployed.
+- Governance: `docs/HoloRecall_Product_Charter_v1.md` now records adopted status and the actual bounded handoff. `AGENTS.md` links the authoritative sources and standing review gates.
+- Skills: `.agents/skills/holorecall-ui-platform-acceptance` and `.agents/skills/holorecall-import-integrity` both pass the installed Codex `quick_validate.py`. Their workflows still need to be exercised on the implementation before HR-GOV-01 can complete.
+- Delegation: two real read-only subagents are investigating import integrity and UI/platform acceptance. They cannot edit shared files; the lead owns integration and final evidence.
+- Checks: both new skills validated; `git diff --check` passed before the checkpoint. No application code or persisted schema changed in this batch.
+- Exact next action: implement the lead-owned compatible media/mapping schema and typed Worker boundary, then integrate audio and mapping through the existing parser/editor/renderer.
+
 ## Recovery snapshot
 
 The worktree contains a coherent extension of the first prototype: Angular Material 3 theming with Light/Dark/System choices; all 16 Italian illustrations; schema-2 IndexedDB migration; persisted study sessions; seven rarity tiers and auditable reward events; Design Studio; Collection inspection; Progress reports; and XLSX/portable-ZIP content exchange. Package versions are pinned in `package.json`; installed top-level versions match it. No development server was listening on port 4200 at recovery.
