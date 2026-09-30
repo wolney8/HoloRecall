@@ -61,7 +61,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
   await page.getByRole('button', { name: 'Save and assign', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Design saved and assigned');
   const saved = await snapshot(page);
-  expect(saved.designs).toHaveLength(1); expect(saved.assets).toHaveLength(2);
+  expect(saved.designs).toHaveLength(1); expect(saved.assets).toHaveLength(1);
   expect(saved.decks[0].designSetId).toBe(saved.designs[0].id);
   expect(saved.designs[0]).toMatchObject({ backgroundFit: 'contain', backgroundPositionX: 51, credit: 'Original family artwork' });
   expect(saved.cards).toEqual(original.cards); expect(saved.events).toEqual([]); expect(saved.rewardEvents).toEqual([]);
@@ -74,7 +74,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
   await page.getByRole('option', { name: /Relic$/ }).click();
   await expect(page.locator('.studio-card .memory-card')).toHaveAttribute('data-rarity', 'relic');
   await navigate(page, 'Dashboard'); await page.getByRole('button', { name: /Start studying/ }).click();
-  await expect(page.locator('.study-card-area .frame-layer img')).toHaveAttribute('src', saved.assets[1].dataUrl);
+  await expect(page.locator('.study-card-area .frame-layer img')).toHaveAttribute('src', saved.assets[0].dataUrl);
   await navigate(page, 'Settings');
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: /Download JSON backup/ }).click();
   const backupPath = await (await download).path();

@@ -26,6 +26,15 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - **Interruption note:** the earlier 119-test browser run was terminated by the editor crash and is not counted as a completed check. A fresh uninterrupted Chromium/WebKit run is required.
 - **Exact next action:** checkpoint the recovered implementation, run the complete browser matrix serially, fix any regression, then reconcile the tracker, capability matrix, architecture and readiness evidence.
 
+### Independent-review correction batch
+
+- **Branch/checkpoint:** implementation checkpoint `20d36bf`; corrections after the independent read-only acceptance review are uncommitted at this handoff line.
+- **Corrected:** media hashes are recomputed from bytes before import/restore/deduplication; identical incoming assets deduplicate within the same bundle; Design Studio reuses the retained stable asset ID; ordinary state commits compare metadata keys and do not hydrate or rewrite unchanged payloads. Parent-deck study includes descendants, archived/suspended ancestors consistently hide descendants from Study and the library, the attention filter now uses the latest five active reviews, inactive lifecycle state cannot start a new index build, and large libraries fail visibly if Worker support is absent.
+- **Organisation UI:** removable active-filter chips and a full Collection filter disclosure make shared query state visible in both library surfaces. The search input now exposes combobox/listbox ownership and its active descendant.
+- **Checks:** unit/domain **88/88 passed** and production build passed at **827.98 kB raw / 188.50 kB estimated transfer**. The first complete browser run after recovery produced **112/119 passed**; all seven failures were investigated. Six were resolved and passed in the focused two-engine rerun; the last WebKit bulk test exposed an ambiguous duplicate-row locator and then passed after targeting the original card by its content. No timeout was increased.
+- **Independent review:** the lead accepted and fixed the two high-severity hash/write issues plus same-bundle dedupe, hierarchy/archive, attention, lifecycle, filter-chip and combobox findings. Portable workbook hierarchy/archive fields and broader 10k mutation/media measurements remain explicit limitations for final scope reporting.
+- **Exact next action:** checkpoint these corrections, reconcile tracker/architecture/capability/readiness documents, run the fresh full browser suite, then capture final animation-enabled organisation evidence.
+
 ## Charter, import and entitlement milestone tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |

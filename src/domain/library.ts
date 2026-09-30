@@ -15,6 +15,7 @@ export interface SearchResult { kind: 'deck' | 'card' | 'tag'; id: string; label
 export interface LibraryItem {
   card: CardContent; deckName: string; deckPath: string; tags: string[]; earned: boolean;
   deckIds: string[];
+  deckArchived: boolean;
   unlockDays: number; unlockRequired: number; lastStudied?: string; due?: string;
   state: 'new' | 'learning' | 'review'; attention: boolean; media: Exclude<MediaFilter, 'none'>[];
 }
@@ -48,8 +49,8 @@ export function validateDeckMove(state: Pick<State,'decks'>, deckId: string, par
 
 export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex {
   const paths = new Map(state.decks.map(deck => [deck.id, deckPath(state, deck.id)]));
-  const lastByCard = new Map<string,string>(), failures = new Map<string,number>();
-  for (const event of activeReviews(state)) { lastByCard.set(event.cardId, event.timestamp); if (event.rating === 1) failures.set(event.cardId, (failures.get(event.cardId) ?? 0) + 1); }
+  const lastByCard = new Map<string,string>(), history = new Map<string,number[]>();
+  for (const event of activeReviews(state)) { lastByCard.set(event.cardId, event.timestamp);history.set(event.cardId,[...(history.get(event.cardId)??[]),event.rating].slice(-5)); }
   const tagLabels = new Map<string,string>();
   for (const card of state.cards) for (const tag of canonicalTags(card.tags)) if (!tagLabels.has(normalizeTag(tag))) tagLabels.set(normalizeTag(tag), tag);
   const deckById = new Map(state.decks.map(deck => [deck.id, deck]));
@@ -58,7 +59,8 @@ export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex 
     const progress = rewardProgress(state, card.id), schedule = state.states[card.id], reps = schedule?.reps ?? 0;
     const stateName: LibraryItem['state'] = reps === 0 ? 'new' : schedule?.state === 2 ? 'review' : 'learning';
     const media: LibraryItem['media'] = [...(card.image || card.backImage ? ['image' as const] : []), ...((card.frontAudio?.length || card.backAudio?.length) ? ['audio' as const] : [])];
-    return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:deckLineage(card.deckId), tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: (failures.get(card.id) ?? 0) >= 2, media };
+    const lineage=deckLineage(card.deckId),deckArchived=lineage.some(id=>{const deck=deckById.get(id);return !!(deck?.archived||deck?.suspended);}),recent=history.get(card.id)??[];
+    return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:lineage, deckArchived, tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: recent.filter(rating=>rating===1).length>=2, media };
   });
   const results: SearchResult[] = [];
   for (const deck of state.decks) { const context=deck.description || paths.get(deck.id) || 'Deck'; results.push({ kind:'deck', id:deck.id, deckId:deck.id, label:deck.name, context, normalized:normalizeSearch(`${deck.name} ${context}`), score:80 }); }
@@ -76,7 +78,7 @@ export function queryLibrary(index: LibraryIndex, request: LibraryQuery, now = n
   const designs = filters.designSetIds?.length ? new Set(filters.designSetIds) : null, finishes = filters.finishes?.length ? new Set(filters.finishes) : null;
   let items = index.cards.filter(item => {
     const card = item.card;
-    if (!filters.includeArchived && card.archived || searched && !searched.has(card.id) || deckIds && !item.deckIds.some(id=>deckIds.has(id))) return false;
+    if (!filters.includeArchived && (card.archived||item.deckArchived) || searched && !searched.has(card.id) || deckIds && !item.deckIds.some(id=>deckIds.has(id))) return false;
     if (tags?.length && !tags.some(tag => item.tags.some(value => normalizeTag(value) === tag))) return false;
     if (rarities && !rarities.has(card.rarity ?? 'common') || filters.earned && item.earned !== (filters.earned === 'earned')) return false;
     if (designs && !designs.has(card.designSetId ?? '') || finishes && !finishes.has(card.finish ?? 'matte')) return false;

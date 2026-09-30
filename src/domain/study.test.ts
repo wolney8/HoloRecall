@@ -131,6 +131,8 @@ describe('local study limits and day boundaries', () => {
     expect(dueCards(data, now)).toEqual([]);
   });
 
+  it('studies descendants from a parent deck and honours archived ancestors',()=>{const data=fresh();data.decks[0]={...data.decks[0]!,id:'parent'};data.decks.push({id:'italian',name:'Italian',description:'',suspended:false,parentId:'parent'});data.cards=data.cards.map(card=>({...card,deckId:'italian'}));expect(dueCards(data,now,'parent').map(card=>card.id)).toEqual(['one','two','three']);data.decks[0]!.archived=true;expect(dueCards(data,now,'italian')).toEqual([]);});
+
   it('uses Europe/London calendar days through spring and autumn DST changes', () => {
     expect(dayKey(new Date('2026-03-29T00:59:00Z'), 'Europe/London')).toBe('2026-03-29');
     expect(dayKey(new Date('2026-03-29T23:00:00Z'), 'Europe/London')).toBe('2026-03-30');

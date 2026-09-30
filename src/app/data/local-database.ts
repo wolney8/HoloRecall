@@ -34,7 +34,7 @@ export class LocalDatabase implements StudyPersistence{
       request.onerror=()=>fail(request.error??new Error('Could not read local media.'));
     });
   }
-  private stageMedia(media:IDBObjectStore,state:State):void{for(const asset of state.assets)media.put(asset.dataUrl,this.mediaKey(asset));}
+  private stageMedia(media:IDBObjectStore,state:State,existingKeys=new Set<string>()):void{for(const asset of state.assets){const key=this.mediaKey(asset);if(!existingKeys.has(key))media.put(asset.dataUrl,key);}}
   async load(initial:State):Promise<State>{const db=await this.open();return new Promise((resolve,reject)=>{
     const transaction=db.transaction([STORE,MEDIA],'readwrite'),store=transaction.objectStore(STORE),media=transaction.objectStore(MEDIA),request=store.get(KEY);let result:State,validationError:unknown;
     const fail=(error:unknown)=>{validationError=error;transaction.abort();};
@@ -44,7 +44,7 @@ export class LocalDatabase implements StudyPersistence{
   async commit(next:State,expectedVersion:number):Promise<State>{validateState(next);if(next.version!==expectedVersion+1)throw new Error('A local save must advance exactly one storage version.');const db=await this.open();return new Promise((resolve,reject)=>{
     const transaction=db.transaction([STORE,MEDIA],'readwrite'),store=transaction.objectStore(STORE),media=transaction.objectStore(MEDIA),request=store.get(KEY);let failure:unknown;
     const fail=(error:unknown)=>{failure=error;transaction.abort();};
-    request.onsuccess=()=>this.hydrate(request.result as PersistedState,media,current=>{try{validateState(current);if(current.version!==expectedVersion)throw new StaleStateError();this.stageMedia(media,next);const retained=new Set(next.assets.map(asset=>this.mediaKey(asset)));for(const asset of current.assets)if(!retained.has(this.mediaKey(asset)))media.delete(this.mediaKey(asset));store.put(this.persisted(next),KEY);}catch(error){fail(error);}},fail);
+    request.onsuccess=()=>{try{const current=request.result as PersistedState|undefined;if(!current)throw new Error('Local study data is unavailable. Reload before saving.');if(current.version!==expectedVersion)throw new StaleStateError();const existingKeys=new Set((current.assets??[]).map(asset=>this.mediaKey(asset)));this.stageMedia(media,next,existingKeys);const retained=new Set(next.assets.map(asset=>this.mediaKey(asset)));for(const key of existingKeys)if(!retained.has(key))media.delete(key);store.put(this.persisted(next),KEY);}catch(error){fail(error);}};
     transaction.oncomplete=()=>resolve(next);transaction.onerror=()=>reject(failure??transaction.error??new Error('Could not save. Your review was not recorded.'));transaction.onabort=()=>reject(failure??transaction.error??new Error('Save interrupted. Your review was not recorded.'));
   });}
   async close():Promise<void>{(await this.connection)?.close();this.connection=undefined;}

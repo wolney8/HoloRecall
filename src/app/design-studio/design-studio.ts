@@ -56,8 +56,8 @@ export class DesignStudioComponent {
     this.busy.set(true);
     try {
       const asset = await readArtwork(file);
-      await this.store.saveAsset(asset);
-      const ref = `asset:${asset.id}`;
+      const saved = await this.store.saveAsset(asset);
+      const ref = `asset:${saved.id}`;
       if (kind === 'background') this.editor.background = ref;
       else if (kind === 'texture') this.editor.texture = ref;
       else if (this.frameSlot === 'base') this.editor.frame = ref;

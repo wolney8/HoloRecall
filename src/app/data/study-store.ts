@@ -160,14 +160,15 @@ export class LocalStudyStore {
     const designId = card.designSetId ?? this.deckById().get(card.deckId)?.designSetId;
     return this.designById().get(designId ?? '');
   }
-  async saveAsset(asset: LocalAsset): Promise<void> {
-    const described=asset.contentHash?asset:await describeAsset(asset);validateAsset(described);
+  async saveAsset(asset: LocalAsset): Promise<LocalAsset> {
+    const described=await describeAsset(asset);validateAsset(described);let retained=described;
     await this.change(data => {
       const previous = data.assets.find(item => item.id === described.id);
       if (previous && JSON.stringify(previous) !== JSON.stringify(described)) throw new Error('Upload replacement artwork with a new asset ID to preserve other designs.');
-      if(previous)return data;const duplicate=data.assets.find(item=>item.contentHash===described.contentHash&&item.mime===described.mime);if(duplicate)throw new Error(`This media already exists as ${duplicate.name}. Reuse that asset instead.`);
+      if(previous){retained=previous;return data;}const duplicate=data.assets.find(item=>item.contentHash===described.contentHash&&item.mime===described.mime);if(duplicate){retained=duplicate;return data;}
       return { ...data, version: data.version + 1, assets: [...data.assets, structuredClone(described)] };
     });
+    return retained;
   }
   async saveDesign(design: DesignSet): Promise<void> {
     validateDesign(design);
@@ -227,8 +228,8 @@ export class LocalStudyStore {
   }
 
   async restoreJson(json: string): Promise<void> {
+    const parsed=parseBackup(json,SEED_CARDS),assets=await Promise.all(parsed.assets.map(describeAsset)),restored={...parsed,assets};
     await this.change(data => {
-      const restored = parseBackup(json, SEED_CARDS);
       if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(createInitialState(SEED_DECKS, SEED_CARDS).cards) || JSON.stringify(data.decks) !== JSON.stringify(SEED_DECKS)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
       return { ...restored, version: data.version + 1 };
     });

@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FlashcardComponent } from '../card';
 import { LocalStudyStore } from '../data/study-store';
 import type { CardContent, Rarity } from '../../domain/models';
@@ -14,10 +15,13 @@ import { LibraryViewService } from '../library/library-view.service';
 @Component({
   selector: 'hr-collection',
   standalone: true,
-  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, PageRevealDirective],
+  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatCheckboxModule, PageRevealDirective],
   template: `
     <div class="page-heading collection-heading" hrReveal><div><p class="eyebrow">CARD LIBRARY</p><h1>Collection</h1><p>Inspect cards, authored rarity and earned cosmetics.</p></div></div>
-    <section class="collection-tools" hrReveal aria-label="Search collection"><mat-form-field appearance="outline"><mat-label>Search collection</mat-label><input matInput [ngModel]="library.query()" (ngModelChange)="library.setQuery($event)" autocomplete="off"></mat-form-field><div class="view-presets" aria-label="Collection views"><button mat-stroked-button (click)="showAll()">All cards</button><button mat-button (click)="library.setFilter('rarities',['rare','holo-rare','ultra-rare','secret-rare','relic'])">Higher rarities</button><button mat-button (click)="library.setFilter('earned','earned')">Earned</button><button mat-button (click)="library.setFilter('earned','unearned')">Next unlock</button>@if(library.activeFilterCount()){<button mat-button (click)="library.clear()">Clear filters</button>}</div>@if(library.status()==='building'){<p class="hint" aria-live="polite">Updating local index…</p>}@else if(library.query()&&!library.page().total){<p class="empty-inline">No results.</p>}</section>
+    <section class="collection-tools" hrReveal aria-label="Search collection"><mat-form-field appearance="outline"><mat-label>Search collection</mat-label><input matInput [ngModel]="library.query()" (ngModelChange)="library.setQuery($event)" autocomplete="off"></mat-form-field><div class="view-presets" aria-label="Collection views"><button mat-stroked-button (click)="showAll()">All cards</button><button mat-button (click)="library.setFilter('rarities',['rare','holo-rare','ultra-rare','secret-rare','relic'])">Higher rarities</button><button mat-button (click)="library.setFilter('earned','earned')">Earned</button><button mat-button (click)="library.setFilter('earned','unearned')">Next unlock</button><button mat-button (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">Filters{{library.activeFilterCount()?' ('+library.activeFilterCount()+')':''}}</button>@if(library.activeFilterCount()){<button mat-button (click)="library.clear()">Clear filters</button>}</div>
+      @if(library.filterChips().length){<div class="active-filter-chips" aria-label="Active collection filters">@for(chip of library.filterChips();track chip.key+chip.value){<button type="button" (click)="library.removeFilterChip(chip.key,chip.value)" [attr.aria-label]="'Remove '+chip.label+' filter'">{{chip.label}} <span aria-hidden="true">×</span></button>}</div>}
+      @if(filtersOpen()){<div class="collection-filter-panel"><fieldset><legend>Deck</legend>@for(deck of store.decks();track deck.id){<mat-checkbox [checked]="library.filters().deckIds?.includes(deck.id)" (change)="toggle('deckIds',deck.id)">{{deck.name}}</mat-checkbox>}</fieldset><fieldset><legend>Tags</legend>@for(tag of library.tags();track tag){<mat-checkbox [checked]="library.filters().tags?.includes(tag)" (change)="toggle('tags',tag)">{{tag}}</mat-checkbox>}</fieldset><fieldset><legend>Study</legend>@for(state of studyFilters;track state){<mat-checkbox [checked]="library.filters().studyStates?.includes(state)" (change)="toggle('studyStates',state)">{{state}}</mat-checkbox>}</fieldset><fieldset><legend>Media</legend>@for(media of mediaFilters;track media){<mat-checkbox [checked]="library.filters().media?.includes(media)" (change)="toggle('media',media)">{{media}}</mat-checkbox>}</fieldset><fieldset><legend>Rarity</legend>@for(tier of tiers;track tier.id){<mat-checkbox [checked]="library.filters().rarities?.includes(tier.id)" (change)="toggle('rarities',tier.id)">{{tier.label}}</mat-checkbox>}</fieldset><fieldset><legend>Design</legend>@for(design of store.data()!.designs;track design.id){<mat-checkbox [checked]="library.filters().designSetIds?.includes(design.id)" (change)="toggle('designSetIds',design.id)">{{design.name}}</mat-checkbox>}</fieldset></div>}
+      @if(library.status()==='building'){<p class="hint" aria-live="polite">Updating local index…</p>}@else if(library.query()&&!library.page().total){<p class="empty-inline">No results.</p>}</section>
     @if (selected(); as card) {
       <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
@@ -56,6 +60,9 @@ export class CollectionComponent {
   readonly sampleTier = signal<Rarity | null>(null);
   readonly previewLocked = signal(false);
   readonly revealed = signal(true);
+  readonly filtersOpen=signal(false);
+  readonly studyFilters=['due','new','learning','review','attention'] as const;
+  readonly mediaFilters=['image','audio','none'] as const;
   readonly selected = computed(() => this.store.cards().find(card => card.id === this.selectedId()) ?? this.store.cards()[0]);
   readonly earnedCount = computed(() => this.store.cards().filter(card => this.progress(card).earned).length);
   readonly recentlyUnlocked = computed(() => { const state = this.store.data(); if (!state) return []; return activeRewardEvents(state).filter(event => event.kind === 'unlock').sort((a,b) => b.timestamp.localeCompare(a.timestamp)).slice(0,4).flatMap(event => { const card = state.cards.find(item => item.id === event.cardId); return card ? [{ event, card }] : []; }); });
@@ -76,5 +83,6 @@ export class CollectionComponent {
   inspect(card: CardContent): void { this.selectedId.set(card.id); this.sampleTier.set(null); this.previewLocked.set(false); this.revealed.set(true); this.scrollToInspection(); }
   inspectSample(rarity: Rarity): void { this.sampleTier.set(rarity); this.revealed.set(true); this.scrollToInspection(); }
   showAll():void{this.library.setQuery('');this.library.clear();}
+  toggle(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key as never,value as never);}
   private scrollToInspection(): void { document.getElementById('inspection-title')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' }); }
 }

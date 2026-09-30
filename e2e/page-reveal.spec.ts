@@ -58,7 +58,7 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
   const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Studio', Progress: 'Progress', 'Import / export': 'Import & export', Settings: 'Settings' };
   for (const [pageName, selector, minimum] of coverage) {
     if (pageName !== 'Dashboard') { await navigate(page, pageName); await expect(page.getByRole('heading', { name: headings[pageName], exact: true })).toBeVisible(); }
-    expect(await page.locator(selector).count(), `${pageName} shared reveal coverage`).toBeGreaterThanOrEqual(minimum);
+    await expect.poll(()=>page.locator(selector).count(),{message:`${pageName} shared reveal coverage`}).toBeGreaterThanOrEqual(minimum);
     if (process.env['HOLORECALL_VIDEO'] === '1') {
       await page.waitForTimeout(260);
       await page.evaluate(() => scrollBy({ top: 620, behavior: 'smooth' }));
@@ -86,7 +86,7 @@ test('HR-UX-12 stable filtering, focus, theme changes and backgrounding do not r
   await expect(firstRow).toHaveAttribute('data-reveal-state', /active|settled/);
   await page.waitForTimeout(600);
   const answer = (await firstRow.locator('h3').textContent())!.trim();
-  await page.getByLabel('Search cards').fill(answer);
+  await page.getByLabel('Search decks and cards').fill(answer);
   await expect(firstRow).toHaveAttribute('data-reveal-state', 'settled');
   expect(await firstRow.evaluate(element => element.getAnimations().length)).toBe(0);
 
