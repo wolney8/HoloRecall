@@ -101,6 +101,7 @@ export class AppComponent {
   private timedCard='';
   private settingsLoaded=false;
   private resultSessionKey='';
+  private initialRecoveryChecked=false;
   private resultUnobserve:(()=>void)[]=[];
   private resultTimers:number[]=[];
   private confidenceTimer=0;
@@ -112,6 +113,7 @@ export class AppComponent {
       const cardId=this.current()?`${this.current()!.id}:${this.current()!.revision}`:'';
       if(cardId!==this.timedCard){this.timedCard=cardId;this.elapsedMs=this.session()?.activeMs??0;this.lastTick=performance.now();}
       const state=this.data();
+      if(state&&!this.initialRecoveryChecked){this.initialRecoveryChecked=true;if(this.screen()==='study'&&state.session?.endedAt&&!state.session.queue.length){queueMicrotask(()=>this.showResults());return;}}
       if(state&&!this.settingsLoaded){this.settingsLoaded=true;this.loadSettings();}
       const resultKey=state&&this.screen()==='results'&&state.session?.endedAt?`${state.session.id}:${state.session.endedAt}`:'';
       if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}

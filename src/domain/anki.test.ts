@@ -42,4 +42,15 @@ describe('Anki content-only import', () => {
     await expect(analyseAnkiPackage(await legacyPackage(), 'collection.apkg')).rejects.toThrow(/collection backup/i);
     await expect(analyseAnkiPackage(new Uint8Array([1, 2, 3]), 'bad.apkg')).rejects.toThrow(/ZIP/i);
   });
+  it.each([
+    ['legacy-anki21', 'e2e/fixtures/anki-26.9.3-legacy.apkg'],
+    ['modern-anki21b', 'e2e/fixtures/anki-26.9.3-modern.apkg'],
+  ] as const)('imports a real Anki 26.9.3 %s export', async (variant, path) => {
+    const bytes = new Uint8Array(await readFile(path)); const analysis = await analyseAnkiPackage(bytes, path.split('/').at(-1)!);
+    expect(analysis.variant).toBe(variant); expect(analysis.sourceNotes).toBe(4); expect(analysis.generatedCards).toBe(6);
+    expect(analysis.cards.some(card => card.front.includes('città') && card.answer.includes('city'))).toBe(true);
+    expect(analysis.cards.filter(card => card.notes.includes('Cloze'))).toHaveLength(2);
+    expect(analysis.assets).toHaveLength(1);
+    expect(analysis.cards.some(card => card.kind === 'visual' && card.image?.startsWith('asset:') && card.answer.includes('la stella'))).toBe(true);
+  });
 });

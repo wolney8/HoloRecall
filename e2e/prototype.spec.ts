@@ -95,6 +95,7 @@ test('collection explicitly previews seven tiers and effects preference persists
   expect((await snapshot(page)).rewardEvents).toEqual([]);
   await navigate(page, 'Settings');
   await page.getByRole('switch', { name: 'Card effects' }).click();
+  await expect(page.getByRole('switch', { name: 'Card effects' })).not.toBeChecked();
   await page.reload();
   await expect(page.getByRole('switch', { name: 'Card effects' })).not.toBeChecked();
   await navigate(page, 'Collection');
@@ -149,6 +150,7 @@ test('converting a visual card to text removes its image and restores the text p
   await navigate(page, 'Decks');
   await page.getByRole('button', { name: 'Edit il limone', exact: true }).click();
   await selectMaterial(page, 'Card type', 'Text prompt with optional image');
+  await page.getByText('Advanced presentation and media', { exact: true }).click();
   await page.getByRole('button', { name: 'Remove front image', exact: true }).click();
   await page.getByLabel('Front text / library prompt').fill('Translate “the lemon” into Italian.');
   await page.getByRole('button', { name: 'Save card', exact: true }).click();

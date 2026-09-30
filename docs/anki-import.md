@@ -4,12 +4,12 @@ HoloRecall imports learning content from an `.apkg` in the browser. It never rep
 
 | Package / content | Status | Evidence and limit |
 | --- | --- | --- |
-| Legacy `collection.anki2` package | Supported | Schema-11-style `col`, `notes` and `cards` fixture covers Basic, reversed and cloze conversion. |
-| Legacy `collection.anki21` package | Parser path implemented | Database selection is covered by detection logic; a genuine Anki-exported interoperability fixture is still required. |
-| Modern v3 `collection.anki21b` | Parser path implemented | Metadata detection, zstd database decompression and protobuf note-type/template fields are implemented. Modern protobuf media maps and a genuine current Anki export remain unverified, so this variant is not yet claimed interoperable. |
+| Legacy `collection.anki2` package | Supported | Schema-11-style bounded fixture covers Basic, reversed and cloze conversion. |
+| Legacy `collection.anki21` package | Supported for the documented subset | A genuine Anki 26.9.3 legacy export covers database selection, Basic, reversed, cloze, image-first content and bundled PNG media. |
+| Modern v3 `collection.anki21b` | Supported for the documented subset | A genuine Anki 26.9.3 modern export covers metadata v3, zstd database/media decompression, protobuf note types/templates/media entries, Basic, reversed, cloze and bundled PNG media. |
 | Basic and reversed templates | Supported | Each Anki card/template row keeps a stable source identity; field substitution, `FrontSide` and common conditionals are converted to inert text. |
 | Standard cloze | Supported for ordinary text clozes | Card ordinal selects the deletion. Nested/overlapping cloze edge cases need real-export coverage. |
-| PNG, JPEG, WebP | Supported for legacy JSON media maps | Files become durable local assets with bounded byte/dimension checks and collision-safe stable IDs. |
+| PNG, JPEG, WebP | Supported for legacy JSON and modern protobuf media maps | Files become durable local assets with bounded byte/dimension checks and collision-safe stable IDs. Genuine legacy/modern fixtures verify bundled PNG recovery into image-first cards. |
 | Bundled audio | Deferred | Reported and excluded. HoloRecall does not silently discard it or claim support. |
 | Script/CSS-dependent templates, typed answers, image occlusion, active SVG, remote resources and fonts | Unsupported | Counted with examples; import requires explicit acceptance of exclusions. No imported active content executes. |
 | Collection backups | Rejected | Files named as collection/backup packages receive guidance to export a deck; no destructive collection replacement exists. |
@@ -19,3 +19,5 @@ Limits are 30 MiB compressed, 60 MiB expanded database/archive data, 10,000 note
 The deterministic styling policy hashes the stable Anki note GUID plus template/cloze ordinal, then proposes: Common 55%, Uncommon 20%, Rare 12%, Holo Rare 7%, Ultra Rare 4%, Secret Rare 1%, Relic 1%. Actual counts are shown before import. These are authored presentation tiers only and do not unlock cosmetics.
 
 Dependencies: `sql.js` 1.14.2 (MIT) and `fzstd` 0.1.1 (MIT). Format behavior was based on Anki’s public source definitions for [package metadata](https://github.com/ankitects/anki/blob/main/proto/anki/import_export.proto), [package selection](https://github.com/ankitects/anki/blob/main/rslib/src/import_export/package/meta.rs), [note types](https://github.com/ankitects/anki/blob/main/proto/anki/notetypes.proto) and [database schema](https://github.com/ankitects/anki/tree/main/rslib/src/storage).
+
+The checked-in interoperability fixtures `e2e/fixtures/anki-26.9.3-legacy.apkg` and `e2e/fixtures/anki-26.9.3-modern.apkg` were exported by the official Anki 26.9.3 Python package. They contain four notes that generate six cards: Basic, reversed, two cloze deletions and an image-first PNG card. `scripts/generate-anki-fixtures.py` records the reproducible source content and export settings; the development-only Anki environment is excluded from the repository. These fixtures contain no learner review history.

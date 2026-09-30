@@ -102,6 +102,17 @@ test('HR-UX-15 real unlock waits for completed progress and Skip/Replay stay pre
   expect((await snapshot(page)).rewardEvents).toHaveLength(rewardCount);
 });
 
+test('HR-UX-15 queues multiple real unlocks and Collection reuses their persisted events', async ({ page }) => {
+  await openApp(page); await page.getByRole('button', { name: 'Settings', exact: false }).click();
+  await page.getByLabel('New cards per day').fill('2'); await page.getByRole('button', { name: 'Save study settings' }).click();
+  await page.getByRole('button', { name: 'Dashboard', exact: false }).click(); await page.getByRole('button', { name: /Start studying/ }).click();
+  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Reveal answer/ }).click(); await page.getByRole('button', { name: /4 Good Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
+  await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible(); const before = await snapshot(page); expect(before.rewardEvents.filter(event => event.kind === 'unlock')).toHaveLength(2);
+  await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 1 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
+  await page.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 2 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
+  await page.getByRole('button', { name: 'View in Collection' }).click(); await expect(page.getByRole('heading', { name: 'Recently unlocked' })).toBeVisible(); await expect(page.locator('.recent-unlocks .collection-item')).toHaveCount(2); expect((await snapshot(page)).rewardEvents).toEqual(before.rewardEvents);
+});
+
 test('HR-UX-13 @ios-compact stacks readable controls below the stable card at 200% text', async ({ page }) => {
   await openApp(page);
   await page.addStyleTag({ content: 'html{font-size:200%}' });

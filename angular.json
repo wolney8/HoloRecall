@@ -16,7 +16,7 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "index": "src/index.html",
-            "allowedCommonJsDependencies": ["exceljs", "jszip"],
+            "allowedCommonJsDependencies": ["exceljs", "jszip", "sql.js/dist/sql-wasm-browser.js"],
             "assets": [
               {
                 "glob": "**/*",
@@ -42,7 +42,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "750kB",
+                  "maximumWarning": "800kB",
                   "maximumError": "1MB"
                 }
               ]

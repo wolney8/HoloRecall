@@ -72,7 +72,8 @@ test('HR-UX-05 and 06 completed results persist and focused Study stays quiet', 
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByText('1 review · 1 unique card', { exact: true })).toBeVisible();
   await expect(page.getByText('+1 eligible day', { exact: false })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Newly unlocked', exact: true })).toBeVisible();
+  await page.locator('.unlock-reveal').scrollIntoViewIfNeeded();
+  await expect(page.locator('.unlock-reveal')).toContainText('Unlocked');
   await expect(page.getByText('1 timed reveal', { exact: true })).toBeVisible();
   await expect(page.locator('.toast')).toHaveCount(0);
   const completed = await snapshot(page);
