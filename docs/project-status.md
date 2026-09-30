@@ -37,7 +37,7 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 
 ### Search, organisation and scalable media final handoff
 
-- **Branch/commits:** `main`; governance `e0f739c`, foundation `c4095fe`, integrated UI/tests `20d36bf`, independent-review corrections `7f7cf3c`, followed by this final documentation checkpoint. Nothing is pushed or deployed.
+- **Branch/commits:** `main`; governance `e0f739c`, foundation `c4095fe`, integrated UI/tests `20d36bf`, independent-review corrections `7f7cf3c`, final evidence `c9f7f23`. Nothing is pushed or deployed.
 - **Requirement state:** HR-GOV-03, HR-ORG-01–05, HR-ORG-07 and HR-MEDIA-01 are `DONE` with linked evidence in `docs/work-items.md`. HR-ORG-06 remains `VERIFY`: 1k/10k index/query and bounded-render baselines exist, while 10k all-selection mutation, media-resolution and import-to-index latency still need dedicated measurement.
 - **Delivered:** accent-insensitive offline search; direct deck/card/tag navigation; shared removable filters and sorting across Decks/Collection; canonical tag rename/bulk changes; validated deck hierarchy and parent study; non-destructive archive; atomic bulk move/tag/rarity/design/finish actions; bounded premium Collection rendering; SHA-256 media dedupe/reference-safe cleanup; split IndexedDB metadata/payload stores without routine byte rewrites.
 - **Checks:** unit/domain **88/88 passed**; production build passed at **827.98 kB raw / 188.50 kB estimated transfer**; final stable Playwright run **119/119 passed** in **3.1 minutes** with no skips. A prior 118/119 run found a real lazy-Collection assertion race; the assertion now waits for the owned collection rows and passed in both engines before the stable full rerun. No timeout was increased.

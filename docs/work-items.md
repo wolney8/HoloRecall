@@ -21,7 +21,7 @@ Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items r
 - **Platform implications:** None at runtime; interruption recovery must not depend on chat history.
 - **Implementation notes:** This tracker owns actionable execution only. It does not replace the charter, roadmap or handoff.
 - **Verification / evidence:** Tracker predates implementation, retains every item and is linked from `AGENTS.md`; each coherent batch has a restart entry in `project-status.md`.
-- **Commits:** `e0f739c`, final reconciliation pending.
+- **Commits:** `e0f739c`, `c9f7f23`.
 
 ### HR-ORG-01 — Global search
 
