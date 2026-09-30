@@ -25,7 +25,7 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 
 ### Import/audio/mapping implementation handoff
 
-- Branch/commit: `main` at `bbcc0e4` plus the uncommitted schema-3, Worker, audio, mapping, entitlement, fixture, format-v3 and documentation batch. Nothing is pushed or deployed.
+- Branch/commit: this implementation batch was checkpointed on `main` at `52e60f7`; final acceptance is recorded below. Nothing is pushed or deployed.
 - Checks: focused unit/domain **37/37 passed**; production build passed at **794.16 kB initial / 180.30 kB estimated transfer** and emitted a distinct lazy Anki Worker; official-fixture mapping/audio passed **2/2** in Chromium/WebKit; 10,000-note responsive cancellation passed **2/2** in Chromium/WebKit. Full unit/browser regression remains next.
 - Persistence: migrations retain `migration-v1-original` or `migration-v2-original`; imported content remains atomic and content-only; mapping presets commit together. Reviews, FSRS state and rewards are unchanged by import/capability decisions.
 - Cross-platform: desktop Playwright WebKit is browser-engine evidence only. Native picker URI handling, durable media, audio interruption/listening quality, memory pressure, VoiceOver and iOS/macOS packaging remain untested.
@@ -33,7 +33,7 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 
 ### Charter/import/entitlement final handoff
 
-- Branch/checkpoints: `main`; charter workflow `958060f`, tracker `bbcc0e4`, core import implementation `52e60f7`, with final acceptance/test/documentation changes in the next checkpoint. Nothing is pushed or deployed.
+- Branch/checkpoints: `main`; charter workflow `958060f`, tracker `bbcc0e4`, core import implementation `52e60f7`, final acceptance and compatibility fixes `3c1246b`. Nothing is pushed or deployed.
 - Requirements: HR-GOV-01/02, HR-IMPORT-01A/B/C, HR-COM-01 and HR-PLAN-01 are complete for the documented local-web scope. HR-IMPORT-01 is now complete only for the compatibility subset in `docs/anki-import.md`, not universal Anki parity.
 - Final checks: **77/77** unit/domain tests; production build **794.64 kB initial / 180.36 kB estimated transfer**; final combined browser gate **108/108** after the new phone-profile import checks (**48 Chromium, 48 desktop WebKit, 12 WebKit phone profiles**). No skips. The first combined 105-case run had eight stale v2/image-label assertions across engines and one Chromium reward-animation timing flake; corrected v3 assertions passed 10/10, the unchanged animation passed 3/3 isolated, and the uninterrupted rerun passed 105/105. Additional import/theme/text-reflow checks then passed in both engines and all three phone profiles.
 - Interoperability: official Anki 26.9.3 legacy `.anki21` and modern `.anki21b` exports contain five notes/seven cards, custom mappings, PNG and MP3. The 10,000-note/card cancellation fixture is 2,572,288 bytes as SQLite and 249,606 bytes compressed. Format-v3 XLSX/ZIP and JSON backup retain audio/mappings; published v1/v2 deck packages remain readable.
