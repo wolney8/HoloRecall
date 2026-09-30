@@ -37,6 +37,11 @@ export class AppComponent {
   readonly message=signal('');
   readonly messageError=signal(false);
   readonly resultsSkipped=signal(false);
+  readonly resultsIntroPlaying=signal(false);
+  readonly activeResultSections=signal(0);
+  readonly resultsRun=signal(0);
+  readonly resultSectionStates=signal<Record<string,'waiting'|'active'|'settled'>>({});
+  readonly confidenceFeedback=signal<1|2|3|4|5|null>(null);
   readonly tiers=RARITIES;
   readonly Math=Math;
   readonly navigation:{id:Screen;label:string;icon:string}[]=[
@@ -72,6 +77,10 @@ export class AppComponent {
   private ticks=0;
   private timedCard='';
   private settingsLoaded=false;
+  private resultSessionKey='';
+  private resultObserver?:IntersectionObserver;
+  private resultTimers:number[]=[];
+  private confidenceTimer=0;
   constructor(){
     void this.store.init();
     effect(()=>{
@@ -79,6 +88,8 @@ export class AppComponent {
       if(cardId!==this.timedCard){this.timedCard=cardId;this.elapsedMs=this.session()?.activeMs??0;this.lastTick=performance.now();}
       const state=this.data();
       if(state&&!this.settingsLoaded){this.settingsLoaded=true;this.loadSettings();}
+      const resultKey=state&&this.screen()==='results'&&state.session?.endedAt?`${state.session.id}:${state.session.endedAt}`:'';
+      if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}
     });
     const activity=()=>{this.lastActivity=performance.now();};
     const visibility=()=>{if(document.hidden)void this.checkpoint();else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}};
@@ -90,13 +101,13 @@ export class AppComponent {
       if(this.ticks%30===0)this.now.set(new Date());
     },1000);
     document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);document.addEventListener('visibilitychange',visibility);
-    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);document.removeEventListener('visibilitychange',visibility);});
+    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearResultMotion();window.clearTimeout(this.confidenceTimer);document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);document.removeEventListener('visibilitychange',visibility);});
   }
   private initialScreen():Screen{const value=location.hash.slice(1);return ['dashboard','library','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
   private loadSettings():void{const state=this.data();if(!state)return;const {newCardLimit,reviewLimit,timeZone}=state.preferences;this.settings={newCardLimit,reviewLimit,timeZone};this.rewardSettings={...state.rewardConfig};}
   timeZone():string{return this.data()?.preferences.timeZone??'Europe/London';}
-  go(screen:Screen):void{void this.checkpoint();this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.deckEditor=null;this.message.set('');this.messageError.set(false);if(screen==='settings')this.loadSettings();window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  go(screen:Screen):void{void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.deckEditor=null;this.message.set('');this.messageError.set(false);if(screen==='settings')this.loadSettings();window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
   deckCards(id:string):CardContent[]{return this.data()?.cards.filter(c=>c.deckId===id)??[];}
   deckReady(id:string):number{return this.data()?dueCards(this.data()!,this.now(),id).length:0;}
   filteredCards():CardContent[]{return(this.data()?.cards??[]).filter(c=>(!this.selectedDeck||c.deckId===this.selectedDeck)&&`${c.answer} ${c.front} ${c.tags.join(' ')}`.toLowerCase().includes(this.search.toLowerCase()));}
@@ -107,12 +118,37 @@ export class AppComponent {
   rarityLabel(rarity?:Rarity):string{return this.tiers.find(t=>t.id===(rarity??'common'))?.label??'Common';}
   unlock(card:CardContent){return rewardProgress(this.data()!,card.id);}
   async setTheme(choice:ThemeChoice):Promise<void>{try{await this.theme.select(choice);}catch(e){this.message.set(String(e));}}
-  async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId);this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.resultsSkipped.set(false);this.go(this.current()?'study':'results');}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId);this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   async reveal():Promise<void>{if(!this.current()||this.busy())return;this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
-  async rate(rating:1|2|3|4|5):Promise<void>{const card=this.current();const session=this.session();if(!card||!session||!this.revealed()||this.busy())return;this.busy.set(true);try{await this.store.review(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));this.elapsedMs=0;this.now.set(new Date());this.message.set('');if(!this.current()){this.resultsSkipped.set(false);this.go('results');}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async rate(rating:1|2|3|4|5):Promise<void>{const card=this.current();const session=this.session();if(!card||!session||!this.revealed()||this.busy())return;this.busy.set(true);try{await this.store.review(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));this.showConfidenceFeedback(rating);this.elapsedMs=0;this.now.set(new Date());this.message.set('');if(!this.current()){this.go('results');this.startResultsPresentation();}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   async undo():Promise<void>{const session=this.session();if(!session?.lastReviewCardId||this.busy())return;this.busy.set(true);try{await this.store.undo(session.lastReviewCardId,session.id);this.elapsedMs=0;this.message.set('');if(this.current())this.go('study');}catch(e){this.fail(e);}finally{this.busy.set(false);}}
-  async endStudy():Promise<void>{if(!this.session()||this.busy())return;this.busy.set(true);try{if(this.current())await this.store.updateSessionTime(Math.round(this.elapsedMs));await this.store.endSession();this.resultsSkipped.set(false);this.go('results');}catch(e){this.fail(e);}finally{this.busy.set(false);}}
-  showResults():void{this.resultsSkipped.set(true);this.go('results');}
+  async endStudy():Promise<void>{if(!this.session()||this.busy())return;this.busy.set(true);try{if(this.current())await this.store.updateSessionTime(Math.round(this.elapsedMs));await this.store.endSession();this.go('results');this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  showResults():void{this.go('results');this.startResultsPresentation();}
+  motionEnabled():boolean{return !!this.data()?.preferences.effects&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+  showResultsSkip():boolean{return this.motionEnabled()&&!this.resultsSkipped()&&(this.resultsIntroPlaying()||this.activeResultSections()>0);}
+  replayResults():void{this.startResultsPresentation();}
+  resultSectionState(id:string):'waiting'|'active'|'settled'{return this.resultSectionStates()[id]??'settled';}
+  skipResults():void{this.resultsSkipped.set(true);this.resultsIntroPlaying.set(false);this.clearResultMotion();this.resultSectionStates.update(states=>Object.fromEntries(Object.keys(states).map(key=>[key,'settled'])));}
+  private startResultsPresentation():void{
+    const session=this.session();if(session?.endedAt)this.resultSessionKey=`${session.id}:${session.endedAt}`;
+    this.clearResultMotion();this.resultsSkipped.set(!this.motionEnabled());this.resultsIntroPlaying.set(this.motionEnabled());this.activeResultSections.set(0);this.resultSectionStates.set(Object.fromEntries(['cosmetics','unlocks','definitions'].map(key=>[key,this.motionEnabled()?'waiting':'settled'])));this.resultsRun.update(value=>value+1);
+    this.resultTimers.push(window.setTimeout(()=>this.observeResultSections(),0));
+    if(this.motionEnabled())this.resultTimers.push(window.setTimeout(()=>this.resultsIntroPlaying.set(false),900));
+  }
+  private observeResultSections():void{
+    const sections=this.renderedResultSections();if(this.screen()!=='results')return;if(!sections.length){this.resultTimers.push(window.setTimeout(()=>this.observeResultSections(),50));return;}
+    if(this.resultsSkipped()||!this.motionEnabled())return;
+    this.resultObserver=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting&&entry.intersectionRatio>=.22){this.resultObserver?.unobserve(entry.target);this.activateResultSection(entry.target as HTMLElement);}}, {root:null,threshold:[.22]});
+    for(const section of sections)this.resultObserver.observe(section);
+  }
+  private renderedResultSections():HTMLElement[]{return Array.from(document.querySelectorAll<HTMLElement>('.results [data-result-section]'));}
+  private activateResultSection(section:HTMLElement):void{
+    const key=section.dataset['resultSection'];if(!key||this.resultSectionState(key)!=='waiting')return;
+    this.resultSectionStates.update(states=>({...states,[key]:'active'}));this.activeResultSections.update(value=>value+1);
+    this.resultTimers.push(window.setTimeout(()=>{this.resultSectionStates.update(states=>({...states,[key]:'settled'}));this.activeResultSections.update(value=>Math.max(0,value-1));},1450));
+  }
+  private clearResultMotion():void{this.resultObserver?.disconnect();this.resultObserver=undefined;for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
+  private showConfidenceFeedback(rating:1|2|3|4|5):void{if(!this.motionEnabled())return;window.clearTimeout(this.confidenceTimer);this.confidenceFeedback.set(null);requestAnimationFrame(()=>{this.confidenceFeedback.set(rating);this.confidenceTimer=window.setTimeout(()=>this.confidenceFeedback.set(null),760);});}
   duration(ms:number):string{const seconds=Math.round(ms/1000);if(ms>0&&seconds===0)return'<1s';return seconds>=60?`${Math.floor(seconds/60)}m ${seconds%60}s`:`${seconds}s`;}
   private fail(error:unknown):void{this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}
   @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.code==='Space'&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
