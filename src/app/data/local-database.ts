@@ -1,4 +1,5 @@
 import type { State } from '../../domain/models';
+import { migrateState } from '../../domain/migrations';
 import { validateState } from '../../domain/backup';
 
 const STORE = 'local-study';
@@ -40,7 +41,13 @@ export class LocalDatabase {
       request.onsuccess = () => {
         try {
           if (request.result === undefined) { validateState(initial); result = initial; store.add(initial, KEY); }
-          else { validateState(request.result); result = request.result; }
+          else {
+            result = migrateState(request.result, initial.cards);
+            if (request.result.schemaVersion === 1) {
+              store.add(request.result, 'migration-v1-original');
+              store.put(result, KEY);
+            }
+          }
         } catch (error) { validationError = error; transaction.abort(); }
       };
       transaction.oncomplete = () => resolve(result);

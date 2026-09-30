@@ -78,3 +78,53 @@ describe('atomic browser persistence', () => {
     await database.close();
   });
 });
+
+describe('v2 persistence migration and session recovery', () => {
+  it('migrates in the original database and saves the exact untouched v1 snapshot', async () => {
+    const name = `test-${crypto.randomUUID()}`;
+    const database = new LocalDatabase(name);
+    const state = await database.load(initial());
+    const reviewed = applyReview(state, { id: 'first', cardId: 'one', rating: 5, sessionId: 'session', now });
+    const legacy = structuredClone(reviewed) as unknown as Record<string, unknown>;
+    legacy['schemaVersion'] = 1;
+    for (const key of ['designs', 'assets', 'rewardEvents', 'rewardConfig', 'session']) delete legacy[key];
+    const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 1); request.onsuccess = () => resolve(request.result); });
+    await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(legacy, 'snapshot'); transaction.oncomplete = () => resolve(); });
+    const restored = await database.load(initial());
+    expect(restored.schemaVersion).toBe(2);
+    expect(restored.events).toEqual(legacy['events']);
+    expect(restored.states).toEqual(legacy['states']);
+    expect(restored.rewardEvents).toEqual([]);
+    const backup = await new Promise<unknown>(resolve => { const request = raw.transaction('local-study').objectStore('local-study').get('migration-v1-original'); request.onsuccess = () => resolve(request.result); });
+    expect(backup).toEqual(legacy);
+    expect(await database.load(initial())).toEqual(restored);
+    raw.close(); await database.close();
+  });
+  it('persists uploaded image bytes and reveal state; advances and undoes the queue atomically', async () => {
+    const name = `test-${crypto.randomUUID()}`;
+    const database = new LocalDatabase(name);
+    const before = await database.load(initial());
+    const prepared = { ...before, version: 1,
+      assets: [{ id: 'my-image', name: 'frame.png', mime: 'image/png' as const, dataUrl: 'data:image/png;base64,iVBORw0KGgo=', width: 10, height: 10 }],
+      session: { id: 'session', queue: ['one'], total: 1, completed: 0, revealed: true, activeMs: 3500 },
+    };
+    prepared.cards[0] = { ...prepared.cards[0]!, image: 'asset:my-image' };
+    await database.commit(prepared, 0); await database.close();
+    const reopened = new LocalDatabase(name);
+    const restored = await reopened.load(initial());
+    expect(restored.assets).toEqual(prepared.assets);
+    expect(restored.session?.revealed).toBe(true);
+    expect(restored.session?.activeMs).toBe(3500);
+    const reviewed = applyReview(restored, { id: 'review', cardId: 'one', rating: 4, sessionId: 'session', now });
+    await reopened.commit(reviewed, restored.version);
+    const after = await reopened.load(initial());
+    expect(after.session?.queue).toEqual([]);
+    expect(after.session?.completed).toBe(1);
+    expect(after.events[0]).toMatchObject({ activeMs: 3500 });
+    expect(applyReview(after, { id: 'review', cardId: 'one', rating: 4, sessionId: 'session', now })).toBe(after);
+    const undone = undoLatestReview(after, now, 'undo', 'one', 'session');
+    await reopened.commit(undone, after.version);
+    expect((await reopened.load(initial())).session).toMatchObject({ queue: ['one'], completed: 0, revealed: false, activeMs: 0 });
+    await reopened.close();
+  });
+});

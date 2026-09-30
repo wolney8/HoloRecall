@@ -2,11 +2,13 @@
 
 HoloRecall is a visual flashcard app for web and iOS. Its core loop is: choose a deck, attempt recall, reveal the answer, rate the attempt, save the review and receive the next due card. Progress survives restart. Animation makes that loop enjoyable without delaying grading or obscuring content.
 
-## First local web milestone
+## Current local web milestone
 
-Deliver a responsive Angular UI with real local dashboard counts, due cards and session progress; an original Italian demonstration deck; basic card creation/editing; scheduled study; persistent card content, review history and FSRS state; image cards; and four visual treatments. Start the local development server and verify that it responds. Exercise the core flow in a browser where tools permit, including a review followed by reload.
+The first local study loop is retained and extended with real Angular Material 3 theming, Roboto, persisted Light/Dark/System choices, all 16 Italian illustrations, complete basic authoring, reusable design sets, seven authored rarities, auditable cosmetic unlocks, tactile collection inspection, versioned XLSX/ZIP exchange and real Progress reports. The working agreement permits autonomous implementation, tests, fixes and starting the local server through this milestone.
 
-Use bundled original assets, so external services cannot block the prototype. Identify local-only storage clearly. Do not simulate successful authentication, sync, earned cosmetics or activity. The collection preview demonstrates labelled sample treatments separately from real learner data. Full rewards, packs, cloud accounts, native packaging, device motion, advanced shaders and production deployment remain later work.
+Design Studio separates background, learning illustration, rarity frame, effects and protected text/control areas. Whole-card movement wraps those layers. Reuse named designs across decks with optional per-card overrides; accept validated raster assets and settings only. Use a 2:3 portrait guide, transparent PNG frames, attribution, fit/crop controls, theme/tier previews and durable local media references. Never execute uploaded HTML, CSS, JavaScript or SVG.
+
+Use bundled original assets. Identify local storage clearly; do not simulate authentication, sync or learning outcomes. Samples demonstrate all tiers without adding synthetic events. Cloud, native packaging, advanced shaders, device motion, XP, packs and production deployment remain later work.
 
 ## Learning content
 
@@ -32,26 +34,21 @@ Keep scheduling separate from effects and rewards. Save all required scheduler s
 
 Review history is reconstructable and immutable during normal operation, with identity, content revision, previous-state version, original rating, mapped grade and resulting state. Undo records a correction/reversal so history, analytics and future rewards agree. Content and each learner's scheduling state are separate.
 
-## Challenge appearance and collection
+## Rarity, learning difficulty and collection
 
-| Challenge presentation | Concept | Treatment |
-| --- | --- | --- |
-| Common / Standard | Established, easier material | Matte |
-| Uncommon / Foil | Material needing more effort | Metallic foil |
-| Rare / Holo | Repeated retrieval difficulty | Holographic shimmer |
-| Secret Rare / Relic | Persistent leech across separate sessions | Gold/obsidian border, optional aura |
+The current authored tier set is Common, Uncommon, Rare, Holo Rare, Ultra Rare, Secret Rare and Relic. Each has a label, symbol, frame treatment and restrained effects profile. An imported high-rarity card remains immediately studyable. Its premium cosmetic is separate from the content and unlocks through local study; Design Studio and Collection can show explicitly labelled unearned previews.
 
-These are learner-specific, reversible challenge states. Before enabling automatic tiers, document a policy based on recent outcomes, lapses and difficulty estimates, minimum evidence and distinct promotion/recovery thresholds. Use a neutral state when evidence is insufficient. Author difficulty tags are not measured performance. One accidental tap must not create a lasting leech; recovery should offer editing, splitting or suspension. Do not use an `ease < 1.3` rule with FSRS.
+The previous four treatments were presentation samples, not stored learner achievements. Their appearance evolves into the seven-tier renderer without inventing past unlocks or altering review history. Learning difficulty remains FSRS state and an explained recent-failure indicator; it does not select authored rarity or award cosmetics. Automatic challenge/leech classification remains deferred pending evidence thresholds and recovery policy. Never use an SM-2 ease-factor rule for FSRS.
 
-Permanently earned cosmetics are separate. Sustained improvement across spaced sessions can unlock variants; dramatic failure appearance must not itself grant valuable rewards. Review this design before implementing rewards to avoid rewarding intentional failure. XP must not depend on self-awarded high confidence. Deduplicate/cap awards and exclude practice farming; recovery bonuses require separated successes.
+The user-authorized cosmetic policy uses high-confidence scheduled ratings 4/5, distinct study dates and at least 20 elapsed hours between contributions. Default thresholds are 1, 2, 3, 5, 8, 12 and 20 qualifying days, configurable in strictly increasing order. This is a motivational policy based on self-report, not a claim of knowledge or mastery. Maintain idempotent contribution/unlock events and reversal evidence; undo reverses its contribution and dependent unlocks, while later forgetting preserves earned cosmetics. Imports, flips, previews, practice and duplicate delivery cannot farm rewards. Scheduling is unchanged.
 
-Later rewards may include levels, streaks, mastery badges, a Collector's Codex and skippable booster-pack reveals. Missed days never remove learned progress or earned cosmetics. Packs may suggest new cards within daily limits; required content remains directly accessible. No paid random packs are in scope.
+Later XP must remain independent of self-awarded high confidence. Levels, streaks, mastery badges and skippable booster packs require separately reviewed rules. Missed days never remove learned progress or earned cosmetics. Packs may suggest new cards within daily limits; required content remains directly accessible. No paid random packs are in scope.
 
 ## Accessibility and interaction
 
 Begin with readable static cards; then add CSS flip/foil effects. Keep shimmer behind text with constrained blending and static fallbacks. Reveal has a visible button and keyboard control; double-tap is only an optional enhancement. Only the visible face is accessible. Prevent rapid taps from recording duplicate ratings.
 
-Pointer shimmer is supported on web. Respect system reduced motion and a user effects switch. Native motion is later, opt-in and user-triggered, with graceful denial/absence handling and listener cleanup. Physical phone flipping is outside the MVP. Lottie/Jitter, particles, counters and packs require compatible runtimes, licence checks, skippable interaction and a measured performance budget on a named iPhone. WebGL requires a demonstrated benefit.
+Pointer shimmer is supported on web. Respect system reduced motion and a user effects switch. Native motion is later, opt-in and user-triggered, with graceful denial/absence handling and listener cleanup. Physical phone flipping is outside the MVP. Current motion uses CSS and the Web Animations API with finite entry effects and sparse decorative particles. Lottie, counters and packs require a suitable licensed asset/runtime and a measured performance budget on a named iPhone before introduction. WebGL requires a demonstrated benefit.
 
 Use original artwork, names, borders and effects. Collectible trading cards are inspiration only; do not reproduce Pokémon assets, logos, characters or proprietary layouts.
 
@@ -59,7 +56,7 @@ Use original artwork, names, borders and effects. Collectible trading cards are 
 
 Cloud work retains the authenticated API, Neon, proposed Auth0 and owned object-storage architecture described in [architecture](architecture.md). Before sync, define outbox delivery, idempotency, conflict resolution and clock-skew behaviour. Stale concurrent reviews must retain pending progress and surface the conflict rather than silently use last-write-wins.
 
-Provide documented JSON export/restore before substantial real study, including media packaging or resolvable references. Later CSV import needs validation and duplicate handling. Anki `.apkg` import is a later subset-based compatibility feature, not permission to execute arbitrary templates or a promise of AnkiWeb sync.
+Provide documented JSON export/restore before substantial real study, including media packaging or resolvable references. Versioned XLSX is content/reference exchange only; portable ZIP adds media and design definitions. Preview new, changed and duplicate content before an atomic import that preserves history. Reject formulas and unsupported embedded worksheet images explicitly. Later CSV import needs validation and duplicate handling. Anki `.apkg` import is a later subset-based compatibility feature, not permission to execute arbitrary templates or a promise of AnkiWeb sync.
 
 Analytics must distinguish review counts, self-reported recall success, model retrievability and a defined mastery criterion. Include sample size and time window; a confidence average is not measured retention. Provide accessible chart summaries and only add a chart library for actual data needs. Synthetic histories belong in labelled development previews, never real analytics.
 

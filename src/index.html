@@ -1,2 +1,24 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>HoloRecall — Make it memorable</title><base href="/"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#163d37"><meta name="description" content="A local, visual flashcard studio. Learn a little. Remember more."><link rel="icon" type="image/svg+xml" href="favicon.svg"></head><body><app-root></app-root></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>HoloRecall</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#244f42">
+  <meta name="description" content="Local flashcards, spaced review, and reusable card designs.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>
+    // Apply the saved preference before styles or Angular can paint.
+    (function () {
+      var theme = 'system';
+      try { var saved = localStorage.getItem('holorecall-theme'); if (saved === 'light' || saved === 'dark') theme = saved; } catch (_) {}
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme;
+    }());
+  </script>
+  <style>html,body{background:light-dark(#f7faf3,#101510);color:light-dark(#191d18,#e1e4dc);margin:0}html{color-scheme:light dark}</style>
+</head>
+<body><app-root></app-root></body>
+</html>

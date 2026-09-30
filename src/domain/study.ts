@@ -1,4 +1,5 @@
 import { createEmptyCard, fsrs, generatorParameters, Rating, type Card as FsrsCard, type Grade } from 'ts-fsrs';
+import { DEFAULT_REWARD_CONFIG, rewardEventsForReview, rewardReversal } from './rewards';
 import type { CardContent, CardState, ConfidenceRating, Deck, ReviewEvent, State } from './models';
 
 export const SCHEDULER_VERSION = 'ts-fsrs@5.4.2';
@@ -12,14 +13,15 @@ export const SCHEDULER_PARAMETERS = generatorParameters({
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     version: 0,
     userId: 'local-learner',
     decks: structuredClone(decks),
     cards: structuredClone(cards),
     states: {},
     events: [],
-    preferences: { effects: true, timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
+    designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null,
+    preferences: { effects: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };
 }
@@ -36,14 +38,14 @@ export function serializeCard(card: FsrsCard, version: number): CardState {
   return { ...values, due: due.toISOString(), ...(last_review ? { last_review: last_review.toISOString() } : {}), version };
 }
 
-function hydrateCard(state: CardState): FsrsCard {
+export function hydrateCard(state: CardState): FsrsCard {
   const { due, last_review, version: _version, ...values } = state;
   return { ...values, due: new Date(due), ...(last_review ? { last_review: new Date(last_review) } : {}) };
 }
 
 export function activeReviews(data: State): ReviewEvent[] {
   const reversed = new Set(data.events.flatMap(event => event.kind === 'reversal' ? [event.reviewEventId] : []));
-  return data.events.filter((event): event is ReviewEvent => event.kind === 'review' && !reversed.has(event.id));
+  return data.events.filter((event): event is ReviewEvent => event.kind === 'review' && event.mode !== 'practice' && !reversed.has(event.id));
 }
 
 /** A calendar date in the learner's time zone, independent of the host zone and DST. */
@@ -73,6 +75,8 @@ export interface ReviewInput {
   sessionId: string;
   rating: ConfidenceRating;
   now: Date;
+  activeMs?: number;
+  recallMs?: number;
 }
 
 export function applyReview(data: State, input: ReviewInput): State {
@@ -82,6 +86,7 @@ export function applyReview(data: State, input: ReviewInput): State {
     throw new Error('This review ID already belongs to a different action.');
   }
   if (!input.id || !input.sessionId || !Number.isFinite(input.now.getTime())) throw new Error('The review is missing a valid ID, session or time.');
+  if (data.session && (data.session.id !== input.sessionId || data.session.queue[0] !== input.cardId || !data.session.revealed)) throw new Error('Reveal the current session card before rating it.');
   const content = data.cards.find(card => card.id === input.cardId);
   if (!content || !dueCards(data, input.now, content.deckId).some(card => card.id === input.cardId)) throw new Error('This card is no longer available in the due queue. Refresh your study session.');
   if (data.scheduler.version !== SCHEDULER_VERSION || data.scheduler.configVersion !== CONFIG_VERSION) throw new Error('This study data needs a scheduler migration before another review.');
@@ -96,8 +101,15 @@ export function applyReview(data: State, input: ReviewInput): State {
     rating: input.rating, grade, previousStateVersion: previous.version,
     previousState: structuredClone(previous), resultingState: structuredClone(resultingState),
     schedulerVersion: data.scheduler.version, configVersion: data.scheduler.configVersion,
+    mode: 'scheduled', activeMs: Math.max(0, Math.min(120000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
+    ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(120000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
   };
-  return { ...data, version: data.version + 1, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event] };
+  const remaining = data.session?.queue.slice(1) ?? [];
+  return {
+    ...data, version: data.version + 1, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event],
+    rewardEvents: [...data.rewardEvents, ...rewardEventsForReview(data, event, dayKey(input.now, data.preferences.timeZone))],
+    session: data.session ? { ...data.session, queue: remaining, completed: data.session.completed + 1, revealed: false, activeMs: 0, recallMs: undefined, cardStartedAt: input.now.toISOString(), lastReviewCardId: input.cardId, ...(remaining.length ? {} : { endedAt: input.now.toISOString(), partial: false }) } : null,
+  };
 }
 
 function sameSchedulingState(a: CardState, b: CardState): boolean {
@@ -116,6 +128,8 @@ export function undoLatestReview(data: State, now: Date, id: string, expectedCar
   const restored = { ...latest.previousState, version: current.version + 1 };
   return {
     ...data, version: data.version + 1,
+    rewardEvents: [...data.rewardEvents, ...rewardReversal(data, latest.id, latest.cardId, now.toISOString(), id)],
+    session: data.session?.id === latest.sessionId ? { ...data.session, queue: [latest.cardId, ...data.session.queue.filter(cardId => cardId !== latest.cardId)], completed: Math.max(0, data.session.completed - 1), revealed: false, activeMs: 0, recallMs: undefined, endedAt: undefined, partial: undefined, lastReviewCardId: undefined, cardStartedAt: now.toISOString() } : data.session,
     states: { ...data.states, [latest.cardId]: restored },
     events: [...data.events, {
       kind: 'reversal', id, userId: data.userId, cardId: latest.cardId,

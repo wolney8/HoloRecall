@@ -1,0 +1,53 @@
+import { fsrs } from 'ts-fsrs';
+import type { ConfidenceRating, State } from './models';
+import { activeReviews, dayKey, dueCards, hydrateCard } from './study';
+import { rewardProgress } from './rewards';
+
+export interface DateRange { from?: string; to?: string }
+/** Event metrics are filtered by learner calendar dates; inventory and model estimates are current. */
+export function buildReport(state: State, now: Date, range: DateRange = {}) {
+  const all = activeReviews(state);
+  const reviews = all.filter(event => {
+    const day = dayKey(new Date(event.timestamp), state.preferences.timeZone);
+    return (!range.from || day >= range.from) && (!range.to || day <= range.to);
+  });
+  const reviewedIds = new Set(reviews.map(review => review.cardId));
+  const confidence = ([1, 2, 3, 4, 5] as ConfidenceRating[]).map(rating => ({ rating, count: reviews.filter(review => review.rating === rating).length }));
+  const days = new Map<string, { date: string; count: number; activeMs: number }>();
+  for (const review of reviews) {
+    const date = dayKey(new Date(review.timestamp), state.preferences.timeZone);
+    const previous = days.get(date) ?? { date, count: 0, activeMs: 0 };
+    days.set(date, { date, count: previous.count + 1, activeMs: previous.activeMs + (review.activeMs ?? 0) });
+  }
+  const newCards = state.cards.filter(card => !card.suspended && !state.decks.find(deck => deck.id === card.deckId)?.suspended && !(state.states[card.id]?.reps));
+  const due = state.cards.filter(card => !card.suspended && !state.decks.find(deck => deck.id === card.deckId)?.suspended && (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime()).length;
+  const attention = state.cards.flatMap(card => {
+    const history = reviews.filter(review => review.cardId === card.id).slice(-5);
+    const failures = history.filter(review => review.rating === 1).length;
+    return failures >= 2 ? [{ cardId: card.id, answer: card.answer, deckId: card.deckId, failures, sampleSize: history.length }] : [];
+  });
+  const scheduler = fsrs(state.scheduler.parameters);
+  const estimates = Object.values(state.states).filter(card => card.reps > 0 && card.last_review).map(card => scheduler.get_retrievability(hydrateCard(card), now, false)).filter(Number.isFinite);
+  const recallSuccess = reviews.length ? reviews.filter(review => review.rating >= 2).length / reviews.length : null;
+  const perDeck = state.decks.map(deck => {
+    const cards = state.cards.filter(card => card.deckId === deck.id);
+    const ids = new Set(cards.map(card => card.id));
+    const events = reviews.filter(review => ids.has(review.cardId));
+    return { id: deck.id, name: deck.name, total: cards.length, introduced: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0).length,
+      due: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime() && !card.suspended && !deck.suspended).length,
+      reviews: events.length, recallSuccess: events.length ? events.filter(event => event.rating >= 2).length / events.length : null,
+      earned: cards.filter(card => rewardProgress(state, card.id).earned).length };
+  });
+  const cosmetics = state.cards.map(card => ({ cardId: card.id, answer: card.answer, rarity: card.rarity ?? 'common', ...rewardProgress(state, card.id) }));
+  const reversed = new Set(state.events.flatMap(event => event.kind === 'reversal' ? [event.reviewEventId] : []));
+  const practiceCount = state.events.filter(event => event.kind === 'review' && event.mode === 'practice' && !reversed.has(event.id) && (!range.from || dayKey(new Date(event.timestamp), state.preferences.timeZone) >= range.from) && (!range.to || dayKey(new Date(event.timestamp), state.preferences.timeZone) <= range.to)).length;
+  return {
+    due, newCards: newCards.length, available: dueCards(state, now).length, reviewedCards: reviewedIds.size, reviewCount: reviews.length,
+    activeMs: reviews.reduce((sum, review) => sum + (review.activeMs ?? 0), 0), activeTimeSamples: reviews.filter(review => review.activeMs !== undefined).length,
+    recallSuccess, confidence, activity: [...days.values()].sort((a, b) => a.date.localeCompare(b.date)), attention, perDeck, cosmetics,
+    earnedCount: cosmetics.filter(item => item.earned).length,
+    estimatedRetrievability: estimates.length ? estimates.reduce((a, b) => a + b, 0) / estimates.length : null,
+    retrievabilitySampleSize: estimates.length, practiceCount,
+  };
+}
+export type ProgressReport = ReturnType<typeof buildReport>;

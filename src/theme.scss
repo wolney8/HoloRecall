@@ -1,0 +1,15 @@
+@use '@angular/material' as mat;
+@use './theme_theme-colors' as brand;
+
+html {
+  color-scheme: light dark;
+  @include mat.theme((
+    color: (primary: brand.$primary-palette, tertiary: brand.$tertiary-palette, theme-type: color-scheme),
+    typography: (plain-family: 'Roboto, Arial, sans-serif', brand-family: 'Roboto, Arial, sans-serif', regular-weight: 400, medium-weight: 500, bold-weight: 700),
+    density: 0
+  ));
+  @include mat.theme-overrides((corner-small: 8px, corner-medium: 12px, corner-large: 20px));
+}
+html[data-theme='light'], [data-preview-theme='light'] { color-scheme: light; }
+html[data-theme='dark'], [data-preview-theme='dark'] { color-scheme: dark; }
+@media (prefers-contrast: more) { html { @include brand.high-contrast-overrides(color-scheme); } }

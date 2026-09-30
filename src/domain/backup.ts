@@ -1,4 +1,6 @@
-import type { CardContent, CardState, Deck, Preferences, State } from './models';
+import type { CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from './models';
+import { migrateState } from './migrations';
+import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
 
 function fail(message: string): never { throw new Error(`Invalid HoloRecall data: ${message}`); }
@@ -12,11 +14,13 @@ const instant = (value: unknown): value is string => text(value, 40) && /^\d{4}-
 export function validatePreferences(value: unknown): asserts value is Preferences {
   const prefs = object(value);
   if (typeof prefs['effects'] !== 'boolean' || !text(prefs['timeZone'], 100) || !integer(prefs['newCardLimit']) || prefs['newCardLimit'] > 1000 || !integer(prefs['reviewLimit'], 1) || prefs['reviewLimit'] > 10000) fail('invalid study preferences.');
+  if (prefs['theme'] !== undefined && !['system', 'light', 'dark'].includes(String(prefs['theme']))) fail('invalid theme preference.');
   try { new Intl.DateTimeFormat('en', { timeZone: prefs['timeZone'] as string }).format(); } catch { fail('unknown time zone.'); }
 }
 
 export function validateDeck(value: unknown): asserts value is Deck {
   const deck = object(value);
+  if (deck['designSetId'] !== undefined && !id(deck['designSetId'])) fail('invalid deck design reference.');
   if (!id(deck['id']) || !text(deck['name'], 160) || !deck['name'].trim() || !text(deck['description'], 2000) || typeof deck['suspended'] !== 'boolean') fail('invalid deck.');
 }
 
@@ -27,7 +31,9 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (!(card['answer'] as string).trim() || (card['kind'] === 'text' && !(card['front'] as string).trim())) fail('cards need a prompt and answer.');
   if (!Array.isArray(card['tags']) || card['tags'].length > 30 || !card['tags'].every(tag => text(tag, 100))) fail('invalid card tags.');
   if (card['imageDescription'] !== undefined && !text(card['imageDescription'], 1000)) fail('invalid image description.');
-  if (card['image'] !== undefined && (!text(card['image'], 300) || !/^\/?(?:assets|art)\/[a-zA-Z0-9/_-]+\.(svg|png|webp|jpe?g)$/.test(card['image']))) fail('this prototype only accepts bundled asset references.');
+  if (card['rarity'] !== undefined && !RARITIES.some(tier => tier.id === card['rarity'])) fail('invalid card rarity.');
+  if (card['designSetId'] !== undefined && !id(card['designSetId'])) fail('invalid card design reference.');
+  for (const key of ['image', 'backImage']) if (card[key] !== undefined) validateMediaRef(card[key]);
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
 }
 
@@ -42,7 +48,8 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 1 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 2 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
   validatePreferences(data['preferences']);
@@ -75,6 +82,9 @@ export function validateState(value: unknown): asserts value is State {
     if ((prior?.version ?? 0) !== event['previousStateVersion'] || result.version !== event['previousStateVersion'] + 1) fail('broken scheduling version history.');
     if (event['kind'] === 'review') {
       if (!id(event['sessionId']) || !integer(event['contentRevision'], 1) || !integer(event['rating'], 1) || event['rating'] > 5 || event['grade'] !== mapRating(event['rating'] as 1 | 2 | 3 | 4 | 5) || event['schedulerVersion'] !== SCHEDULER_VERSION || event['configVersion'] !== CONFIG_VERSION) fail('invalid review details.');
+      if (event['mode'] !== undefined && !['scheduled', 'practice'].includes(String(event['mode']))) fail('invalid review mode.');
+      if (event['activeMs'] !== undefined && (!integer(event['activeMs']) || event['activeMs'] > 120000)) fail('invalid active study time.');
+      if (event['recallMs'] !== undefined && (!integer(event['recallMs']) || event['recallMs'] > 120000)) fail('invalid recall time.');
       validateCardState(event['previousState']);
       if ((event['previousState'] as CardState).version !== event['previousStateVersion']) fail('mismatched previous version.');
       reviewIds.set(event['id'], event['cardId']);
@@ -86,18 +96,104 @@ export function validateState(value: unknown): asserts value is State {
   }
   for (const [cardId, latest] of resultingStates) if (JSON.stringify(states[cardId]) !== JSON.stringify(latest)) fail('current scheduling state does not match history.');
   for (const cardId of Object.keys(states)) if (!resultingStates.has(cardId)) fail('scheduling state is missing its history.');
+  validateReferences(data as unknown as State);
+  validateRewards(data as unknown as State);
 }
 
 export function exportBackup(data: State, now: Date): string {
-  return JSON.stringify({ format: 'holorecall-backup', version: 1, exportedAt: now.toISOString(), state: data }, null, 2);
+  return JSON.stringify({ format: 'holorecall-backup', version: 2, exportedAt: now.toISOString(), state: data }, null, 2);
 }
 
-export function parseBackup(json: string): State {
-  if (json.length > 5_000_000) fail('backup exceeds the 5 MB prototype limit.');
+export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
+  if (json.length > 100_000_000) fail('backup exceeds the 100 MB prototype limit.');
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
-  if (backup['format'] !== 'holorecall-backup' || backup['version'] !== 1 || !instant(backup['exportedAt'])) fail('unsupported backup format.');
-  validateState(backup['state']);
-  return backup['state'];
+  if (backup['format'] !== 'holorecall-backup' || ![1, 2].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
+  return migrateState(backup['state'], bundledCards);
+}
+
+
+export function validateMediaRef(value: unknown): asserts value is string {
+  if (!text(value, 300) || (!/^\/?(?:assets|art)\/[a-zA-Z0-9/_-]+\.(svg|png|webp|jpe?g)$/.test(value) && !(value.startsWith('asset:') && id(value.slice(6))))) fail('invalid media reference; upload an image or use bundled artwork.');
+}
+export function validateAsset(value: unknown): asserts value is LocalAsset {
+  const asset = object(value);
+  if (!id(asset['id']) || !text(asset['name'], 240) || !['image/png', 'image/webp', 'image/jpeg'].includes(String(asset['mime'])) || !integer(asset['width'], 1) || !integer(asset['height'], 1) || asset['width'] > 8192 || asset['height'] > 8192) fail('invalid uploaded image.');
+  if (!text(asset['dataUrl'], 7_000_000) || !asset['dataUrl'].startsWith(`data:${asset['mime']};base64,`) || !/^[A-Za-z0-9+/]*={0,2}$/.test(asset['dataUrl'].split(',')[1] ?? '')) fail('invalid image bytes or image exceeds 5 MB.');
+  const base64 = asset['dataUrl'].split(',')[1]!;
+  let bytes: string;
+  try { bytes = atob(base64.slice(0, 16)); } catch { return fail('invalid raster image bytes.'); }
+  const signature = Array.from(bytes).map(char => char.charCodeAt(0));
+  const raster = asset['mime'] === 'image/png' ? [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => signature[index] === byte)
+    : asset['mime'] === 'image/jpeg' ? signature[0] === 255 && signature[1] === 216 && signature[2] === 255
+      : bytes.slice(0, 4) === 'RIFF' && bytes.slice(8, 12) === 'WEBP';
+  if (!raster) fail('image bytes do not match the declared raster type.');
+  for (const field of ['credit', 'source', 'license']) if (asset[field] !== undefined && !text(asset[field], 2000)) fail('invalid image attribution.');
+}
+export function validateDesign(value: unknown): asserts value is DesignSet {
+  const design = object(value);
+  if (!id(design['id']) || !text(design['name'], 160) || !design['name'].trim() || !['cover', 'contain'].includes(String(design['backgroundFit'])) || !['cover', 'contain'].includes(String(design['frameFit']))) fail('invalid design set.');
+  for (const field of ['backgroundPositionX', 'backgroundPositionY']) if (!finite(design[field]) || design[field] > 100) fail('invalid image position.');
+  for (const field of ['credit', 'source', 'license']) if (!text(design[field], 2000)) fail('invalid design attribution.');
+  for (const field of ['frame', 'background']) if (design[field] !== undefined) validateMediaRef(design[field]);
+  if (design['frames'] !== undefined) for (const [rarity, ref] of Object.entries(object(design['frames']))) {
+    if (!RARITIES.some(tier => tier.id === rarity)) fail('invalid frame rarity.');
+    validateMediaRef(ref);
+  }
+}
+export function validateRewardConfig(value: unknown): asserts value is Record<Rarity, number> {
+  const config = object(value);
+  if (Object.keys(config).length !== RARITIES.length) fail('invalid reward thresholds.');
+  let previous = 0;
+  for (const rarity of RARITIES) {
+    const threshold = config[rarity.id];
+    if (!integer(threshold, 1) || threshold > 365 || threshold <= previous) fail('reward thresholds must be strictly increasing, from 1 to 365 study days.');
+    previous = threshold;
+  }
+}
+function validateExtensions(data: Record<string, unknown>): void {
+  if (!Array.isArray(data['assets']) || !Array.isArray(data['designs']) || !Array.isArray(data['rewardEvents'])) fail('missing design, media or reward data.');
+  data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
+  validateRewardConfig(data['rewardConfig']);
+  const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
+  if (new Set(assets.map(item => item.id)).size !== assets.length || new Set(designs.map(item => item.id)).size !== designs.length) fail('duplicate asset or design IDs.');
+  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > 80_000_000) fail('uploaded images exceed the 60 MB local prototype limit.');
+  if (data['session'] !== null) {
+    const session = object(data['session']);
+    if (!id(session['id']) || !Array.isArray(session['queue']) || !session['queue'].every(id) || new Set(session['queue']).size !== session['queue'].length || !integer(session['total']) || !integer(session['completed']) || session['completed'] > session['total'] || session['queue'].length + session['completed'] !== session['total'] || typeof session['revealed'] !== 'boolean' || !integer(session['activeMs']) || session['activeMs'] > 120000) fail('invalid persisted study session.');
+    if (session['cardStartedAt'] !== undefined && !instant(session['cardStartedAt'])) fail('invalid session time.');
+    if (session['startedAt'] !== undefined && !instant(session['startedAt'])) fail('invalid session start.');
+    if (session['endedAt'] !== undefined && !instant(session['endedAt'])) fail('invalid session completion.');
+    if (session['partial'] !== undefined && typeof session['partial'] !== 'boolean') fail('invalid partial session flag.');
+    if (session['plannedTotal'] !== undefined && !integer(session['plannedTotal'], session['total'] as number)) fail('invalid planned session total.');
+    if (session['recallMs'] !== undefined && (!integer(session['recallMs']) || session['recallMs'] > 120000)) fail('invalid persisted recall time.');
+    if (session['lastReviewCardId'] !== undefined && !id(session['lastReviewCardId'])) fail('invalid previous session card.');
+  }
+}
+export function validateReferences(data: State): void {
+  const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id));
+  const refs = [...data.cards.flatMap(card => [card.image, card.backImage]), ...data.designs.flatMap(design => [design.background, design.frame, ...Object.values(design.frames ?? {})])];
+  // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
+  if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
+  if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
+  if (data.session?.queue.some(cardId => !data.cards.some(card => card.id === cardId))) fail('study session references a missing card.');
+}
+function validateRewards(data: State): void {
+  const seen = new Map<string, State['rewardEvents'][number]>(), reversed = new Set<string>();
+  const reviews = new Map(data.events.filter(event => event.kind === 'review').map(event => [event.id, event]));
+  for (const event of data.rewardEvents) {
+    if (!id(event.id) || seen.has(event.id) || !instant(event.timestamp) || !id(event.cardId) || !id(event.reviewEventId)) fail('invalid reward event.');
+    const review = reviews.get(event.reviewEventId);
+    if (!review || review.cardId !== event.cardId) fail('reward must reference its real review.');
+    if (event.kind === 'contribution') {
+      if (review.rating < 4 || review.mode === 'practice' || event.configVersion !== 'confidence-days-v1' || !/^\d{4}-\d{2}-\d{2}$/.test(event.studyDay) || !text(event.timeZone, 100) || [...seen.values()].some(prior => prior.kind === 'contribution' && prior.reviewEventId === event.reviewEventId)) fail('invalid reward contribution.');
+    } else if (event.kind === 'unlock') {
+      if (!RARITIES.some(tier => tier.id === event.rarity) || !integer(event.required, 1) || !Array.isArray(event.contributionIds) || event.contributionIds.length < event.required || new Set(event.contributionIds).size !== event.contributionIds.length || event.contributionIds.some(id => seen.get(id)?.kind !== 'contribution' || seen.get(id)?.cardId !== event.cardId || reversed.has(id))) fail('invalid unlock evidence.');
+    } else if (event.kind === 'reward-reversal') {
+      if (!data.events.some(study => study.kind === 'reversal' && study.reviewEventId === event.reviewEventId) || !Array.isArray(event.reversedEventIds) || event.reversedEventIds.some(id => !seen.has(id) || seen.get(id)?.cardId !== event.cardId || reversed.has(id))) fail('invalid reward reversal.');
+      event.reversedEventIds.forEach(id => reversed.add(id));
+    } else fail('unknown reward event.');
+    seen.set(event.id, event);
+  }
 }

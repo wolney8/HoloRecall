@@ -1,19 +1,19 @@
 # HoloRecall
 
-A local visual flashcard prototype: study an original Italian deck, reveal an answer, rate recall and keep the resulting FSRS schedule between browser reloads. The first milestone includes a dashboard, deck/card editing, image cards and a clearly labelled collection preview.
+A local Angular flashcard application with FSRS scheduling, original Italian illustrations, reusable card designs and earned cosmetics. The current milestone adds Material 3, Light/Dark/System themes, Design Studio, seven rarities, content exchange and event-based Progress reports.
 
-**Local prototype:** this application uses this browser's IndexedDB. There is no cloud account, authentication or synchronisation. Storage belongs to the browser profile and origin; clearing browser data can remove it. Keep a backup before relying on the prototype for substantial study. The public repository must not contain private study data, credentials, `.env` files or personal exports.
+**Local prototype:** all learning data and uploaded artwork live in this browser's IndexedDB. There is no cloud authentication or synchronisation. Use the same origin and browser profile, and download private backups before relying on substantial study history.
 
-## Run locally
+## Run and verify
 
-Use Node **24.3.0** and npm **11.4.2**. From the HoloRecall project directory:
+Use Node **24.3.0** and npm **11.4.2** from the project directory:
 
 ```sh
 npm ci
 npm start
 ```
 
-Open **http://127.0.0.1:4200/**. Use the same address consistently: `localhost` and `127.0.0.1` have separate browser storage. The server binds to the local machine only. The application has no cloud service prerequisites.
+Open **http://127.0.0.1:4200/**. `localhost` and `127.0.0.1` have separate storage. The server binds only to this Mac. No external service account is required.
 
 ```sh
 npm run build
@@ -21,33 +21,44 @@ npm test
 npm run test:e2e
 ```
 
-The browser suite expects the development server to be running in another terminal. Chromium was installed in this checkout's ignored `.runtime/playwright` directory. On a fresh checkout, install it with the pinned project CLI:
+The browser tests expect the server to be running. On a fresh checkout, install the pinned test browser locally:
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH=.runtime/playwright ./node_modules/.bin/playwright install chromium
 ```
 
-Actual build and test results are recorded in [project status](docs/project-status.md).
+Actual results and limitations are in [project status](docs/project-status.md).
 
-## Study and visual behaviour
+## Study, design and collect
 
-Start a session from the dashboard or deck library. Attempt recall before revealing the answer, then choose one of five ratings. A failed or unrecalled answer is rating 1; familiarity after reveal is not a successful recall. Ratings 3 and 4 deliberately share FSRS's Good outcome. Scheduling estimates are not guaranteed retention or exact optimal dates.
+Start or resume a session from Dashboard or Decks. Study hides the application chrome, keeps the scheduler-ordered card in front of a concealed deck stack, and offers a persistent End session action. Attempt recall, reveal, then rate 1–5. A wrong or unrecalled answer is 1. The FSRS mapping remains Again / Hard / Good / Good / Easy. Space reveals; keys 1–5 grade. The selected queue, revealed face, saved reviews and session progress survive reload. Animation never shuffles the scheduler's order.
 
-Visual cards have an image-only question face and the same image on the answer side, with the Italian answer and separately labelled approximate pronunciation. Matte, foil, holo and relic samples demonstrate presentation only; they are not earned rewards or fabricated learning results. Effects must remain readable and respect reduced motion.
+Natural completion and early end both produce a persisted results screen. It separates review count from unique cards, reports event-based active time and self-reported confidence, and shows recall speed only for reviews with a focused question-to-reveal measurement. Cosmetic progress comes from the same idempotent reward events used by Collection; replaying or refreshing results cannot add rewards. Partial sessions are labelled. Undo reverses the review contribution and reopens that card.
 
-The initial queue contains up to 10 new cards, with due reviews prioritised and a total limit of 100 scheduled reviews per day. Both limits and the `Europe/London` day boundary are configurable in Study settings. Space reveals; keys 1–5 grade after reveal. Each card appears once in the current session; check for due cards again to pick up short-term repeats. Reloading preserves study data but starts a new session view.
+The original Italian deck contains 16 individually illustrated tasks covering nouns, articles, exceptions, essere, avere and parlare. Visual fronts hide the answer; text prompts retain their cloze task. The answer side reuses the illustration, with pronunciation and meaning separate. Decks supports creation, editing, tags, uploaded images, suspension, authored rarity and design overrides.
 
-## Back up and restore
+Design Studio saves named backgrounds and frames independently of learning content. Upload PNG/WebP/JPEG (4 MB, 16–4096 px per side), adjust fit/crop, preview both themes and seven rarities, and assign one reusable design to multiple decks. Optional card overrides take priority. Transparent PNG frames are recommended. Download the 1000 × 1500 px (2:3) guide and transparent starter from the studio. Uploads contain no executable code; missing images have a visible fallback.
 
-Study settings can download a private JSON backup. The envelope is `{ format: 'holorecall-backup', version: 1, exportedAt, state }`; the state includes decks, cards, preferences, immutable review/reversal events, learner scheduling state and the full versioned scheduler configuration. Dates are UTC ISO instants. Original illustrations use bundled `/art/*.svg` references and resolve in the same app version; no external media bytes are needed.
+Collection supports enlarged front/back inspection, pointer/touch tilt, click/tap and keyboard flipping, attribution, unlock progress and seven labelled design samples. The shared 760 ms card turn swaps content edge-on to prevent mirrored text; reduced motion changes the face immediately. Foil, shimmer and glints cross the whole card face above its surfaces while readable text and focus indicators remain above them. Samples never create learning or reward history. Effects respect reduced motion and the Settings switch, and stop offscreen or in background tabs.
 
-Restore validates the schema, scheduler version, references, event IDs and state history, with a 5 MB limit. It only writes into an untouched local workspace. An existing edited or studied workspace is refused, preserving its data. Use a fresh browser profile to restore a backup. There is no destructive reset, merge, CSV import or Anki import in this milestone.
+Cosmetics require scheduled ratings 4/5 across distinct study days with at least 20 elapsed hours between contributions. Defaults are **1 / 2 / 3 / 5 / 8 / 12 / 20** qualifying days for Common through Relic. Settings permits strictly increasing thresholds. Later forgetting retains earned cosmetics; undo reverses its contribution and dependent unlocks. Rarity and rewards never change FSRS intervals. Self-reported confidence is not independently verified knowledge.
 
-## Project notes
+Progress uses real persisted events, excludes undone reviews, separates practice, and explains each metric and sample size. Active study time counts focused, visible interaction, with an idle cutoff and a two-minute cap per card. Session time checkpoints every five seconds; abrupt closure can lose the last few seconds, never duplicate a review.
 
-- [Product brief](docs/product-brief.md): milestone scope and retained product requirements.
-- [Architecture](docs/architecture.md): pinned toolchain, data boundaries and future API/native direction.
-- [Project status](docs/project-status.md): actual evidence, limitations and one next action.
-- [API boundary](api/README.md): planned server responsibilities; no server is implemented yet.
+## Content exchange and private backups
 
-The remote was empty when cloned. Bootstrap deliberately started on unborn `main`, then created the initial local commit using the existing configured Git identity. The lockfile is included. No `origin/main` commit was assumed, no remote branch was created, and nothing has been pushed. Publishing remains a separate action.
+**Import / export** provides a blank XLSX, the populated Italian example, a portable illustrated ZIP, import preview and atomic content updates. XLSX contains structured content and references; ZIP packages media and design definitions. Formula cells, embedded worksheet images and uploaded SVGs are rejected explicitly. Importing content never imports reviews or grants cosmetics. See the exact [format specification](docs/deck-format.md) and [AI generation prompt](docs/deck-generation-prompt.md).
+
+**Settings → Full progress backup** downloads a private JSON envelope: `{ format: 'holorecall-backup', version: 2, exportedAt, state }`. It includes cards, decks, designs, uploaded raster bytes, sessions, immutable review/reversal events, rewards, learner states and versioned scheduler parameters. Bundled `/art/*.svg` paths resolve against the original assets shipped with HoloRecall. Persisted instants use UTC.
+
+Validated restore accepts version 1 or 2 and writes only into untouched local storage; use a fresh browser profile to avoid replacing existing work. JSON input is limited to 100 MB, with an aggregate embedded-media bound. Schema-1 browser data migrates atomically and retains its exact original snapshot in the existing database. Neither migration nor restore fabricates earned rewards. Export files can contain personal learning data: keep them out of this public repository.
+
+## Project documentation
+
+- [Product brief](docs/product-brief.md): current scope and retained requirements.
+- [Architecture](docs/architecture.md): decisions, pinned dependencies, storage, rewards and cloud/native boundaries.
+- [Project status](docs/project-status.md): actual verification and next action.
+- [Deck format](docs/deck-format.md): workbook fields, validation and media portability.
+- [API boundary](api/README.md): future server responsibilities.
+
+Work continues from verified local commit `bb475eb`; no history was reset. No push, deployment, paid resource or native/cloud provisioning is part of this milestone.

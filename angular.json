@@ -1,7 +1,9 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
-  "cli": { "analytics": false },
+  "cli": {
+    "analytics": false
+  },
   "projects": {
     "holorecall": {
       "projectType": "application",
@@ -14,23 +16,49 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "index": "src/index.html",
-            "assets": [{ "glob": "**/*", "input": "public" }],
-            "styles": ["src/styles.css"]
+            "allowedCommonJsDependencies": ["exceljs", "jszip"],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "node_modules/@fontsource/roboto/latin-400.css",
+              "node_modules/@fontsource/roboto/latin-500.css",
+              "node_modules/@fontsource/roboto/latin-700.css",
+              "src/theme.scss",
+              "src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
               "outputHashing": "all",
-              "budgets": [{ "type": "initial", "maximumWarning": "700kB", "maximumError": "1MB" }]
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "750kB",
+                  "maximumError": "1MB"
+                }
+              ]
             },
-            "development": { "optimization": false, "sourceMap": true, "extractLicenses": false }
+            "development": {
+              "optimization": false,
+              "sourceMap": true,
+              "extractLicenses": false
+            }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "development": { "buildTarget": "holorecall:build:development" },
-            "production": { "buildTarget": "holorecall:build:production" }
+            "development": {
+              "buildTarget": "holorecall:build:development"
+            },
+            "production": {
+              "buildTarget": "holorecall:build:production"
+            }
           },
           "defaultConfiguration": "development"
         }

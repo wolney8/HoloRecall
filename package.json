@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": "24.3.0", "npm": "11.4.2" },
+  "engines": {
+    "node": "24.3.0",
+    "npm": "11.4.2"
+  },
   "packageManager": "npm@11.4.2",
   "scripts": {
     "start": "ng serve --host 127.0.0.1 --port 4200",
@@ -12,17 +15,25 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@angular/cdk": "21.2.14",
     "@angular/common": "21.2.24",
     "@angular/compiler": "21.2.24",
     "@angular/core": "21.2.24",
     "@angular/forms": "21.2.24",
+    "@angular/material": "21.2.14",
     "@angular/platform-browser": "21.2.24",
+    "@fontsource/roboto": "5.3.0",
+    "exceljs": "4.4.0",
+    "jszip": "3.10.2",
     "rxjs": "7.8.2",
     "ts-fsrs": "5.4.2",
     "tslib": "2.8.1"
   },
   "overrides": {
-    "vite": "7.3.6"
+    "vite": "7.3.6",
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   },
   "devDependencies": {
     "@angular/build": "21.2.24",
@@ -30,10 +41,10 @@
     "@angular/compiler-cli": "21.2.24",
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
+    "fake-indexeddb": "6.2.5",
+    "postcss": "8.5.28",
     "tailwindcss": "4.3.3",
-    "postcss": "8.5.6",
     "typescript": "5.9.3",
-    "vitest": "4.1.0",
-    "fake-indexeddb": "6.2.5"
+    "vitest": "4.1.11"
   }
 }
