@@ -2,6 +2,8 @@
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
+Version 3 predates schema-4 deck hierarchy and archive metadata. It exports deck/card content and assets but flattens `parentId` and omits archive/creation timestamps when moved to another profile. The version-4 full learning backup preserves those fields. A future deck-content format revision will add them while retaining this reader; no hierarchy should be inferred from titles during a v3 round trip.
+
 Download the [blank workbook](/downloads/holorecall-blank-v3.xlsx), [16-card Italian example](/downloads/holorecall-italian-v3.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v3.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 3 adds separate front/answer audio references. Versions 1 and 2 remain import-compatible.
 
 ## Workbook contract

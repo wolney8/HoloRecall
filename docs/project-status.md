@@ -35,6 +35,18 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - **Independent review:** the lead accepted and fixed the two high-severity hash/write issues plus same-bundle dedupe, hierarchy/archive, attention, lifecycle, filter-chip and combobox findings. Portable workbook hierarchy/archive fields and broader 10k mutation/media measurements remain explicit limitations for final scope reporting.
 - **Exact next action:** checkpoint these corrections, reconcile tracker/architecture/capability/readiness documents, run the fresh full browser suite, then capture final animation-enabled organisation evidence.
 
+### Search, organisation and scalable media final handoff
+
+- **Branch/commits:** `main`; governance `e0f739c`, foundation `c4095fe`, integrated UI/tests `20d36bf`, independent-review corrections `7f7cf3c`, followed by this final documentation checkpoint. Nothing is pushed or deployed.
+- **Requirement state:** HR-GOV-03, HR-ORG-01–05, HR-ORG-07 and HR-MEDIA-01 are `DONE` with linked evidence in `docs/work-items.md`. HR-ORG-06 remains `VERIFY`: 1k/10k index/query and bounded-render baselines exist, while 10k all-selection mutation, media-resolution and import-to-index latency still need dedicated measurement.
+- **Delivered:** accent-insensitive offline search; direct deck/card/tag navigation; shared removable filters and sorting across Decks/Collection; canonical tag rename/bulk changes; validated deck hierarchy and parent study; non-destructive archive; atomic bulk move/tag/rarity/design/finish actions; bounded premium Collection rendering; SHA-256 media dedupe/reference-safe cleanup; split IndexedDB metadata/payload stores without routine byte rewrites.
+- **Checks:** unit/domain **88/88 passed**; production build passed at **827.98 kB raw / 188.50 kB estimated transfer**; final stable Playwright run **119/119 passed** in **3.1 minutes** with no skips. A prior 118/119 run found a real lazy-Collection assertion race; the assertion now waits for the owned collection rows and passed in both engines before the stable full rerun. No timeout was increased.
+- **Performance:** Node 24.3/macOS observed 1k under the 500/100 ms index/query test budgets and 10k at **777.8/10.9 ms**. Final browser observations: Chromium **1,985/47 ms**, WebKit **1,096/55 ms** for 10k index+render/query+render. These are local desktop baselines, not service-level promises.
+- **Visual evidence:** animation-enabled search and filter/navigation recordings for Chromium and WebKit are under ignored `test-results/organisation-HR-ORG-01-*/video.webm` and `test-results/organisation-HR-ORG-02-*/video.webm`.
+- **Limitations:** deck-content format v3 flattens schema-4 hierarchy/archive/creation metadata; full JSON backup preserves it. Initial web load still hydrates registered media into memory. Native storage, Safari/WKWebView, simulator/device, VoiceOver and macOS packaging remain unverified.
+- **Recommended next bounded milestone:** study configuration and review-history management: per-deck queue options with clear precedence, searchable event/correction history and bounded custom-study/practice controls. Do not start it without a new authorization.
+- **Exact restart point:** HR-ORG-06 evidence expansion is the only unfinished item in this milestone. For product work, begin from the recommended bounded milestone after authorization; preserve the local search/media contracts and content-format limitation above.
+
 ## Charter, import and entitlement milestone tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |

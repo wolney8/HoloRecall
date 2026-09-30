@@ -93,6 +93,16 @@ Content exchange format v2 adds card finish overrides and reusable design finish
 - **Sync:** Define a durable outbox, unique event IDs, acknowledgements, retries and visible pending/error states. The server validates submitted events and calculates resulting scheduling/rewards; it must not trust client-supplied XP or final state. Detect stale state versions, retain pending work and surface conflicts. Define resolution and clock-skew handling before claiming multi-device offline sync.
 - **Portability:** A versioned JSON export/restore contract must include content, review history, scheduling/configuration state and packaged media or resolvable references. Validate imports and avoid silent replacement. Add CSV validation/duplicate handling later; Anki `.apkg` support needs an explicit supported subset. No AnkiWeb sync is promised.
 
+## Decision 006: reconstructable local index and payload media registry
+
+Schema 4 adds explicit deck parents plus non-destructive deck/card archive state. Parent study includes descendants; suspension or archive on any ancestor excludes that branch from scheduled queues and ordinary library results. Tags are canonicalised for casing, accents and spacing while preserving a stable display label. Bulk content changes commit once and do not alter scheduling, review or reward records.
+
+The learner-facing search document is a reconstructable read model, never portable user data. Collections above 500 cards build it in a lazy local Worker; smaller collections avoid Worker startup overhead. Queries operate on normalized indexed fields and return 60-item visible slices so foil cards and media are not mounted for the whole collection. Lifecycle backgrounding cancels the Worker, stale results are ignored, and a missing Worker produces a visible safe error for large data rather than blocking the main thread.
+
+IndexedDB version 2 keeps validated state metadata in `local-study` and media payloads in `local-media` under stable content-hash keys in the same transaction. Imports and restores recompute SHA-256 from the bytes before storage identity or deduplication is trusted. Reference accounting covers card images/audio and design backgrounds/frames/textures; cleanup is explicit and refuses referenced assets. Routine state commits retain unchanged media keys without hydrating or rewriting their bytes. The application still hydrates assets on initial web load, so a future native adapter and further very-large-media profiling remain required.
+
+Deck content exchange remains format v3 and therefore does not yet carry schema-4 parent/archive/created-time organisation fields. Full learner backup does. A future content-format revision must add those fields while retaining v1–v3 readers; no silent format change is made in this milestone.
+
 ## Native feasibility
 
 Capacitor remains the iOS direction. Current stable Capacitor **8.5.2** requires Node 22+, full **Xcode 26+**, and supports **iOS 15+**. Swift Package Manager is the default native dependency manager; CocoaPods is optional. [Environment setup](https://capacitorjs.com/docs/getting-started/environment-setup), [iOS requirements](https://capacitorjs.com/docs/ios).
