@@ -15,5 +15,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: process.env['HOLORECALL_VIDEO'] === '1' ? 'on' : 'off',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', grepInvert: /@ios-/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'webkit', grepInvert: /@ios-/, use: { ...devices['Desktop Safari'] } },
+    { name: 'webkit-compact', grep: /@ios-compact/, use: { ...devices['iPhone SE'] } },
+    { name: 'webkit-large', grep: /@ios-large/, use: { ...devices['iPhone 15 Pro Max'] } },
+    { name: 'webkit-landscape', grep: /@ios-landscape/, use: { ...devices['iPhone 15 Pro Max landscape'] } },
+  ],
 });

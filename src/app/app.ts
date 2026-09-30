@@ -97,7 +97,7 @@ export class AppComponent {
       if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}
     });
     const activity=()=>{this.lastActivity=performance.now();};
-    const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();this.clearResultMotion();window.clearTimeout(this.confidenceTimer);this.confidenceFeedback.set(null);}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
+    const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();window.clearTimeout(this.confidenceTimer);this.confidenceFeedback.set(null);}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
     const timer=setInterval(()=>{
       const tick=performance.now();
       if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min(120_000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}

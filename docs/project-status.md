@@ -33,12 +33,12 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
 | --- | --- | --- | --- |
-| HR-IOS-01 | In progress | Playwright 1.63.0 is pinned; repository-local Chromium is installed and WebKit 26.6 build 2359 has been installed for the new gate. | Configure shared WebKit projects, adapt genuine engine differences and run the critical/full suites without skips. |
-| HR-IOS-02 | In progress | Safe-area env values now have one owner per edge, `viewport-fit=cover` is enabled, touch controls retain 44/48 px targets, mobile form text is 16 px, and a visual-viewport coordinator keeps a keyboard-obscured focused editor control visible. | Run compact/large/landscape WebKit checks, 200% text and focused-field viewport-resize coverage. |
-| HR-IOS-03 | In progress | FSRS, rewards, reports and XLSX/ZIP schemas remain browser-independent. `StudyPersistence`, `AppLifecycle` and `FileDelivery` are narrow boundaries; web IndexedDB and download implementations retain current behavior. | Exercise package/download behavior in both engines; native implementations remain deliberately absent. |
-| HR-IOS-04 | In progress | Atomic review persistence remains unchanged. A shared lifecycle source now pauses timing/motion on visibility or page lifecycle transitions, refreshes on resume and owns listener cleanup. Build and 65 domain/unit tests pass. | Verify interruption, accepted-review recovery, no duplication and repeated-entry cleanup in browser tests. |
-| HR-IOS-05 | In progress | Core font/art assets are bundled; bounded media validation now has an `Image` decode fallback when `createImageBitmap` is unavailable, and temporary decode/download URLs are revoked. | Exercise WebKit decoding/exchange/effects and the loaded-page offline case. |
-| HR-IOS-06 | In progress | `docs/ios-readiness.md` is the maintained evidence matrix; no native claims are inferred from browser tests. | Reconcile actual Chromium/WebKit results and native gaps after implementation. |
+| HR-IOS-01 | Complete | Shared Playwright projects run 33 desktop journeys in Chromium 153 and patched WebKit 26.6, plus five WebKit phone-profile tests. Critical Study, Collection, Results, theme, authoring/media/exchange, recovery, save failure and reward paths pass without skips. | Safari/WKWebView/simulator/device verification remains native work. |
+| HR-IOS-02 | Complete | Safe-area env values have one owner per edge, `viewport-fit=cover` is enabled, controls retain 44/48 px targets, mobile form text is 16 px, and visual-viewport resize keeps focused editor controls reachable. Compact/large portrait, landscape, touch, 200% text, no-overflow and stable reveal pass in WebKit. | Real notch/home indicator, software keyboard, VoiceOver and Dynamic Type remain untested. |
+| HR-IOS-03 | Complete | FSRS/reward/report/exchange rules remain browser-independent. `StudyPersistence`, `AppLifecycle` and `FileDelivery` are narrow seams; package bytes are generated separately from delivery. Web behavior passes in both engines. | Capacitor lifecycle, SQLite/media and Files/share implementations do not exist and never report fake success. |
+| HR-IOS-04 | Complete | Atomic persistence is unchanged. Lifecycle interruption checkpoints active time, pauses motion, settles interrupted faces/results, refreshes on resume and cleans listeners/observers/timers. Accepted review/reward arrays survive interruption/reload exactly once in Chromium and WebKit. | Native durable-storage provider and crash/migration tests await a native milestone. |
+| HR-IOS-05 | Complete | Local fonts/art remove core runtime network dependencies. Bounded media validation supports a WebKit-safe decode fallback; temporary URLs are revoked. WebKit upload/recovery, XLSX/ZIP, overlays/flips, reduced motion and loaded-page offline study pass. | Cold web start offline is unsupported; native picker/share/URI/cancellation and packaged cold start remain pending. |
+| HR-IOS-06 | Complete | `docs/ios-readiness.md` identifies implementation and evidence per platform, the exact engines and native-only gaps. No browser result is labelled iOS verified. | Keep the matrix current on every meaningful future change. |
 
 ### HR-UX-07–11 diagnosed causes
 
@@ -78,3 +78,12 @@ This remains one local learner in browser IndexedDB. There is no authentication,
 - Checks: production build passes at 722.59 kB initial; all 65 unit/domain tests pass; `git diff --check` passes.
 - Cross-platform note: the web adapters use standard browser APIs and retain explicit future Capacitor integration points. Keyboard behavior, WebKit layout, page interruption and browser downloads remain pending browser evidence; simulator/physical-device behavior is untested.
 - Exact next action: configure the shared Playwright WebKit gate and run the critical journeys, phone layouts and interruption checks.
+
+### iOS-readiness batch 2
+
+- Branch/commit: `main`; runtime seams checkpoint `98600ea`; WebKit gate/lifecycle fixes and this handoff are the final readiness checkpoint.
+- Changes: shared Chromium/WebKit test matrix, compact/large/landscape phone projects, safe-area/text-size/viewport/interruption/offline checks, authoritative flip settlement, Results interruption settlement and visibility-first focus initialization for WebKit.
+- Checks: 33/33 Chromium desktop journeys; 33/33 WebKit desktop journeys; 5/5 WebKit phone-profile checks; 65/65 unit/domain tests; production build passed. No tests were skipped.
+- Evidence: patched WebKit 26.6 build 2359 and Chromium 153.0.8010.12 on macOS arm64. Short videos and screenshot are in ignored `test-results/hr-ios-webkit-evidence-20260930/`.
+- Cross-platform note: safe-area values remain zero in this desktop-hosted automation, and viewport presets do not emulate WKWebView, hardware cutouts, the iOS keyboard, VoiceOver or Dynamic Type. Native storage, Files/share, lifecycle plugin binding and device profiling remain explicitly unimplemented.
+- Exact next action: review this local checkpoint at `http://127.0.0.1:4200/`. The prior local product milestone is complete; the next proposed milestone is a separately authorized minimal Capacitor native-feasibility build with storage/plugin decisions and simulator/device evidence.

@@ -131,7 +131,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private updateMotion(): void {
     const enabled = this.effects && this.visible && this.lifecycle.active() && !this.preference?.matches;
     this.animated.set(enabled);
-    if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.settle(); }
+    if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.displayedRevealed.set(this.revealed); this.settle(); }
   }
   private animate(type: 'deal'): void {
     if (!this.animated() || !this.turn) return;

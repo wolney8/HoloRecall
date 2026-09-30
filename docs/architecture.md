@@ -10,6 +10,8 @@ Keep the browser prototype on the validated IndexedDB snapshot adapter. Capacito
 
 Use narrow platform ports for application lifecycle and generated-file delivery. Domain scheduling, reward eligibility, reports, deck schemas and XLSX/ZIP generation must remain platform-neutral. Browser delivery uses a bounded object URL; a future native implementation must write to a controlled temporary/cache file and invoke the Files/share sheet with cancellation and URI cleanup. No fake native success implementation is permitted.
 
+The web implementation now uses `StudyPersistence`, `AppLifecycle` and `FileDelivery` boundaries. IndexedDB remains the only implemented persistence adapter; browser download remains the only implemented delivery adapter. Raster validation accepts the same bounded bytes through ImageBitmap or an Image decode fallback, while portable records continue to store stable asset IDs.
+
 References: [Capacitor environment setup](https://capacitorjs.com/docs/getting-started/environment-setup), [storage guidance](https://capacitorjs.com/docs/guides/storage), [App lifecycle API](https://capacitorjs.com/docs/apis/app), [Filesystem](https://capacitorjs.com/docs/apis/filesystem), [Share](https://capacitorjs.com/docs/apis/share).
 
 ## Decision 002: reusable presentation and portable content

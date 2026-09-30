@@ -9,11 +9,13 @@ export type LifecycleListener = (active: boolean) => void;
 @Injectable({ providedIn: 'root' })
 export class AppLifecycle {
   readonly active = signal(!document.hidden);
-  readonly focused = signal(document.hasFocus());
+  // Visible pages begin focused; explicit blur/focus events are more reliable than
+  // document.hasFocus() during WebKit startup and automation.
+  readonly focused = signal(!document.hidden);
   private readonly listeners = new Set<LifecycleListener>();
 
   constructor() {
-    const refresh = () => this.setState(!document.hidden, document.hasFocus());
+    const refresh = () => this.setState(!document.hidden, !document.hidden);
     const pageHide = () => this.setState(false, false);
     const pageShow = () => refresh();
     const focus = () => { this.focused.set(true); this.notify(); };

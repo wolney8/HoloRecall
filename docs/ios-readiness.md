@@ -13,14 +13,14 @@ This is the maintained cross-platform evidence matrix. “WebKit verified” mea
 
 | Area | Web implementation | Chromium evidence | WebKit evidence | Native implementation needed | Simulator | Physical device |
 | --- | --- | --- | --- | --- | --- | --- |
-| Study and scheduling | Atomic IndexedDB review/session transaction; pure TypeScript FSRS/reward rules | Existing domain and journey suites pass | Pending gate | Durable native store adapter and lifecycle hookup | Not tested | Not tested |
-| Lifecycle and active time | Visibility/focus events pause timing and checkpoint accepted work | Existing background/reload tests pass | Pending interruption test | Bind Capacitor App state events to the same port | Not tested | Not tested |
-| Card motion/effects | Shared CSS/Web Animations renderer; reduced motion/effects controls | Intermediate flip/effect assertions pass | Pending visual checks | Profile WKWebView compositing and app backgrounding | Not tested | Not tested |
-| Layout/input/a11y | Responsive Material 3 UI and semantic controls | Desktop/390 px and keyboard checks pass | Pending compact/large/landscape/text-size checks | VoiceOver, Dynamic Type, software keyboard and real safe areas | Not tested | Not tested |
-| Content/media storage | Stable `asset:` IDs with validated raster bytes in current snapshot | Upload/reload/backup pass | Pending decode/recovery gate | SQLite records plus Filesystem media; crash-safe coordinated migration | Not tested | Not tested |
-| XLSX/ZIP exchange | Domain package generation; atomic preview/apply; bounded input | Round trips and formula rejection pass | Pending exchange gate | Document picker/security-scoped URI handling, temporary files, share sheet and cancellation | Not tested | Not tested |
-| Offline | Bundled font, UI and demonstration art; loaded-page study works offline | Active loaded-page recovery passes | Pending loaded-page check | Packaged assets should cold-start offline after native build verification | Not tested | Not tested |
-| Themes | Local early-paint preference plus IndexedDB preference | Light/Dark/System persistence passes | Pending | Status/splash bars and native appearance integration | Not tested | Not tested |
+| Study and scheduling | Atomic IndexedDB review/session transaction; pure TypeScript FSRS/reward rules | Chromium 153 journey and domain suites pass | WebKit 26.6 reveal/rate/reload, stale save and deduplication pass | Durable native store adapter and lifecycle hookup | Not tested | Not tested |
+| Lifecycle and active time | Shared visibility/page/focus source pauses timing and effects, checkpoints, refreshes and cleans up | Chromium interruption/reload passes | WebKit interruption/reload passes | Bind Capacitor App state events to the same port | Not tested | Not tested |
+| Card motion/effects | Shared CSS/Web Animations renderer; reduced motion/effects controls; interrupted turns settle to persisted face | Intermediate flip/effect assertions pass | Seven overlay tiers, flip, confidence/results motion and reduced motion pass | Profile WKWebView compositing and app backgrounding | Not tested | Not tested |
+| Layout/input/a11y | Safe-area owners, visual-viewport focused-field recovery, touch sizes, semantic controls and text zoom | Desktop/390 px and keyboard checks pass | Compact/large portrait, landscape and 200% text checks pass | VoiceOver, Dynamic Type, software keyboard and real safe areas | Not tested | Not tested |
+| Content/media storage | Stable `asset:` IDs, bounded raster bytes, ImageBitmap/Image decode paths and atomic snapshot | Upload/reload/backup pass | Design upload/reload, all illustrations and ZIP media decode pass | SQLite records plus Filesystem media; crash-safe coordinated migration | Not tested | Not tested |
+| XLSX/ZIP exchange | Platform-neutral package generation; `FileDelivery` handles web download; atomic preview/apply | Round trips, download and formula rejection pass | XLSX/ZIP round trips, download, media and formula rejection pass | Document picker/security-scoped URI handling, temporary files, share sheet and cancellation | Not tested | Not tested |
+| Offline | Bundled font, UI and demonstration art; loaded-page study works offline | Active loaded-page recovery passes | Active loaded-page review/reload passes | Packaged assets should cold-start offline after native build verification | Not tested | Not tested |
+| Themes | Local early-paint preference plus IndexedDB preference | Light/Dark/System persistence passes | System/explicit themes and reduced motion pass | Status/splash bars and native appearance integration | Not tested | Not tested |
 
 ## Native durability proposal
 
@@ -44,3 +44,12 @@ A native migration must be versioned, atomic and recoverable: verify the source 
 ## Change review note
 
 For each meaningful change, add a proportional note to the durable handoff covering WebKit/Capacitor compatibility, touch/safe areas/keyboard/accessibility, persistence/offline/interruption, animation cleanup, browser APIs requiring native work, tests run and unverified native behavior.
+
+## Current gate evidence
+
+- Engines: Playwright 1.63.0, Chromium 153.0.8010.12 and patched WebKit 26.6 build 2359 on macOS arm64.
+- Desktop suites: 33/33 Chromium and 33/33 WebKit passed. Phone-profile WebKit gate: 5/5 passed across iPhone SE, iPhone 15 Pro Max portrait and landscape presets. These presets provide viewport/touch/browser-engine evidence only.
+- Unit/domain suite: 65/65 passed. Production Angular build passed.
+- WebKit motion evidence: `test-results/hr-ios-webkit-evidence-20260930/` contains two short videos (compact reveal and results progress) plus `motion-review.png`. The directory is ignored test output, not a product fixture.
+- Observed and fixed: WebKit startup did not consistently report `document.hasFocus()`, so active-time state now starts from visibility and follows explicit focus/blur events. Cancelling a flip on backgrounding now settles the shown face to persisted reveal state. Backgrounding Results settles its presentation run so delayed observers/timers cannot reveal content later.
+- Not run: Safari, WKWebView, an iOS simulator, a physical iPhone, VoiceOver, Dynamic Type, a software keyboard, real safe-area cutouts and native file/lifecycle/storage integrations.
