@@ -74,7 +74,7 @@ test('HR-UX-09 rapid and failed review attempts do not duplicate feedback or rev
     await page.getByRole('button', { name: /Start studying/ }).click();
     await page.getByRole('button', { name: /Reveal answer/ }).click();
     await page.evaluate(() => new Promise<void>((resolve, reject) => {
-      const open = indexedDB.open('holorecall-local-v1', 1);
+      const open = indexedDB.open('holorecall-local-v1', 2);
       open.onerror = () => reject(open.error);
       open.onsuccess = () => {
         const db = open.result, transaction = db.transaction('local-study', 'readwrite'), store = transaction.objectStore('local-study'), read = store.get('snapshot');

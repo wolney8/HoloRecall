@@ -131,7 +131,7 @@ test('real IndexedDB v1 upgrade preserves its original snapshot and review histo
   for (const key of ['assets', 'designs', 'rewardEvents', 'rewardConfig', 'session', 'ankiMappings']) delete legacy[key];
   for (const card of legacy['cards'] as State['cards']) { delete card.rarity; if (card.kind === 'text') { delete card.image; delete card.imageDescription; } }
   await page.evaluate(value => new Promise<void>((resolve, reject) => {
-    const open = indexedDB.open('holorecall-local-v1', 1); open.onerror = () => reject(open.error);
+    const open = indexedDB.open('holorecall-local-v1', 2); open.onerror = () => reject(open.error);
     open.onsuccess = () => { const db = open.result, tx = db.transaction('local-study', 'readwrite'); tx.objectStore('local-study').put(value, 'snapshot'); tx.oncomplete = () => { db.close(); resolve(); }; tx.onerror = () => reject(tx.error); };
   }), legacy);
   await page.reload(); await expect(page.getByTestId('today-count')).toContainText('1');
@@ -140,7 +140,7 @@ test('real IndexedDB v1 upgrade preserves its original snapshot and review histo
   expect(upgraded.rewardEvents).toEqual([]); expect(upgraded.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
   expect(upgraded.cards.every(card => card.revision === 1)).toBe(true);
   const preserved = await page.evaluate(() => new Promise<unknown>((resolve, reject) => {
-    const open = indexedDB.open('holorecall-local-v1', 1); open.onerror = () => reject(open.error);
+    const open = indexedDB.open('holorecall-local-v1', 2); open.onerror = () => reject(open.error);
     open.onsuccess = () => { const db = open.result, tx = db.transaction('local-study'), request = tx.objectStore('local-study').get('migration-v1-original'); request.onsuccess = () => resolve(request.result); tx.oncomplete = () => db.close(); };
   }));
   expect(preserved).toEqual(legacy);

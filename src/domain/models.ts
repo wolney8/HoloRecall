@@ -24,9 +24,11 @@ export interface CardContent {
   imageDescription?: string;
   frontAudio?: string[];
   backAudio?: string[];
+  archived?: boolean;
+  createdAt?: string;
 }
 
-export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string }
+export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean }
 export type ConfidenceRating = 1 | 2 | 3 | 4 | 5;
 export interface Preferences {
   effects: boolean;
@@ -75,7 +77,7 @@ export interface ReversalEvent {
 export type StudyEvent = ReviewEvent | ReversalEvent;
 
 export interface State {
-  schemaVersion: 3;
+  schemaVersion: 4;
   version: number;
   userId: string;
   decks: Deck[];
@@ -122,6 +124,8 @@ export interface LocalAsset {
   credit?: string;
   source?: string;
   license?: string;
+  contentHash?: string;
+  byteLength?: number;
 }
 
 export type AnkiFieldTarget = 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';

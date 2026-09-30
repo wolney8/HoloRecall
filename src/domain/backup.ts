@@ -22,6 +22,7 @@ export function validatePreferences(value: unknown): asserts value is Preference
 export function validateDeck(value: unknown): asserts value is Deck {
   const deck = object(value);
   if (deck['designSetId'] !== undefined && !id(deck['designSetId'])) fail('invalid deck design reference.');
+  if (deck['parentId'] !== undefined && !id(deck['parentId']) || deck['archived'] !== undefined && typeof deck['archived'] !== 'boolean') fail('invalid deck organisation.');
   if (!id(deck['id']) || !text(deck['name'], 160) || !deck['name'].trim() || !text(deck['description'], 2000) || typeof deck['suspended'] !== 'boolean') fail('invalid deck.');
 }
 
@@ -37,6 +38,8 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (card['finish'] !== undefined && !FINISHES.includes(String(card['finish']))) fail('invalid card finish.');
   for (const key of ['image', 'backImage']) if (card[key] !== undefined) validateMediaRef(card[key]);
   for (const key of ['frontAudio', 'backAudio']) if (card[key] !== undefined && (!Array.isArray(card[key]) || card[key].length > 8 || !card[key].every((ref: unknown) => { try { validateMediaRef(ref); return true; } catch { return false; } }))) fail(`invalid card ${key}.`);
+  if (card['archived'] !== undefined && typeof card['archived'] !== 'boolean') fail('invalid card archive state.');
+  if (card['createdAt'] !== undefined && !instant(card['createdAt'])) fail('invalid card creation time.');
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
 }
 
@@ -51,7 +54,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 3 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 4 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -66,6 +69,8 @@ export function validateState(value: unknown): asserts value is State {
   const deckIds = new Set(typedDecks.map(deck => deck.id));
   const cardIds = new Set(typedCards.map(card => card.id));
   if (deckIds.size !== decks.length || cardIds.size !== cards.length || typedCards.some(card => !deckIds.has(card.deckId))) fail('duplicate IDs or a card with no deck.');
+  if (typedDecks.some(deck => deck.parentId && (!deckIds.has(deck.parentId) || deck.parentId === deck.id))) fail('deck hierarchy references an invalid parent.');
+  for (const deck of typedDecks) { const visited = new Set<string>([deck.id]); let parent = deck.parentId; while (parent) { if (visited.has(parent)) fail('deck hierarchy contains a cycle.'); visited.add(parent); parent = typedDecks.find(item => item.id === parent)?.parentId; } }
   const states = object(data['states']);
   for (const [cardId, state] of Object.entries(states)) {
     if (!cardIds.has(cardId)) fail('scheduling state references a missing card.');
@@ -104,7 +109,7 @@ export function validateState(value: unknown): asserts value is State {
 }
 
 export function exportBackup(data: State, now: Date): string {
-  return JSON.stringify({ format: 'holorecall-backup', version: 3, exportedAt: now.toISOString(), state: data }, null, 2);
+  return JSON.stringify({ format: 'holorecall-backup', version: 4, exportedAt: now.toISOString(), state: data }, null, 2);
 }
 
 export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
@@ -112,7 +117,7 @@ export function parseBackup(json: string, bundledCards: CardContent[] = []): Sta
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
-  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
+  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3, 4].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
   return migrateState(backup['state'], bundledCards);
 }
 
@@ -138,6 +143,8 @@ export function validateAsset(value: unknown): asserts value is LocalAsset {
           : bytes.slice(0, 4) === 'RIFF' && bytes.slice(8, 12) === 'WAVE';
   if (!validBytes) fail('media bytes do not match the declared raster type or supported audio type.');
   for (const field of ['credit', 'source', 'license']) if (asset[field] !== undefined && !text(asset[field], 2000)) fail('invalid image attribution.');
+  if (asset['contentHash'] !== undefined && !/^sha256:[a-f0-9]{64}$/.test(String(asset['contentHash']))) fail('invalid asset content hash.');
+  if (asset['byteLength'] !== undefined && !integer(asset['byteLength'], 1)) fail('invalid asset byte length.');
 }
 export function validateDesign(value: unknown): asserts value is DesignSet {
   const design = object(value);

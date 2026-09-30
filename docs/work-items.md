@@ -26,92 +26,92 @@ Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items r
 ### HR-ORG-01 — Global search
 
 - **Product area / milestone / priority:** Organisation / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** Platform-neutral content index; stable deck/card identities
 - **Requirement:** Responsive offline search across deck titles and meaningful card content, including answers, meaning, pronunciation, notes, tags and useful source metadata. Results distinguish decks, cards and match context and navigate directly to the relevant context.
 - **Acceptance:** Indexed query avoids DOM-wide scanning; wide and compact Material 3 experiences support keyboard and touch; empty state is concise; 1,000- and 10,000-card fixtures provide measured response evidence.
 - **Platform implications:** Worker or index boundary must not assume a web filesystem; WebKit, lifecycle cancellation, offline use and future native storage remain explicit.
 - **Implementation notes:** Internal IDs must not become ordinary searchable content.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Pure Unicode-normalized index/query tests cover learner-facing fields and ID exclusion. A 10,000-card Node run indexed in 777.8 ms and answered a combined search/tag query in 10.9 ms; browser/Worker evidence remains pending.
 - **Commits:** Pending.
 
 ### HR-ORG-02 — Filtering and sorting
 
 - **Product area / milestone / priority:** Organisation / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** HR-ORG-01 query boundary; rewards and scheduler read models
 - **Requirement:** Add combinable deck/subdeck, tag, rarity, earned state, design, finish, scheduling/attention and media filters where meaningful, plus useful sorting. Use progressive disclosure and active chips.
 - **Acceptance:** Combined filters return accurate cards, clearing is obvious, navigation back preserves the active view without trapping the learner, and persisted content is unchanged.
 - **Platform implications:** Touch-sized controls, keyboard operation, 200% reflow and compact/landscape layouts.
 - **Implementation notes:** Filters are view state, not portable learner content.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Pure combined-filter/sort contract and progressive shared filter UI implemented; full browser matrix remains pending.
 - **Commits:** Pending.
 
 ### HR-ORG-03 — Tags and deck hierarchy
 
 - **Product area / milestone / priority:** Authoring and organisation / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** Compatible state migration and atomic bulk mutation
 - **Requirement:** Canonical tag add/remove/rename and bulk operations; preserve imported tags. Add explicit deck/subdeck relationships, rename/move decks, and single/bulk card moves. Keep deletion non-destructive or separately confirmed.
 - **Acceptance:** Trivial case/spacing variants do not duplicate tags; hierarchy cycles are rejected; safe bulk changes preserve review history, sessions and cosmetics; imported `::` hierarchy migrates predictably.
 - **Platform implications:** Platform-neutral validation; usable keyboard and touch bulk flows.
 - **Implementation notes:** Archive is preferred to destructive deletion during this milestone.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Schema 4 adds validated parent/archive fields; cycle rejection, canonical tags, atomic move/tag/archive store operations and hierarchy UI are implemented. Full preservation/browser tests remain pending.
 - **Commits:** Pending.
 
 ### HR-ORG-04 — Scalable bulk management
 
 - **Product area / milestone / priority:** Library management / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** HR-ORG-02 and HR-ORG-03
 - **Requirement:** Efficient selection and bulk move, tag, rarity, design, finish and archive actions without rendering thousands of collectible-card effects.
 - **Acceptance:** Incremental rendering, paging or virtualization bounds DOM work; selection is scoped, keyboard-capable and touch-friendly; 10,000-card fixture proves large selection and mutation remain responsive.
 - **Platform implications:** Avoid hover-only operation, permanent animation loops and inaccessible offscreen selected controls.
 - **Implementation notes:** Only visible collection items animate.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Decks and Collection now query the same 60-item indexed slice with explicit load-more; expanded bulk controls are implemented. 10,000-card DOM/browser evidence remains pending.
 - **Commits:** Pending.
 
 ### HR-MEDIA-01 — Scalable local media registry
 
 - **Product area / milestone / priority:** Persistence and portability / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** Existing schema-3 asset model, IndexedDB adapter, import/export and backup contracts
 - **Requirement:** Evolve the current single-snapshot media assumptions into an efficient stable registry for images, audio, backgrounds, frames and textures. Add content hashing/deduplication, reference accounting and an explicit safe cleanup operation.
 - **Acceptance:** Identical imports reuse bytes; conflicting IDs remain safe; referenced assets cannot be cleaned; reload and old backup/package migration work; portable decks and full backups contain required bytes; index metadata is reconstructable.
 - **Platform implications:** IndexedDB remains the web prototype; future native durable media uses the same stable IDs. Object URLs are never durable identities and resources are cleaned on lifecycle changes.
 - **Implementation notes:** Do not auto-purge uncertain assets or clear existing storage.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** IndexedDB v2 separates media payloads from the state snapshot in the same transaction; domain SHA-256 registry/dedupe/reference tests and focused persistence migration tests pass. Portable/browser cleanup evidence remains pending.
 - **Commits:** Pending.
 
 ### HR-ORG-05 — Collection library experience
 
 - **Product area / milestone / priority:** Collection / Search and organisation / P1
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** HR-ORG-01, HR-ORG-02 and HR-ORG-04
 - **Requirement:** Preserve the premium collectible identity while adding useful All, rarity, deck, recently unlocked, next unlock and query-driven views.
 - **Acceptance:** Rich inspection remains; result grids are bounded; visible high-rarity cards may use restrained entrance/focus effects; search/filter navigation is direct; no new currency or unrelated game layer.
 - **Platform implications:** WebKit-safe compositing, reduced motion, effects preference, touch and keyboard inspection.
 - **Implementation notes:** Existing card renderer, finishes, design sets, tilt, `hrReveal` and M3 tokens remain authoritative.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Collection uses the shared query slice and retains a single rich inspection card plus recently/next unlock views; cross-engine visual evidence remains pending.
 - **Commits:** Pending.
 
 ### HR-ORG-06 — Large-library performance
 
 - **Product area / milestone / priority:** Performance / Search and organisation / P0
-- **Status:** PLANNED
+- **Status:** IN_PROGRESS
 - **Source:** Will, 30 September 2026
 - **Dependencies:** HR-ORG-01, HR-ORG-04 and HR-MEDIA-01
 - **Requirement:** Add reproducible 1,000- and 10,000-card fixtures and measure load, index, query, filter, scroll, selection, media resolution and import-to-index availability.
 - **Acceptance:** Record real environment and timings, derive regression budgets from observed baselines, demonstrate responsive indexing and safe cancellation/recovery, and never count a completed test alone as performance evidence.
 - **Platform implications:** Measurements are browser evidence only; WebKit is not native iOS/macOS proof.
 - **Implementation notes:** Reuse existing large Anki fixture where it matches the scenario.
-- **Verification / evidence:** Pending.
+- **Verification / evidence:** Reproducible 10,000-card domain fixture records 777.8 ms indexing and 10.9 ms combined query on Node 24.3.0/macOS; 1,000-card and browser measurements remain pending.
 - **Commits:** Pending.
 
 ### HR-ORG-07 — UI consistency gate

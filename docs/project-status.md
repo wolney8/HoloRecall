@@ -10,6 +10,14 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - **Preservation boundary:** no data reset, dependency change, package installation or application mutation occurred in recovery. Existing learning content, media, reviews, rewards, imports, designs and portability remain intact.
 - **Exact next action:** checkpoint the canonical tracker/guidance, then implement the platform-neutral library query/index contract and compatible organisation/media model in one tested batch.
 
+### Search/data foundation batch
+
+- **Branch/checkpoint:** `main` after tracker commit `e0f739c`; current organisation/media implementation is uncommitted at this handoff point.
+- **Implemented:** schema 4 hierarchy/archive fields; Unicode/accent-insensitive platform-neutral library index and combined filters; a lazy local Worker boundary; stable 60-card result slices shared by Decks and Collection; atomic bulk move/tag/presentation/archive operations; SHA-256 media registry, deduplication and safe reference accounting; IndexedDB v2 media payload separation so routine reviews write metadata without rewriting bytes.
+- **Checks:** focused library/media/migration/persistence **17/17 passed**; full unit/domain **83/83 passed**. Production build completed at **819.76 kB initial / 185.14 kB estimated transfer** with one 19.76 kB budget warning that must be resolved or deliberately re-budgeted. The measured 10,000-card Node fixture indexed in **777.8 ms** and answered a combined search/tag query in **10.9 ms**.
+- **Known issues:** browser fixture helpers are being migrated to IndexedDB v2; portable hierarchy metadata, browser interactions, themes/reflow, 1,000-card measurements and Chromium/WebKit evidence remain unfinished. Media bytes are separated in web IndexedDB, but native durable media remains a future adapter.
+- **Exact next action:** complete persistence/browser fixture migration and portable-format compatibility, then exercise the new organisation flows in Chromium and WebKit before moving work items to `VERIFY`.
+
 ## Charter, import and entitlement milestone tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |

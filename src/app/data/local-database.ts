@@ -1,83 +1,51 @@
-import type { State } from '../../domain/models';
+import type { LocalAsset, State } from '../../domain/models';
 import { migrateState } from '../../domain/migrations';
 import { validateState } from '../../domain/backup';
 import type { StudyPersistence } from './study-persistence';
 
-const STORE = 'local-study';
-const KEY = 'snapshot';
-export class StaleStateError extends Error {
-  constructor() { super('Your study data changed in another tab. Nothing was overwritten. Refresh local data and try again.'); }
-}
+const STORE='local-study',MEDIA='local-media',KEY='snapshot';
+type PersistedAsset=Omit<LocalAsset,'dataUrl'>&{dataUrl?:string};
+type PersistedState=Omit<State,'assets'>&{assets:PersistedAsset[]};
+export class StaleStateError extends Error{constructor(){super('Your study data changed in another tab. Nothing was overwritten. Refresh local data and try again.');}}
 
-/** One atomic read/compare/write transaction prevents reviews being partially saved. */
-export class LocalDatabase implements StudyPersistence {
-  private connection?: Promise<IDBDatabase>;
-  constructor(private readonly name = 'holorecall-local-v1') {}
-
-  private open(): Promise<IDBDatabase> {
-    if (!this.connection) this.connection = new Promise<IDBDatabase>((resolve, reject) => {
-      if (!globalThis.indexedDB) { reject(new Error('IndexedDB is unavailable. Enable browser storage to use this local prototype.')); return; }
-      const request = indexedDB.open(this.name, 1);
-      let failed = false;
-      request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-      request.onerror = () => { failed = true; reject(request.error ?? new Error('Could not open local browser storage.')); };
-      request.onblocked = () => { failed = true; reject(new Error('Another tab is blocking local storage. Close other HoloRecall tabs and retry.')); };
-      request.onsuccess = () => {
-        if (failed) { request.result.close(); return; }
-        request.result.onversionchange = () => { request.result.close(); this.connection = undefined; };
-        resolve(request.result);
-      };
-    }).catch(error => { this.connection = undefined; throw error; });
-    return this.connection;
+/** State metadata and media payloads share one transaction, but routine reviews never rewrite media bytes. */
+export class LocalDatabase implements StudyPersistence{
+  private connection?:Promise<IDBDatabase>;
+  constructor(private readonly name='holorecall-local-v1'){}
+  private open():Promise<IDBDatabase>{
+    if(!this.connection)this.connection=new Promise<IDBDatabase>((resolve,reject)=>{
+      if(!globalThis.indexedDB){reject(new Error('IndexedDB is unavailable. Enable browser storage to use this local prototype.'));return;}
+      const request=indexedDB.open(this.name,2);let failed=false;
+      request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE);if(!db.objectStoreNames.contains(MEDIA))db.createObjectStore(MEDIA);};
+      request.onerror=()=>{failed=true;reject(request.error??new Error('Could not open local browser storage.'));};
+      request.onblocked=()=>{failed=true;reject(new Error('Another tab is blocking local storage. Close other HoloRecall tabs and retry.'));};
+      request.onsuccess=()=>{if(failed){request.result.close();return;}request.result.onversionchange=()=>{request.result.close();this.connection=undefined;};resolve(request.result);};
+    }).catch(error=>{this.connection=undefined;throw error;});return this.connection;
   }
-
-  async load(initial: State): Promise<State> {
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE, 'readwrite');
-      const store = transaction.objectStore(STORE);
-      const request = store.get(KEY);
-      let result: State;
-      let validationError: unknown;
-      request.onsuccess = () => {
-        try {
-          if (request.result === undefined) { validateState(initial); result = initial; store.add(initial, KEY); }
-          else {
-            result = migrateState(request.result, initial.cards);
-            if (request.result.schemaVersion !== result.schemaVersion) {
-              store.add(request.result, `migration-v${request.result.schemaVersion}-original`);
-              store.put(result, KEY);
-            }
-          }
-        } catch (error) { validationError = error; transaction.abort(); }
-      };
-      transaction.oncomplete = () => resolve(result);
-      transaction.onerror = () => reject(validationError ?? transaction.error ?? new Error('Could not read local storage.'));
-      transaction.onabort = () => reject(validationError ?? transaction.error ?? new Error('Local storage read was interrupted.'));
+  private persisted(state:State):PersistedState{return{...state,assets:state.assets.map(({dataUrl,...asset})=>asset)};}
+  private mediaKey(asset:PersistedAsset):string{return asset.contentHash??`asset:${asset.id}`;}
+  private hydrate(raw:PersistedState,media:IDBObjectStore,done:(state:State)=>void,fail:(error:unknown)=>void):void{
+    const assets=raw.assets??[];if(!assets.length){done({...raw,assets:[]} as State);return;}
+    const hydrated:LocalAsset[]=new Array(assets.length);let remaining=assets.length;
+    assets.forEach((asset,index)=>{
+      if(asset.dataUrl){hydrated[index]=asset as LocalAsset;if(!--remaining)done({...raw,assets:hydrated} as State);return;}
+      const request=media.get(this.mediaKey(asset));
+      request.onsuccess=()=>{if(typeof request.result!=='string'){fail(new Error(`Stored media ${asset.name} is unavailable. Restore a backup or reimport its package.`));return;}hydrated[index]={...asset,dataUrl:request.result};if(!--remaining)done({...raw,assets:hydrated} as State);};
+      request.onerror=()=>fail(request.error??new Error('Could not read local media.'));
     });
   }
-
-  async commit(next: State, expectedVersion: number): Promise<State> {
-    validateState(next);
-    if (next.version !== expectedVersion + 1) throw new Error('A local save must advance exactly one storage version.');
-    const db = await this.open();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(STORE, 'readwrite');
-      const store = transaction.objectStore(STORE);
-      const request = store.get(KEY);
-      let failure: unknown;
-      request.onsuccess = () => {
-        try {
-          validateState(request.result);
-          if (request.result.version !== expectedVersion) throw new StaleStateError();
-          store.put(next, KEY);
-        } catch (error) { failure = error; transaction.abort(); }
-      };
-      transaction.oncomplete = () => resolve(next);
-      transaction.onerror = () => reject(failure ?? transaction.error ?? new Error('Could not save. Your review was not recorded.'));
-      transaction.onabort = () => reject(failure ?? transaction.error ?? new Error('Save interrupted. Your review was not recorded.'));
-    });
-  }
-
-  async close(): Promise<void> { (await this.connection)?.close(); this.connection = undefined; }
+  private stageMedia(media:IDBObjectStore,state:State):void{for(const asset of state.assets)media.put(asset.dataUrl,this.mediaKey(asset));}
+  async load(initial:State):Promise<State>{const db=await this.open();return new Promise((resolve,reject)=>{
+    const transaction=db.transaction([STORE,MEDIA],'readwrite'),store=transaction.objectStore(STORE),media=transaction.objectStore(MEDIA),request=store.get(KEY);let result:State,validationError:unknown;
+    const fail=(error:unknown)=>{validationError=error;transaction.abort();};
+    request.onsuccess=()=>{try{if(request.result===undefined){validateState(initial);result=initial;store.add(this.persisted(initial),KEY);}else this.hydrate(request.result as PersistedState,media,hydrated=>{try{result=migrateState(hydrated,initial.cards);const raw=request.result as PersistedState,changed=raw.schemaVersion!==result.schemaVersion||raw.assets.some(asset=>!!asset.dataUrl);if(changed){store.add(request.result,`migration-v${raw.schemaVersion}-original`);this.stageMedia(media,result);store.put(this.persisted(result),KEY);}}catch(error){fail(error);}},fail);}catch(error){fail(error);}};
+    transaction.oncomplete=()=>resolve(result);transaction.onerror=()=>reject(validationError??transaction.error??new Error('Could not read local storage.'));transaction.onabort=()=>reject(validationError??transaction.error??new Error('Local storage read was interrupted.'));
+  });}
+  async commit(next:State,expectedVersion:number):Promise<State>{validateState(next);if(next.version!==expectedVersion+1)throw new Error('A local save must advance exactly one storage version.');const db=await this.open();return new Promise((resolve,reject)=>{
+    const transaction=db.transaction([STORE,MEDIA],'readwrite'),store=transaction.objectStore(STORE),media=transaction.objectStore(MEDIA),request=store.get(KEY);let failure:unknown;
+    const fail=(error:unknown)=>{failure=error;transaction.abort();};
+    request.onsuccess=()=>this.hydrate(request.result as PersistedState,media,current=>{try{validateState(current);if(current.version!==expectedVersion)throw new StaleStateError();this.stageMedia(media,next);const retained=new Set(next.assets.map(asset=>this.mediaKey(asset)));for(const asset of current.assets)if(!retained.has(this.mediaKey(asset)))media.delete(this.mediaKey(asset));store.put(this.persisted(next),KEY);}catch(error){fail(error);}},fail);
+    transaction.oncomplete=()=>resolve(next);transaction.onerror=()=>reject(failure??transaction.error??new Error('Could not save. Your review was not recorded.'));transaction.onabort=()=>reject(failure??transaction.error??new Error('Save interrupted. Your review was not recorded.'));
+  });}
+  async close():Promise<void>{(await this.connection)?.close();this.connection=undefined;}
 }

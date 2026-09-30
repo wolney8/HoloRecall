@@ -1,18 +1,23 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { FlashcardComponent } from '../card';
 import { LocalStudyStore } from '../data/study-store';
 import type { CardContent, Rarity } from '../../domain/models';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../../domain/rewards';
 import { PageRevealDirective } from '../motion/page-reveal';
+import { LibraryViewService } from '../library/library-view.service';
 
 @Component({
   selector: 'hr-collection',
   standalone: true,
-  imports: [FlashcardComponent, MatButtonModule, MatProgressBarModule, PageRevealDirective],
+  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, PageRevealDirective],
   template: `
-    <div class="collection-heading" hrReveal><h1>Collection</h1><p>Inspect your cards, authored rarities and earned cosmetics.</p></div>
+    <div class="page-heading collection-heading" hrReveal><div><p class="eyebrow">CARD LIBRARY</p><h1>Collection</h1><p>Inspect cards, authored rarity and earned cosmetics.</p></div></div>
+    <section class="collection-tools" hrReveal aria-label="Search collection"><mat-form-field appearance="outline"><mat-label>Search collection</mat-label><input matInput [ngModel]="library.query()" (ngModelChange)="library.setQuery($event)" autocomplete="off"></mat-form-field><div class="view-presets" aria-label="Collection views"><button mat-stroked-button (click)="showAll()">All cards</button><button mat-button (click)="library.setFilter('rarities',['rare','holo-rare','ultra-rare','secret-rare','relic'])">Higher rarities</button><button mat-button (click)="library.setFilter('earned','earned')">Earned</button><button mat-button (click)="library.setFilter('earned','unearned')">Next unlock</button>@if(library.activeFilterCount()){<button mat-button (click)="library.clear()">Clear filters</button>}</div>@if(library.status()==='building'){<p class="hint" aria-live="polite">Updating local index…</p>}@else if(library.query()&&!library.page().total){<p class="empty-inline">No results.</p>}</section>
     @if (selected(); as card) {
       <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
@@ -35,8 +40,9 @@ import { PageRevealDirective } from '../motion/page-reveal';
     }
     @if(nextUnlock();as next){<section class="unlock-panel next-unlock" hrReveal aria-labelledby="next-unlock-title"><div><p class="eyebrow">NEXT UNLOCK</p><h2 id="next-unlock-title">{{next.card.answer}} · {{tierName(next.card.rarity || 'common')}}</h2><p>{{next.remaining}} more eligible {{next.remaining===1?'study day':'study days'}}. Current progress {{next.progress.days}} of {{next.progress.required}}.</p></div><div class="next-unlock-symbol" aria-hidden="true">{{tierSymbol(next.card.rarity || 'common')}}</div><mat-progress-bar mode="determinate" [value]="percent(next.card)" [attr.aria-label]="next.card.answer+' unlock progress '+next.progress.days+' of '+next.progress.required"/><details><summary>How to unlock</summary><p>Scheduled ratings 4 or 5 contribute on distinct study days at least 20 hours apart. Honest lower ratings keep scheduling accurate and never remove an earned cosmetic.</p></details></section>}
     @if(recentlyUnlocked().length){<section class="recent-unlocks" hrReveal aria-labelledby="recent-title"><div class="section-title"><h2 id="recent-title">Recently unlocked</h2><span>Earned from real scheduled reviews</span></div><div class="collection-grid">@for(item of recentlyUnlocked();track item.event.id){<button class="collection-item" (click)="inspect(item.card)"><span class="sample-symbol" aria-hidden="true">{{tierSymbol(item.event.rarity)}}</span><span class="item-copy"><strong>{{item.card.answer}}</strong><span>{{tierName(item.event.rarity)}}</span><small>{{item.event.timestamp.slice(0,10)}}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button>}</div></section>}
-    <section class="owned-section" aria-labelledby="cards-title"><div class="section-title" hrReveal><h2 id="cards-title">Your cards</h2><span>{{ store.cards().length }} cards · {{ earnedCount() }} authored cosmetics earned</span></div>
-      <div class="collection-grid">@for (card of store.cards(); track card.id; let index = $index) { <button class="collection-item" hrReveal [hrRevealDelay]="index * 45" [class.selected]="selectedId() === card.id && !sampleTier()" (click)="inspect(card)" [attr.aria-label]="'Inspect ' + card.answer"><span class="thumbnail">@if (store.mediaUrl(card.image)) {<img [src]="store.mediaUrl(card.image)" alt="" loading="lazy">}@else {<span aria-hidden="true">▧</span>}</span><span class="item-copy"><strong>{{ card.answer }}</strong><span>{{ tierSymbol(card.rarity || 'common') }} {{ tierName(card.rarity || 'common') }}</span><small>{{ progress(card).earned ? 'Earned' : progress(card).days + '/' + progress(card).required + ' qualifying days' }}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button> }</div>
+    <section class="owned-section" aria-labelledby="cards-title"><div class="section-title" hrReveal><h2 id="cards-title">Cards</h2><span>Showing {{library.page().items.length}} of {{ library.page().total }} · {{ earnedCount() }} cosmetics earned</span></div>
+      <div class="collection-grid">@for (item of library.page().items; track item.card.id; let index = $index) { @let card=item.card;<button class="collection-item" hrReveal [hrRevealDelay]="(index % 6) * 45" [class.selected]="selectedId() === card.id && !sampleTier()" (click)="inspect(card)" [attr.aria-label]="'Inspect ' + card.answer"><span class="thumbnail">@if (store.mediaUrl(card.image)) {<img [src]="store.mediaUrl(card.image)" alt="" loading="lazy">}@else {<span aria-hidden="true">▧</span>}</span><span class="item-copy"><strong>{{ card.answer }}</strong><span>{{item.deckPath}} · {{ tierSymbol(card.rarity || 'common') }} {{ tierName(card.rarity || 'common') }}</span><small>{{ progress(card).earned ? 'Earned' : progress(card).days + '/' + progress(card).required + ' qualifying days' }}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button> }</div>
+      @if(library.page().nextOffset){<div class="collection-more"><button mat-stroked-button (click)="library.more()">Load 60 more</button></div>}
     </section>
     <section class="sample-section" aria-labelledby="samples-title" hrReveal><div class="section-title"><h2 id="samples-title">Design samples</h2><span>Previews · no earned progress</span></div><p>Inspect all seven frame treatments without changing study data.</p><div class="sample-grid">@for (tier of tiers; track tier.id) {<button class="sample-button" [class.selected]="sampleTier() === tier.id" [attr.data-rarity]="tier.id" (click)="inspectSample(tier.id)"><span class="sample-symbol" aria-hidden="true">{{ tier.symbol }}</span><strong>{{ tier.label }}</strong><small>Preview · {{ required(tier.id) }} {{ required(tier.id) === 1 ? 'day' : 'days' }}</small></button>}</div></section>
   `,
@@ -44,6 +50,7 @@ import { PageRevealDirective } from '../motion/page-reveal';
 })
 export class CollectionComponent {
   readonly store = inject(LocalStudyStore);
+  readonly library = inject(LibraryViewService);
   readonly tiers = RARITIES;
   readonly selectedId = signal('');
   readonly sampleTier = signal<Rarity | null>(null);
@@ -59,6 +66,7 @@ export class CollectionComponent {
     return this.sampleTier() || (this.progress(card).earned || this.previewLocked() ? card.rarity || 'common' : 'common');
   });
   readonly isPreview = computed(() => !!this.sampleTier() || this.previewLocked());
+  constructor(){effect(()=>{const target=this.library.target();if(target?.kind==='card'){const card=this.store.cards().find(item=>item.id===target.cardId);if(card){this.library.target.set(null);queueMicrotask(()=>this.inspect(card));}}});}
   progress(card: CardContent) { const data = this.store.data(); return data ? rewardProgress(data, card.id) : { earned: false, days: 0, required: 1 }; }
   percent(card: CardContent): number { const value = this.progress(card); return Math.min(100, value.days / value.required * 100); }
   required(rarity: Rarity): number { return this.store.data()?.rewardConfig[rarity] ?? 1; }
@@ -67,5 +75,6 @@ export class CollectionComponent {
   deckName(id: string): string { return this.store.decks().find(deck => deck.id === id)?.name ?? 'Deck unavailable'; }
   inspect(card: CardContent): void { this.selectedId.set(card.id); this.sampleTier.set(null); this.previewLocked.set(false); this.revealed.set(true); this.scrollToInspection(); }
   inspectSample(rarity: Rarity): void { this.sampleTier.set(rarity); this.revealed.set(true); this.scrollToInspection(); }
+  showAll():void{this.library.setQuery('');this.library.clear();}
   private scrollToInspection(): void { document.getElementById('inspection-title')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' }); }
 }

@@ -6,7 +6,7 @@ import { validateState } from './backup';
 export function migrateState(input: unknown, bundledCards: CardContent[] = []): State {
   if (!input || typeof input !== 'object') throw new Error('Invalid HoloRecall data: expected an object.');
   const raw = structuredClone(input) as Record<string, unknown>;
-  if (![1, 2, 3].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
+  if (![1, 2, 3, 4].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
   if (raw['schemaVersion'] === 1) {
     raw['schemaVersion'] = 2;
     raw['designs'] = [];
@@ -21,6 +21,7 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     });
   }
   if (raw['schemaVersion'] === 2) { raw['schemaVersion'] = 3; raw['ankiMappings'] = []; }
+  if (raw['schemaVersion'] === 3) raw['schemaVersion'] = 4;
   validateState(raw);
   return raw;
 }

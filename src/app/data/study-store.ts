@@ -5,6 +5,13 @@ import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateD
 import { SEED_CARDS, SEED_DECKS } from '../seed';
 import { LocalDatabase } from './local-database';
 import type { StudyPersistence } from './study-persistence';
+import { canonicalTags, validateDeckMove } from '../../domain/library';
+import { deduplicateContent, describeAsset, removableAssets } from '../../domain/media-registry';
+
+export interface BulkCardPatch {
+  deckId?: string; addTags?: string[]; removeTags?: string[]; rarity?: Rarity;
+  designSetId?: string; finish?: CardContent['finish']; archived?: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
@@ -12,12 +19,15 @@ export class LocalStudyStore {
   readonly error = signal('');
   readonly cards = computed(() => this.data()?.cards ?? []);
   readonly decks = computed(() => this.data()?.decks ?? []);
+  private readonly assetById = computed(() => new Map((this.data()?.assets ?? []).map(asset => [asset.id, asset])));
+  private readonly deckById = computed(() => new Map((this.data()?.decks ?? []).map(deck => [deck.id, deck])));
+  private readonly designById = computed(() => new Map((this.data()?.designs ?? []).map(design => [design.id, design])));
   private readonly database: StudyPersistence = new LocalDatabase();
   private saving = false;
   private pendingChange: Promise<void> = Promise.resolve();
 
   async init(): Promise<void> {
-    try { await this.refresh(); } catch { /* error signal presents the storage failure; never fall back to volatile progress. */ }
+    try { await this.refresh(); await this.ensureAssetMetadata(); } catch { /* error signal presents the storage failure; never fall back to volatile progress. */ }
   }
 
   async refresh(): Promise<void> {
@@ -61,7 +71,7 @@ export class LocalStudyStore {
         if (!data.decks.some(deck => deck.id === card.deckId)) throw new Error('Choose an existing deck.');
         const previous = data.cards.find(item => item.id === card.id);
         if (previous && previous.revision !== card.revision) throw new Error('This card was edited elsewhere. Reopen the editor before saving.');
-        const next = structuredClone({ ...card, revision: previous ? previous.revision + 1 : 1 });
+        const next = structuredClone({ ...card, tags: canonicalTags(card.tags), revision: previous ? previous.revision + 1 : 1, createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString() });
         validateCard(next);
         nextCards = previous ? nextCards.map(item => item.id === card.id ? next : item) : [...nextCards, next];
       }
@@ -70,14 +80,22 @@ export class LocalStudyStore {
   }
 
   async bulkUpdateCards(ids: string[], patch: Pick<CardContent, 'rarity' | 'designSetId' | 'finish'>): Promise<void> {
+    await this.bulkOrganizeCards(ids, patch);
+  }
+
+  async bulkOrganizeCards(ids: string[], patch: BulkCardPatch): Promise<void> {
     await this.change(data => {
       const selected = new Set(ids);
       if (!selected.size) throw new Error('Select at least one card.');
-      if ([...selected].some(id => !data.cards.some(card => card.id === id))) throw new Error('A selected card no longer exists. Refresh the library.');
+      const cardIds = new Set(data.cards.map(card => card.id));
+      if ([...selected].some(id => !cardIds.has(id))) throw new Error('A selected card no longer exists. Refresh the library.');
+      if (patch.deckId && !data.decks.some(deck => deck.id === patch.deckId)) throw new Error('Choose an existing destination deck.');
+      const remove = new Set((patch.removeTags ?? []).map(tag => tag.trim().toLocaleLowerCase('en')));
       const cards = data.cards.map(card => {
         if (!selected.has(card.id)) return card;
-        const next = { ...card, rarity: patch.rarity, designSetId: patch.designSetId, finish: patch.finish, revision: card.revision + 1 };
-        if (!next.designSetId) delete next.designSetId;
+        const next = { ...card, ...(patch.deckId ? { deckId: patch.deckId } : {}), ...(patch.rarity ? { rarity: patch.rarity } : {}), ...(patch.finish ? { finish: patch.finish } : {}), ...(patch.archived !== undefined ? { archived: patch.archived } : {}), revision: card.revision + 1 };
+        next.tags = canonicalTags([...card.tags.filter(tag => !remove.has(tag.trim().toLocaleLowerCase('en'))), ...(patch.addTags ?? [])]);
+        if (patch.designSetId !== undefined) { if (patch.designSetId) next.designSetId = patch.designSetId; else delete next.designSetId; }
         validateCard(next); return next;
       });
       return reconcileSession({ ...data, version: data.version + 1, cards }, data);
@@ -86,6 +104,7 @@ export class LocalStudyStore {
 
   async saveDeck(deck: Deck): Promise<void> {
     await this.change(data => {
+      if (data.decks.some(item => item.id === deck.id)) validateDeckMove(data, deck.id, deck.parentId);
       validateDeck(deck);
       const next = structuredClone(deck);
       return reconcileSession({ ...data, version: data.version + 1, decks: data.decks.some(item => item.id === deck.id) ? data.decks.map(item => item.id === deck.id ? next : item) : [...data.decks, next] }, data);
@@ -133,20 +152,21 @@ export class LocalStudyStore {
   }
   mediaUrl(ref?: string): string {
     if (!ref) return '';
-    if (ref.startsWith('asset:')) return this.data()?.assets.find(asset => asset.id === ref.slice(6))?.dataUrl ?? '';
+    if (ref.startsWith('asset:')) return this.assetById().get(ref.slice(6))?.dataUrl ?? '';
     return /^\/?(?:art|assets)\/[a-zA-Z0-9/_-]+\.(svg|png|webp|jpe?g)$/.test(ref) ? ref : '';
   }
   designFor(card: CardContent): DesignSet | undefined {
     const data = this.data();
-    const designId = card.designSetId ?? data?.decks.find(deck => deck.id === card.deckId)?.designSetId;
-    return data?.designs.find(design => design.id === designId);
+    const designId = card.designSetId ?? this.deckById().get(card.deckId)?.designSetId;
+    return this.designById().get(designId ?? '');
   }
   async saveAsset(asset: LocalAsset): Promise<void> {
-    validateAsset(asset);
+    const described=asset.contentHash?asset:await describeAsset(asset);validateAsset(described);
     await this.change(data => {
-      const previous = data.assets.find(item => item.id === asset.id);
-      if (previous && JSON.stringify(previous) !== JSON.stringify(asset)) throw new Error('Upload replacement artwork with a new asset ID to preserve other designs.');
-      return previous ? data : { ...data, version: data.version + 1, assets: [...data.assets, structuredClone(asset)] };
+      const previous = data.assets.find(item => item.id === described.id);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(described)) throw new Error('Upload replacement artwork with a new asset ID to preserve other designs.');
+      if(previous)return data;const duplicate=data.assets.find(item=>item.contentHash===described.contentHash&&item.mime===described.mime);if(duplicate)throw new Error(`This media already exists as ${duplicate.name}. Reuse that asset instead.`);
+      return { ...data, version: data.version + 1, assets: [...data.assets, structuredClone(described)] };
     });
   }
   async saveDesign(design: DesignSet): Promise<void> {
@@ -174,6 +194,8 @@ export class LocalStudyStore {
     });
   }
   async applyContentImport(bundle: ContentImport, expectedVersion: number): Promise<void> {
+    const current=this.data();if(!current)throw new Error('Local study data is not ready.');
+    const prepared=await deduplicateContent(current,bundle);bundle=prepared.bundle;
     await this.change(data => {
       if (data.version !== expectedVersion) throw new Error('Local content changed after this preview. Preview the import again.');
       const merge = <T extends { id: string }>(current: T[], incoming: T[]): T[] => {
@@ -187,11 +209,16 @@ export class LocalStudyStore {
       }
       const cards = bundle.cards.map(card => {
         const previous = data.cards.find(item => item.id === card.id);
-        return { ...card, revision: previous ? previous.revision + (sameCardContent(previous, card) ? 0 : 1) : 1 };
+        return { ...card, tags: canonicalTags(card.tags), createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString(), revision: previous ? previous.revision + (sameCardContent(previous, card) ? 0 : 1) : 1 };
       });
       return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, bundle.decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)) }, data);
     });
   }
+
+  async renameTag(from:string,to:string):Promise<number>{let changed=0;const source=from.trim().toLocaleLowerCase('en'),replacement=to.trim().replace(/\s+/g,' ');if(!source||!replacement)throw new Error('Choose an existing tag and a nonempty replacement.');await this.change(data=>{const cards=data.cards.map(card=>{if(!card.tags.some(tag=>tag.trim().toLocaleLowerCase('en')===source))return card;changed++;const next={...card,tags:canonicalTags(card.tags.map(tag=>tag.trim().toLocaleLowerCase('en')===source?replacement:tag)),revision:card.revision+1};validateCard(next);return next;});return changed?reconcileSession({...data,version:data.version+1,cards},data):data;});return changed;}
+  unusedAssets():LocalAsset[]{const data=this.data();return data?removableAssets(data):[];}
+  async removeUnusedAssets(ids:string[]):Promise<number>{let removed=0;await this.change(data=>{const permitted=new Set(removableAssets(data).map(asset=>asset.id)),wanted=new Set(ids);if([...wanted].some(id=>!permitted.has(id)))throw new Error('One or more media files are still referenced and were not removed.');const assets=data.assets.filter(asset=>{const remove=wanted.has(asset.id);if(remove)removed++;return!remove;});return removed?{...data,version:data.version+1,assets}:data;});return removed;}
+  private async ensureAssetMetadata():Promise<void>{const data=this.data(),missing=data?.assets.filter(asset=>!asset.contentHash||!asset.byteLength)??[];if(!missing.length)return;const described=await Promise.all(missing.map(describeAsset)),updates=new Map(described.map(asset=>[asset.id,asset]));await this.change(current=>({...current,version:current.version+1,assets:current.assets.map(asset=>updates.get(asset.id)??asset)}));}
 
   exportJson(): string {
     const data = this.data();

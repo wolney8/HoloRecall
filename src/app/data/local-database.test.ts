@@ -57,7 +57,7 @@ describe('atomic browser persistence', () => {
     const database = new LocalDatabase(name);
     await database.load(initial());
     const raw = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(name, 1);
+      const request = indexedDB.open(name, 2);
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
@@ -88,10 +88,10 @@ describe('v2 persistence migration and session recovery', () => {
     const legacy = structuredClone(reviewed) as unknown as Record<string, unknown>;
     legacy['schemaVersion'] = 1;
     for (const key of ['designs', 'assets', 'rewardEvents', 'rewardConfig', 'session', 'ankiMappings']) delete legacy[key];
-    const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 1); request.onsuccess = () => resolve(request.result); });
+    const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(legacy, 'snapshot'); transaction.oncomplete = () => resolve(); });
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(3);
+    expect(restored.schemaVersion).toBe(4);
     expect(restored.events).toEqual(legacy['events']);
     expect(restored.states).toEqual(legacy['states']);
     expect(restored.rewardEvents).toEqual([]);
@@ -106,10 +106,12 @@ describe('v2 persistence migration and session recovery', () => {
     versionTwo['schemaVersion'] = 2; delete versionTwo['ankiMappings'];
     const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 1); request.onupgradeneeded = () => request.result.createObjectStore('local-study'); request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(versionTwo, 'snapshot'); transaction.oncomplete = () => resolve(); });
+    raw.close();
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(3); expect(restored.ankiMappings).toEqual([]);
-    const backup = await new Promise<unknown>(resolve => { const request = raw.transaction('local-study').objectStore('local-study').get('migration-v2-original'); request.onsuccess = () => resolve(request.result); });
-    expect(backup).toEqual(versionTwo); raw.close(); await database.close();
+    expect(restored.schemaVersion).toBe(4); expect(restored.ankiMappings).toEqual([]);
+    const migrated = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
+    const backup = await new Promise<unknown>(resolve => { const request = migrated.transaction('local-study').objectStore('local-study').get('migration-v2-original'); request.onsuccess = () => resolve(request.result); });
+    expect(backup).toEqual(versionTwo); migrated.close(); await database.close();
   });
   it('persists uploaded image bytes and reveal state; advances and undoes the queue atomically', async () => {
     const name = `test-${crypto.randomUUID()}`;
@@ -121,6 +123,9 @@ describe('v2 persistence migration and session recovery', () => {
     };
     prepared.cards[0] = { ...prepared.cards[0]!, image: 'asset:my-image' };
     await database.commit(prepared, 0); await database.close();
+    const raw = await new Promise<IDBDatabase>((resolve,reject)=>{const request=indexedDB.open(name,2);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
+    const stored = await new Promise<{snapshot:any;media:string}>((resolve,reject)=>{const transaction=raw.transaction(['local-study','local-media']),snapshot=transaction.objectStore('local-study').get('snapshot'),media=transaction.objectStore('local-media').get('asset:my-image');transaction.oncomplete=()=>resolve({snapshot:snapshot.result,media:media.result});transaction.onerror=()=>reject(transaction.error);});
+    expect(stored.snapshot.assets[0].dataUrl).toBeUndefined();expect(stored.media).toBe(prepared.assets[0]!.dataUrl);raw.close();
     const reopened = new LocalDatabase(name);
     const restored = await reopened.load(initial());
     expect(restored.assets).toEqual(prepared.assets);

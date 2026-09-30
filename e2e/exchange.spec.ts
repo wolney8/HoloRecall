@@ -6,7 +6,7 @@ import type { State } from '../src/domain/models';
 
 async function snapshot(page: Page): Promise<State> {
   return page.evaluate(() => new Promise<State>((resolve, reject) => {
-    const open = indexedDB.open('holorecall-local-v1', 1);
+    const open = indexedDB.open('holorecall-local-v1', 2);
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
       const db = open.result; const transaction = db.transaction('local-study', 'readonly');

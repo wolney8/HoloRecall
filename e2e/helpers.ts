@@ -38,7 +38,7 @@ export async function selectMaterial(page: Page, label: string, option: string):
 }
 export async function snapshot(page: Page): Promise<State> {
   return page.evaluate(() => new Promise<State>((resolve, reject) => {
-    const request = indexedDB.open('holorecall-local-v1', 1);
+    const request = indexedDB.open('holorecall-local-v1', 2);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       const db = request.result, transaction = db.transaction('local-study', 'readonly'), read = transaction.objectStore('local-study').get('snapshot');

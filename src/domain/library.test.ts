@@ -1,0 +1,14 @@
+import { describe, expect, it } from 'vitest';
+import { buildLibraryIndex, canonicalTags, queryLibrary, validateDeckMove } from './library';
+import type { CardContent, Deck } from './models';
+import { createInitialState } from './study';
+
+const decks: Deck[]=[{id:'languages',name:'Languages',description:'All languages',suspended:false},{id:'italian',name:'Italian',description:'Everyday phrases',suspended:false,parentId:'languages'}];
+const cards: CardContent[]=[{id:'c1',deckId:'italian',kind:'text',front:'The coffee',answer:'il caffè',pronunciation:'eel kah-FEH',meaning:'coffee',notes:'At the bar',tags:[' Drinks ','drinks','Travel'],rarity:'rare',revision:1,suspended:false},{id:'c2',deckId:'italian',kind:'visual',front:'Recall',answer:'la città',pronunciation:'lah cheet-TAH',meaning:'city',notes:'Urban noun',tags:['Places'],image:'/art/casa.svg',imageDescription:'A warm street scene',revision:1,suspended:false}];
+
+describe('library index and query',()=>{
+  it('searches accents and learner-facing fields without exposing IDs',()=>{const index=buildLibraryIndex(createInitialState(decks,cards));expect(queryLibrary(index,{query:'caffe'}).items.map(item=>item.card.id)).toEqual(['c1']);expect(queryLibrary(index,{query:'kah feh'}).items.map(item=>item.card.id)).toEqual(['c1']);expect(queryLibrary(index,{query:'c1'}).items).toEqual([]);expect(queryLibrary(index,{query:'everyday'}).results.some(result=>result.kind==='deck')).toBe(true);});
+  it('combines filters',()=>{const index=buildLibraryIndex(createInitialState(decks,cards));expect(queryLibrary(index,{filters:{deckIds:['italian'],tags:[' drinks '],rarities:['rare'],media:['none']}}).items.map(item=>item.card.id)).toEqual(['c1']);expect(queryLibrary(index,{filters:{media:['image']}}).items.map(item=>item.card.id)).toEqual(['c2']);});
+  it('normalizes tags and rejects hierarchy cycles',()=>{expect(canonicalTags([' Travel ','travel','TRÁVEL','Food'])).toEqual(['Travel','Food']);expect(()=>validateDeckMove({decks},'languages','italian')).toThrow(/cannot be moved/);});
+  it('indexes and queries ten thousand cards within a measured local budget',()=>{const large=Array.from({length:10_000},(_,index):CardContent=>({...cards[0]!,id:`card-${index}`,front:`Prompt ${index}`,answer:`Answer ${index}`,notes:index===9876?'needle vocabulary':'ordinary vocabulary',tags:[`Batch ${index%20}`]}));const state=createInitialState(decks,large),start=performance.now(),built=buildLibraryIndex(state),indexedMs=performance.now()-start,queryStart=performance.now(),result=queryLibrary(built,{query:'needle vocabulary',filters:{tags:['Batch 16']}}),queryMs=performance.now()-queryStart;expect(result.items.map(item=>item.card.id)).toEqual(['card-9876']);expect(indexedMs).toBeLessThan(3000);expect(queryMs).toBeLessThan(500);console.info(`[HR-ORG-06] 10k index ${indexedMs.toFixed(1)}ms; combined query ${queryMs.toFixed(1)}ms`);});
+});
