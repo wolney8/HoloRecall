@@ -19,8 +19,8 @@ export function buildReport(state: State, now: Date, range: DateRange = {}) {
     const previous = days.get(date) ?? { date, count: 0, activeMs: 0 };
     days.set(date, { date, count: previous.count + 1, activeMs: previous.activeMs + (review.activeMs ?? 0) });
   }
-  const newCards = state.cards.filter(card => !card.suspended && !state.decks.find(deck => deck.id === card.deckId)?.suspended && !(state.states[card.id]?.reps));
-  const due = state.cards.filter(card => !card.suspended && !state.decks.find(deck => deck.id === card.deckId)?.suspended && (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime()).length;
+  const newCards = state.cards.filter(card => !card.suspended && !card.archived && !state.decks.find(deck => deck.id === card.deckId)?.suspended && !state.decks.find(deck => deck.id === card.deckId)?.archived && !(state.states[card.id]?.reps));
+  const due = state.cards.filter(card => !card.suspended && !card.archived && !state.decks.find(deck => deck.id === card.deckId)?.suspended && !state.decks.find(deck => deck.id === card.deckId)?.archived && (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime()).length;
   const attention = state.cards.flatMap(card => {
     const history = reviews.filter(review => review.cardId === card.id).slice(-5);
     const failures = history.filter(review => review.rating === 1).length;

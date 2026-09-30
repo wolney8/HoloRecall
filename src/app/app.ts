@@ -61,6 +61,7 @@ export class AppComponent {
   readonly studyTransition=signal<'idle'|'feedback'|'deal'>('idle');
   readonly feedbackPosition=signal({x:0,y:0});
   readonly openRatingHelp=signal<number|null>(null);
+  readonly searchResultIndex=signal(0);
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
   readonly Math=Math;
@@ -72,7 +73,7 @@ export class AppComponent {
   ];
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
-  selectedCardIds=new Set<string>();bulkRarity:Rarity='common';bulkDesignSetId='';bulkFinish:FinishPreset='matte';
+  selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
   bulkDeckId='';bulkTags='';bulkRemoveTags='';renameTagFrom='';renameTagTo='';
   private editorBaseline='';
   settings={newCardLimit:10,reviewLimit:100,timeZone:'Europe/London'};
@@ -143,7 +144,7 @@ export class AppComponent {
   deckReady(id:string):number{return this.data()?dueCards(this.data()!,this.now(),id).length:0;}
   filteredCards():CardContent[]{return this.library.page().items.map(item=>item.card);}
   deckPath(id:string):string{return this.data()?deckPath(this.data()!,id):'';}
-  setLibrarySearch(value:string):void{this.search=value;this.library.setQuery(value);}
+  setLibrarySearch(value:string):void{this.search=value;this.searchResultIndex.set(0);this.library.setQuery(value);}
   toggleFilter(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'finishes'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key,value as never);}
   chooseSearchResult(result:SearchResult):void{this.library.selectResult(result);if(result.kind==='card'){const card=this.data()?.cards.find(item=>item.id===result.cardId);if(card)this.edit(card);}else this.go('library');}
   deckName(id:string):string{return this.data()?.decks.find(d=>d.id===id)?.name??'Deck';}
@@ -233,9 +234,14 @@ export class AppComponent {
   async saveCard(addAnother=false):Promise<void>{if(!this.editor||this.busy())return;this.busy.set(true);try{const card={...this.editor,front:this.editor.front.trim(),answer:this.editor.answer.trim(),tags:this.tagInput.split(',').map(s=>s.trim()).filter(Boolean)};if(!card.designSetId)delete card.designSetId;const cards=[card];if(this.authorPreset==='reversible'&&!card.revision)cards.push({...card,id:crypto.randomUUID(),front:card.answer,answer:card.front,frontAudio:card.backAudio,backAudio:card.frontAudio,pronunciation:'',meaning:card.meaning,revision:0});await this.store.saveCards(cards);this.message.set(cards.length===2?'Two reversible cards saved. Review history was not changed.':'Card saved. Review history preserved.');if(addAnother){const deckId=card.deckId,designSetId=card.designSetId,preset=this.authorPreset;this.editor=this.blankCard(deckId,designSetId);this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.tagInput='';this.authorPreviewRevealed=false;this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}else{this.editor=null;this.editorBaseline='';}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   toggleCardSelection(id:string,selected:boolean):void{const next=new Set(this.selectedCardIds);selected?next.add(id):next.delete(id);this.selectedCardIds=next;}
   clearCardSelection():void{this.selectedCardIds=new Set();}
-  async applyBulkCards():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{...(this.bulkDeckId?{deckId:this.bulkDeckId}:{}),addTags:this.bulkTags.split(',').filter(Boolean),removeTags:this.bulkRemoveTags.split(',').filter(Boolean),rarity:this.bulkRarity,designSetId:this.bulkDesignSetId,finish:this.bulkFinish});this.message.set(`${this.selectedCardIds.size} cards updated. Review history and earned cosmetics were preserved.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async applyBulkCards():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{...(this.bulkDeckId?{deckId:this.bulkDeckId}:{}),addTags:this.bulkTags.split(',').filter(Boolean),removeTags:this.bulkRemoveTags.split(',').filter(Boolean),...(this.bulkRarity?{rarity:this.bulkRarity}:{}),...(this.bulkDesignSetId!=='__keep__'?{designSetId:this.bulkDesignSetId==='__inherit__'?'':this.bulkDesignSetId}:{}),...(this.bulkFinish?{finish:this.bulkFinish}:{})});this.message.set(`${this.selectedCardIds.size} cards updated. Review history and earned cosmetics were preserved.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   async archiveSelected():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{archived:true});this.message.set(`${this.selectedCardIds.size} cards archived. Learning history was retained.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   selectShown():void{this.selectedCardIds=new Set(this.filteredCards().map(card=>card.id));}
+  selectAllMatching():void{this.selectedCardIds=new Set(this.library.allMatchingIds());}
+  async restoreSelected():Promise<void>{if(!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{archived:false});this.message.set(`${this.selectedCardIds.size} cards restored.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  tagUsage(tag:string):number{return this.library.index()?.cards.filter(item=>item.tags.some(value=>value.toLocaleLowerCase('en')===tag.toLocaleLowerCase('en'))).length??0;}
+  onSearchKey(event:KeyboardEvent):void{const results=this.library.page().results.slice(0,8);if(event.key==='Escape'){this.setLibrarySearch('');return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();const direction=event.key==='ArrowDown'?1:-1;this.searchResultIndex.set((this.searchResultIndex()+direction+results.length)%Math.max(1,results.length));return;}if(event.key==='Enter'&&results[this.searchResultIndex()]){event.preventDefault();this.chooseSearchResult(results[this.searchResultIndex()]!);}}
+  async cleanUnusedMedia():Promise<void>{const assets=this.store.unusedAssets();if(!assets.length){this.message.set('No unused local media.');return;}if(!confirm(`Remove ${assets.length} unreferenced media ${assets.length===1?'file':'files'}? This does not remove card or design content.`))return;try{const count=await this.store.removeUnusedAssets(assets.map(asset=>asset.id));this.message.set(`${count} unused media ${count===1?'file':'files'} removed.`);}catch(e){this.fail(e);}}
   async renameTag():Promise<void>{if(this.busy())return;this.busy.set(true);try{const count=await this.store.renameTag(this.renameTagFrom,this.renameTagTo);this.message.set(count?`Renamed the tag on ${count} cards.`:'No cards used that tag.');this.renameTagFrom='';this.renameTagTo='';}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   private blankCard(deckId?:string,designSetId?:string):CardContent{return{id:crypto.randomUUID(),deckId:deckId||this.selectedDeck||this.data()?.decks[0]?.id||'',kind:'text',front:'',answer:'',pronunciation:'',meaning:'',notes:'',tags:[],revision:0,suspended:false,rarity:'common',...(designSetId?{designSetId}:{})};}
   private editorSnapshot():string{return JSON.stringify({editor:this.editor,tags:this.tagInput});}

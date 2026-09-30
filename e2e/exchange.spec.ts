@@ -9,8 +9,8 @@ async function snapshot(page: Page): Promise<State> {
     const open = indexedDB.open('holorecall-local-v1', 2);
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
-      const db = open.result; const transaction = db.transaction('local-study', 'readonly');
-      const read = transaction.objectStore('local-study').get('snapshot'); read.onsuccess = () => resolve(read.result); read.onerror = () => reject(read.error); transaction.oncomplete = () => db.close();
+      const db = open.result; const transaction = db.transaction(['local-study','local-media'], 'readonly');
+      const read = transaction.objectStore('local-study').get('snapshot'); read.onerror = () => reject(read.error);read.onsuccess=()=>{const state=read.result as State,media=transaction.objectStore('local-media'),pending=state.assets.map(asset=>{const request=media.get(asset.contentHash??`asset:${asset.id}`);return new Promise<void>((done,fail)=>{request.onsuccess=()=>{asset.dataUrl=request.result;done();};request.onerror=()=>fail(request.error);});});Promise.all(pending).then(()=>resolve(state),reject);};transaction.oncomplete = () => db.close();
     };
   }));
 }

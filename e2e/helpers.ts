@@ -41,8 +41,8 @@ export async function snapshot(page: Page): Promise<State> {
     const request = indexedDB.open('holorecall-local-v1', 2);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
-      const db = request.result, transaction = db.transaction('local-study', 'readonly'), read = transaction.objectStore('local-study').get('snapshot');
-      read.onsuccess = () => resolve(read.result as State); read.onerror = () => reject(read.error); transaction.oncomplete = () => db.close();
+      const db=request.result,transaction=db.transaction(['local-study','local-media'],'readonly'),read=transaction.objectStore('local-study').get('snapshot');
+      read.onerror=()=>reject(read.error);read.onsuccess=()=>{const state=read.result as State,media=transaction.objectStore('local-media'),pending=state.assets.map(asset=>{const value=media.get(asset.contentHash??`asset:${asset.id}`);return new Promise<void>((done,fail)=>{value.onsuccess=()=>{asset.dataUrl=value.result;done();};value.onerror=()=>fail(value.error);});});Promise.all(pending).then(()=>resolve(state),reject);};transaction.oncomplete=()=>db.close();
     };
   }));
 }

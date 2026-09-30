@@ -18,6 +18,14 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - **Known issues:** browser fixture helpers are being migrated to IndexedDB v2; portable hierarchy metadata, browser interactions, themes/reflow, 1,000-card measurements and Chromium/WebKit evidence remain unfinished. Media bytes are separated in web IndexedDB, but native durable media remains a future adapter.
 - **Exact next action:** complete persistence/browser fixture migration and portable-format compatibility, then exercise the new organisation flows in Chromium and WebKit before moving work items to `VERIFY`.
 
+### Organisation integration checkpoint after editor recovery
+
+- **Branch/checkpoint:** `main` at `c4095fe`; the recovered working tree contains the bounded organisation UI, hierarchy, archive semantics and browser-fixture compatibility changes. No reset or storage-clearing action was used after the VS Code interruption.
+- **Implemented:** Deck and Collection share the indexed query state; desktop and compact search support direct result navigation and keyboard selection; combined filters and explicit clearing persist across those views; 60-item slices bound rich rendering; bulk move/tag/rarity/design/finish/archive actions preserve learner state; imported `Parent::Child` deck paths become validated hierarchy records; archived content is excluded from scheduled queues and reports.
+- **Checks:** full unit/domain suite **84/84 passed** and the production build completed on 30 September 2026. The initial bundle is **824.81 kB raw / 186.05 kB estimated transfer**; XLSX, ZIP, SQLite and Anki conversion remain lazy chunks. The warning ceiling is intentionally adjusted to 850 kB from this observed feature baseline rather than hiding a production error.
+- **Interruption note:** the earlier 119-test browser run was terminated by the editor crash and is not counted as a completed check. A fresh uninterrupted Chromium/WebKit run is required.
+- **Exact next action:** checkpoint the recovered implementation, run the complete browser matrix serially, fix any regression, then reconcile the tracker, capability matrix, architecture and readiness evidence.
+
 ## Charter, import and entitlement milestone tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |

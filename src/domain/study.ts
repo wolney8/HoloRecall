@@ -69,8 +69,8 @@ export function dueCards(data: State, now: Date, deckId?: string): CardContent[]
   const reviewsLeft = Math.max(0, data.preferences.reviewLimit - reviewsToday.length);
   const introducedToday = new Set(reviewsToday.filter(event => event.previousState.reps === 0).map(event => event.cardId));
   const newLeft = Math.max(0, data.preferences.newCardLimit - introducedToday.size);
-  const activeDecks = new Set(data.decks.filter(deck => !deck.suspended).map(deck => deck.id));
-  const available = data.cards.filter(card => !card.suspended && activeDecks.has(card.deckId) && (!deckId || card.deckId === deckId));
+  const activeDecks = new Set(data.decks.filter(deck => !deck.suspended && !deck.archived).map(deck => deck.id));
+  const available = data.cards.filter(card => !card.suspended && !card.archived && activeDecks.has(card.deckId) && (!deckId || card.deckId === deckId));
   const existing = available.filter(card => (data.states[card.id]?.reps ?? 0) > 0 && Date.parse(data.states[card.id]!.due) <= now.getTime())
     .sort((a, b) => Date.parse(data.states[a.id]!.due) - Date.parse(data.states[b.id]!.due));
   const newCards = available.filter(card => (data.states[card.id]?.reps ?? 0) === 0).slice(0, newLeft);

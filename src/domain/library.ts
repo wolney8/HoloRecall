@@ -14,6 +14,7 @@ export interface LibraryQuery { query?: string; filters?: LibraryFilters; sort?:
 export interface SearchResult { kind: 'deck' | 'card' | 'tag'; id: string; label: string; context: string; normalized: string; cardId?: string; deckId?: string; score: number }
 export interface LibraryItem {
   card: CardContent; deckName: string; deckPath: string; tags: string[]; earned: boolean;
+  deckIds: string[];
   unlockDays: number; unlockRequired: number; lastStudied?: string; due?: string;
   state: 'new' | 'learning' | 'review'; attention: boolean; media: Exclude<MediaFilter, 'none'>[];
 }
@@ -52,11 +53,12 @@ export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex 
   const tagLabels = new Map<string,string>();
   for (const card of state.cards) for (const tag of canonicalTags(card.tags)) if (!tagLabels.has(normalizeTag(tag))) tagLabels.set(normalizeTag(tag), tag);
   const deckById = new Map(state.decks.map(deck => [deck.id, deck]));
+  const deckLineage=(id:string):string[]=>{const result:string[]=[];let current=deckById.get(id);while(current&&!result.includes(current.id)){result.push(current.id);current=current.parentId?deckById.get(current.parentId):undefined;}return result;};
   const cards: LibraryItem[] = state.cards.map(card => {
     const progress = rewardProgress(state, card.id), schedule = state.states[card.id], reps = schedule?.reps ?? 0;
     const stateName: LibraryItem['state'] = reps === 0 ? 'new' : schedule?.state === 2 ? 'review' : 'learning';
     const media: LibraryItem['media'] = [...(card.image || card.backImage ? ['image' as const] : []), ...((card.frontAudio?.length || card.backAudio?.length) ? ['audio' as const] : [])];
-    return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: (failures.get(card.id) ?? 0) >= 2, media };
+    return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:deckLineage(card.deckId), tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: (failures.get(card.id) ?? 0) >= 2, media };
   });
   const results: SearchResult[] = [];
   for (const deck of state.decks) { const context=deck.description || paths.get(deck.id) || 'Deck'; results.push({ kind:'deck', id:deck.id, deckId:deck.id, label:deck.name, context, normalized:normalizeSearch(`${deck.name} ${context}`), score:80 }); }
@@ -74,7 +76,7 @@ export function queryLibrary(index: LibraryIndex, request: LibraryQuery, now = n
   const designs = filters.designSetIds?.length ? new Set(filters.designSetIds) : null, finishes = filters.finishes?.length ? new Set(filters.finishes) : null;
   let items = index.cards.filter(item => {
     const card = item.card;
-    if (!filters.includeArchived && card.archived || searched && !searched.has(card.id) || deckIds && !deckIds.has(card.deckId)) return false;
+    if (!filters.includeArchived && card.archived || searched && !searched.has(card.id) || deckIds && !item.deckIds.some(id=>deckIds.has(id))) return false;
     if (tags?.length && !tags.some(tag => item.tags.some(value => normalizeTag(value) === tag))) return false;
     if (rarities && !rarities.has(card.rarity ?? 'common') || filters.earned && item.earned !== (filters.earned === 'earned')) return false;
     if (designs && !designs.has(card.designSetId ?? '') || finishes && !finishes.has(card.finish ?? 'matte')) return false;
@@ -93,6 +95,6 @@ export function queryLibrary(index: LibraryIndex, request: LibraryQuery, now = n
     else compared = (b.unlockDays / b.unlockRequired) - (a.unlockDays / a.unlockRequired);
     return compared || a.card.id.localeCompare(b.card.id);
   });
-  const total = items.length, offset = Math.max(0, request.offset ?? 0), limit = Math.max(1, Math.min(200, request.limit ?? 60));
+  const total = items.length, offset = Math.max(0, request.offset ?? 0), limit = Math.max(1, Math.min(100_000, request.limit ?? 60));
   return { items: items.slice(offset, offset + limit), total, nextOffset: offset + limit < total ? offset + limit : undefined, results: words.length ? index.results.filter(result => matches(result, words)).sort((a,b) => b.score-a.score || a.label.localeCompare(b.label)).slice(0,30) : [] };
 }
