@@ -1,5 +1,17 @@
 # Architecture
 
+## Decision 004: cross-platform seams without premature native scaffolding
+
+Every meaningful change now considers both the web application and a future Capacitor iOS runtime; the maintained evidence and native gaps live in `docs/ios-readiness.md`. Browser-engine testing is not native verification.
+
+The current stable Capacitor line is version 8. Its documented baseline is Node 22+, Xcode 26+ and iOS 15; Swift Package Manager is the default native dependency manager. HoloRecall's Node 24.3.0 is compatible, but Capacitor packages and an `ios/` project will be added only with an authorized native build checkpoint. Capacitor 9 is prerelease and is not selected. No minimum iOS version is silently changed by this decision.
+
+Keep the browser prototype on the validated IndexedDB snapshot adapter. Capacitor documents WebView IndexedDB on iOS as evictable and Preferences as suitable only for small values, so the native storage proposal is a versioned SQLite-backed structured store plus Filesystem-backed media, preserving the same validation, migration, compare-and-swap and backup contracts. Plugin/provider selection requires an implementation-time licence, maintenance and recovery review. Local native storage remains distinct from future authenticated cloud sync.
+
+Use narrow platform ports for application lifecycle and generated-file delivery. Domain scheduling, reward eligibility, reports, deck schemas and XLSX/ZIP generation must remain platform-neutral. Browser delivery uses a bounded object URL; a future native implementation must write to a controlled temporary/cache file and invoke the Files/share sheet with cancellation and URI cleanup. No fake native success implementation is permitted.
+
+References: [Capacitor environment setup](https://capacitorjs.com/docs/getting-started/environment-setup), [storage guidance](https://capacitorjs.com/docs/guides/storage), [App lifecycle API](https://capacitorjs.com/docs/apis/app), [Filesystem](https://capacitorjs.com/docs/apis/filesystem), [Share](https://capacitorjs.com/docs/apis/share).
+
 ## Decision 002: reusable presentation and portable content
 
 The second local milestone uses Angular Material/CDK 21.2.14, compatible with Angular 21.2.24, through the public `mat.theme` M3 API. Shared system tokens style the custom card and layout; locally bundled Roboto replaces serif UI headings. Light, Dark and System preferences apply before app startup and persist locally. [Material theming](https://material.angular.dev/guide/theming), [custom components](https://material.angular.dev/guide/theming-your-components).

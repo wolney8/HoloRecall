@@ -29,6 +29,17 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 | HR-UX-10 | Complete | IntersectionObserver uses the document viewport at 22% visibility. Tests prove the progress section has no animation while offscreen, then samples active row entrance, an intermediate real 0-to-1 fill, sheen and the transient zero-track error-colour glow before settlement. | Browser automation cannot characterize every GPU's colour/blending output. |
 | HR-UX-11 | Complete | The diagnosed render race is removed with run-scoped observer attachment after conditional rendering. Intro current time is sampled mid-run; Skip appears only during active motion, settles/cancels all sections, and Replay/reload leave review/reward arrays unchanged. Reduced motion is static with no Skip. | No physical-device motion profiling yet. |
 
+## iOS-readiness tracker
+
+| ID | Status | Acceptance evidence | Remaining issue / exact next action |
+| --- | --- | --- | --- |
+| HR-IOS-01 | In progress | Playwright 1.63.0 is pinned; repository-local Chromium is installed and WebKit 26.6 build 2359 has been installed for the new gate. | Configure shared WebKit projects, adapt genuine engine differences and run the critical/full suites without skips. |
+| HR-IOS-02 | In progress | Existing mobile Chromium checks cover 390 px Light/Dark screens, 48 px Study action and stable reveal. | Add safe-area layout, compact/large/landscape WebKit checks, 200% text and focused-field viewport-resize coverage. |
+| HR-IOS-03 | In progress | FSRS, rewards, reports and XLSX/ZIP schemas are browser-independent; IndexedDB is already isolated in `LocalDatabase`. | Add only lifecycle, persistence typing and generated-file delivery seams; test web implementations. |
+| HR-IOS-04 | In progress | Atomic compare-and-swap reviews, reward events, session checkpoints, migrations, reload and stale-save failures already pass. | Route activity/inactivity through a replaceable lifecycle boundary and verify interruption/cleanup behavior. |
+| HR-IOS-05 | In progress | Core font/art assets are bundled; imports are bounded to 30 MiB and raster uploads to 4 MiB/4096 px; active-page offline review passes. | Exercise WebKit decoding/exchange/effects and document native picker/share/URI/cancellation requirements. |
+| HR-IOS-06 | In progress | `docs/ios-readiness.md` is the maintained evidence matrix; no native claims are inferred from browser tests. | Reconcile actual Chromium/WebKit results and native gaps after implementation. |
+
 ### HR-UX-07–11 diagnosed causes
 
 - Reveal previously replaced a short action block with five tall rating rows in normal flow. The Study layout was a two-column grid whose overall height and scroll anchoring changed; focusing/clicking controls could expose that movement. The card now occupies an invariant stage, while both interaction states share reserved space below it.
