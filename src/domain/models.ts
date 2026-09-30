@@ -22,6 +22,8 @@ export interface CardContent {
   designSetId?: string;
   finish?: FinishPreset;
   imageDescription?: string;
+  frontAudio?: string[];
+  backAudio?: string[];
 }
 
 export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string }
@@ -73,7 +75,7 @@ export interface ReversalEvent {
 export type StudyEvent = ReviewEvent | ReversalEvent;
 
 export interface State {
-  schemaVersion: 2;
+  schemaVersion: 3;
   version: number;
   userId: string;
   decks: Deck[];
@@ -87,6 +89,7 @@ export interface State {
   session: StudySession | null;
   preferences: Preferences;
   scheduler: { version: string; configVersion: string; parameters: FSRSParameters };
+  ankiMappings: AnkiMappingPreset[];
 }
 
 
@@ -112,13 +115,23 @@ export interface DesignSet {
 export interface LocalAsset {
   id: string;
   name: string;
-  mime: 'image/png' | 'image/webp' | 'image/jpeg';
+  mime: 'image/png' | 'image/webp' | 'image/jpeg' | 'audio/mpeg' | 'audio/wav';
   dataUrl: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   credit?: string;
   source?: string;
   license?: string;
+}
+
+export type AnkiFieldTarget = 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';
+export interface AnkiMappingPreset {
+  id: string;
+  version: 1;
+  name: string;
+  sourceSignature: string;
+  modelName: string;
+  fields: Record<string, AnkiFieldTarget>;
 }
 
 export interface StudySession {

@@ -22,6 +22,18 @@ export async function readArtwork(file: File): Promise<LocalAsset> {
   return { id: crypto.randomUUID(), name: file.name.slice(0, 160), mime, dataUrl, width, height };
 }
 
+/** Bounded, inert audio upload. Browser playback support is checked when the learner plays it. */
+export async function readAudio(file: File): Promise<LocalAsset> {
+  if (!file.size || file.size > 5 * 1024 * 1024) throw new Error('Choose an MP3 or WAV audio file up to 5 MB.');
+  const bytes = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const mp3 = String.fromCharCode(...bytes.slice(0, 3)) === 'ID3' || bytes[0] === 255 && (bytes[1]! & 0xe0) === 0xe0;
+  const wav = String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WAVE';
+  const mime = mp3 ? 'audio/mpeg' : wav ? 'audio/wav' : null;
+  if (!mime || ![mime, mime === 'audio/mpeg' ? 'audio/mp3' : mime].includes(file.type)) throw new Error('Use a valid MP3 or WAV file.');
+  const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).replace(/^data:audio\/mp3;/, 'data:audio/mpeg;')); reader.onerror = () => reject(new Error('Could not read audio.')); reader.readAsDataURL(file); });
+  return { id: crypto.randomUUID(), name: file.name.slice(0, 160), mime, dataUrl };
+}
+
 /** Decode dimensions with ImageBitmap where available and a WebKit-safe Image fallback. */
 export async function decodeRaster(blob: Blob): Promise<{ width: number; height: number }> {
   if (typeof createImageBitmap === 'function') {

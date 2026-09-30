@@ -1,4 +1,4 @@
-import type { CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from './models';
+import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from './models';
 import { migrateState } from './migrations';
 import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
@@ -36,6 +36,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (card['designSetId'] !== undefined && !id(card['designSetId'])) fail('invalid card design reference.');
   if (card['finish'] !== undefined && !FINISHES.includes(String(card['finish']))) fail('invalid card finish.');
   for (const key of ['image', 'backImage']) if (card[key] !== undefined) validateMediaRef(card[key]);
+  for (const key of ['frontAudio', 'backAudio']) if (card[key] !== undefined && (!Array.isArray(card[key]) || card[key].length > 8 || !card[key].every((ref: unknown) => { try { validateMediaRef(ref); return true; } catch { return false; } }))) fail(`invalid card ${key}.`);
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
 }
 
@@ -50,7 +51,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 2 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 3 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -103,7 +104,7 @@ export function validateState(value: unknown): asserts value is State {
 }
 
 export function exportBackup(data: State, now: Date): string {
-  return JSON.stringify({ format: 'holorecall-backup', version: 2, exportedAt: now.toISOString(), state: data }, null, 2);
+  return JSON.stringify({ format: 'holorecall-backup', version: 3, exportedAt: now.toISOString(), state: data }, null, 2);
 }
 
 export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
@@ -111,7 +112,7 @@ export function parseBackup(json: string, bundledCards: CardContent[] = []): Sta
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
-  if (backup['format'] !== 'holorecall-backup' || ![1, 2].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
+  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
   return migrateState(backup['state'], bundledCards);
 }
 
@@ -121,16 +122,21 @@ export function validateMediaRef(value: unknown): asserts value is string {
 }
 export function validateAsset(value: unknown): asserts value is LocalAsset {
   const asset = object(value);
-  if (!id(asset['id']) || !text(asset['name'], 240) || !['image/png', 'image/webp', 'image/jpeg'].includes(String(asset['mime'])) || !integer(asset['width'], 1) || !integer(asset['height'], 1) || asset['width'] > 8192 || asset['height'] > 8192) fail('invalid uploaded image.');
+  const mime = String(asset['mime']), image = ['image/png', 'image/webp', 'image/jpeg'].includes(mime), audio = ['audio/mpeg', 'audio/wav'].includes(mime);
+  if (!id(asset['id']) || !text(asset['name'], 240) || (!image && !audio)) fail('invalid uploaded media.');
+  if (image && (!integer(asset['width'], 1) || !integer(asset['height'], 1) || asset['width'] > 8192 || asset['height'] > 8192)) fail('invalid uploaded image.');
+  if (audio && (asset['width'] !== undefined || asset['height'] !== undefined)) fail('audio assets do not have image dimensions.');
   if (!text(asset['dataUrl'], 7_000_000) || !asset['dataUrl'].startsWith(`data:${asset['mime']};base64,`) || !/^[A-Za-z0-9+/]*={0,2}$/.test(asset['dataUrl'].split(',')[1] ?? '')) fail('invalid image bytes or image exceeds 5 MB.');
   const base64 = asset['dataUrl'].split(',')[1]!;
   let bytes: string;
-  try { bytes = atob(base64.slice(0, 16)); } catch { return fail('invalid raster image bytes.'); }
+  try { bytes = atob(base64.slice(0, 16)); } catch { return fail('invalid media bytes.'); }
   const signature = Array.from(bytes).map(char => char.charCodeAt(0));
-  const raster = asset['mime'] === 'image/png' ? [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => signature[index] === byte)
+  const validBytes = asset['mime'] === 'image/png' ? [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => signature[index] === byte)
     : asset['mime'] === 'image/jpeg' ? signature[0] === 255 && signature[1] === 216 && signature[2] === 255
-      : bytes.slice(0, 4) === 'RIFF' && bytes.slice(8, 12) === 'WEBP';
-  if (!raster) fail('image bytes do not match the declared raster type.');
+      : asset['mime'] === 'image/webp' ? bytes.slice(0, 4) === 'RIFF' && bytes.slice(8, 12) === 'WEBP'
+        : asset['mime'] === 'audio/mpeg' ? bytes.slice(0, 3) === 'ID3' || signature[0] === 255 && (signature[1] & 0xe0) === 0xe0
+          : bytes.slice(0, 4) === 'RIFF' && bytes.slice(8, 12) === 'WAVE';
+  if (!validBytes) fail('media bytes do not match the declared raster type or supported audio type.');
   for (const field of ['credit', 'source', 'license']) if (asset[field] !== undefined && !text(asset[field], 2000)) fail('invalid image attribution.');
 }
 export function validateDesign(value: unknown): asserts value is DesignSet {
@@ -163,10 +169,12 @@ export function validateRewardConfig(value: unknown): asserts value is Record<Ra
 function validateExtensions(data: Record<string, unknown>): void {
   if (!Array.isArray(data['assets']) || !Array.isArray(data['designs']) || !Array.isArray(data['rewardEvents'])) fail('missing design, media or reward data.');
   data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
+  if (!Array.isArray(data['ankiMappings'])) fail('missing Anki mapping presets.');
+  data['ankiMappings'].forEach(validateAnkiMapping);
   validateRewardConfig(data['rewardConfig']);
   const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
   if (new Set(assets.map(item => item.id)).size !== assets.length || new Set(designs.map(item => item.id)).size !== designs.length) fail('duplicate asset or design IDs.');
-  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > 80_000_000) fail('uploaded images exceed the 60 MB local prototype limit.');
+  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > 80_000_000) fail('uploaded media exceed the 60 MB local prototype limit.');
   if (data['session'] !== null) {
     const session = object(data['session']);
     if (!id(session['id']) || !Array.isArray(session['queue']) || !session['queue'].every(id) || new Set(session['queue']).size !== session['queue'].length || !integer(session['total']) || !integer(session['completed']) || session['completed'] > session['total'] || session['queue'].length + session['completed'] !== session['total'] || typeof session['revealed'] !== 'boolean' || !integer(session['activeMs']) || session['activeMs'] > 120000) fail('invalid persisted study session.');
@@ -181,11 +189,17 @@ function validateExtensions(data: Record<string, unknown>): void {
 }
 export function validateReferences(data: State): void {
   const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id));
-  const refs = [...data.cards.flatMap(card => [card.image, card.backImage]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])];
+  const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])];
   // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
   if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
   if (data.session?.queue.some(cardId => !data.cards.some(card => card.id === cardId))) fail('study session references a missing card.');
+}
+export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
+  const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
+  if (!id(mapping['id']) || mapping['version'] !== 1 || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
+  const fields = object(mapping['fields']);
+  if (Object.keys(fields).length > 100 || Object.values(fields).some(target => !targets.includes(String(target)))) fail('invalid Anki field mapping.');
 }
 function validateRewards(data: State): void {
   const seen = new Map<string, State['rewardEvents'][number]>(), reversed = new Set<string>();

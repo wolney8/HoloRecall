@@ -6,13 +6,13 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
 | --- | --- | --- | --- |
-| HR-GOV-01 | In progress | Charter adopted at its authoritative path; root guidance links maintained records and adds the proportional learning/UI/platform/portability/entitlement and layout gates. Two repository-local skills validate successfully. | Exercise both skills against the implementation and reconcile roadmap/platform evidence. |
-| HR-GOV-02 | In progress | Two native Codex delegates are running bounded read-only import-integrity and UI/platform acceptance investigations with shared interfaces fixed by the lead. Lead retains schema, dependencies, migrations and integration. | Inspect delegate findings, record evidence, then run an independent acceptance follow-up. |
-| HR-IMPORT-01A | Not started | Existing parser accepts cancellation signals but still executes ZIP/zstd/SQLite work on the main thread. | Add typed lazy worker jobs, exact-stage reporting, cancellation and production-path evidence. |
-| HR-IMPORT-01B | Not started | Existing importer reports bundled audio as unsupported. | Add bounded durable audio assets, side-specific controls, editing and portability. |
-| HR-IMPORT-01C | Not started | Existing conversion uses template substitution and preserves unmapped fields as notes, but has no saved mapping step. | Add source-signature mapping presets, preview/remap and schema-change review. |
-| HR-COM-01 | Not started | Charter defines the separation but no capability-policy interface exists. | Add an allow-all development policy and exercise real entry points without restrictions. |
-| HR-PLAN-01 | Not started | Product brief has delivery checkpoints but no maintained capability matrix. | Extend that record with stable capability IDs, evidence, acceptance, dependencies and proposed commercial classification. |
+| HR-GOV-01 | Implemented; final gate pending | Charter is authoritative; root guidance links maintained records and applies proportional learning/UI/web+iOS+macOS/portability/entitlement and layout gates. Both repository skills validated and their checklists were exercised against changed flows. | Complete final regression/evidence reconciliation. |
+| HR-GOV-02 | Complete | Two native Codex delegates performed independent read-only import-integrity/security and UI/platform reviews. The lead fixed binary audio detection, side leakage, Worker lifecycle/path, mapping signature, nested control, 200% layout, entitlement and documentation findings. Shared schema/dependencies/integration stayed lead-owned. | No open important delegate finding; final suite remains lead-owned. |
+| HR-IMPORT-01A | Implemented; final gate pending | A typed lazy Worker owns the existing parser's ZIP/zstd/SQLite/WASM/conversion/media path, honest stages/counts, unique jobs, stale-result suppression, termination and a 45-second deadline. Production build emits `worker-UC4EKNLH.js`; Chromium/WebKit responsive cancellation tests pass. | Run the final combined suite and record generated fixture size. |
+| HR-IMPORT-01B | Implemented; final gate pending | Side-specific MP3/WAV refs, durable local assets, explicit accessible controls, editor replacement, lifecycle cleanup, schema-3 migration, ZIP/XLSX/full-backup recovery and real MP3 playback-event checks exist. | Complete full browser regression and document native listening/device gaps. |
+| HR-IMPORT-01C | Implemented; final gate pending | Compact mapping disclosure covers front/answer/pronunciation/meaning/notes/media. Named v1 presets use exact canonical field/template/cloze signatures and save atomically; unmatched schemas require review. Official fixtures preserve generated-card semantics and inert unmapped metadata. | Complete full regression and a changed-signature assertion. |
+| HR-COM-01 | Complete | Central stable capability IDs and allow-all `DevelopmentCapabilityPolicy` are exercised by Import and Design Studio. Isolated policy tests verify unavailable handling and unchanged learning state. It is labelled unverified development access and implements no payment or restriction. | Provider/purchase/restore/refund/offline choices remain future decisions. |
+| HR-PLAN-01 | Complete | The product brief now contains a category-spanning stable capability matrix with actual status, evidence/platform scope, acceptance, dependencies and explicitly proposed classifications; Anki import/export, HoloRecall exchange and full backup remain separate. | Keep it current; next recommended bounded milestone is search/organisation/scalable local media indexing. |
 
 ### Charter adoption handoff
 
@@ -22,6 +22,14 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - Delegation: two real read-only subagents are investigating import integrity and UI/platform acceptance. They cannot edit shared files; the lead owns integration and final evidence.
 - Checks: both new skills validated; `git diff --check` passed before the checkpoint. No application code or persisted schema changed in this batch.
 - Exact next action: implement the lead-owned compatible media/mapping schema and typed Worker boundary, then integrate audio and mapping through the existing parser/editor/renderer.
+
+### Import/audio/mapping implementation handoff
+
+- Branch/commit: `main` at `bbcc0e4` plus the uncommitted schema-3, Worker, audio, mapping, entitlement, fixture, format-v3 and documentation batch. Nothing is pushed or deployed.
+- Checks: focused unit/domain **37/37 passed**; production build passed at **794.16 kB initial / 180.30 kB estimated transfer** and emitted a distinct lazy Anki Worker; official-fixture mapping/audio passed **2/2** in Chromium/WebKit; 10,000-note responsive cancellation passed **2/2** in Chromium/WebKit. Full unit/browser regression remains next.
+- Persistence: migrations retain `migration-v1-original` or `migration-v2-original`; imported content remains atomic and content-only; mapping presets commit together. Reviews, FSRS state and rewards are unchanged by import/capability decisions.
+- Cross-platform: desktop Playwright WebKit is browser-engine evidence only. Native picker URI handling, durable media, audio interruption/listening quality, memory pressure, VoiceOver and iOS/macOS packaging remain untested.
+- Exact next action: add final signature-change/backup checks, run unit/build and full Chromium/WebKit/phone suites, capture import evidence, reconcile final status and restart the local server.
 
 ## Recovery snapshot
 

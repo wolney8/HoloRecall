@@ -1,8 +1,8 @@
-# HoloRecall deck-content format, version 2
+# HoloRecall deck-content format, version 3
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Download the [blank workbook](/downloads/holorecall-blank-v2.xlsx), [16-card Italian example](/downloads/holorecall-italian-v2.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v2.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 2 adds finish and reusable design-family fields; version 1 remains import-compatible.
+Download the [blank workbook](/downloads/holorecall-blank-v3.xlsx), [16-card Italian example](/downloads/holorecall-italian-v3.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v3.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 3 adds separate front/answer audio references. Versions 1 and 2 remain import-compatible.
 
 ## Workbook contract
 
@@ -16,7 +16,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 2
+format_version | 3
 content_only | true
 ```
 
@@ -39,7 +39,7 @@ deck_id | title | description | design_set_id | suspended
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio
 ```
 
 | Field | Meaning and validation |
@@ -60,6 +60,8 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `image_description` | Required for visual cards; maximum 1,000 characters. Describe visible shapes/actions without spelling out the Italian answer. |
 | `suspended` | `true` or `false`; blank means `false`. |
 | `finish` | Optional card-level override: `matte`, `metallic`, `holographic`, `prismatic`, `etched`, `starfield`, `crystal`, `gilded`, or `aurora`. |
+| `front_audio` | JSON array of up to eight `asset:` references. These controls are available before reveal. Blank means `[]`. |
+| `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
 
 ### Designs
 
@@ -75,7 +77,7 @@ design_set_id | name | background | frame | common_frame | uncommon_frame | rare
 asset_id | file | name | mime | width | height | credit | source | license
 ```
 
-Each asset row declares one raster media file. `asset_id`, `name`, `mime`, `width` and `height` are required. `file` is required for portable ZIPs and must be `media/<filename>.png`, `.jpg`, `.jpeg` or `.webp`; filenames use letters, digits, dots, underscores and hyphens. MIME must match the actual bytes: `image/png`, `image/jpeg` or `image/webp`. The browser decodes imported images and checks dimensions against the declared integer `width` and `height`, both 16–4096 pixels. Limit: 5 MiB per imported image (the interactive upload UI currently caps files at 4 MB). Optional attribution fields are at most 2,000 characters. Stored image bytes and IDs are durable; temporary object URLs are never saved.
+Each asset row declares one inert media file. `asset_id`, `name` and `mime` are required. `file` is required for portable ZIPs and must end in `.png`, `.jpg`, `.jpeg`, `.webp`, `.mp3` or `.wav`; filenames use letters, digits, dots, underscores and hyphens. MIME and signatures must match: `image/png`, `image/jpeg`, `image/webp`, `audio/mpeg` or `audio/wav`. Raster assets require integer `width` and `height` from 16–4096 pixels; audio leaves both cells blank. Limit: 5 MiB per asset. Optional attribution fields are at most 2,000 characters. Stored bytes and IDs are durable; temporary object URLs are never saved.
 
 ## Media portability
 
@@ -96,10 +98,10 @@ XLSX alone carries references only. Its `asset:` references must already exist i
 ```text
 deck.xlsx
 designs.json
-media/<asset filename>.png  (or .jpg/.jpeg/.webp)
+media/<asset filename>.png  (or .jpg/.jpeg/.webp/.mp3/.wav)
 ```
 
-`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. Do not add executable fields. All declared media must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Images are encoded once and reused by ID across decks/cards/designs. An asset ID collision with different bytes is an error: use a new ID for replacement art.
+`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. Do not add executable fields. All declared media must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Media is encoded once and reused by ID. An asset ID collision with different bytes is an error: use a new ID for replacement media.
 
 ## Preview and atomic updates
 

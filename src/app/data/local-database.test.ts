@@ -87,11 +87,11 @@ describe('v2 persistence migration and session recovery', () => {
     const reviewed = applyReview(state, { id: 'first', cardId: 'one', rating: 5, sessionId: 'session', now });
     const legacy = structuredClone(reviewed) as unknown as Record<string, unknown>;
     legacy['schemaVersion'] = 1;
-    for (const key of ['designs', 'assets', 'rewardEvents', 'rewardConfig', 'session']) delete legacy[key];
+    for (const key of ['designs', 'assets', 'rewardEvents', 'rewardConfig', 'session', 'ankiMappings']) delete legacy[key];
     const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 1); request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(legacy, 'snapshot'); transaction.oncomplete = () => resolve(); });
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(2);
+    expect(restored.schemaVersion).toBe(3);
     expect(restored.events).toEqual(legacy['events']);
     expect(restored.states).toEqual(legacy['states']);
     expect(restored.rewardEvents).toEqual([]);
@@ -99,6 +99,17 @@ describe('v2 persistence migration and session recovery', () => {
     expect(backup).toEqual(legacy);
     expect(await database.load(initial())).toEqual(restored);
     raw.close(); await database.close();
+  });
+  it('adds mapping storage to v2 snapshots and retains the exact pre-migration data', async () => {
+    const name = `test-${crypto.randomUUID()}`, database = new LocalDatabase(name);
+    const versionTwo = structuredClone(initial()) as unknown as Record<string, unknown>;
+    versionTwo['schemaVersion'] = 2; delete versionTwo['ankiMappings'];
+    const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 1); request.onupgradeneeded = () => request.result.createObjectStore('local-study'); request.onsuccess = () => resolve(request.result); });
+    await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(versionTwo, 'snapshot'); transaction.oncomplete = () => resolve(); });
+    const restored = await database.load(initial());
+    expect(restored.schemaVersion).toBe(3); expect(restored.ankiMappings).toEqual([]);
+    const backup = await new Promise<unknown>(resolve => { const request = raw.transaction('local-study').objectStore('local-study').get('migration-v2-original'); request.onsuccess = () => resolve(request.result); });
+    expect(backup).toEqual(versionTwo); raw.close(); await database.close();
   });
   it('persists uploaded image bytes and reveal state; advances and undoes the queue atomically', async () => {
     const name = `test-${crypto.randomUUID()}`;

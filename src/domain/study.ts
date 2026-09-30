@@ -21,14 +21,14 @@ export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'A
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     version: 0,
     userId: 'local-learner',
     decks: structuredClone(decks),
     cards: structuredClone(cards),
     states: {},
     events: [],
-    designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null,
+    designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null, ankiMappings: [],
     preferences: { effects: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };

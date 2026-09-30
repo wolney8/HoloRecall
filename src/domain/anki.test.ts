@@ -47,10 +47,17 @@ describe('Anki content-only import', () => {
     ['modern-anki21b', 'e2e/fixtures/anki-26.9.3-modern.apkg'],
   ] as const)('imports a real Anki 26.9.3 %s export', async (variant, path) => {
     const bytes = new Uint8Array(await readFile(path)); const analysis = await analyseAnkiPackage(bytes, path.split('/').at(-1)!);
-    expect(analysis.variant).toBe(variant); expect(analysis.sourceNotes).toBe(4); expect(analysis.generatedCards).toBe(6);
+    expect(analysis.variant).toBe(variant); expect(analysis.sourceNotes).toBe(5); expect(analysis.generatedCards).toBe(7);
     expect(analysis.cards.some(card => card.front.includes('città') && card.answer.includes('city'))).toBe(true);
     expect(analysis.cards.filter(card => card.notes.includes('Cloze'))).toHaveLength(2);
-    expect(analysis.assets).toHaveLength(1);
+    expect(analysis.assets).toHaveLength(2);
     expect(analysis.cards.some(card => card.kind === 'visual' && card.image?.startsWith('asset:') && card.answer.includes('la stella'))).toBe(true);
+    const audio = analysis.cards.find(card => card.answer.includes('buonasera'))!;
+    expect(audio.frontAudio).toHaveLength(1); expect(audio.backAudio).toHaveLength(1);
+    expect(analysis.assets.find(asset => asset.mime === 'audio/mpeg')?.dataUrl).toMatch(/^data:audio\/mpeg;base64,/);
+    const schema = analysis.modelSchemas.find(model => model.name === 'HoloRecall Custom Audio')!;
+    const mapped = await analyseAnkiPackage(bytes, path.split('/').at(-1)!, undefined, undefined, [{ id: 'custom-audio', version: 1, name: 'Italian audio', sourceSignature: schema.signature, modelName: schema.name, fields: { Prompt: 'front', Response: 'answer', Pronunciation: 'pronunciation', NaturalMeaning: 'meaning', Context: 'notes', QuestionSound: 'front-media', AnswerSound: 'back-media' } }]);
+    const mappedAudio = mapped.cards.find(card => card.answer === 'buonasera')!;
+    expect(mappedAudio.pronunciation).toBe('bwoh-nah-SEH-rah'); expect(mappedAudio.meaning).toBe('good evening'); expect(mappedAudio.notes).toContain('Used later in the day.');
   });
 });

@@ -9,12 +9,12 @@ export interface ImportPreview {
   newDecks: string[]; updatedDecks: string[]; duplicateDecks: string[];
   newDesigns: string[]; updatedDesigns: string[]; duplicateDesigns: string[];
 }
-export const FORMAT_VERSION = '2';
+export const FORMAT_VERSION = '3';
 export const EXCHANGE_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic'];
 export const HEADERS = {
   Metadata: ['key', 'value'],
   Decks: ['deck_id', 'title', 'description', 'design_set_id', 'suspended'],
-  Cards: ['card_id', 'deck_id', 'card_type', 'front_text', 'back_text', 'pronunciation', 'meaning', 'notes', 'tags', 'rarity', 'design_set_id', 'front_media', 'back_media', 'image_description', 'suspended', 'finish'],
+  Cards: ['card_id', 'deck_id', 'card_type', 'front_text', 'back_text', 'pronunciation', 'meaning', 'notes', 'tags', 'rarity', 'design_set_id', 'front_media', 'back_media', 'image_description', 'suspended', 'finish', 'front_audio', 'back_audio'],
   Designs: ['design_set_id', 'name', 'background', 'frame', 'common_frame', 'uncommon_frame', 'rare_frame', 'holo_rare_frame', 'ultra_rare_frame', 'secret_rare_frame', 'relic_frame', 'background_fit', 'background_position_x', 'background_position_y', 'frame_fit', 'credit', 'source', 'license', 'base_finish', 'rarity_finishes', 'layout', 'texture'],
   Assets: ['asset_id', 'file', 'name', 'mime', 'width', 'height', 'credit', 'source', 'license'],
 } as const;
@@ -23,6 +23,7 @@ const LEGACY_HEADERS = {
   Cards: HEADERS.Cards.slice(0, 15),
   Designs: HEADERS.Designs.slice(0, 18),
 } as const;
+const V2_HEADERS = { ...HEADERS, Cards: HEADERS.Cards.slice(0, 16) } as const;
 type SheetName = keyof typeof HEADERS;
 type Tables = Record<SheetName, string[][]>;
 export const MAX_FILE_BYTES = 30 * 1024 * 1024;
@@ -51,14 +52,14 @@ export function makePreview(bundle: ContentBundle, state: State, errors: string[
   return result;
 }
 
-function extension(asset: LocalAsset): string { return asset.mime === 'image/jpeg' ? 'jpg' : asset.mime === 'image/webp' ? 'webp' : 'png'; }
+function extension(asset: LocalAsset): string { return asset.mime === 'image/jpeg' ? 'jpg' : asset.mime === 'image/webp' ? 'webp' : asset.mime === 'audio/mpeg' ? 'mp3' : asset.mime === 'audio/wav' ? 'wav' : 'png'; }
 export function bundleTables(bundle: ContentBundle): Tables {
   return {
     Metadata: [['format_version', FORMAT_VERSION], ['content_only', 'true']],
     Decks: bundle.decks.map(deck => [deck.id, deck.name, deck.description, deck.designSetId ?? '', String(deck.suspended)]),
-    Cards: bundle.cards.map(card => [card.id, card.deckId, card.kind, card.front, card.answer, card.pronunciation, card.meaning, card.notes, JSON.stringify(card.tags), card.rarity ?? 'common', card.designSetId ?? '', card.image ?? '', card.backImage ?? '', card.imageDescription ?? '', String(card.suspended), card.finish ?? '']),
+    Cards: bundle.cards.map(card => [card.id, card.deckId, card.kind, card.front, card.answer, card.pronunciation, card.meaning, card.notes, JSON.stringify(card.tags), card.rarity ?? 'common', card.designSetId ?? '', card.image ?? '', card.backImage ?? '', card.imageDescription ?? '', String(card.suspended), card.finish ?? '', JSON.stringify(card.frontAudio ?? []), JSON.stringify(card.backAudio ?? [])]),
     Designs: bundle.designs.map(design => [design.id, design.name, design.background ?? '', design.frame ?? '', ...EXCHANGE_RARITIES.map(rarity => design.frames?.[rarity] ?? ''), design.backgroundFit, String(design.backgroundPositionX), String(design.backgroundPositionY), design.frameFit, design.credit, design.source, design.license, design.finish ?? '', design.finishes ? JSON.stringify(design.finishes) : '', design.layout ?? '', design.texture ?? '']),
-    Assets: bundle.assets.map(asset => [asset.id, `media/${asset.id}.${extension(asset)}`, asset.name, asset.mime, String(asset.width), String(asset.height), asset.credit ?? '', asset.source ?? '', asset.license ?? '']),
+    Assets: bundle.assets.map(asset => [asset.id, `media/${asset.id}.${extension(asset)}`, asset.name, asset.mime, asset.width === undefined ? '' : String(asset.width), asset.height === undefined ? '' : String(asset.height), asset.credit ?? '', asset.source ?? '', asset.license ?? '']),
   };
 }
 
@@ -132,9 +133,9 @@ async function readTables(bytes: Uint8Array): Promise<Tables> {
       });
       if (number === 1) {
         const actual = values.slice(0, sheet.columnCount);
-        const current = [...HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
+        const current = [...HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
         const matches = (expected: readonly string[]) => actual.slice(0, expected.length).every((value, index) => value === expected[index]) && actual.slice(expected.length).every(value => value === '');
-        if (!matches(current) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 or version-2 template.`);
+        if (!matches(current) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1, version-2 or version-3 template.`);
       }
       else if (values.some(value => value !== '')) rows.push(values);
     });
@@ -152,7 +153,7 @@ function validRef(ref: string | undefined, assets: Set<string>, label: string): 
 function duplicates(items: { id: string }[], name: string): void { const ids = new Set<string>(); for (const item of items) { if (ids.has(item.id)) throw new Error(`${name}: duplicate ID ${item.id} inside this file.`); ids.add(item.id); } }
 
 export function parseTables(tables: Tables, state: State, incomingAssets: LocalAsset[] = []): ContentBundle {
-  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 or 2) and content_only=true only.');
+  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1, 2 or 3) and content_only=true only.');
   const bundle = emptyBundle(); bundle.assets = incomingAssets;
   bundle.decks = tables.Decks.map(([deckId, title, description, designSetId, suspended]) => ({ id: id(deckId, 'Deck ID'), name: required(title, 'Deck title'), description, designSetId: optional(designSetId), suspended: bool(suspended, 'Deck suspended') }));
   bundle.designs = tables.Designs.map(row => {
@@ -166,20 +167,22 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
     if (!finishes || Array.isArray(finishes) || typeof finishes !== 'object') throw new Error(`Design ${designId}: rarity_finishes must be a JSON object.`);
     return { id: id(designId, 'Design ID'), name: required(name, 'Design name'), background: optional(background), frame: optional(frame), frames, backgroundFit: backgroundFit as 'cover' | 'contain', backgroundPositionX: boundedNumber(row[12], 50, 'Background X'), backgroundPositionY: boundedNumber(row[13], 50, 'Background Y'), frameFit: frameFit as 'cover' | 'contain', credit: row[15], source: row[16], license: row[17], ...(row[18] ? { finish: row[18] as DesignSet['finish'] } : {}), ...(Object.keys(finishes).length ? { finishes: finishes as DesignSet['finishes'] } : {}), ...(row[20] ? { layout: row[20] as DesignSet['layout'] } : {}), ...(row[21] ? { texture: row[21] } : {}) };
   });
-  bundle.cards = tables.Cards.map(([cardId, deckId, kind, front, answer, pronunciation, meaning, notes, tags, rarity, designSetId, image, backImage, imageDescription, suspended, finish]) => {
+  bundle.cards = tables.Cards.map(([cardId, deckId, kind, front, answer, pronunciation, meaning, notes, tags, rarity, designSetId, image, backImage, imageDescription, suspended, finish, frontAudioRaw, backAudioRaw]) => {
     if (kind !== 'text' && kind !== 'visual') throw new Error(`Card ${cardId}: card_type must be text or visual.`);
     if (!EXCHANGE_RARITIES.includes((rarity || 'common') as Rarity)) throw new Error(`Card ${cardId}: unknown rarity ${rarity}.`);
     let parsedTags: unknown; try { parsedTags = tags ? JSON.parse(tags) : []; } catch { throw new Error(`Card ${cardId}: tags must be a JSON array of strings.`); }
     if (!Array.isArray(parsedTags) || parsedTags.length > 30 || parsedTags.some(tag => typeof tag !== 'string' || !tag.trim() || tag.length > 100)) throw new Error(`Card ${cardId}: tags must be up to 30 nonempty strings of at most 100 characters.`);
     if (kind === 'visual' && (!image || !imageDescription)) throw new Error(`Card ${cardId}: visual cards need front_media and an answer-safe image_description.`);
     if (kind === 'text') required(front, `Card ${cardId} front_text`);
-    return { id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], revision: 1, suspended: bool(suspended, 'Card suspended') };
+    const parseAudio = (raw: string | undefined, label: string): string[] => { let value: unknown; try { value = raw ? JSON.parse(raw) : []; } catch { throw new Error(`Card ${cardId}: ${label} must be a JSON array of asset references.`); } if (!Array.isArray(value) || value.length > 8 || value.some(item => typeof item !== 'string')) throw new Error(`Card ${cardId}: ${label} must contain up to 8 media references.`); return value as string[]; };
+    const frontAudio = parseAudio(frontAudioRaw, 'front_audio'), backAudio = parseAudio(backAudioRaw, 'back_audio');
+    return { id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], ...(frontAudio.length ? { frontAudio } : {}), ...(backAudio.length ? { backAudio } : {}), revision: 1, suspended: bool(suspended, 'Card suspended') };
   });
   duplicates(bundle.decks, 'Decks'); duplicates(bundle.cards, 'Cards'); duplicates(bundle.designs, 'Designs'); duplicates(bundle.assets, 'Assets');
   bundle.decks.forEach(validateDeck); bundle.cards.forEach(validateCard); bundle.designs.forEach(validateDesign); bundle.assets.forEach(validateAsset);
   for (const asset of bundle.assets) {
     const existing = state.assets.find(item => item.id === asset.id);
-    if (existing && (existing.dataUrl !== asset.dataUrl || existing.mime !== asset.mime || existing.width !== asset.width || existing.height !== asset.height)) throw new Error(`Asset ${asset.id} already exists with different image bytes or dimensions. Assign a new asset ID and update its references.`);
+    if (existing && (existing.dataUrl !== asset.dataUrl || existing.mime !== asset.mime || existing.width !== asset.width || existing.height !== asset.height)) throw new Error(`Asset ${asset.id} already exists with different media bytes or metadata. Assign a new asset ID and update its references.`);
   }
   const assetIds = new Set([...state.assets, ...bundle.assets].map(asset => asset.id));
   const designIds = new Set([...state.designs, ...bundle.designs].map(design => design.id));
@@ -188,20 +191,21 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
     id(row[0], 'Asset ID');
     if (!assetIds.has(row[0])) throw new Error(`Asset ${row[0]} is not available. Import the portable ZIP containing its media, or first upload that asset locally.`);
     const asset = [...bundle.assets, ...state.assets].find(item => item.id === row[0])!;
-    if (row[3] !== asset.mime || Number(row[4]) !== asset.width || Number(row[5]) !== asset.height) throw new Error(`Asset ${row[0]} metadata does not match its media.`);
+    if (row[3] !== asset.mime || (asset.mime.startsWith('image/') && (Number(row[4]) !== asset.width || Number(row[5]) !== asset.height)) || (!asset.mime.startsWith('image/') && (row[4] || row[5]))) throw new Error(`Asset ${row[0]} metadata does not match its media.`);
   }
   if (new Set(tables.Assets.map(row => row[0])).size !== tables.Assets.length) throw new Error('Assets contains duplicate IDs.');
   for (const item of [...bundle.decks, ...bundle.cards]) if (item.designSetId && !designIds.has(item.designSetId)) throw new Error(`Missing design set ${item.designSetId}.`);
-  for (const card of bundle.cards) { if (!deckIds.has(card.deckId)) throw new Error(`Card ${card.id}: missing deck ${card.deckId}.`); validRef(card.image, assetIds, `Card ${card.id} front`); validRef(card.backImage, assetIds, `Card ${card.id} back`); }
+  for (const card of bundle.cards) { if (!deckIds.has(card.deckId)) throw new Error(`Card ${card.id}: missing deck ${card.deckId}.`); validRef(card.image, assetIds, `Card ${card.id} front`); validRef(card.backImage, assetIds, `Card ${card.id} back`); for (const ref of card.frontAudio ?? []) validRef(ref, assetIds, `Card ${card.id} front audio`); for (const ref of card.backAudio ?? []) validRef(ref, assetIds, `Card ${card.id} answer audio`); }
   for (const design of bundle.designs) for (const ref of [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})]) validRef(ref, assetIds, `Design ${design.id}`);
   return bundle;
 }
 
 function bytesBase64(bytes: Uint8Array): string { let raw = ''; for (let offset = 0; offset < bytes.length; offset += 8192) raw += String.fromCharCode(...bytes.subarray(offset, offset + 8192)); return btoa(raw); }
 function assetBytes(asset: LocalAsset): Uint8Array { const raw = atob(asset.dataUrl.split(',')[1] ?? ''); return Uint8Array.from(raw, char => char.charCodeAt(0)); }
-export function validateImageSignature(bytes: Uint8Array, mime: string): void {
-  const matches = mime === 'image/png' ? [137,80,78,71,13,10,26,10].every((value, index) => bytes[index] === value) : mime === 'image/jpeg' ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 : mime === 'image/webp' ? new TextDecoder().decode(bytes.subarray(0,4)) === 'RIFF' && new TextDecoder().decode(bytes.subarray(8,12)) === 'WEBP' : false;
-  if (!matches || bytes.length > MAX_ASSET_BYTES) throw new Error('Media must be a matching PNG, JPEG or WebP raster image of at most 5 MiB. Active SVG uploads are unsupported.');
+export function validateMediaSignature(bytes: Uint8Array, mime: string): void {
+  const text = (start:number,end:number)=>new TextDecoder().decode(bytes.subarray(start,end));
+  const matches = mime === 'image/png' ? [137,80,78,71,13,10,26,10].every((value, index) => bytes[index] === value) : mime === 'image/jpeg' ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 : mime === 'image/webp' ? text(0,4) === 'RIFF' && text(8,12) === 'WEBP' : mime === 'audio/mpeg' ? text(0,3) === 'ID3' || bytes[0] === 255 && (bytes[1]! & 0xe0) === 0xe0 : mime === 'audio/wav' ? text(0,4) === 'RIFF' && text(8,12) === 'WAVE' : false;
+  if (!matches || !bytes.length || bytes.length > MAX_ASSET_BYTES) throw new Error('Media must be a matching raster image (PNG, JPEG or WebP) or audio file (MP3 or WAV) of at most 5 MiB. Active SVG and executable uploads are unsupported.');
 }
 
 export async function readContentFile(bytes: Uint8Array, filename: string, state: State): Promise<ImportPreview> {
@@ -218,12 +222,12 @@ export async function readContentFile(bytes: Uint8Array, filename: string, state
       const permitted = new Set(['deck.xlsx', 'designs.json', ...tables.Assets.map(row => row[1])]);
       for (const entry of Object.values(zip.files)) if (!entry.dir && !permitted.has(entry.name)) throw new Error(`Unexpected ZIP file ${entry.name}. Only declared media, deck.xlsx and designs.json are allowed.`);
       for (const [assetId, path, name, mime, width, height, credit, source, license] of tables.Assets) {
-        id(assetId, 'Asset ID'); if (!/^media\/[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|webp)$/i.test(path)) throw new Error(`Unsafe media path ${path}.`);
+        id(assetId, 'Asset ID'); if (!/^media\/[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|webp|mp3|wav)$/i.test(path)) throw new Error(`Unsafe media path ${path}.`);
         const entry = zip.file(path); if (!entry) throw new Error(`Missing ZIP media file ${path}.`);
-        const data = await entry.async('uint8array'); validateImageSignature(data, mime);
-        incomingAssets.push({ id: assetId, name: required(name, 'Asset name'), mime: mime as LocalAsset['mime'], dataUrl: `data:${mime};base64,${bytesBase64(data)}`, width: boundedNumber(width, 0, 'Image width', 1, 8192), height: boundedNumber(height, 0, 'Image height', 1, 8192), credit, source, license });
+        const data = await entry.async('uint8array'); validateMediaSignature(data, mime); const image = mime.startsWith('image/');
+        incomingAssets.push({ id: assetId, name: required(name, 'Asset name'), mime: mime as LocalAsset['mime'], dataUrl: `data:${mime};base64,${bytesBase64(data)}`, ...(image ? { width: boundedNumber(width, 0, 'Image width', 1, 8192), height: boundedNumber(height, 0, 'Image height', 1, 8192) } : {}), credit, source, license });
       }
-    } else throw new Error('Choose a supported version-1/version-2 .xlsx workbook or portable .zip archive.');
+    } else throw new Error('Choose a supported version-1/version-2/version-3 .xlsx workbook or portable .zip archive.');
     const bundle = parseTables(tables, state, incomingAssets);
     if (jsonDesigns !== undefined && !sameContent(jsonDesigns, bundle.designs)) throw new Error('designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.');
     return makePreview(bundle, state);
@@ -249,7 +253,7 @@ export async function makePortableBundle(source: ContentBundle, rasterize: Raste
 export async function writePortableZip(bundle: ContentBundle): Promise<Uint8Array> {
   const { default: JSZip } = await import('jszip'); const zip = new JSZip();
   zip.file('deck.xlsx', await writeWorkbook(bundle)); zip.file('designs.json', JSON.stringify(bundle.designs, null, 2));
-  for (const asset of bundle.assets) { const bytes = assetBytes(asset); validateImageSignature(bytes, asset.mime); zip.file(`media/${asset.id}.${extension(asset)}`, bytes); }
+  for (const asset of bundle.assets) { const bytes = assetBytes(asset); validateMediaSignature(bytes, asset.mime); zip.file(`media/${asset.id}.${extension(asset)}`, bytes); }
   const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   // Never offer an archive that exceeds this prototype's own import boundary.
   inspectZip(bytes); return bytes;

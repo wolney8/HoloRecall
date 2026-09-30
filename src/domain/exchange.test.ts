@@ -11,12 +11,13 @@ import type { LocalAsset, State } from './models';
 const state = (): State => createInitialState(SEED_DECKS, SEED_CARDS);
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aamkAAAAASUVORK5CYII=';
 const asset: LocalAsset = { id: 'test-art', name: 'test.png', mime: 'image/png', dataUrl: `data:image/png;base64,${png}`, width: 1, height: 1, credit: 'Artist', source: '', license: 'Original' };
+const audioAsset: LocalAsset = { id: 'test-audio', name: 'test.mp3', mime: 'audio/mpeg', dataUrl: 'data:audio/mpeg;base64,SUQzBAAAAAA=', credit: 'Speaker', source: '', license: 'Original' };
 function sample(): ContentBundle {
   return {
     decks: [{ id: 'exchange-italian', name: 'Italiano: caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame' }],
-    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', designSetId: 'warm-frame', tags: ['caffè', 'Due parole'] }],
+    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', frontAudio: ['asset:test-audio'], backAudio: ['asset:test-audio'], designSetId: 'warm-frame', tags: ['caffè', 'Due parole'] }],
     designs: [{ id: 'warm-frame', name: 'Warm frame', background: 'asset:test-art', texture: 'asset:test-art', frames: { 'secret-rare': 'asset:test-art' }, finish: 'metallic', finishes: { 'secret-rare': 'starfield' }, layout: 'ornate', backgroundFit: 'cover', backgroundPositionX: 25, backgroundPositionY: 60, frameFit: 'contain', credit: 'Artist', source: 'Local', license: 'Original' }],
-    assets: [asset],
+    assets: [asset, audioAsset],
   };
 }
 
@@ -49,7 +50,7 @@ describe('versioned content exchange', () => {
   it('rejects missing workbook media while allowing already-local references', async () => {
     const bytes = await writeWorkbook(sample());
     expect((await readContentFile(bytes, 'deck.xlsx', state())).errors[0]).toContain('not available');
-    const local = state(); local.assets = [asset];
+    const local = state(); local.assets = [asset, audioAsset];
     expect((await readContentFile(bytes, 'deck.xlsx', local)).errors).toEqual([]);
   });
   it('rejects formula cells and defined names without executing them', async () => {

@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from '../../domain/models';
+import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from '../../domain/models';
 import { activeReviews, applyReview, createInitialState, dayKey, dueCards, undoLatestReview } from '../../domain/study';
-import { exportBackup, parseBackup, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
+import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
 import { LocalDatabase } from './local-database';
 import type { StudyPersistence } from './study-persistence';
@@ -153,6 +153,19 @@ export class LocalStudyStore {
     validateDesign(design);
     await this.change(data => ({ ...data, version: data.version + 1, designs: data.designs.some(item => item.id === design.id) ? data.designs.map(item => item.id === design.id ? structuredClone(design) : item) : [...data.designs, structuredClone(design)] }));
   }
+  async saveAnkiMapping(mapping: AnkiMappingPreset): Promise<void> {
+    await this.saveAnkiMappings([mapping]);
+  }
+  async saveAnkiMappings(mappings: AnkiMappingPreset[]): Promise<void> {
+    mappings.forEach(validateAnkiMapping);
+    if (new Set(mappings.map(mapping => mapping.id)).size !== mappings.length) throw new Error('Mapping preset IDs must be unique.');
+    await this.change(data => {
+      const replacements = new Map(mappings.map(mapping => [mapping.id, structuredClone(mapping)]));
+      const ankiMappings = data.ankiMappings.map(mapping => replacements.get(mapping.id) ?? mapping);
+      for (const mapping of replacements.values()) if (!data.ankiMappings.some(item => item.id === mapping.id)) ankiMappings.push(mapping);
+      return { ...data, version: data.version + 1, ankiMappings };
+    });
+  }
   async updateRewardConfig(patch: Partial<Record<Rarity, number>>): Promise<void> {
     await this.change(data => {
       const rewardConfig = { ...data.rewardConfig, ...patch };
@@ -170,7 +183,7 @@ export class LocalStudyStore {
       };
       for (const asset of bundle.assets) {
         const existing = data.assets.find(item => item.id === asset.id);
-        if (existing && (existing.dataUrl !== asset.dataUrl || existing.mime !== asset.mime || existing.width !== asset.width || existing.height !== asset.height)) throw new Error('An imported asset ID already has different artwork. Use a new asset ID.');
+        if (existing && (existing.dataUrl !== asset.dataUrl || existing.mime !== asset.mime || existing.width !== asset.width || existing.height !== asset.height)) throw new Error('An imported asset ID already has different artwork or audio. Use a new asset ID.');
       }
       const cards = bundle.cards.map(card => {
         const previous = data.cards.find(item => item.id === card.id);

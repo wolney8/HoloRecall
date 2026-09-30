@@ -44,8 +44,8 @@ export class LocalDatabase implements StudyPersistence {
           if (request.result === undefined) { validateState(initial); result = initial; store.add(initial, KEY); }
           else {
             result = migrateState(request.result, initial.cards);
-            if (request.result.schemaVersion === 1) {
-              store.add(request.result, 'migration-v1-original');
+            if (request.result.schemaVersion !== result.schemaVersion) {
+              store.add(request.result, `migration-v${request.result.schemaVersion}-original`);
               store.put(result, KEY);
             }
           }

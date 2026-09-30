@@ -11,6 +11,7 @@ import { RARITIES } from '../../domain/rewards';
 import type { DesignSet, FinishPreset, Rarity } from '../../domain/models';
 import { readArtwork } from '../upload';
 import { PageRevealDirective } from '../motion/page-reveal';
+import { CAPABILITY_POLICY } from '../platform/capability-policy';
 
 @Component({
   selector: 'hr-design-studio', standalone: true,
@@ -19,6 +20,8 @@ import { PageRevealDirective } from '../motion/page-reveal';
 })
 export class DesignStudioComponent {
   readonly store = inject(LocalStudyStore);
+  private readonly capabilityPolicy = inject(CAPABILITY_POLICY);
+  readonly authoringDecision = this.capabilityPolicy.decide('custom-design-authoring');
   readonly tiers = RARITIES;
   readonly finishes: { id: FinishPreset; label: string }[] = [
     { id: 'matte', label: 'Matte' }, { id: 'metallic', label: 'Soft metallic foil' }, { id: 'holographic', label: 'Directional holographic' },
@@ -47,6 +50,7 @@ export class DesignStudioComponent {
   }
   frameRef(): string | undefined { return this.editor.frames?.[this.rarity] || this.editor.frame; }
   async upload(event: Event, kind: 'background' | 'frame' | 'texture'): Promise<void> {
+    if (!this.authoringDecision.allowed) { this.notice.set(this.authoringDecision.reason ?? 'Custom design authoring is unavailable.'); return; }
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0]; if (!file) return;
     this.busy.set(true);
@@ -73,6 +77,7 @@ export class DesignStudioComponent {
   finishForPreview(): FinishPreset { return this.editor.finishes?.[this.rarity] ?? this.editor.finish ?? 'matte'; }
   setTierFinish(value: FinishPreset): void { this.editor.finishes = { ...this.editor.finishes, [this.rarity]: value }; this.editor = { ...this.editor }; }
   async save(assign = false): Promise<void> {
+    if (!this.authoringDecision.allowed) { this.notice.set(this.authoringDecision.reason ?? 'Custom design authoring is unavailable.'); return; }
     if (!this.editor.name.trim()) { this.notice.set('Give this design a name.'); return; }
     this.busy.set(true);
     try {

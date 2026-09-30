@@ -10,7 +10,7 @@ const fresh = () => createInitialState([{ id: 'it', name: 'My deck', description
 export const legacySnapshot = (state = fresh()): Record<string, unknown> => {
   const legacy = structuredClone(state) as unknown as Record<string, unknown>;
   legacy['schemaVersion'] = 1;
-  for (const key of ['assets', 'designs', 'rewardEvents', 'rewardConfig', 'session']) delete legacy[key];
+  for (const key of ['assets', 'designs', 'rewardEvents', 'rewardConfig', 'session', 'ankiMappings']) delete legacy[key];
   return legacy;
 };
 
@@ -40,16 +40,19 @@ describe('non-destructive v1 migration and backups', () => {
     state.cards[0] = { ...seed[0]!, image: '/art/caffe.svg' };
     expect(migrateState(legacySnapshot(state), seed).cards[0]!.image).toBe('/art/caffe.svg');
   });
-  it('restores a v1 backup and round-trips v2 uploaded assets, designs, and persisted session', () => {
+  it('restores a v1 backup and round-trips v3 uploaded media, designs, mappings, and persisted session', () => {
     const json = JSON.stringify({ format: 'holorecall-backup', version: 1, exportedAt: now.toISOString(), state: legacySnapshot() });
     const restored = parseBackup(json);
-    expect(restored.schemaVersion).toBe(2);
+    expect(restored.schemaVersion).toBe(3);
     const withBundledArt = parseBackup(json, [{ ...fresh().cards[0]!, image: '/art/mela.svg', imageDescription: 'A red fruit.' }]);
     expect(withBundledArt.cards[0]!.image).toBe('/art/mela.svg');
     const next = { ...restored, session: { id: 'session', queue: ['it-mela'], total: 1, completed: 0, revealed: true, activeMs: 1000 } } satisfies State;
     next.assets.push({ id: 'picture', name: 'apple.png', mime: 'image/png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=', width: 16, height: 16 });
+    next.assets.push({ id: 'voice', name: 'apple.mp3', mime: 'audio/mpeg', dataUrl: 'data:audio/mpeg;base64,SUQzBAAAAAA=' });
     next.designs.push({ id: 'set', name: 'My artwork', background: 'asset:picture', backgroundFit: 'cover', frameFit: 'contain', backgroundPositionX: 50, backgroundPositionY: 50, credit: 'Me', source: '', license: 'Original' });
     next.cards[0]!.designSetId = 'set';
+    next.cards[0]!.frontAudio = ['asset:voice']; next.cards[0]!.backAudio = ['asset:voice'];
+    next.ankiMappings.push({ id: 'map', version: 1, name: 'Custom Italian', sourceSignature: 'anki-model-v1-abcd', modelName: 'Custom', fields: { Term: 'front', Definition: 'answer' } });
     expect(parseBackup(exportBackup(next, now))).toEqual(next);
   });
   it('rejects unresolved uploaded assets, design references and active image sources', () => {

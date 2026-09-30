@@ -44,8 +44,23 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
         </article>
       </div>
     </div>
+    @if (audioRefs.length) {
+      <div class="audio-controls" [attr.aria-label]="displayedRevealed() ? 'Answer audio' : 'Front audio'" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+        @for (ref of audioRefs; track ref; let index = $index) {
+          <button type="button" class="audio-button" (click)="toggleAudio(ref,$event)" [attr.aria-label]="(playingAudio()===ref?'Pause ':'Play ')+(displayedRevealed()?'answer':'front')+' audio '+(index+1)"><span aria-hidden="true">{{playingAudio()===ref?'Ⅱ':'▶'}}</span><span>{{index+1}}</span></button>
+        }
+      </div>
+      @if(audioError()){<p class="audio-error" role="alert">{{audioError()}}</p>}
+    }
   `,
   styleUrl: './card.css',
+  styles: [`
+    :host{position:relative}
+    .audio-controls{position:absolute;z-index:5;left:50%;bottom:38px;transform:translateX(-50%);display:flex;gap:6px;max-width:calc(100% - 48px);flex-wrap:wrap;justify-content:center}
+    .audio-button{min-width:44px;min-height:44px;border:1px solid color-mix(in srgb,var(--mat-sys-outline) 55%,transparent);border-radius:999px;background:var(--mat-sys-surface-container-high);color:var(--mat-sys-on-surface);display:inline-flex;align-items:center;justify-content:center;gap:4px;font:600 12px/1 Roboto,Arial,sans-serif;box-shadow:0 3px 10px color-mix(in srgb,var(--mat-sys-shadow) 15%,transparent)}
+    .audio-button:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:2px}
+    .audio-error{position:absolute;z-index:6;left:20px;right:20px;bottom:84px;margin:0;padding:6px 8px;border-radius:8px;background:var(--mat-sys-error-container);color:var(--mat-sys-on-error-container);font-size:12px;text-align:start}
+  `],
 })
 export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input({ required: true }) card!: CardContent;
@@ -76,6 +91,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   readonly failedImage = signal(false);
   readonly failedBackground = signal(false);
   readonly failedFrame = signal(false);
+  readonly playingAudio = signal('');
+  readonly audioError = signal('');
   private observer?: IntersectionObserver;
   private preference?: MediaQueryList;
   private visible = false;
@@ -89,6 +106,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private readonly lifecycle = inject(AppLifecycle);
   private readonly store = inject(LocalStudyStore);
   private unsubscribeLifecycle?: () => void;
+  private audio?: HTMLAudioElement;
   private readonly motionChanged = () => { this.updateMotion(); this.settle(); };
 
   get shownRarity(): Rarity { return this.rarity ?? (this.treatment ? ({ matte: 'common', foil: 'uncommon', holo: 'holo-rare', relic: 'relic' } as const)[this.treatment] : this.card?.rarity ?? 'common'); }
@@ -105,11 +123,12 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get hasIllustrationReference(): boolean { return !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl))); }
   get illustrationMissing(): boolean { return (this.hasIllustrationReference || this.card?.kind === 'visual') && (!this.illustration || this.failedImage()); }
   get missingDesignAsset(): boolean { return this.failedBackground() || this.failedFrame() || !!(this.design?.background && !this.backgroundUrl) || !!((this.design?.frames?.[this.shownRarity] || this.design?.frame) && !this.frameUrl); }
+  get audioRefs(): string[] { return this.displayedRevealed() ? this.card?.backAudio ?? [] : this.card?.frontAudio ?? []; }
 
   ngAfterViewInit(): void {
     this.preference = matchMedia('(prefers-reduced-motion: reduce)');
     this.preference.addEventListener('change', this.motionChanged);
-    this.unsubscribeLifecycle = this.lifecycle.subscribe(active => { this.updateMotion(); if (!active) this.settle(); });
+    this.unsubscribeLifecycle = this.lifecycle.subscribe(active => { this.updateMotion(); if (!active) { this.settle(); this.stopAudio(); } });
     this.observer = new IntersectionObserver(entries => { this.visible = !!entries[0]?.isIntersecting; this.updateMotion(); }, { threshold: 0.1 });
     if (this.motion) this.observer.observe(this.motion.nativeElement);
     if (this.copy) {
@@ -124,6 +143,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['revealed']?.firstChange || changes['card']) this.displayedRevealed.set(this.revealed);
     if (changes['revealed'] || (changes['card'] && changes['card'].previousValue?.id !== this.card.id)) {
+      this.stopAudio();
       queueMicrotask(() => { if (this.copy) this.copy.nativeElement.scrollTo({ top: 0, left: 0, behavior: 'instant' }); });
     }
     if (changes['card'] || changes['imageUrl'] || changes['backImageUrl'] || changes['revealed']) this.failedImage.set(false);
@@ -174,7 +194,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.flipped.emit(!this.revealed);
   }
   keyFlip(event: KeyboardEvent): void {
-    if (!this.flippable || (event.key !== 'Enter' && event.key !== ' ')) return;
+    if (!this.flippable || (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="region"]') || (event.key !== 'Enter' && event.key !== ' ')) return;
     event.preventDefault();
     this.flipped.emit(!this.revealed);
   }
@@ -209,6 +229,17 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.dragDistance = 0;
     if (this.suppressFlipClick) setTimeout(() => { this.suppressFlipClick = false; }, 0);
   }
+  async toggleAudio(ref: string, event: Event): Promise<void> {
+    event.stopPropagation(); this.audioError.set('');
+    if (this.playingAudio() === ref) { this.stopAudio(); return; }
+    this.stopAudio(); const url = this.store.mediaUrl(ref); if (!url) { this.audioError.set('Audio file unavailable. Reimport or replace this clip.'); return; }
+    const audio = new Audio(url); this.audio = audio;
+    audio.addEventListener('playing', () => { if (this.audio === audio) this.playingAudio.set(ref); }, { once: true });
+    audio.addEventListener('ended', () => { if (this.audio === audio) this.stopAudio(); }, { once: true });
+    audio.addEventListener('error', () => { if (this.audio === audio) { this.stopAudio(); this.audioError.set('This audio could not be played.'); } }, { once: true });
+    try { await audio.play(); } catch { if (this.audio === audio) { this.stopAudio(); this.audioError.set('Playback was blocked or the audio could not be decoded.'); } }
+  }
+  private stopAudio(): void { if (this.audio) { this.audio.pause(); this.audio.currentTime = 0; this.audio.src = ''; this.audio.load(); } this.audio = undefined; this.playingAudio.set(''); }
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
     this.observer?.disconnect();
@@ -217,5 +248,6 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.preference?.removeEventListener('change', this.motionChanged);
     this.unsubscribeLifecycle?.();
     this.animations.forEach(animation => animation.cancel());
+    this.stopAudio();
   }
 }

@@ -23,6 +23,19 @@ function createStore(data: State) {
 const bundleFor = (data: State): ContentImport => ({ decks: structuredClone(data.decks), cards: structuredClone(data.cards), assets: [], designs: [] });
 
 describe('atomic content imports and persistent sessions', () => {
+  it('saves custom Anki mapping presets in one validated state change', async () => {
+    const store = createStore(fixture());
+    await store.saveAnkiMappings([
+      { id: 'mapping-a', version: 1, name: 'Vocabulary', sourceSignature: 'anki-model-v1-a1', modelName: 'Custom', fields: { Prompt: 'front', Reply: 'answer' } },
+      { id: 'mapping-b', version: 1, name: 'Audio', sourceSignature: 'anki-model-v1-b2', modelName: 'Custom audio', fields: { Sound: 'front-media' } },
+    ]);
+    expect(store.data()!.version).toBe(1); expect(store.data()!.ankiMappings).toHaveLength(2);
+    const before = structuredClone(store.data());
+    await expect(store.saveAnkiMappings([
+      { id: 'mapping-a', version: 1, name: '', sourceSignature: 'anki-model-v1-a1', modelName: 'Custom', fields: { Prompt: 'front' } },
+    ])).rejects.toThrow('invalid Anki mapping');
+    expect(store.data()).toEqual(before);
+  });
   it('updates content revisions while preserving review history, scheduling, and reward events', async () => {
     const reviewed = applyReview(fixture(), { id: 'review', cardId: 'card', sessionId: 'session', rating: 4, now: new Date('2026-09-28T12:00:00Z') });
     const store = createStore(reviewed), bundle = bundleFor(reviewed);

@@ -60,6 +60,34 @@ Provide documented JSON export/restore before substantial real study, including 
 
 Analytics must distinguish review counts, self-reported recall success, model retrievability and a defined mastery criterion. Include sample size and time window; a confidence average is not measured retention. Provide accessible chart summaries and only add a chart library for actual data needs. Synthetic histories belong in labelled development previews, never real analytics.
 
+## Capability roadmap matrix
+
+Commercial labels below are proposals for product planning, not enforced policy or verified ownership. Data recovery, learning integrity and accessible study remain independent of future entitlement decisions. Anki behavior is scoped against the official [packaged deck](https://docs.ankiweb.net/importing/packaged-decks.html), [media](https://docs.ankiweb.net/media.html) and [template field](https://docs.ankiweb.net/templates/fields.html) documentation.
+
+| Stable ID | Category / intended behaviour | Actual status and platform evidence | Acceptance criteria | Dependencies | Proposed classification |
+| --- | --- | --- | --- | --- | --- |
+| HR-CAP-AUTH-01 | Basic, image-first and reversible card/deck authoring | Complete for local web; Chromium/WebKit create/edit/duplicate/draft checks | Structured fields, preview, validation, no history changes | Current renderer and IndexedDB | Core/free |
+| HR-CAP-AUTH-02 | Rich reusable templates without executing imported code | Partial: safe Anki template subset and field mappings; no HoloRecall template editor | Versioned safe template model, conditional/reverse/cloze coverage, migration tests | Schema/design review | Undecided |
+| HR-CAP-MEDIA-01 | Durable image and explicit side-specific audio | Complete for local web; raster plus MP3/WAV reload/backup/portable evidence | Accessible playback/editing, bounded bytes, lifecycle cleanup, native provider | Native media storage later | Core/free |
+| HR-CAP-ORG-01 | Decks, subdeck identity, tags, suspend and bulk presentation edits | Partial: decks/tags/suspend and bulk rarity/design/finish exist; imported subdeck names retained | Hierarchy browsing and bulk content actions preserve history | Search/index design | Core/free |
+| HR-CAP-ORG-02 | Search, filters and saved organisation views | Not started | Fast accessible search over content/tags/status with stable selections | Index/query boundary | Proposed full-license candidate; undecided |
+| HR-CAP-STUDY-01 | Five-point UI with real FSRS scheduling | Complete for local web; domain plus Chromium/WebKit persistence/dedup/undo evidence | Mapping/version/state/history invariants and interruption recovery | Native durable storage for apps | Core/free |
+| HR-CAP-STUDY-02 | Study limits and configuration | Partial: daily new/review limits and timezone exist; no deck-option parity claim | Per-deck/global rules with queue tests and clear precedence | Product configuration decisions | Core/free baseline; advanced undecided |
+| HR-CAP-HISTORY-01 | Reconstructable reviews, session summaries and undo | Complete for local web; persisted immutable/reversal events | Filters/export and correction semantics remain auditable | Current event model | Safety baseline/core |
+| HR-CAP-STAT-01 | Honest progress and report metrics | Complete for current local metrics; no Anki-statistics parity claim | Defined sample/time windows, accessibility, practice/undo exclusions | More real usage evidence | Core/free baseline; advanced undecided |
+| HR-CAP-IMPORT-ANKI-01 | Content-only `.apkg` import | Complete for documented subset; real Anki 26.9.3 legacy/modern fixtures in domain and both browser engines | Compatibility matrix, Worker cancellation, mapping/audio/reimport/security tests | Ongoing format fixtures | Core portability |
+| HR-CAP-EXPORT-ANKI-01 | Export back to `.apkg` | Not started and separate from import | Defined supported loss model and genuine Anki reopen evidence | Format/product decision | Undecided |
+| HR-CAP-EXCHANGE-01 | HoloRecall XLSX and portable ZIP deck exchange | Complete format v3; v1/v2 remain readable; unit/browser round trips | Atomic preview/apply, literal cells, bundled advertised media, no history grants | Current exchange boundary | Core portability |
+| HR-CAP-BACKUP-01 | Full learner JSON backup and safe restore | Complete locally with schema 1–3 migration and media/mapping/reward history | Recovery drill, nonempty-profile protection and native read-back | Native store later | Safety baseline/core |
+| HR-CAP-COLLECT-01 | Seven rarities, designs, finishes and earned cosmetics | Complete for local web scope; both engines cover renderer/rewards | Content/rarity/finish/earned/scheduling stay separate | Physical performance testing | Ordinary collection core; advanced studio proposed full-license candidate |
+| HR-CAP-CONT-WEB-01 | Responsive local web application | Complete for loaded-page local prototype in Chromium/WebKit; cold offline start unsupported | Supported-browser matrix, recovery/export, release accessibility review | Hosting/release approval later | Core/free |
+| HR-CAP-CONT-IOS-01 | Packaged iOS application with native durability/files | Pending; browser WebKit and phone viewports are readiness evidence only | Authorized shell, storage/files/lifecycle adapters, simulator and device tests | Capacitor decision, Xcode/signing | Proposed full licence/app access; undecided |
+| HR-CAP-CONT-MAC-01 | Supported macOS application | Architecture decision unresolved; Mac browser evidence only | Choose browser/PWA/native shell and verify keyboard, files, purchases and supported OS | Product/distribution decision | Proposed full licence/app access; undecided |
+| HR-CAP-SYNC-01 | Authenticated multi-device continuity | Not started | Owned API, outbox/idempotency, conflicts, deletion/media recovery and offline visibility | Auth/API/Neon/object storage decisions | Commercial/cloud allowance proposed; undecided |
+| HR-CAP-ENT-01 | Central product-access policy | Foundation complete: allow-all unverified development policy used by Import and Design Studio | Provider-neutral verified adapter, restore/refund/offline/account conflict design before enforcement | Purchase model and account decision | No restrictions in prototype |
+
+The recommended next bounded milestone is **search, organisation and scalable local media indexing**. It gives learners immediate control over larger imported collections, addresses the current snapshot/media scaling limit before native storage work, and supplies the query/media boundaries needed by both iOS and any later sync design. It depends on agreeing search/filter behavior and a non-destructive IndexedDB migration; it does not require cloud, payment or native provisioning.
+
 ## Delivery checkpoints
 
 1. Isolated checkout and concise project documentation.

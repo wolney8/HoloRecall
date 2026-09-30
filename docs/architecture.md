@@ -1,5 +1,15 @@
 # Architecture
 
+## Decision 005: background package conversion and non-enforcing capabilities
+
+Anki package analysis runs in one lazy module Worker through a typed job protocol. The existing domain parser remains the only conversion implementation: archive inspection, bounded zstd expansion, SQLite/WASM queries, template conversion and media indexing all execute in the Worker. The UI receives named stages and completed/total counts where a real total exists; it never invents percentages. Each request has a unique ID and 45-second deadline. A new request, navigation or Cancel terminates the prior Worker, and stale replies are ignored. Worker startup/runtime failure is a safe visible failure with no main-thread parser fallback. Applying the already-previewed content remains a separate atomic IndexedDB transaction.
+
+The packaged SQL WASM URL resolves from `document.baseURI`, so production subpaths do not depend on a development-server path. `sql.js` 1.14.2 and `fzstd` 0.1.1 remain pinned MIT dependencies with notices under `public/licenses`. The Worker is lazy, although Angular currently emits separate lazy JSZip/ExcelJS/SQLite module chunks for the main and worker dependency graphs; that duplication does not enter the initial bundle and is a future size optimization.
+
+Schema 3 adds side-specific arrays of stable audio asset references and versioned Anki mapping presets. MP3 and WAV bytes use the same durable `asset:` identity, validation, atomic import, portable ZIP and full-backup contracts as raster media. Playback is explicit, never exposes answer audio before reveal, and stops on card changes, navigation or backgrounding. Mapping presets are keyed by a canonical signature of field names, template names/content and cloze type; a changed schema requires review. Template rows and cloze ordinals remain distinct cards, while unmapped fields stay inert metadata.
+
+`CapabilityPolicy` is the sole application-facing product-access seam. Stable capability IDs are distinct from authored rarity, finish, earned cosmetics, scheduling and user content. The current `DevelopmentCapabilityPolicy` explicitly allows existing features and identifies itself as unverified development access; it is not evidence of purchase ownership. Import and Design Studio exercise this seam without adding a paywall or restriction. Future adapters must define verified ownership, account linking, restore, refund/revocation and offline behavior before any commercial enforcement. Learning backup/export remains available independently and contains no entitlement proof.
+
 ## Decision 004: cross-platform seams without premature native scaffolding
 
 Every meaningful change now considers both the web application and a future Capacitor iOS runtime; the maintained evidence and native gaps live in `docs/ios-readiness.md`. Browser-engine testing is not native verification.

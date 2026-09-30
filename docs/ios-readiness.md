@@ -1,6 +1,6 @@
-# iOS readiness
+# Apple-platform readiness
 
-This is the maintained cross-platform evidence matrix. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS simulator or a physical iPhone was tested.
+This retains the project's iOS-readiness history and adds macOS explicitly. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS simulator, a native iPhone app or a native macOS app was tested.
 
 ## Current toolchain constraints
 
@@ -19,9 +19,21 @@ This is the maintained cross-platform evidence matrix. “WebKit verified” mea
 | Layout/input/a11y | Safe-area owners, visual-viewport focused-field recovery, touch sizes, semantic controls and text zoom | Desktop/390 px and keyboard checks pass | Compact/large portrait, landscape and 200% text checks pass | VoiceOver, Dynamic Type, software keyboard and real safe areas | Not tested | Not tested |
 | Content/media storage | Stable `asset:` IDs, bounded raster bytes, ImageBitmap/Image decode paths and atomic snapshot | Upload/reload/backup pass | Design upload/reload, all illustrations and ZIP media decode pass | SQLite records plus Filesystem media; crash-safe coordinated migration | Not tested | Not tested |
 | XLSX/ZIP exchange | Platform-neutral package generation; `FileDelivery` handles web download; atomic preview/apply | Round trips, download and formula rejection pass | XLSX/ZIP round trips, download, media and formula rejection pass | Document picker/security-scoped URI handling, temporary files, share sheet and cancellation | Not tested | Not tested |
-| Anki package import | Lazy local ZIP/zstd/SQLite parser, bounded inert conversion and atomic content apply | Genuine Anki 26.9.3 legacy/modern packages cover Basic, reversed, cloze and bundled image media; browser apply/reload passes | The content apply/reload journey passes in desktop WebKit; genuine package parsing is domain-tested in the same JavaScript runtime | Native document URI/cancellation and memory-pressure profiling; audio, custom field mapping and Worker gaps remain in the compatibility matrix | Not tested | Not tested |
+| Anki package import | Lazy typed Worker runs bounded ZIP/zstd/SQLite conversion, reviewed custom mappings, PNG and side-specific MP3/WAV; atomic content-only apply | Genuine Anki 26.9.3 legacy/modern packages cover Basic, reversed, cloze, custom fields, PNG/MP3, mapping, playback event, reload and cancellation | The same Worker/mapping/audio journey and 10,000-card cancellation check pass in desktop Playwright WebKit | Native document URI/cancellation, media playback and memory-pressure profiling | Not tested | Not tested |
 | Offline | Bundled font, UI and demonstration art; loaded-page study works offline | Active loaded-page recovery passes | Active loaded-page review/reload passes | Packaged assets should cold-start offline after native build verification | Not tested | Not tested |
 | Themes | Local early-paint preference plus IndexedDB preference | Light/Dark/System persistence passes | System/explicit themes and reduced motion pass | Status/splash bars and native appearance integration | Not tested | Not tested |
+
+## macOS readiness matrix
+
+| Area | Current evidence | Native macOS implementation / decision still needed |
+| --- | --- | --- |
+| Browser application | Angular application and Playwright Chromium/WebKit execute on macOS arm64; keyboard, responsive layout and local file inputs are browser evidence | Define supported Safari/macOS versions and complete release accessibility testing |
+| Desktop packaging | None. A Mac browser session is not a packaged macOS application | Decide browser/PWA versus Catalyst/Capacitor/another maintained shell before generating one |
+| Storage and recovery | IndexedDB, content ZIP and full JSON backup work in tested browsers | Select durable sandbox storage, coordinated media migration, backup location and crash recovery for any native shell |
+| Files and sharing | Browser picker/download through `FileDelivery`; package bytes remain platform-neutral | Native open/save panels, security-scoped URLs, cancellation, temporary-file cleanup and share behavior |
+| Lifecycle/audio/motion | Visibility lifecycle and explicit audio cleanup pass in browser engines | Verify native window/background behavior, media session/audio interruptions and resource pressure |
+| Accessibility/input | Semantic controls, keyboard, touch targets, reflow and reduced motion are browser-tested | VoiceOver, Full Keyboard Access, macOS text/contrast settings, pointer/trackpad and window resizing |
+| Purchases/licensing | Only an allow-all, unverified development capability policy exists | Decide Mac distribution and purchase restoration/account linking; no provider or entitlement proof exists |
 
 ## Native durability proposal
 
