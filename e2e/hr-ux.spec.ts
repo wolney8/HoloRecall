@@ -67,7 +67,7 @@ test('HR-UX-05 and 06 completed results persist and focused Study stays quiet', 
   await expect(page.locator('.deck-shadow.next')).toBeHidden();
   await page.waitForTimeout(1100);
   await page.getByRole('button', { name: /Reveal answer/ }).click();
-  await page.getByRole('button', { name: /4 Confident/ }).click();
+  await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible();
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.getByText('1 review · 1 unique card', { exact: true })).toBeVisible();

@@ -49,7 +49,7 @@ export async function snapshot(page: Page): Promise<State> {
 export async function confidentReview(page: Page): Promise<void> {
   await page.getByRole('button', { name: /Reveal answer/ }).click();
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /4 Confident Correct and confident Good/ }).click();
+  await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.locator('.session-bar')).toContainText('1 / 10');
 }
 export async function expectNoOverflow(page: Page): Promise<void> {

@@ -10,7 +10,7 @@ test('visual reveal, five-point rating and FSRS state survive a reload', async (
   await expect(flashcard.locator('img')).toHaveAttribute('src', '/art/limone.svg');
   await expect(flashcard.getByText('il limone', { exact: true })).toHaveCount(0);
   await expect(flashcard.locator('img')).not.toHaveAttribute('alt', /lemon|limone/i);
-  await expect(page.getByRole('button', { name: /4 Confident/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /4 Good Confident/ })).toHaveCount(0);
 
   await confidentReview(page);
   await expect(page.locator('.session-bar')).toContainText('1 / 10');

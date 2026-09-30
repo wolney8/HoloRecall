@@ -32,6 +32,8 @@ Active time advances only while Study is visible, focused and recently interacte
 
 The shared renderer uses one face surface and two sequential Web Animations phases totaling 760 ms. It swaps semantic/content state while edge-on, avoiding mirrored text and face bleed while preserving the controlled Angular state. Reduced motion bypasses both phases. Layer order is explicit: background/illustration/text-panel surfaces, whole-face effect overlay, rarity frame, then readable text/focus content. Overlays are pointer-inert. Card tilt wraps those internal layers and never changes queue order.
 
+Review submission owns a finite visual handoff after the atomic save: retain the rated card, play confidence acknowledgement, deal the next persisted queue item, then release the interaction lock. Backgrounding, navigation and motion-preference settlement resolve the owned sequence without replaying the review. The Study timer is paused while the transaction/presentation lock is active, so visual timing does not inflate recall or active-study metrics.
+
 ## Decision 001: a local web milestone first
 
 Recorded 28 September 2026 as the bootstrap architecture decision. Build one strict TypeScript, standalone Angular application, with shared domain modules and persistence behind an adapter. Use Tailwind and scoped CSS. Keep the future API boundary in `api/`; no API, authentication or cloud sync is implemented for this milestone.

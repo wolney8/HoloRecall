@@ -11,6 +11,14 @@ export const SCHEDULER_PARAMETERS = generatorParameters({
   enable_short_term: true,
 });
 
+export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'Again' | 'Hard' | 'Good' | 'Easy'; label: string; help: string }> = [
+  { rating: 1, grade: 'Again', label: 'Forgot', help: 'Incorrect or needed the answer.' },
+  { rating: 2, grade: 'Hard', label: 'With effort', help: 'Correct, but with substantial effort.' },
+  { rating: 3, grade: 'Good', label: 'Some hesitation', help: 'Correct, with some hesitation.' },
+  { rating: 4, grade: 'Good', label: 'Confident', help: 'Correct and confident.' },
+  { rating: 5, grade: 'Easy', label: 'Effortless', help: 'Correct immediately and effortlessly.' },
+];
+
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
     schemaVersion: 2,

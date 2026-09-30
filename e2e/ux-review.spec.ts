@@ -32,7 +32,7 @@ for (const size of [{ name: 'desktop', width: 1280, height: 820 }, { name: 'mobi
       expect(Math.abs(measured!.height - before!.height)).toBeLessThanOrEqual(.5);
     }
     expect(scrollAfter).toEqual(scrollBefore);
-    const revealStyle = await page.getByRole('button', { name: /1 Forgot/ }).evaluate(node => ({ overflow: document.documentElement.scrollWidth <= innerWidth, stageWidth: (node.closest('.study-controls') as HTMLElement).offsetWidth }));
+    const revealStyle = await page.getByRole('button', { name: /1 Again Forgot/ }).evaluate(node => ({ overflow: document.documentElement.scrollWidth <= innerWidth, stageWidth: (node.closest('.study-controls') as HTMLElement).offsetWidth }));
     expect(revealStyle.overflow).toBe(true);
     expect(revealStyle.stageWidth).toBeGreaterThan(250);
   });
@@ -83,7 +83,7 @@ test('HR-UX-09 rapid and failed review attempts do not duplicate feedback or rev
         transaction.onerror = () => reject(transaction.error);
       };
     }));
-    await page.getByRole('button', { name: /4 Confident/ }).dblclick();
+    await page.getByRole('button', { name: /4 Good Confident/ }).dblclick();
     await expect(page.locator('.error-banner')).toBeVisible();
     await expect(page.locator('.confidence-feedback')).toHaveCount(0);
     expect((await snapshot(page)).events).toEqual([]);
@@ -106,7 +106,7 @@ test('HR-UX-10 and 11 intro, scroll progress, zero glow, Skip and Replay are rea
   expect(Math.abs(during!.y - before!.y)).toBeLessThanOrEqual(.5);
   expect(Math.abs(during!.width - before!.width)).toBeLessThanOrEqual(.5);
   expect(Math.abs(during!.height - before!.height)).toBeLessThanOrEqual(.5);
-  await page.getByRole('button', { name: /1 Forgot/ }).click();
+  await page.getByRole('button', { name: /1 Again Forgot/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible();
   await page.waitForTimeout(80);
   const headingAnimation = await page.locator('.results-heading h1').evaluate(node => node.getAnimations()[0]?.currentTime);
@@ -159,7 +159,7 @@ test('HR-UX-10 positive cosmetic gain visibly grows from its real starting balan
   const during = await stage.boundingBox();
   expect(Math.abs(during!.y - before!.y)).toBeLessThanOrEqual(.5);
   await page.waitForTimeout(650);
-  await page.getByRole('button', { name: /4 Confident/ }).click();
+  await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.locator('.confidence-feedback[data-rating="4"]')).toBeVisible();
   const progress = page.locator('[data-result-section="cosmetics"]');
   await expect(progress).toHaveClass(/motion-waiting/);
@@ -179,7 +179,7 @@ test('HR-UX-11 reduced motion is static and never offers a misleading Skip contr
   await setNewLimit(page, 1);
   await page.getByRole('button', { name: /Start studying/ }).click();
   await page.getByRole('button', { name: /Reveal answer/ }).click();
-  await page.getByRole('button', { name: /1 Forgot/ }).click();
+  await page.getByRole('button', { name: /1 Again Forgot/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Skip animation' })).toHaveCount(0);
   await expect(page.locator('.confidence-feedback')).toHaveCount(0);
