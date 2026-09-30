@@ -2,7 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LocalStudyStore } from '../data/study-store';
-import { downloadBlob } from '../upload';
+import { decodeRaster } from '../upload';
+import { FILE_DELIVERY } from '../platform/file-delivery';
 import type { ImportPreview } from '../../domain/exchange';
 
 @Component({
@@ -45,6 +46,7 @@ import type { ImportPreview } from '../../domain/exchange';
 })
 export class ExchangeComponent {
   readonly store = inject(LocalStudyStore);
+  private readonly fileDelivery = inject(FILE_DELIVERY);
   readonly preview = signal<ImportPreview | null>(null);
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
 
@@ -61,10 +63,10 @@ export class ExchangeComponent {
       // A byte signature is insufficient to establish an image is decodable. Verify every ZIP image before enabling Apply.
       if (!preview.errors.length) for (const asset of preview.bundle.assets) {
         const blob = await (await fetch(asset.dataUrl)).blob();
-        let bitmap: ImageBitmap;
-        try { bitmap = await createImageBitmap(blob); } catch { throw new Error(`Image ${asset.name} cannot be decoded.`); }
-        const matches = bitmap.width === asset.width && bitmap.height === asset.height && bitmap.width >= 16 && bitmap.height >= 16 && bitmap.width <= 4096 && bitmap.height <= 4096;
-        bitmap.close(); if (!matches) throw new Error(`Image ${asset.name}: dimensions must match its metadata and be 16–4096 pixels.`);
+        let dimensions: { width: number; height: number };
+        try { dimensions = await decodeRaster(blob); } catch { throw new Error(`Image ${asset.name} cannot be decoded.`); }
+        const matches = dimensions.width === asset.width && dimensions.height === asset.height && dimensions.width >= 16 && dimensions.height >= 16 && dimensions.width <= 4096 && dimensions.height <= 4096;
+        if (!matches) throw new Error(`Image ${asset.name}: dimensions must match its metadata and be 16–4096 pixels.`);
       }
       this.preview.set(preview);
     } catch (error) { this.failure.set(this.errorMessage(error)); }
@@ -88,8 +90,8 @@ export class ExchangeComponent {
       if (portable) bundle = await makePortableBundle(bundle, rasterizeBundled);
       const bytes = portable ? await writePortableZip(bundle) : await writeWorkbook(bundle);
       const blob = new Blob([bytes.slice().buffer], { type: portable ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      downloadBlob(blob, `holorecall-content-v1.${portable ? 'zip' : 'xlsx'}`);
-      this.message.set(portable ? 'Portable ZIP downloaded with media and design definitions. No learning history is included.' : 'Workbook downloaded. Uploaded image references require the portable ZIP when shared with another browser.');
+      await this.fileDelivery.deliver(blob, `holorecall-content-v1.${portable ? 'zip' : 'xlsx'}`);
+      this.message.set(portable ? 'Portable ZIP download requested with media and design definitions. No learning history is included.' : 'Workbook download requested. Uploaded image references require the portable ZIP when shared with another browser.');
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }
   }

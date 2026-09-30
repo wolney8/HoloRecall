@@ -1,6 +1,7 @@
 import type { State } from '../../domain/models';
 import { migrateState } from '../../domain/migrations';
 import { validateState } from '../../domain/backup';
+import type { StudyPersistence } from './study-persistence';
 
 const STORE = 'local-study';
 const KEY = 'snapshot';
@@ -9,7 +10,7 @@ export class StaleStateError extends Error {
 }
 
 /** One atomic read/compare/write transaction prevents reviews being partially saved. */
-export class LocalDatabase {
+export class LocalDatabase implements StudyPersistence {
   private connection?: Promise<IDBDatabase>;
   constructor(private readonly name = 'holorecall-local-v1') {}
 

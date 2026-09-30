@@ -19,7 +19,9 @@ import { DesignStudioComponent } from './design-studio/design-studio';
 import { CollectionComponent } from './collection/collection';
 import { ProgressComponent } from './progress/progress';
 import { ExchangeComponent } from './exchange/exchange';
-import { downloadBlob, readArtwork } from './upload';
+import { readArtwork } from './upload';
+import { AppLifecycle, VisualViewportCoordinator } from './platform/app-lifecycle';
+import { FILE_DELIVERY } from './platform/file-delivery';
 
 type Screen = 'dashboard' | 'library' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 @Component({
@@ -30,6 +32,9 @@ type Screen = 'dashboard' | 'library' | 'study' | 'results' | 'collection' | 'st
 export class AppComponent {
   readonly store=inject(LocalStudyStore);
   readonly theme=inject(ThemeService);
+  readonly lifecycle=inject(AppLifecycle);
+  private readonly viewportCoordinator=inject(VisualViewportCoordinator);
+  private readonly fileDelivery=inject(FILE_DELIVERY);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
   readonly now=signal(new Date());
@@ -92,16 +97,16 @@ export class AppComponent {
       if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}
     });
     const activity=()=>{this.lastActivity=performance.now();};
-    const visibility=()=>{if(document.hidden)void this.checkpoint();else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}};
+    const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();this.clearResultMotion();window.clearTimeout(this.confidenceTimer);this.confidenceFeedback.set(null);}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
     const timer=setInterval(()=>{
       const tick=performance.now();
-      if(this.screen()==='study'&&this.current()&&!document.hidden&&document.hasFocus()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min(120_000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
+      if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min(120_000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
       this.lastTick=tick;
       if(++this.ticks%5===0)void this.checkpoint();
       if(this.ticks%30===0)this.now.set(new Date());
     },1000);
-    document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);document.addEventListener('visibilitychange',visibility);
-    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearResultMotion();window.clearTimeout(this.confidenceTimer);document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);document.removeEventListener('visibilitychange',visibility);});
+    document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);
+    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearResultMotion();window.clearTimeout(this.confidenceTimer);document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1);return ['dashboard','library','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
@@ -161,6 +166,6 @@ export class AppComponent {
   async toggleEffects():Promise<void>{try{await this.store.updatePreferences({effects:!this.data()?.preferences.effects});}catch(e){this.message.set(String(e));}}
   async saveSettings():Promise<void>{try{await this.store.updatePreferences(this.settings);this.message.set('Study settings saved.');}catch(e){this.message.set(String(e));}}
   async saveRewards():Promise<void>{try{await this.store.updateRewardConfig(this.rewardSettings);this.message.set('Unlock thresholds saved. Existing earned cosmetics are preserved; changes apply on future qualifying reviews.');}catch(e){this.message.set(String(e));}}
-  export():void{downloadBlob(new Blob([this.store.exportJson()],{type:'application/json'}),`holorecall-export-${dayKey(new Date(),this.timeZone())}.json`);this.message.set('Full backup downloaded, including uploaded artwork and progress.');}
+  async export():Promise<void>{try{await this.fileDelivery.deliver(new Blob([this.store.exportJson()],{type:'application/json'}),`holorecall-export-${dayKey(new Date(),this.timeZone())}.json`);this.message.set('Full backup download requested, including uploaded artwork and progress.');}catch(e){this.fail(e);}}
   async restore(event:Event):Promise<void>{const input=event.target as HTMLInputElement;const file=input.files?.[0];if(!file)return;try{if(file.size>100_000_000)throw new Error('Backup is larger than the 100 MB local limit.');await this.store.restoreJson(await file.text());this.message.set('Backup restored.');}catch(e){this.message.set(String(e));}finally{input.value='';}}
 }

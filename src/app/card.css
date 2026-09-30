@@ -2,7 +2,7 @@
 
 .illustration-layer.no-illustration + .card-copy{flex:1 1 auto}.card-heading,.card-copy,footer{min-width:0}.card-motion:not(.motion-enabled){transform:none}
 
-.card-motion.drag-enabled{touch-action:pan-y}
+.card-motion.drag-enabled{touch-action:pan-y pinch-zoom}
 
 .card-copy{flex-shrink:1;max-height:48%;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}.card-copy[tabindex="0"]{justify-content:flex-start}.card-copy:focus-visible{outline:2px solid var(--mat-sys-primary);outline-offset:-2px}.illustration-layer.no-illustration + .card-copy{max-height:none}.scroll-hint{font-size:9px;letter-spacing:0;color:var(--card-muted)}
 

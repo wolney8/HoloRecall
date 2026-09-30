@@ -4,6 +4,7 @@ import { activeReviews, applyReview, createInitialState, dayKey, dueCards, undoL
 import { exportBackup, parseBackup, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
 import { LocalDatabase } from './local-database';
+import type { StudyPersistence } from './study-persistence';
 
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
@@ -11,7 +12,7 @@ export class LocalStudyStore {
   readonly error = signal('');
   readonly cards = computed(() => this.data()?.cards ?? []);
   readonly decks = computed(() => this.data()?.decks ?? []);
-  private readonly database = new LocalDatabase();
+  private readonly database: StudyPersistence = new LocalDatabase();
   private saving = false;
   private pendingChange: Promise<void> = Promise.resolve();
 

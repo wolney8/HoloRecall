@@ -1,6 +1,7 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
 import type { CardContent, DesignSet, Rarity } from '../domain/models';
 import { RARITIES } from '../domain/rewards';
+import { AppLifecycle } from './platform/app-lifecycle';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -83,7 +84,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private suppressFlipClick = false;
   private pointerStart?: { x: number; y: number };
   private flipSequence = 0;
-  private readonly visibilityChanged = () => { this.updateMotion(); if (document.hidden) this.settle(); };
+  private readonly lifecycle = inject(AppLifecycle);
+  private unsubscribeLifecycle?: () => void;
   private readonly motionChanged = () => { this.updateMotion(); this.settle(); };
 
   get shownRarity(): Rarity { return this.rarity ?? (this.treatment ? ({ matte: 'common', foil: 'uncommon', holo: 'holo-rare', relic: 'relic' } as const)[this.treatment] : this.card?.rarity ?? 'common'); }
@@ -101,7 +103,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngAfterViewInit(): void {
     this.preference = matchMedia('(prefers-reduced-motion: reduce)');
     this.preference.addEventListener('change', this.motionChanged);
-    document.addEventListener('visibilitychange', this.visibilityChanged);
+    this.unsubscribeLifecycle = this.lifecycle.subscribe(active => { this.updateMotion(); if (!active) this.settle(); });
     this.observer = new IntersectionObserver(entries => { this.visible = !!entries[0]?.isIntersecting; this.updateMotion(); }, { threshold: 0.1 });
     if (this.motion) this.observer.observe(this.motion.nativeElement);
     if (this.copy) {
@@ -127,7 +129,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     } else if (changes['revealed'] && !changes['revealed'].firstChange) queueMicrotask(() => void this.animateFlip(this.revealed));
   }
   private updateMotion(): void {
-    const enabled = this.effects && this.visible && !document.hidden && !this.preference?.matches;
+    const enabled = this.effects && this.visible && this.lifecycle.active() && !this.preference?.matches;
     this.animated.set(enabled);
     if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.settle(); }
   }
@@ -207,7 +209,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.copyResize?.disconnect();
     this.copyMutation?.disconnect();
     this.preference?.removeEventListener('change', this.motionChanged);
-    document.removeEventListener('visibilitychange', this.visibilityChanged);
+    this.unsubscribeLifecycle?.();
     this.animations.forEach(animation => animation.cancel());
   }
 }

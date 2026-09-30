@@ -34,10 +34,10 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
 | --- | --- | --- | --- |
 | HR-IOS-01 | In progress | Playwright 1.63.0 is pinned; repository-local Chromium is installed and WebKit 26.6 build 2359 has been installed for the new gate. | Configure shared WebKit projects, adapt genuine engine differences and run the critical/full suites without skips. |
-| HR-IOS-02 | In progress | Existing mobile Chromium checks cover 390 px Light/Dark screens, 48 px Study action and stable reveal. | Add safe-area layout, compact/large/landscape WebKit checks, 200% text and focused-field viewport-resize coverage. |
-| HR-IOS-03 | In progress | FSRS, rewards, reports and XLSX/ZIP schemas are browser-independent; IndexedDB is already isolated in `LocalDatabase`. | Add only lifecycle, persistence typing and generated-file delivery seams; test web implementations. |
-| HR-IOS-04 | In progress | Atomic compare-and-swap reviews, reward events, session checkpoints, migrations, reload and stale-save failures already pass. | Route activity/inactivity through a replaceable lifecycle boundary and verify interruption/cleanup behavior. |
-| HR-IOS-05 | In progress | Core font/art assets are bundled; imports are bounded to 30 MiB and raster uploads to 4 MiB/4096 px; active-page offline review passes. | Exercise WebKit decoding/exchange/effects and document native picker/share/URI/cancellation requirements. |
+| HR-IOS-02 | In progress | Safe-area env values now have one owner per edge, `viewport-fit=cover` is enabled, touch controls retain 44/48 px targets, mobile form text is 16 px, and a visual-viewport coordinator keeps a keyboard-obscured focused editor control visible. | Run compact/large/landscape WebKit checks, 200% text and focused-field viewport-resize coverage. |
+| HR-IOS-03 | In progress | FSRS, rewards, reports and XLSX/ZIP schemas remain browser-independent. `StudyPersistence`, `AppLifecycle` and `FileDelivery` are narrow boundaries; web IndexedDB and download implementations retain current behavior. | Exercise package/download behavior in both engines; native implementations remain deliberately absent. |
+| HR-IOS-04 | In progress | Atomic review persistence remains unchanged. A shared lifecycle source now pauses timing/motion on visibility or page lifecycle transitions, refreshes on resume and owns listener cleanup. Build and 65 domain/unit tests pass. | Verify interruption, accepted-review recovery, no duplication and repeated-entry cleanup in browser tests. |
+| HR-IOS-05 | In progress | Core font/art assets are bundled; bounded media validation now has an `Image` decode fallback when `createImageBitmap` is unavailable, and temporary decode/download URLs are revoked. | Exercise WebKit decoding/exchange/effects and the loaded-page offline case. |
 | HR-IOS-06 | In progress | `docs/ios-readiness.md` is the maintained evidence matrix; no native claims are inferred from browser tests. | Reconcile actual Chromium/WebKit results and native gaps after implementation. |
 
 ### HR-UX-07–11 diagnosed causes
@@ -70,3 +70,11 @@ This remains one local learner in browser IndexedDB. There is no authentication,
 - Current batch: invariant Study stage/control reserve, compact reveal action, five confidence effects, scroll-run results presentation, accurate progress animation, zero glow, Skip/Replay lifecycle, targeted tests and documentation.
 - Outstanding product limitations are listed above; there are no known blockers for local review.
 - Exact next action: inspect the local application at `http://127.0.0.1:4200/`; future cloud/iOS work remains a separate milestone.
+
+### iOS-readiness batch 1
+
+- Branch/commit: `main`; standing requirements/evidence baseline committed at `5837123`; platform-seam changes are the next checkpoint.
+- Changes: safe-area/visual-viewport handling, shared web lifecycle, persistence typing, generated-file delivery port, WebKit-safe raster decoder fallback and cleanup. No schema, seed, scheduling, reward or stored-data migration changed.
+- Checks: production build passes at 722.59 kB initial; all 65 unit/domain tests pass; `git diff --check` passes.
+- Cross-platform note: the web adapters use standard browser APIs and retain explicit future Capacitor integration points. Keyboard behavior, WebKit layout, page interruption and browser downloads remain pending browser evidence; simulator/physical-device behavior is untested.
+- Exact next action: configure the shared Playwright WebKit gate and run the critical journeys, phone layouts and interruption checks.
