@@ -9,8 +9,9 @@ import { buildReport } from '../../domain/reports';
 import { dayKey } from '../../domain/study';
 import { RARITIES } from '../../domain/rewards';
 import type { Rarity } from '../../domain/models';
+import { PageRevealDirective } from '../motion/page-reveal';
 
-@Component({selector:'hr-progress',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule],templateUrl:'./progress.html'})
+@Component({selector:'hr-progress',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective],templateUrl:'./progress.html'})
 export class ProgressComponent {
   readonly Math=Math;
   readonly store=inject(LocalStudyStore);

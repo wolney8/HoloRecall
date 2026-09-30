@@ -10,10 +10,11 @@ import { FlashcardComponent } from '../card';
 import { RARITIES } from '../../domain/rewards';
 import type { DesignSet, Rarity } from '../../domain/models';
 import { readArtwork } from '../upload';
+import { PageRevealDirective } from '../motion/page-reveal';
 
 @Component({
   selector: 'hr-design-studio', standalone: true,
-  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonToggleModule, FlashcardComponent],
+  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonToggleModule, FlashcardComponent, PageRevealDirective],
   templateUrl: './design-studio.html',
 })
 export class DesignStudioComponent {

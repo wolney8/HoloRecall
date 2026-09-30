@@ -1,6 +1,6 @@
-<div class="page-heading"><div><p class="eyebrow">REUSABLE CARD DESIGNS</p><h1>Design Studio</h1><p>Create a base design, then add optional frames for each rarity.</p></div><button mat-flat-button (click)="choose('')">＋ New design</button></div>
+<div class="page-heading" hrReveal><div><p class="eyebrow">REUSABLE CARD DESIGNS</p><h1>Design Studio</h1><p>Create a base design, then add optional frames for each rarity.</p></div><button mat-flat-button (click)="choose('')">＋ New design</button></div>
 <div class="studio-layout">
-  <section class="panel studio-editor" aria-label="Design editor">
+  <section class="panel studio-editor" aria-label="Design editor" hrReveal>
     <mat-form-field appearance="outline"><mat-label>Saved design</mat-label><mat-select [ngModel]="selected()" (ngModelChange)="choose($event)"><mat-option value="">New design</mat-option>@for(design of store.data()!.designs;track design.id){<mat-option [value]="design.id">{{design.name}}</mat-option>}</mat-select></mat-form-field>
     <mat-form-field appearance="outline"><mat-label>Design name</mat-label><input matInput [(ngModel)]="editor.name" maxlength="100" required></mat-form-field>
     <div class="section-heading"><h2>Background</h2><button mat-button (click)="remove('background')" [disabled]="!editor.background">Use default</button></div>
@@ -17,7 +17,7 @@
     <div class="actions"><button mat-flat-button (click)="save()" [disabled]="busy()">Save design</button><span class="hint">Changes update every deck using this design.</span></div>
     <div class="assign-design"><h2>Assign to a deck</h2><mat-form-field appearance="outline"><mat-label>Deck</mat-label><mat-select [(ngModel)]="deckId">@for(deck of store.data()!.decks;track deck.id){<mat-option [value]="deck.id">{{deck.name}}</mat-option>}</mat-select></mat-form-field><button mat-stroked-button (click)="save(true)" [disabled]="!deckId || busy()">Save and assign</button><p class="hint">Individual card designs can override the deck in the card editor. Learning content and progress stay unchanged.</p></div>
   </section>
-  <section class="studio-preview panel" [attr.data-preview-theme]="previewTheme" aria-label="Live design preview">
+  <section class="studio-preview panel" [attr.data-preview-theme]="previewTheme" aria-label="Live design preview" hrReveal [hrRevealDelay]="55">
     <div class="section-heading"><h2>Live preview</h2><span class="status-chip">Preview · not earned</span></div>
     <div class="form-grid"><mat-form-field appearance="outline"><mat-label>Preview card</mat-label><mat-select [(ngModel)]="cardId">@for(card of cards();track card.id){<mat-option [value]="card.id">{{card.answer}}</mat-option>}</mat-select></mat-form-field><mat-form-field appearance="outline"><mat-label>Preview rarity</mat-label><mat-select [(ngModel)]="rarity">@for(tier of tiers;track tier.id){<mat-option [value]="tier.id">{{tier.symbol}} {{tier.label}}</mat-option>}</mat-select></mat-form-field></div>
     <div class="preview-controls"><mat-button-toggle-group aria-label="Preview theme" [(ngModel)]="previewTheme"><mat-button-toggle value="light">Light</mat-button-toggle><mat-button-toggle value="dark">Dark</mat-button-toggle></mat-button-toggle-group><button mat-stroked-button (click)="revealed=!revealed">{{revealed ? 'Show front' : 'Show back'}}</button></div>

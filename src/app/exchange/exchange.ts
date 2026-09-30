@@ -5,20 +5,21 @@ import { LocalStudyStore } from '../data/study-store';
 import { decodeRaster } from '../upload';
 import { FILE_DELIVERY } from '../platform/file-delivery';
 import type { ImportPreview } from '../../domain/exchange';
+import { PageRevealDirective } from '../motion/page-reveal';
 
 @Component({
   selector: 'hr-exchange', standalone: true,
-  imports: [MatButtonModule, MatProgressSpinnerModule],
+  imports: [MatButtonModule, MatProgressSpinnerModule, PageRevealDirective],
   template: `
-    <div class="exchange-heading"><div><p class="eyebrow">CONTENT EXCHANGE</p><h1>Import & export</h1><p>Share decks and designs. Your study history stays in this browser.</p></div><span class="version">Format v1</span></div>
+    <div class="exchange-heading" hrReveal><div><p class="eyebrow">CONTENT EXCHANGE</p><h1>Import & export</h1><p>Share decks and designs. Your study history stays in this browser.</p></div><span class="version">Format v1</span></div>
     <div class="exchange-grid">
-      <section class="exchange-panel"><h2>Download</h2><p>Start from a workbook or export your current content.</p>
+      <section class="exchange-panel" hrReveal><h2>Download</h2><p>Start from a workbook or export your current content.</p>
         <div class="download-links"><a mat-stroked-button href="/downloads/holorecall-blank-v1.xlsx" download>Blank workbook</a><a mat-stroked-button href="/downloads/holorecall-italian-v1.xlsx" download>Italian example</a><a mat-stroked-button href="/downloads/holorecall-italian-v1.zip" download>Portable example ZIP</a></div>
         <div class="export-actions"><button mat-flat-button (click)="export(false)" [disabled]="!!busy()">Export current XLSX</button><button mat-stroked-button (click)="export(true)" [disabled]="!!busy()">Export portable ZIP</button></div>
         <dl><dt>XLSX</dt><dd>Structured deck content, design settings and media references. Image files are not embedded.</dd><dt>Portable ZIP</dt><dd>The workbook, raster media files and design definitions. Bundled illustrations are converted to PNG.</dd></dl>
         <p class="help">For another AI: <a href="/downloads/deck-generation-prompt.md" download>generation prompt</a> · <a href="/downloads/deck-format.md" download>exact format specification</a>.</p>
       </section>
-      <section class="exchange-panel"><h2>Import content</h2><p>Select a version-1 workbook or portable ZIP, inspect its changes, then apply.</p>
+      <section class="exchange-panel" hrReveal [hrRevealDelay]="55"><h2>Import content</h2><p>Select a version-1 workbook or portable ZIP, inspect its changes, then apply.</p>
         <label class="file-label" for="content-import">Workbook or portable archive</label><input id="content-import" type="file" accept=".xlsx,.zip" (change)="selectFile($event)" [disabled]="!!busy()" />
         <p class="help">Up to 30 MiB compressed. Formula cells, embedded worksheet images, SVG uploads and external media URLs are rejected. Image-only cards require an answer-safe image description.</p>
         <p class="help">A deck import never grants cosmetics or imports reviews. Stable IDs update matching content; missing rows never delete existing cards.</p>
@@ -28,7 +29,7 @@ import type { ImportPreview } from '../../domain/exchange';
     @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
     @if (failure()) { <p class="failure" role="alert">{{ failure() }}</p> }
     @if (preview(); as item) {
-      <section class="exchange-panel preview" aria-label="Import preview"><div class="preview-heading"><h2>Import preview</h2><span>{{ filename() }}</span></div>
+      <section class="exchange-panel preview" aria-label="Import preview" hrReveal><div class="preview-heading"><h2>Import preview</h2><span>{{ filename() }}</span></div>
         @if (item.errors.length) { <div class="failure" role="alert"><h3>Import blocked</h3><ul>@for (error of item.errors; track $index) { <li>{{ error }}</li> }</ul><p>Nothing has been changed. Correct the file and select it again.</p></div> }
         @else {
           <div class="preview-counts"><div><strong>{{ item.newCards.length }}</strong><span>New cards</span></div><div><strong>{{ item.updatedCards.length }}</strong><span>Card updates</span></div><div><strong>{{ item.duplicateCards.length }}</strong><span>Unchanged cards</span></div><div><strong>0</strong><span>Errors</span></div></div>

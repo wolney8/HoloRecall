@@ -22,11 +22,12 @@ import { ExchangeComponent } from './exchange/exchange';
 import { readArtwork } from './upload';
 import { AppLifecycle, VisualViewportCoordinator } from './platform/app-lifecycle';
 import { FILE_DELIVERY } from './platform/file-delivery';
+import { PageRevealDirective, ViewportRevealService } from './motion/page-reveal';
 
 type Screen = 'dashboard' | 'library' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 @Component({
   selector:'app-root', standalone:true,
-  imports:[CommonModule,FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatSlideToggleModule,MatProgressBarModule,MatCheckboxModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent],
+  imports:[CommonModule,FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatSlideToggleModule,MatProgressBarModule,MatCheckboxModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -35,6 +36,7 @@ export class AppComponent {
   readonly lifecycle=inject(AppLifecycle);
   private readonly viewportCoordinator=inject(VisualViewportCoordinator);
   private readonly fileDelivery=inject(FILE_DELIVERY);
+  private readonly viewportReveal=inject(ViewportRevealService);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
   readonly now=signal(new Date());
@@ -83,7 +85,7 @@ export class AppComponent {
   private timedCard='';
   private settingsLoaded=false;
   private resultSessionKey='';
-  private resultObserver?:IntersectionObserver;
+  private resultUnobserve:(()=>void)[]=[];
   private resultTimers:number[]=[];
   private confidenceTimer=0;
   constructor(){
@@ -143,8 +145,7 @@ export class AppComponent {
   private observeResultSections():void{
     const sections=this.renderedResultSections();if(this.screen()!=='results')return;if(!sections.length){this.resultTimers.push(window.setTimeout(()=>this.observeResultSections(),50));return;}
     if(this.resultsSkipped()||!this.motionEnabled())return;
-    this.resultObserver=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting&&entry.intersectionRatio>=.22){this.resultObserver?.unobserve(entry.target);this.activateResultSection(entry.target as HTMLElement);}}, {root:null,threshold:[.22]});
-    for(const section of sections)this.resultObserver.observe(section);
+    for(const section of sections)this.resultUnobserve.push(this.viewportReveal.observe(section,()=>this.activateResultSection(section)));
   }
   private renderedResultSections():HTMLElement[]{return Array.from(document.querySelectorAll<HTMLElement>('.results [data-result-section]'));}
   private activateResultSection(section:HTMLElement):void{
@@ -152,7 +153,7 @@ export class AppComponent {
     this.resultSectionStates.update(states=>({...states,[key]:'active'}));this.activeResultSections.update(value=>value+1);
     this.resultTimers.push(window.setTimeout(()=>{this.resultSectionStates.update(states=>({...states,[key]:'settled'}));this.activeResultSections.update(value=>Math.max(0,value-1));},1450));
   }
-  private clearResultMotion():void{this.resultObserver?.disconnect();this.resultObserver=undefined;for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
+  private clearResultMotion():void{for(const unobserve of this.resultUnobserve)unobserve();this.resultUnobserve=[];for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
   private showConfidenceFeedback(rating:1|2|3|4|5):void{if(!this.motionEnabled())return;window.clearTimeout(this.confidenceTimer);this.confidenceFeedback.set(null);requestAnimationFrame(()=>{this.confidenceFeedback.set(rating);this.confidenceTimer=window.setTimeout(()=>this.confidenceFeedback.set(null),760);});}
   duration(ms:number):string{const seconds=Math.round(ms/1000);if(ms>0&&seconds===0)return'<1s';return seconds>=60?`${Math.floor(seconds/60)}m ${seconds%60}s`:`${seconds}s`;}
   private fail(error:unknown):void{this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}

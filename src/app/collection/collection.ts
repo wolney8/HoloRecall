@@ -5,15 +5,16 @@ import { FlashcardComponent } from '../card';
 import { LocalStudyStore } from '../data/study-store';
 import type { CardContent, Rarity } from '../../domain/models';
 import { RARITIES, rewardProgress } from '../../domain/rewards';
+import { PageRevealDirective } from '../motion/page-reveal';
 
 @Component({
   selector: 'hr-collection',
   standalone: true,
-  imports: [FlashcardComponent, MatButtonModule, MatProgressBarModule],
+  imports: [FlashcardComponent, MatButtonModule, MatProgressBarModule, PageRevealDirective],
   template: `
-    <div class="collection-heading"><h1>Collection</h1><p>Inspect your cards, authored rarities and earned cosmetics.</p></div>
+    <div class="collection-heading" hrReveal><h1>Collection</h1><p>Inspect your cards, authored rarities and earned cosmetics.</p></div>
     @if (selected(); as card) {
-      <section class="showcase" aria-labelledby="inspection-title">
+      <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
           <hr-card [card]="card" [dragTilt]="true" [flippable]="true" (flipped)="revealed.set($event)" [revealed]="revealed()" [rarity]="displayRarity()" [demo]="isPreview()" [effects]="store.data()?.preferences?.effects ?? true" [design]="store.designFor(card)" [imageUrl]="store.mediaUrl(card.image)" [backImageUrl]="store.mediaUrl(card.backImage || card.image)" [backgroundUrl]="store.mediaUrl(store.designFor(card)?.background)" [frameUrl]="store.mediaUrl(store.designFor(card)?.frames?.[displayRarity()] || store.designFor(card)?.frame)"/>
         </div>
@@ -32,10 +33,10 @@ import { RARITIES, rewardProgress } from '../../domain/rewards';
         </div>
       </section>
     }
-    <section class="owned-section" aria-labelledby="cards-title"><div class="section-title"><h2 id="cards-title">Your cards</h2><span>{{ store.cards().length }} cards · {{ earnedCount() }} authored cosmetics earned</span></div>
-      <div class="collection-grid">@for (card of store.cards(); track card.id) { <button class="collection-item" [class.selected]="selectedId() === card.id && !sampleTier()" (click)="inspect(card)" [attr.aria-label]="'Inspect ' + card.answer"><span class="thumbnail">@if (store.mediaUrl(card.image)) {<img [src]="store.mediaUrl(card.image)" alt="" loading="lazy">}@else {<span aria-hidden="true">▧</span>}</span><span class="item-copy"><strong>{{ card.answer }}</strong><span>{{ tierSymbol(card.rarity || 'common') }} {{ tierName(card.rarity || 'common') }}</span><small>{{ progress(card).earned ? 'Earned' : progress(card).days + '/' + progress(card).required + ' qualifying days' }}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button> }</div>
+    <section class="owned-section" aria-labelledby="cards-title"><div class="section-title" hrReveal><h2 id="cards-title">Your cards</h2><span>{{ store.cards().length }} cards · {{ earnedCount() }} authored cosmetics earned</span></div>
+      <div class="collection-grid">@for (card of store.cards(); track card.id; let index = $index) { <button class="collection-item" hrReveal [hrRevealDelay]="index * 45" [class.selected]="selectedId() === card.id && !sampleTier()" (click)="inspect(card)" [attr.aria-label]="'Inspect ' + card.answer"><span class="thumbnail">@if (store.mediaUrl(card.image)) {<img [src]="store.mediaUrl(card.image)" alt="" loading="lazy">}@else {<span aria-hidden="true">▧</span>}</span><span class="item-copy"><strong>{{ card.answer }}</strong><span>{{ tierSymbol(card.rarity || 'common') }} {{ tierName(card.rarity || 'common') }}</span><small>{{ progress(card).earned ? 'Earned' : progress(card).days + '/' + progress(card).required + ' qualifying days' }}</small></span><span class="inspect-arrow" aria-hidden="true">↗</span></button> }</div>
     </section>
-    <section class="sample-section" aria-labelledby="samples-title"><div class="section-title"><h2 id="samples-title">Design samples</h2><span>Previews · no earned progress</span></div><p>Inspect all seven frame treatments without changing study data.</p><div class="sample-grid">@for (tier of tiers; track tier.id) {<button class="sample-button" [class.selected]="sampleTier() === tier.id" [attr.data-rarity]="tier.id" (click)="inspectSample(tier.id)"><span class="sample-symbol" aria-hidden="true">{{ tier.symbol }}</span><strong>{{ tier.label }}</strong><small>Preview · {{ required(tier.id) }} {{ required(tier.id) === 1 ? 'day' : 'days' }}</small></button>}</div></section>
+    <section class="sample-section" aria-labelledby="samples-title" hrReveal><div class="section-title"><h2 id="samples-title">Design samples</h2><span>Previews · no earned progress</span></div><p>Inspect all seven frame treatments without changing study data.</p><div class="sample-grid">@for (tier of tiers; track tier.id) {<button class="sample-button" [class.selected]="sampleTier() === tier.id" [attr.data-rarity]="tier.id" (click)="inspectSample(tier.id)"><span class="sample-symbol" aria-hidden="true">{{ tier.symbol }}</span><strong>{{ tier.label }}</strong><small>Preview · {{ required(tier.id) }} {{ required(tier.id) === 1 ? 'day' : 'days' }}</small></button>}</div></section>
   `,
   styleUrl: './collection.css',
 })
