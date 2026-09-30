@@ -2,6 +2,14 @@
 
 Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
+## Search and organisation milestone handoff
+
+- **Recovered state:** `main` was clean at accepted checkpoint `d5d0c89`; Angular 21.2.24, Material/CDK 21.2.14, TypeScript 5.9.3 and the previously verified schema-3 features are present. The local server remained available on port 4200.
+- **Active requirements:** HR-GOV-03 is `IN_PROGRESS`; HR-ORG-01–07 and HR-MEDIA-01 are recorded as `PLANNED` in the canonical `docs/work-items.md` before implementation.
+- **Delegation:** the lead owns tracker state, shared contracts, migrations, integration and commits. Two bounded read-only delegates are inspecting data/index/media architecture and organisation UI/platform acceptance.
+- **Preservation boundary:** no data reset, dependency change, package installation or application mutation occurred in recovery. Existing learning content, media, reviews, rewards, imports, designs and portability remain intact.
+- **Exact next action:** checkpoint the canonical tracker/guidance, then implement the platform-neutral library query/index contract and compatible organisation/media model in one tested batch.
+
 ## Charter, import and entitlement milestone tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
