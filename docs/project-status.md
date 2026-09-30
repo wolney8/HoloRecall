@@ -28,13 +28,13 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 | HR-UX-09 | Complete | A motion-enabled browser test records five distinct intermediate animation signatures. Feedback is created only after commit; five accepted ratings create five reviews/effects, while a forced stale save creates neither. Rapid double input remains deduplicated. | Treatments are CSS/Web Animations presentation only and remain subject to product tuning. |
 | HR-UX-10 | Complete | IntersectionObserver uses the document viewport at 22% visibility. Tests prove the progress section has no animation while offscreen, then samples active row entrance, an intermediate real 0-to-1 fill, sheen and the transient zero-track error-colour glow before settlement. | Browser automation cannot characterize every GPU's colour/blending output. |
 | HR-UX-11 | Complete | The diagnosed render race is removed with run-scoped observer attachment after conditional rendering. Intro current time is sampled mid-run; Skip appears only during active motion, settles/cancels all sections, and Replay/reload leave review/reward arrays unchanged. Reduced motion is static with no Skip. | No physical-device motion profiling yet. |
-| HR-UX-12 | In progress | `ViewportRevealService` now shares one observer per scrolling root between the `hrReveal` directive and Results. Dashboard, Decks/editors, Collection, Design Studio, Progress, Import/export and Settings have meaningful block coverage; Study and Results retain their specialized motion ownership. Production build passes. | Add cross-page Chromium/WebKit integration checks, inspect intermediate motion/video, verify lifecycle/focus/dynamic behavior and reconcile final page coverage. |
+| HR-UX-12 | Complete | `ViewportRevealService` shares one observer per scrolling root between the `hrReveal` directive and Results. Ten targeted Chromium/WebKit and phone-profile checks prove intermediate motion, offscreen waiting, one-shot settlement, dynamic content, focus/lifecycle safety, reduced motion and text zoom. Two cross-page recordings were inspected. | Safari/WKWebView and physical-device compositing remain native verification; ordinary page entrances deliberately have no Skip/Replay UI. |
 
 ## iOS-readiness tracker
 
 | ID | Status | Acceptance evidence | Remaining issue / exact next action |
 | --- | --- | --- | --- |
-| HR-IOS-01 | Complete | Shared Playwright projects run 33 desktop journeys in Chromium 153 and patched WebKit 26.6, plus five WebKit phone-profile tests. Critical Study, Collection, Results, theme, authoring/media/exchange, recovery, save failure and reward paths pass without skips. | Safari/WKWebView/simulator/device verification remains native work. |
+| HR-IOS-01 | Complete | Shared Playwright projects run 37 desktop journeys in Chromium 153 and patched WebKit 26.6, plus seven WebKit phone-profile tests. Critical Study, Collection, Results, theme, authoring/media/exchange, page entrances, recovery, save failure and reward paths pass without skips. | Safari/WKWebView/simulator/device verification remains native work. |
 | HR-IOS-02 | Complete | Safe-area env values have one owner per edge, `viewport-fit=cover` is enabled, controls retain 44/48 px targets, mobile form text is 16 px, and visual-viewport resize keeps focused editor controls reachable. Compact/large portrait, landscape, touch, 200% text, no-overflow and stable reveal pass in WebKit. | Real notch/home indicator, software keyboard, VoiceOver and Dynamic Type remain untested. |
 | HR-IOS-03 | Complete | FSRS/reward/report/exchange rules remain browser-independent. `StudyPersistence`, `AppLifecycle` and `FileDelivery` are narrow seams; package bytes are generated separately from delivery. Web behavior passes in both engines. | Capacitor lifecycle, SQLite/media and Files/share implementations do not exist and never report fake success. |
 | HR-IOS-04 | Complete | Atomic persistence is unchanged. Lifecycle interruption checkpoints active time, pauses motion, settles interrupted faces/results, refreshes on resume and cleans listeners/observers/timers. Accepted review/reward arrays survive interruption/reload exactly once in Chromium and WebKit. | Native durable-storage provider and crash/migration tests await a native milestone. |
@@ -60,6 +60,19 @@ Evidence recovered from files and repeatable checks, rather than interrupted-age
 ## Known limitations retained by design
 
 This remains one local learner in browser IndexedDB. There is no authentication, API, Neon database, cloud media, cloud sync, service worker, native packaging or physical-device evidence. Restore intentionally refuses to replace a nonempty workspace. Practice-mode storage is modeled but no practice UI exists. Uploaded assets are retained even if an unsaved design is abandoned; safe garbage collection is deferred. Browser emulation does not prove physical iPhone behavior.
+
+## HR-UX-12 page coverage
+
+- **Dashboard:** heading, study summary, real metrics, deck heading and stable deck tiles.
+- **Decks and deck detail:** page heading, deck editor, card authoring, deck panels, filters and stable card rows. The form enters as a section; individual controls do not cascade.
+- **Collection:** heading, showcase, owned-card heading and rows, and the labelled sample gallery. Rendered cards retain their own flip and tilt transforms.
+- **Progress:** heading/filter/metrics, report sections, tables, charts, deck progress, attention, scheduler, cosmetics and definitions. Progress marks use the shared visibility trigger while their displayed totals remain final data rather than simulated gains.
+- **Design Studio:** heading, design editor and live preview panels. The preview card keeps its renderer motion ownership.
+- **Import/export:** heading, download/import groups and newly created preview. Busy states, validation failures and recovery actions remain immediate.
+- **Settings:** heading, appearance/study panels and cosmetic thresholds.
+- **Study:** only suitable supporting content may use the shared pattern. The active deck, reveal/rating controls and card transition are intentionally excluded so review actions never move or replay entrances.
+- **Session Complete:** its accurate pre-session-to-final sequence, scroll progress, zero pulse, Skip and Replay remain page-owned, but now use the same observer service. This prevents competing observers while preserving its run state.
+- **Component-owned transitions:** Angular Material controls, native disclosure panels and intentionally hidden content are not wrapped in a second entrance. There are no current application dialogs or vertically nested page scrollers; `hrRevealRoot` supports a future explicit nested root without changing the directive contract.
 
 ## Current batch handoff
 
@@ -88,3 +101,12 @@ This remains one local learner in browser IndexedDB. There is no authentication,
 - Evidence: patched WebKit 26.6 build 2359 and Chromium 153.0.8010.12 on macOS arm64. Short videos and screenshot are in ignored `test-results/hr-ios-webkit-evidence-20260930/`.
 - Cross-platform note: safe-area values remain zero in this desktop-hosted automation, and viewport presets do not emulate WKWebView, hardware cutouts, the iOS keyboard, VoiceOver or Dynamic Type. Native storage, Files/share, lifecycle plugin binding and device profiling remain explicitly unimplemented.
 - Exact next action: review this local checkpoint at `http://127.0.0.1:4200/`. The prior local product milestone is complete; the next proposed milestone is a separately authorized minimal Capacitor native-feasibility build with storage/plugin decisions and simulator/device evidence.
+
+### HR-UX-12 shared page-motion batch
+
+- Branch/commits: `main`; shared implementation `dbc4993`; targeted verification `41e4bb8`; nothing is pushed or deployed.
+- Changes: reusable `hrReveal` directive, one observer bucket per actual scroll root, common entrance tokens, capped group staggering, focus and lifecycle settlement, and explicit progress/chart presentation hooks. The directive fails open, owns no layout dimensions and cleans observers and Web Animations on removal.
+- Checks: **65/65** unit/domain tests; production build without warnings at **728.98 kB initial / 165.81 kB estimated transfer**; final full browser suite **81/81** with no skips (**37 Chromium desktop, 37 WebKit desktop, seven WebKit phone-profile tests**). A prior full run had one existing rating-4 feedback timeout under parallel load; it passed 3/3 in isolation and the complete rerun passed.
+- Targeted evidence: **10/10** page-reveal tests cover actual intermediate animation state, offscreen wait/scroll trigger, no replay, every route, stable filtered items, newly focused authoring, background/resume, theme changes, reduced motion/effects disabled, 200% text and landscape. Chromium and WebKit recordings are under ignored `test-results/hr-ux-12-evidence-20260930/` and were inspected as contact sheets.
+- Cross-platform note: the implementation uses `IntersectionObserver`, Web Animations and existing lifecycle/preferences behind shared ownership. Desktop-hosted WebKit and touch viewport checks pass; Safari, WKWebView, native lifecycle, physical safe areas, VoiceOver and device performance remain untested.
+- Exact next action: review the running application at `http://127.0.0.1:4200/`. Native scaffolding, provisioning, cloud work and deployment remain outside this change.
