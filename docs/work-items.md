@@ -104,16 +104,15 @@ Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items r
 ### HR-ORG-06 — Large-library performance
 
 - **Product area / milestone / priority:** Performance / Search and organisation / P0
-- **Status:** VERIFY
+- **Status:** DONE
 - **Source:** Will, 30 September 2026
 - **Dependencies:** HR-ORG-01, HR-ORG-04 and HR-MEDIA-01
 - **Requirement:** Add reproducible 1,000- and 10,000-card fixtures and measure load, index, query, filter, scroll, selection, media resolution and import-to-index availability.
 - **Acceptance:** Record real environment and timings, derive regression budgets from observed baselines, demonstrate responsive indexing and safe cancellation/recovery, and never count a completed test alone as performance evidence.
 - **Platform implications:** Measurements are browser evidence only; WebKit is not native iOS/macOS proof.
 - **Implementation notes:** Reuse existing large Anki fixture where it matches the scenario.
-- **Verification / evidence:** Node 24.3/macOS: 1,000-card index/query stay below 500/100 ms test budgets; 10,000-card observed 777.8 ms index and 10.9 ms combined query. Chromium observed 2,296 ms index/render and 46 ms query/render; WebKit observed 1,077 ms and 69 ms. DOM remains bounded at 60 normally and one for the measured query.
-- **Remaining:** Measure 10k filter/load-more/all-selection mutation, media-resolution and import-to-index latency before moving this item to DONE. Current content is safe and usable; this is evidence depth, not a data blocker.
-- **Commits:** `c4095fe`, `20d36bf`, `7f7cf3c`.
+- **Verification / evidence:** Node 24.3/macOS: 1,000-card index/query stay below 500/100 ms test budgets. The final 10,000-card run measured 729.2 ms index, 6.6 ms combined query, 788.8 ms content-to-index availability, 19.1 ms atomic all-card mutation, 17.3 ms registry construction and 114.2 ms for 10,000 media resolutions. Earlier Chromium measured 2,296 ms index/render and 46 ms query/render; WebKit measured 1,077 ms and 69 ms. The DOM remains bounded at 60 normally and one for the measured query. These are local browser/Node baselines, not native-device claims.
+- **Commits:** `c4095fe`, `20d36bf`, `7f7cf3c`, pending study-milestone checkpoint.
 
 ### HR-ORG-07 — UI consistency gate
 

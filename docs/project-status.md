@@ -7,10 +7,11 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 ### Study configuration/history milestone recovery
 
 - **Recovered state:** `main` is clean at accepted checkpoint `8a36388`; Angular 21.2.24, Material/CDK 21.2.14, `ts-fsrs` 5.4.2 and schema 4 are installed. Existing Study, import, organisation, media, rewards and portability behavior is preserved. The local server was retained on port 4200.
-- **Tracked scope:** HR-STUDY-01–08, HR-HIST-01–03, HR-IMPORT-02 and HR-PLAN-02 are recorded `IN_PROGRESS` in the canonical tracker before implementation. HR-ORG-06 remains `VERIFY` until its remaining scalable-operation measurements are captured.
+- **Tracked scope:** HR-STUDY-01–08, HR-HIST-01–03, HR-IMPORT-02 and HR-PLAN-02 are recorded `IN_PROGRESS` in the canonical tracker before implementation. HR-ORG-06 is now `DONE` after its requested dedicated measurements.
 - **Delegation:** the lead owns schema/scheduler/event contracts and integration. Two read-only delegates are reviewing the current official Anki comparison/scheduler surface and the existing Material 3 settings/history UX boundaries.
 - **Official baseline:** current Anki documentation confirms reusable presets; preset/deck/today-only limits; selected-parent versus child limit semantics; FSRS desired retention (default 0.90), maximum interval, short sub-day learning/relearning guidance, retrievability ordering, sibling burying, audio/timers and administrative browser operations. It also warns against copying parameters and treats higher retention as higher workload. HoloRecall will implement only semantics supported by its own model/library.
-- **Exact next action:** checkpoint tracker recovery, complete practical HR-ORG-06 measurements, then design schema-5 preset/override/administrative-event contracts before UI work.
+- **HR-ORG-06 closure:** Vitest on Node 24.3/macOS measured 10k index 729.2 ms, query 6.6 ms, import-to-index 788.8 ms, atomic 10k mutation 19.1 ms, media-registry construction 17.3 ms and 10k map resolutions 114.2 ms; 11 targeted tests passed. Budgets remain evidence-based local regression limits.
+- **Exact next action:** checkpoint HR-ORG-06 closure, then implement the lead-owned schema-5 preset/override/administrative-event contracts before UI work.
 
 - **Recovered state:** `main` was clean at accepted checkpoint `d5d0c89`; Angular 21.2.24, Material/CDK 21.2.14, TypeScript 5.9.3 and the previously verified schema-3 features are present. The local server remained available on port 4200.
 - **Active requirements:** HR-GOV-03 is `IN_PROGRESS`; HR-ORG-01–07 and HR-MEDIA-01 are recorded as `PLANNED` in the canonical `docs/work-items.md` before implementation.
