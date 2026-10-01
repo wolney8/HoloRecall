@@ -128,6 +128,114 @@ Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items r
 - **Verification / evidence:** Changed screens use shared Material/system tokens, start-aligned list tracks and progressive controls. WebKit compact/large/landscape at 200% text passes; theme/reduced-motion coverage remains in the full regression gate.
 - **Commits:** `c4095fe`, `20d36bf`, `7f7cf3c`.
 
+## Active milestone — Study configuration, history and Anki normalization
+
+All items below originate from Will's 1 October 2026 milestone. The lead owns schema, scheduler contracts and integration. Official comparison sources are the current Anki Manual deck-options, studying, preferences, browsing and packaged-deck pages; these define comparison points, not a requirement to copy Anki's interface.
+
+### HR-STUDY-01 — Reusable HoloRecall study presets
+- **Product area / milestone / priority:** Scheduling / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Schema migration; FSRS adapter
+- **Requirement / acceptance:** Stable named presets with built-ins, create/duplicate/rename/edit, deck assignment/usage, safe defaults and referenced-delete protection; deck exceptions and today-only limits stay separate.
+- **Platform implications:** Platform-neutral resolution, compact Material 3 UI, keyboard/touch/200% reflow.
+- **Verification / commits:** Pending implementation and inheritance/browser evidence.
+
+### HR-STUDY-02 — Daily workload and hierarchy limits
+- **Product area / milestone / priority:** Scheduling / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** HR-STUDY-01; hierarchy-aware queue
+- **Requirement / acceptance:** New/review limits, new-after-review-limit policy, per-deck and today-only overrides, deterministic parent/subdeck caps and honest limited-work explanations without history mutation.
+- **Platform implications:** Local-day/DST behavior remains platform-neutral and interruption safe.
+- **Verification / commits:** Pending queue/inheritance tests.
+
+### HR-STUDY-03 — Supported FSRS settings
+- **Product area / milestone / priority:** Scheduling / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Installed `ts-fsrs` 5.4.2 capabilities
+- **Requirement / acceptance:** Desired retention and maximum interval are honored; learning/relearning steps are exposed only where correct; optimisation exists only if a trustworthy supported implementation is present, with explicit apply/recovery.
+- **Platform implications:** Pure domain configuration; no imported parameters or native divergence.
+- **Verification / commits:** Pending library/API review and fixed-clock scheduler tests.
+
+### HR-STUDY-04 — Preserve five-confidence grading
+- **Product area / milestone / priority:** Study / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Existing Study renderer and scheduler adapter
+- **Requirement / acceptance:** Retain 1/2/3/4/5 → Again/Hard/Good/Good/Easy with original ratings, labels/help, save-gated effects and timing; no fifth FSRS grade.
+- **Platform implications:** Preserve keyboard, touch, reduced motion and fixed Study geometry.
+- **Verification / commits:** Existing mapping regression plus full Study journeys.
+
+### HR-STUDY-05 — Deterministic queue and display order
+- **Product area / milestone / priority:** Scheduling / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** HR-STUDY-01/02; stable new-card position
+- **Requirement / acceptance:** Supported gather/sort, new-versus-review and review due/random/retrievability orders alter only the persisted queue; animations follow it. Deterministic tests cover every option.
+- **Platform implications:** Platform-neutral randomness injection and reload recovery.
+- **Verification / commits:** Pending.
+
+### HR-STUDY-06 — Siblings, burying and suspension
+- **Product area / milestone / priority:** Scheduling / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Stable source note/template sibling identity
+- **Requirement / acceptance:** Configurable sibling burying, manual bury/unbury and persistent suspend/unsuspend remain distinct from archive. Reversed/cloze siblings survive import/reimport and statuses appear in management filters.
+- **Platform implications:** Day-boundary/DST persistence and accessible bulk controls.
+- **Verification / commits:** Pending sibling/import/reload tests.
+
+### HR-STUDY-07 — Lapses and leech management
+- **Product area / milestone / priority:** Scheduling / Study configuration / P1
+- **Status:** IN_PROGRESS
+- **Dependencies:** Review history; HR-STUDY-03/06
+- **Requirement / acceptance:** Real failures drive configurable attention threshold and optional suspend action; default flags only. No rarity, entitlement or punitive-low-confidence coupling.
+- **Platform implications:** Pure event-derived policy; visible recovery on all layouts.
+- **Verification / commits:** Pending.
+
+### HR-STUDY-08 — Reviewer preferences
+- **Product area / milestone / priority:** Study / Study configuration / P1
+- **Status:** IN_PROGRESS
+- **Dependencies:** Existing audio, timing and confidence controls
+- **Requirement / acceptance:** Remaining-count and predicted-interval visibility, audio autoplay/stop behavior, recorded-answer cap and optional visible timer preserve scheduling and active-time semantics. Auto Advance stays BACKLOG unless safely compatible; Easy Days is evidence-gated.
+- **Platform implications:** Audio/lifecycle cleanup, reduced motion, touch, future native interruption.
+- **Verification / commits:** Pending.
+
+### HR-HIST-01 — Truthful card review history
+- **Product area / milestone / priority:** History / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Immutable review/reversal events
+- **Requirement / acceptance:** Collection/management exposes concise review history with persisted time, confidence, grade, state, interval/due changes, timing and FSRS values; missing historical values say unavailable.
+- **Platform implications:** Bounded rendering, semantic table/timeline and compact reflow.
+- **Verification / commits:** Pending.
+
+### HR-HIST-02 — Safe scheduling administration
+- **Product area / milestone / priority:** History / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Versioned administrative events and atomic store operations
+- **Requirement / acceptance:** Set due, suspend, bury, reset/forget and meaningful new-card reposition operations are confirmed, atomic and history-preserving. Administrative events never count as recall or rewards.
+- **Platform implications:** Durable reload/recovery and touch/keyboard confirmation.
+- **Verification / commits:** Pending.
+
+### HR-HIST-03 — Scheduling-state and history filters
+- **Product area / milestone / priority:** History / Study configuration / P1
+- **Status:** IN_PROGRESS
+- **Dependencies:** Existing library index and Progress date filters
+- **Requirement / acceptance:** Extend the current index for new/learning/review/due/overdue/suspended/buried/attention/recently reviewed; add date-filtered history without a second search system.
+- **Platform implications:** Worker-safe reconstructable fields and compact filter disclosure.
+- **Verification / commits:** Pending.
+
+### HR-IMPORT-02 — Normalize Anki content into HoloRecall study
+- **Product area / milestone / priority:** Import / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** HR-STUDY-01; existing stable source identities
+- **Requirement / acceptance:** Preview selects a HoloRecall preset and states that Anki learning history is excluded. New imports enter native New state; reimport preserves HoloRecall state/history/rewards. No Anki scheduling, options, parameters or AnkiWeb data are adopted.
+- **Platform implications:** Worker conversion stays content-only and platform-neutral.
+- **Verification / commits:** Pending import→study→reimport tests.
+
+### HR-PLAN-02 — Study-settings capability matrix
+- **Product area / milestone / priority:** Planning / Study configuration / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Current official Anki Manual and implemented evidence
+- **Requirement / acceptance:** Classify every requested settings/history capability as DONE/PARTIAL/PLANNED/NOT APPLICABLE/NOT PLANNED. Record **AnkiWeb Sync — NOT PLANNED** and keep future HoloRecall sync separate.
+- **Platform implications:** Evidence must distinguish web, WebKit and native verification.
+- **Verification / commits:** Pending roadmap/import documentation update.
+
 ## Preserved completed history
 
 The detailed acceptance evidence for these items remains in `docs/project-status.md`, `docs/architecture.md`, `docs/ios-readiness.md`, and `docs/anki-import.md`. They retain their original stable IDs and are not reopened by this milestone.

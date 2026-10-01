@@ -4,6 +4,14 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 
 ## Search and organisation milestone handoff
 
+### Study configuration/history milestone recovery
+
+- **Recovered state:** `main` is clean at accepted checkpoint `8a36388`; Angular 21.2.24, Material/CDK 21.2.14, `ts-fsrs` 5.4.2 and schema 4 are installed. Existing Study, import, organisation, media, rewards and portability behavior is preserved. The local server was retained on port 4200.
+- **Tracked scope:** HR-STUDY-01–08, HR-HIST-01–03, HR-IMPORT-02 and HR-PLAN-02 are recorded `IN_PROGRESS` in the canonical tracker before implementation. HR-ORG-06 remains `VERIFY` until its remaining scalable-operation measurements are captured.
+- **Delegation:** the lead owns schema/scheduler/event contracts and integration. Two read-only delegates are reviewing the current official Anki comparison/scheduler surface and the existing Material 3 settings/history UX boundaries.
+- **Official baseline:** current Anki documentation confirms reusable presets; preset/deck/today-only limits; selected-parent versus child limit semantics; FSRS desired retention (default 0.90), maximum interval, short sub-day learning/relearning guidance, retrievability ordering, sibling burying, audio/timers and administrative browser operations. It also warns against copying parameters and treats higher retention as higher workload. HoloRecall will implement only semantics supported by its own model/library.
+- **Exact next action:** checkpoint tracker recovery, complete practical HR-ORG-06 measurements, then design schema-5 preset/override/administrative-event contracts before UI work.
+
 - **Recovered state:** `main` was clean at accepted checkpoint `d5d0c89`; Angular 21.2.24, Material/CDK 21.2.14, TypeScript 5.9.3 and the previously verified schema-3 features are present. The local server remained available on port 4200.
 - **Active requirements:** HR-GOV-03 is `IN_PROGRESS`; HR-ORG-01–07 and HR-MEDIA-01 are recorded as `PLANNED` in the canonical `docs/work-items.md` before implementation.
 - **Delegation:** the lead owns tracker state, shared contracts, migrations, integration and commits. Two bounded read-only delegates are inspecting data/index/media architecture and organisation UI/platform acceptance.
