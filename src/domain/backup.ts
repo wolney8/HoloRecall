@@ -1,7 +1,8 @@
-import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State } from './models';
+import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
 import { migrateState } from './migrations';
 import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
+import { validateDeckOverrides, validateStudyPreset, validateTodayOverride } from './study-settings';
 
 function fail(message: string): never { throw new Error(`Invalid HoloRecall data: ${message}`); }
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : fail('expected an object.');
@@ -23,6 +24,8 @@ export function validateDeck(value: unknown): asserts value is Deck {
   const deck = object(value);
   if (deck['designSetId'] !== undefined && !id(deck['designSetId'])) fail('invalid deck design reference.');
   if (deck['parentId'] !== undefined && !id(deck['parentId']) || deck['archived'] !== undefined && typeof deck['archived'] !== 'boolean') fail('invalid deck organisation.');
+  if(deck['studyPresetId']!==undefined&&!id(deck['studyPresetId']))fail('invalid deck study preset.');
+  try{validateDeckOverrides(deck['studyOverrides'] as Deck['studyOverrides']);}catch(error){fail(error instanceof Error?error.message:'invalid deck study override.');}
   if (!id(deck['id']) || !text(deck['name'], 160) || !deck['name'].trim() || !text(deck['description'], 2000) || typeof deck['suspended'] !== 'boolean') fail('invalid deck.');
 }
 
@@ -40,6 +43,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
   for (const key of ['frontAudio', 'backAudio']) if (card[key] !== undefined && (!Array.isArray(card[key]) || card[key].length > 8 || !card[key].every((ref: unknown) => { try { validateMediaRef(ref); return true; } catch { return false; } }))) fail(`invalid card ${key}.`);
   if (card['archived'] !== undefined && typeof card['archived'] !== 'boolean') fail('invalid card archive state.');
   if (card['createdAt'] !== undefined && !instant(card['createdAt'])) fail('invalid card creation time.');
+  if(card['siblingGroupId']!==undefined&&!id(card['siblingGroupId']))fail('invalid sibling group.');
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
 }
 
@@ -54,7 +58,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 4 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 5 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -79,20 +83,20 @@ export function validateState(value: unknown): asserts value is State {
   const eventIds = new Set<string>();
   const reviewIds = new Map<string, string>();
   const reversed = new Set<string>();
-  const resultingStates = new Map<string, CardState>();
+  const transitions=new Map<string,Array<{previous:number;result:CardState}>>();
   for (const value of data['events'] as unknown[]) {
     const event = object(value);
     if (!id(event['id']) || eventIds.has(event['id']) || !id(event['cardId']) || !cardIds.has(event['cardId']) || event['userId'] !== data['userId'] || !instant(event['timestamp']) || !integer(event['previousStateVersion'])) fail('invalid or duplicate review event.');
     eventIds.add(event['id']);
     validateCardState(event['resultingState']);
     const result = event['resultingState'] as CardState;
-    const prior = resultingStates.get(event['cardId']);
-    if ((prior?.version ?? 0) !== event['previousStateVersion'] || result.version !== event['previousStateVersion'] + 1) fail('broken scheduling version history.');
+    if (result.version !== event['previousStateVersion'] + 1) fail('broken scheduling version history.');
     if (event['kind'] === 'review') {
       if (!id(event['sessionId']) || !integer(event['contentRevision'], 1) || !integer(event['rating'], 1) || event['rating'] > 5 || event['grade'] !== mapRating(event['rating'] as 1 | 2 | 3 | 4 | 5) || event['schedulerVersion'] !== SCHEDULER_VERSION || event['configVersion'] !== CONFIG_VERSION) fail('invalid review details.');
       if (event['mode'] !== undefined && !['scheduled', 'practice'].includes(String(event['mode']))) fail('invalid review mode.');
       if (event['activeMs'] !== undefined && (!integer(event['activeMs']) || event['activeMs'] > 120000)) fail('invalid active study time.');
       if (event['recallMs'] !== undefined && (!integer(event['recallMs']) || event['recallMs'] > 120000)) fail('invalid recall time.');
+      if(event['studyPresetId']!==undefined&&!id(event['studyPresetId']))fail('invalid review study preset.');
       validateCardState(event['previousState']);
       if ((event['previousState'] as CardState).version !== event['previousStateVersion']) fail('mismatched previous version.');
       reviewIds.set(event['id'], event['cardId']);
@@ -100,16 +104,17 @@ export function validateState(value: unknown): asserts value is State {
       if (!id(event['reviewEventId']) || reviewIds.get(event['reviewEventId']) !== event['cardId'] || reversed.has(event['reviewEventId'])) fail('invalid review reversal.');
       reversed.add(event['reviewEventId']);
     } else fail('unknown history event.');
-    resultingStates.set(event['cardId'], result);
+    const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous:event['previousStateVersion'] as number,result}]);
   }
-  for (const [cardId, latest] of resultingStates) if (JSON.stringify(states[cardId]) !== JSON.stringify(latest)) fail('current scheduling state does not match history.');
-  for (const cardId of Object.keys(states)) if (!resultingStates.has(cardId)) fail('scheduling state is missing its history.');
+  for(const value of data['administrativeEvents'] as unknown[]){const event=object(value);if(!id(event['id'])||eventIds.has(event['id'])||!id(event['cardId'])||!cardIds.has(event['cardId'])||event['userId']!==data['userId']||!instant(event['timestamp'])||!['set-due','reset','bury','unbury','suspend','unsuspend','reposition'].includes(String(event['action'])))fail('invalid administrative event.');eventIds.add(event['id']);if(event['detail']!==undefined&&!text(event['detail'],500))fail('invalid administrative event detail.');if(event['resultingState']!==undefined){validateCardState(event['resultingState']);if(event['previousState']!==undefined)validateCardState(event['previousState']);const result=event['resultingState'] as CardState,previous=(event['previousState'] as CardState|undefined)?.version??0;if(result.version!==previous+1)fail('broken administrative scheduling version.');const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous,result}]);}}
+  for(const [cardId,items] of transitions){items.sort((a,b)=>a.result.version-b.result.version);let prior=0;for(const item of items){if(item.previous!==prior)fail('broken scheduling version history.');prior=item.result.version;}if(JSON.stringify(states[cardId])!==JSON.stringify(items.at(-1)!.result))fail('current scheduling state does not match history.');}
+  for (const cardId of Object.keys(states)) if (!transitions.has(cardId)) fail('scheduling state is missing its history.');
   validateReferences(data as unknown as State);
   validateRewards(data as unknown as State);
 }
 
 export function exportBackup(data: State, now: Date): string {
-  return JSON.stringify({ format: 'holorecall-backup', version: 4, exportedAt: now.toISOString(), state: data }, null, 2);
+  return JSON.stringify({ format: 'holorecall-backup', version: 5, exportedAt: now.toISOString(), state: data }, null, 2);
 }
 
 export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
@@ -117,7 +122,7 @@ export function parseBackup(json: string, bundledCards: CardContent[] = []): Sta
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
-  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3, 4].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
+  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3, 4, 5].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
   return migrateState(backup['state'], bundledCards);
 }
 
@@ -178,6 +183,10 @@ function validateExtensions(data: Record<string, unknown>): void {
   data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
   if (!Array.isArray(data['ankiMappings'])) fail('missing Anki mapping presets.');
   data['ankiMappings'].forEach(validateAnkiMapping);
+  if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents']))fail('missing study configuration or management history.');
+  try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
+  if(new Set((data['studyPresets'] as StudyPreset[]).map(item=>item.id)).size!==(data['studyPresets'] as StudyPreset[]).length)fail('duplicate study preset IDs.');
+  const controls=object(data['cardControls']);for(const [cardId,value] of Object.entries(controls)){if(!id(cardId))fail('invalid card control ID.');const control=object(value);if(control['manualBuried']!==undefined&&typeof control['manualBuried']!=='boolean'||control['leech']!==undefined&&typeof control['leech']!=='boolean'||control['buriedOnDay']!==undefined&&!/^\d{4}-\d{2}-\d{2}$/.test(String(control['buriedOnDay']))||control['newPosition']!==undefined&&!integer(control['newPosition']))fail('invalid card scheduling control.');}
   validateRewardConfig(data['rewardConfig']);
   const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
   if (new Set(assets.map(item => item.id)).size !== assets.length || new Set(designs.map(item => item.id)).size !== designs.length) fail('duplicate asset or design IDs.');
@@ -192,15 +201,18 @@ function validateExtensions(data: Record<string, unknown>): void {
     if (session['plannedTotal'] !== undefined && !integer(session['plannedTotal'], session['total'] as number)) fail('invalid planned session total.');
     if (session['recallMs'] !== undefined && (!integer(session['recallMs']) || session['recallMs'] > 120000)) fail('invalid persisted recall time.');
     if (session['lastReviewCardId'] !== undefined && !id(session['lastReviewCardId'])) fail('invalid previous session card.');
+    if(session['scopeDeckId']!==undefined&&!id(session['scopeDeckId']))fail('invalid session deck scope.');
   }
 }
 export function validateReferences(data: State): void {
-  const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id));
+  const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id)),presets=new Set(data.studyPresets.map(preset=>preset.id)),cards=new Set(data.cards.map(card=>card.id)),decks=new Set(data.decks.map(deck=>deck.id));
   const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])];
   // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
   if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
   if (data.session?.queue.some(cardId => !data.cards.some(card => card.id === cardId))) fail('study session references a missing card.');
+  if(data.decks.some(deck=>deck.studyPresetId&&!presets.has(deck.studyPresetId))||data.todayOverrides.some(item=>!decks.has(item.deckId)))fail('study configuration references a missing preset or deck.');
+  if(Object.keys(data.cardControls).some(cardId=>!cards.has(cardId))||data.administrativeEvents.some(event=>!cards.has(event.cardId)))fail('card management references missing content.');
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
   const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];

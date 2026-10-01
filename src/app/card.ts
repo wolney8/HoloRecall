@@ -80,6 +80,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() frameUrl?: string;
   @Input() textureUrl?: string;
   @Input() themePreview?: 'light' | 'dark';
+  @Input() audioAutoplay=false;
+  @Input() stopAudioOnAction=true;
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
   @ViewChild('turn') private turn?: ElementRef<HTMLElement>;
   @ViewChild('copy') private copy?: ElementRef<HTMLElement>;
@@ -139,12 +141,14 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.copyResize.observe(content);
       this.copyMutation.observe(content, { childList: true, subtree: true, characterData: true });
     }
+    queueMicrotask(()=>void this.autoplayAudio());
   }
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['revealed']?.firstChange || changes['card']) this.displayedRevealed.set(this.revealed);
     if (changes['revealed'] || (changes['card'] && changes['card'].previousValue?.id !== this.card.id)) {
-      this.stopAudio();
+      if(this.stopAudioOnAction||changes['card'])this.stopAudio();
       queueMicrotask(() => { if (this.copy) this.copy.nativeElement.scrollTo({ top: 0, left: 0, behavior: 'instant' }); });
+      queueMicrotask(()=>void this.autoplayAudio());
     }
     if (changes['card'] || changes['imageUrl'] || changes['backImageUrl'] || changes['revealed']) this.failedImage.set(false);
     if (changes['backgroundUrl'] || changes['design']) this.failedBackground.set(false);
@@ -239,6 +243,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     audio.addEventListener('error', () => { if (this.audio === audio) { this.stopAudio(); this.audioError.set('This audio could not be played.'); } }, { once: true });
     try { await audio.play(); } catch { if (this.audio === audio) { this.stopAudio(); this.audioError.set('Playback was blocked or the audio could not be decoded.'); } }
   }
+  private async autoplayAudio():Promise<void>{const ref=this.audioRefs[0];if(!this.audioAutoplay||!ref||!this.lifecycle.active())return;await this.toggleAudio(ref,new Event('autoplay'));}
   private stopAudio(): void { if (this.audio) { this.audio.pause(); this.audio.currentTime = 0; this.audio.src = ''; this.audio.load(); } this.audio = undefined; this.playingAudio.set(''); }
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);

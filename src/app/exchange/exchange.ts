@@ -14,6 +14,7 @@ import type { AnkiFieldTarget, AnkiMappingPreset, Rarity } from '../../domain/mo
 import { PageRevealDirective } from '../motion/page-reveal';
 import { AnkiWorkerClient } from './anki-worker-client';
 import { CAPABILITY_POLICY } from '../platform/capability-policy';
+import { BALANCED_PRESET_ID } from '../../domain/study-settings';
 
 @Component({
   selector: 'hr-exchange', standalone: true,
@@ -62,7 +63,7 @@ import { CAPABILITY_POLICY } from '../platform/capability-policy';
         </details>
         @if(analysis.issues.length){<div class="failure"><h3>Excluded or unsupported content</h3><ul>@for(issue of analysis.issues;track issue.kind+issue.message){<li><strong>{{issue.count}}</strong> {{issue.message}} <span class="ids">{{issue.examples.join(', ')}}</span></li>}</ul><label><input type="checkbox" [(ngModel)]="acceptAnkiIssues"> Import the supported cards and exclude the listed items</label></div>}
         <label><input type="checkbox" [(ngModel)]="preserveAnkiEdits" (change)="refreshAnkiPreview()"> Preserve local edits when a stable Anki card identity already exists</label>
-        @if(ankiPreview();as item){<p>{{item.newCards.length}} new · {{item.updatedCards.length}} updates · {{item.duplicateCards.length}} unchanged. Imported rarity is authored presentation only; it does not unlock cosmetics.</p><button mat-flat-button (click)="applyAnki()" [disabled]="!!busy() || (!!analysis.issues.length && !acceptAnkiIssues)">Import {{item.newCards.length + item.updatedCards.length}} supported cards</button> <button mat-button (click)="cancelAnki()">Cancel</button>}
+        @if(ankiPreview();as item){<p>{{item.newCards.length}} new · {{item.updatedCards.length}} updates · {{item.duplicateCards.length}} unchanged. Imported rarity is authored presentation only; it does not unlock cosmetics.</p><div class="study-choice"><mat-form-field appearance="outline"><mat-label>Study using</mat-label><mat-select [(ngModel)]="ankiStudyPresetId">@for(preset of store.data()?.studyPresets??[];track preset.id){<mat-option [value]="preset.id">{{preset.name}}</mat-option>}</mat-select></mat-form-field><p class="hint">Anki learning history isn't imported. These cards will use your HoloRecall study settings.</p></div><button mat-flat-button (click)="applyAnki()" [disabled]="!!busy() || (!!analysis.issues.length && !acceptAnkiIssues)">Import {{item.newCards.length + item.updatedCards.length}} supported cards</button> <button mat-button (click)="cancelAnki()">Cancel</button>}
       </div>}
       <details><summary>Supported package scope</summary><p>Legacy <code>collection.anki2</code>, legacy <code>collection.anki21</code>, and detected modern <code>collection.anki21b</code> databases are analysed in a bounded background Worker. Basic, reversed, conditional and standard cloze templates convert to inert HoloRecall text. PNG, JPEG, WebP, MP3 and WAV media are bundled. Text-to-speech directives, script-dependent templates without an explicit safe mapping, answer checking, image occlusion, active SVG, remote resources and fonts remain unsupported.</p></details>
     </section>
@@ -88,7 +89,7 @@ export class ExchangeComponent implements OnDestroy {
   readonly ankiUnavailable = this.capabilityPolicy.decide('anki-package-import').reason ?? 'Anki package import is unavailable under the active capability policy.';
   readonly preview = signal<ImportPreview | null>(null);
   readonly ankiAnalysis = signal<AnkiAnalysis | null>(null); readonly ankiPreview = signal<ImportPreview | null>(null);
-  preserveAnkiEdits = true; acceptAnkiIssues = false; private ankiAbort?: AbortController; private ankiBytes?: Uint8Array; private ankiPackageName = '';
+  preserveAnkiEdits = true; acceptAnkiIssues = false;ankiStudyPresetId=BALANCED_PRESET_ID; private ankiAbort?: AbortController; private ankiBytes?: Uint8Array; private ankiPackageName = '';
   readonly ankiRunning = signal(false); readonly mappingDrafts = new Map<string, AnkiMappingPreset>();
   readonly mappingTargets: { id: AnkiFieldTarget; label: string }[] = [{id:'ignore',label:'Keep as source metadata'},{id:'front',label:'Front'},{id:'answer',label:'Answer'},{id:'pronunciation',label:'Pronunciation'},{id:'meaning',label:'Meaning'},{id:'notes',label:'Notes'},{id:'front-media',label:'Front media'},{id:'back-media',label:'Answer media'}];
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
@@ -136,7 +137,7 @@ export class ExchangeComponent implements OnDestroy {
   }
   refreshAnkiPreview(): void { const analysis = this.ankiAnalysis(), state = this.store.data(); if (!analysis || !state) return; void import('../../domain/anki').then(({ previewAnkiImport }) => this.ankiPreview.set(previewAnkiImport(analysis, state, this.preserveAnkiEdits))); }
   cancelAnki(): void { this.ankiAbort?.abort(); this.ankiWorker.cancel(); this.ankiAbort = undefined; this.ankiRunning.set(false); this.ankiAnalysis.set(null); this.ankiPreview.set(null); this.ankiBytes=undefined; this.ankiPackageName=''; this.busy.set(''); }
-  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || !analysis || (analysis.issues.length && !this.acceptAnkiIssues)) return; this.busy.set('Saving the supported Anki content atomically…'); try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion); this.message.set(`Imported ${preview.newCards.length} Anki cards. Scheduling, review history and cosmetic unlocks were not imported.`); this.cancelAnki(); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
+  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || !analysis || (analysis.issues.length && !this.acceptAnkiIssues)) return; this.busy.set('Saving the supported Anki content atomically…'); try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion,this.ankiStudyPresetId,true); this.message.set(`Imported ${preview.newCards.length} Anki cards. Scheduling, review history and cosmetic unlocks were not imported.`); this.cancelAnki(); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
 
   async export(portable: boolean): Promise<void> {
     this.message.set(''); this.failure.set(''); this.busy.set(portable ? 'Packaging workbook, media and designs…' : 'Building content workbook…');

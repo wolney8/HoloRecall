@@ -12,7 +12,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { LocalStudyStore } from './data/study-store';
 import { ThemeService, ThemeChoice } from './theme.service';
-import { activeReviews, dayKey, dueCards, RATING_OPTIONS } from '../domain/study';
+import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
+import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../domain/rewards';
 import type { CardContent, Deck, DesignSet, FinishPreset, Rarity } from '../domain/models';
 import { FlashcardComponent } from './card';
@@ -26,11 +27,13 @@ import { FILE_DELIVERY } from './platform/file-delivery';
 import { PageRevealDirective, ViewportRevealService } from './motion/page-reveal';
 import { LibraryViewService } from './library/library-view.service';
 import { deckPath, type SearchResult } from '../domain/library';
+import { StudySettingsComponent } from './settings/study-settings';
+import { effectiveStudyPreset, fsrsParameters } from '../domain/study-settings';
 
 type Screen = 'dashboard' | 'library' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 @Component({
   selector:'app-root', standalone:true,
-  imports:[CommonModule,FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatSlideToggleModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,PageRevealDirective],
+  imports:[CommonModule,FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatSlideToggleModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -85,6 +88,7 @@ export class AppComponent {
   readonly newReady=computed(()=>this.ready().length-this.reviewDue());
   readonly session=computed(()=>this.data()?.session??null);
   readonly current=computed(()=>this.data()?.cards.find(c=>c.id===this.session()?.queue[0])??null);
+  readonly currentPreset=computed(()=>{const data=this.data(),card=this.current();return data?effectiveStudyPreset(data,card?.deckId??this.session()?.scopeDeckId,new Date()):null;});
   readonly displayedCard=computed(()=>this.studyPresentationCard()??this.current());
   readonly revealed=computed(()=>this.session()?.revealed??false);
   readonly displayedRevealed=computed(()=>this.studyPresentationCard()?true:this.revealed());
@@ -127,7 +131,7 @@ export class AppComponent {
     const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();this.settleConfidenceFeedback();}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
     const timer=setInterval(()=>{
       const tick=performance.now();
-      if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min(120_000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
+      if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min((this.currentPreset()?.maxAnswerSeconds??120)*1000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
       this.lastTick=tick;
       if(++this.ticks%5===0)void this.checkpoint();
       if(this.ticks%30===0)this.now.set(new Date());
@@ -139,6 +143,8 @@ export class AppComponent {
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
   private loadSettings():void{const state=this.data();if(!state)return;const {newCardLimit,reviewLimit,timeZone}=state.preferences;this.settings={newCardLimit,reviewLimit,timeZone};this.rewardSettings={...state.rewardConfig};}
   timeZone():string{return this.data()?.preferences.timeZone??'Europe/London';}
+  predictedInterval(rating:1|2|3|4|5):string{const data=this.data(),card=this.current(),preset=this.currentPreset();if(!data||!card||!preset)return'';const previous=data.states[card.id]?hydrateCard(data.states[card.id]!):createEmptyCard(new Date());const result=fsrs(fsrsParameters(preset)).next(previous,new Date(),mapRating(rating)).card,days=result.scheduled_days;return days<1?'Soon':days===1?'1 day':`${days} days`;}
+  visibleTimer():string{const seconds=Math.floor(this.elapsedMs/1000);return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;}
   go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study')this.cancelStudyPresentation();if(screen!=='library')this.selectedCardIds=new Set();this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);if(screen==='settings')this.loadSettings();window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
   deckCards(id:string):CardContent[]{return this.data()?.cards.filter(c=>c.deckId===id)??[];}
   deckReady(id:string):number{return this.data()?dueCards(this.data()!,this.now(),id).length:0;}
@@ -231,7 +237,7 @@ export class AppComponent {
   duplicateCard(card:CardContent):void{this.edit({...structuredClone(card),id:crypto.randomUUID(),revision:0},card.deckId);this.message.set('Duplicate draft created. Review it before saving.');}
   setAuthorPreset(preset:'basic'|'image-first'|'reversible'):void{if(!this.editor)return;this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.editor={...this.editor};}
   cancelCardEditor():void{if(this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;this.editor=null;this.editorBaseline='';}
-  async saveCard(addAnother=false):Promise<void>{if(!this.editor||this.busy())return;this.busy.set(true);try{const card={...this.editor,front:this.editor.front.trim(),answer:this.editor.answer.trim(),tags:this.tagInput.split(',').map(s=>s.trim()).filter(Boolean)};if(!card.designSetId)delete card.designSetId;const cards=[card];if(this.authorPreset==='reversible'&&!card.revision)cards.push({...card,id:crypto.randomUUID(),front:card.answer,answer:card.front,frontAudio:card.backAudio,backAudio:card.frontAudio,pronunciation:'',meaning:card.meaning,revision:0});await this.store.saveCards(cards);this.message.set(cards.length===2?'Two reversible cards saved. Review history was not changed.':'Card saved. Review history preserved.');if(addAnother){const deckId=card.deckId,designSetId=card.designSetId,preset=this.authorPreset;this.editor=this.blankCard(deckId,designSetId);this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.tagInput='';this.authorPreviewRevealed=false;this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}else{this.editor=null;this.editorBaseline='';}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async saveCard(addAnother=false):Promise<void>{if(!this.editor||this.busy())return;this.busy.set(true);try{let card={...this.editor,front:this.editor.front.trim(),answer:this.editor.answer.trim(),tags:this.tagInput.split(',').map(s=>s.trim()).filter(Boolean)};if(!card.designSetId)delete card.designSetId;const cards=[card];if(this.authorPreset==='reversible'&&!card.revision){const siblingGroupId=card.siblingGroupId??`siblings-${crypto.randomUUID()}`;card={...card,siblingGroupId};cards[0]=card;cards.push({...card,id:crypto.randomUUID(),front:card.answer,answer:card.front,frontAudio:card.backAudio,backAudio:card.frontAudio,pronunciation:'',meaning:card.meaning,revision:0});}await this.store.saveCards(cards);this.message.set(cards.length===2?'Two reversible cards saved. Review history was not changed.':'Card saved. Review history preserved.');if(addAnother){const deckId=card.deckId,designSetId=card.designSetId,preset=this.authorPreset;this.editor=this.blankCard(deckId,designSetId);this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.tagInput='';this.authorPreviewRevealed=false;this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}else{this.editor=null;this.editorBaseline='';}}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   toggleCardSelection(id:string,selected:boolean):void{const next=new Set(this.selectedCardIds);selected?next.add(id):next.delete(id);this.selectedCardIds=next;}
   clearCardSelection():void{this.selectedCardIds=new Set();}
   async applyBulkCards():Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{...(this.bulkDeckId?{deckId:this.bulkDeckId}:{}),addTags:this.bulkTags.split(',').filter(Boolean),removeTags:this.bulkRemoveTags.split(',').filter(Boolean),...(this.bulkRarity?{rarity:this.bulkRarity}:{}),...(this.bulkDesignSetId!=='__keep__'?{designSetId:this.bulkDesignSetId==='__inherit__'?'':this.bulkDesignSetId}:{}),...(this.bulkFinish?{finish:this.bulkFinish}:{})});this.message.set(`${this.selectedCardIds.size} cards updated. Review history and earned cosmetics were preserved.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}

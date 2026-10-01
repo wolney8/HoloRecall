@@ -11,11 +11,12 @@ import type { CardContent, Rarity } from '../../domain/models';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../../domain/rewards';
 import { PageRevealDirective } from '../motion/page-reveal';
 import { LibraryViewService } from '../library/library-view.service';
+import { ReviewHistoryComponent } from '../history/review-history';
 
 @Component({
   selector: 'hr-collection',
   standalone: true,
-  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatCheckboxModule, PageRevealDirective],
+  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatCheckboxModule, PageRevealDirective,ReviewHistoryComponent],
   template: `
     <div class="page-heading collection-heading" hrReveal><div><p class="eyebrow">CARD LIBRARY</p><h1>Collection</h1><p>Inspect cards, authored rarity and earned cosmetics.</p></div></div>
     <section class="collection-tools" hrReveal aria-label="Search collection"><mat-form-field appearance="outline"><mat-label>Search collection</mat-label><input matInput [ngModel]="library.query()" (ngModelChange)="library.setQuery($event)" autocomplete="off"></mat-form-field><div class="view-presets" aria-label="Collection views"><button mat-stroked-button (click)="showAll()">All cards</button><button mat-button (click)="library.setFilter('rarities',['rare','holo-rare','ultra-rare','secret-rare','relic'])">Higher rarities</button><button mat-button (click)="library.setFilter('earned','earned')">Earned</button><button mat-button (click)="library.setFilter('earned','unearned')">Next unlock</button><button mat-button (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">Filters{{library.activeFilterCount()?' ('+library.activeFilterCount()+')':''}}</button>@if(library.activeFilterCount()){<button mat-button (click)="library.clear()">Clear filters</button>}</div>
@@ -39,6 +40,7 @@ import { LibraryViewService } from '../library/library-view.service';
             <div class="unlock-panel"><div class="progress-label"><span>{{ progress(card).days }} / {{ progress(card).required }} qualifying days</span><strong>{{ progress(card).earned ? 'Earned' : 'In progress' }}</strong></div><mat-progress-bar mode="determinate" [value]="percent(card)" [attr.aria-label]="'Unlock progress: ' + progress(card).days + ' of ' + progress(card).required + ' qualifying days'"/><details><summary>{{ progress(card).earned ? 'Unlock details' : 'How to unlock' }}</summary><p>Rate a scheduled review 4 or 5 on distinct study days, at least 20 hours apart. Practice, repeated submissions and imports do not count. Undo reverses that review’s contribution.</p><p>Later forgetting keeps earned cosmetics. Confidence is self-reported; it does not prove mastery.</p></details></div>
           }
           <p class="interaction-hint">Click or tap the card to turn it. Keyboard: focus the card and press Enter or Space. Dragging tilts without turning it.</p>
+          @if(!sampleTier()){<hr-review-history [cardId]="card.id"/>}
         </div>
       </section>
     }
@@ -61,7 +63,7 @@ export class CollectionComponent {
   readonly previewLocked = signal(false);
   readonly revealed = signal(true);
   readonly filtersOpen=signal(false);
-  readonly studyFilters=['due','new','learning','review','attention'] as const;
+  readonly studyFilters=['due','overdue','new','learning','review','suspended','buried','leech','attention','recently-reviewed'] as const;
   readonly mediaFilters=['image','audio','none'] as const;
   readonly selected = computed(() => this.store.cards().find(card => card.id === this.selectedId()) ?? this.store.cards()[0]);
   readonly earnedCount = computed(() => this.store.cards().filter(card => this.progress(card).earned).length);

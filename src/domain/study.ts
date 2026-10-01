@@ -1,6 +1,9 @@
 import { createEmptyCard, fsrs, generatorParameters, Rating, type Card as FsrsCard, type Grade } from 'ts-fsrs';
 import { DEFAULT_REWARD_CONFIG, rewardEventsForReview, rewardReversal } from './rewards';
 import type { CardContent, CardState, ConfidenceRating, Deck, ReviewEvent, State } from './models';
+import { BALANCED_PRESET_ID, cloneBuiltInPresets, effectiveStudyPreset, fsrsParameters } from './study-settings';
+export { dayKey } from './time';
+import { dayKey } from './time';
 
 export const SCHEDULER_VERSION = 'ts-fsrs@5.4.2';
 export const CONFIG_VERSION = 'holorecall-fsrs-v1';
@@ -21,14 +24,15 @@ export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'A
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     version: 0,
     userId: 'local-learner',
-    decks: structuredClone(decks),
+    decks: structuredClone(decks).map(deck=>({...deck,studyPresetId:deck.studyPresetId??BALANCED_PRESET_ID})),
     cards: structuredClone(cards),
     states: {},
     events: [],
     designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null, ankiMappings: [],
+    studyPresets:cloneBuiltInPresets(),todayOverrides:[],cardControls:{},administrativeEvents:[],
     preferences: { effects: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };
@@ -56,27 +60,28 @@ export function activeReviews(data: State): ReviewEvent[] {
   return data.events.filter((event): event is ReviewEvent => event.kind === 'review' && event.mode !== 'practice' && !reversed.has(event.id));
 }
 
-/** A calendar date in the learner's time zone, independent of the host zone and DST. */
-export function dayKey(date: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
-  const part = (type: string) => parts.find(item => item.type === type)!.value;
-  return `${part('year')}-${part('month')}-${part('day')}`;
-}
-
 export function dueCards(data: State, now: Date, deckId?: string): CardContent[] {
   const today = dayKey(now, data.preferences.timeZone);
   const reviewsToday = activeReviews(data).filter(event => dayKey(new Date(event.timestamp), data.preferences.timeZone) === today);
-  const reviewsLeft = Math.max(0, data.preferences.reviewLimit - reviewsToday.length);
+  const selectedPreset=effectiveStudyPreset(data,deckId,now);
+  const reviewCount=reviewsToday.filter(event=>event.previousState.reps>0&&![1,3].includes(event.previousState.state)).length;
+  const reviewsLeft = Math.max(0, selectedPreset.maxReviewsPerDay - reviewCount);
   const introducedToday = new Set(reviewsToday.filter(event => event.previousState.reps === 0).map(event => event.cardId));
-  const newLeft = Math.max(0, data.preferences.newCardLimit - introducedToday.size);
+  const newLeft = Math.max(0, selectedPreset.newCardsPerDay - introducedToday.size);
   const byId=new Map(data.decks.map(deck=>[deck.id,deck]));
   const deckEnabled=(id:string):boolean=>{const seen=new Set<string>();let deck=byId.get(id);while(deck&&!seen.has(deck.id)){if(deck.suspended||deck.archived)return false;seen.add(deck.id);deck=deck.parentId?byId.get(deck.parentId):undefined;}return !!byId.get(id);};
   const selectedDecks=deckId?new Set<string>([deckId]):null;if(selectedDecks){let changed=true;while(changed){changed=false;for(const deck of data.decks)if(deck.parentId&&selectedDecks.has(deck.parentId)&&!selectedDecks.has(deck.id)){selectedDecks.add(deck.id);changed=true;}}}
-  const available = data.cards.filter(card => !card.suspended && !card.archived && deckEnabled(card.deckId) && (!selectedDecks || selectedDecks.has(card.deckId)));
-  const existing = available.filter(card => (data.states[card.id]?.reps ?? 0) > 0 && Date.parse(data.states[card.id]!.due) <= now.getTime())
-    .sort((a, b) => Date.parse(data.states[a.id]!.due) - Date.parse(data.states[b.id]!.due));
-  const newCards = available.filter(card => (data.states[card.id]?.reps ?? 0) === 0).slice(0, newLeft);
-  return [...existing, ...newCards].slice(0, reviewsLeft);
+  const available = data.cards.filter(card => {const control=data.cardControls[card.id];return !card.suspended&&!card.archived&&!control?.manualBuried&&control?.buriedOnDay!==today&&deckEnabled(card.deckId)&&(!selectedDecks||selectedDecks.has(card.deckId));});
+  const due=available.filter(card=>(data.states[card.id]?.reps??0)>0&&Date.parse(data.states[card.id]!.due)<=now.getTime());
+  const learning=due.filter(card=>[1,3].includes(data.states[card.id]!.state)).sort((a,b)=>Date.parse(data.states[a.id]!.due)-Date.parse(data.states[b.id]!.due));
+  let reviews=due.filter(card=>![1,3].includes(data.states[card.id]!.state));
+  const stable=(card:CardContent)=>{let value=2166136261;for(const char of `${today}:${card.id}`)value=Math.imul(value^char.charCodeAt(0),16777619);return value>>>0;};
+  const reviewByDeck=new Map<string,number>();reviews=[...reviews].sort((a,b)=>selectedPreset.reviewOrder==='random'?stable(a)-stable(b):selectedPreset.reviewOrder==='retrievability'?fsrs(fsrsParameters(effectiveStudyPreset(data,a.deckId,now))).get_retrievability(hydrateCard(data.states[a.id]!),now,false)-fsrs(fsrsParameters(effectiveStudyPreset(data,b.deckId,now))).get_retrievability(hydrateCard(data.states[b.id]!),now,false):Date.parse(data.states[a.id]!.due)-Date.parse(data.states[b.id]!.due)).filter(card=>{const used=reviewByDeck.get(card.deckId)??0,limit=effectiveStudyPreset(data,card.deckId,now).maxReviewsPerDay;if(used>=limit)return false;reviewByDeck.set(card.deckId,used+1);return true;}).slice(0,reviewsLeft);
+  let fresh=available.filter(card=>(data.states[card.id]?.reps??0)===0);
+  const newByDeck=new Map<string,number>();fresh=[...fresh].sort((a,b)=>selectedPreset.newGatherOrder==='random'||selectedPreset.newSortOrder==='random'?stable(a)-stable(b):selectedPreset.newGatherOrder==='position'?(data.cardControls[a.id]?.newPosition??Number.MAX_SAFE_INTEGER)-(data.cardControls[b.id]?.newPosition??Number.MAX_SAFE_INTEGER):data.decks.findIndex(deck=>deck.id===a.deckId)-data.decks.findIndex(deck=>deck.id===b.deckId)||data.cards.indexOf(a)-data.cards.indexOf(b)).filter(card=>{const used=newByDeck.get(card.deckId)??0,limit=effectiveStudyPreset(data,card.deckId,now).newCardsPerDay;if(used>=limit)return false;newByDeck.set(card.deckId,used+1);return true;}).slice(0,newLeft);
+  if(!selectedPreset.newCardsIgnoreReviewLimit&&reviewsLeft<=reviews.length)fresh=[];
+  let scheduled:CardContent[];if(selectedPreset.newReviewOrder==='before')scheduled=[...fresh,...reviews];else if(selectedPreset.newReviewOrder==='mixed'){scheduled=[];const length=Math.max(fresh.length,reviews.length);for(let index=0;index<length;index++){if(reviews[index])scheduled.push(reviews[index]!);if(fresh[index])scheduled.push(fresh[index]!);}}else scheduled=[...reviews,...fresh];
+  return [...learning,...scheduled];
 }
 
 export interface ReviewInput {
@@ -98,12 +103,13 @@ export function applyReview(data: State, input: ReviewInput): State {
   if (!input.id || !input.sessionId || !Number.isFinite(input.now.getTime())) throw new Error('The review is missing a valid ID, session or time.');
   if (data.session && (data.session.id !== input.sessionId || data.session.queue[0] !== input.cardId || !data.session.revealed)) throw new Error('Reveal the current session card before rating it.');
   const content = data.cards.find(card => card.id === input.cardId);
-  if (!content || !dueCards(data, input.now, content.deckId).some(card => card.id === input.cardId)) throw new Error('This card is no longer available in the due queue. Refresh your study session.');
+  if (!content || (!data.session&&!dueCards(data,input.now,content.deckId).some(card=>card.id===input.cardId))) throw new Error('This card is no longer available in the due queue. Refresh your study session.');
   if (data.scheduler.version !== SCHEDULER_VERSION || data.scheduler.configVersion !== CONFIG_VERSION) throw new Error('This study data needs a scheduler migration before another review.');
   const previous = data.states[input.cardId] ?? serializeCard(createEmptyCard(input.now), 0);
   if (previous.last_review && input.now.getTime() < Date.parse(previous.last_review)) throw new Error('Your clock is earlier than the last review. Check the system time before continuing.');
   const grade = mapRating(input.rating);
-  const next = fsrs(data.scheduler.parameters).next(hydrateCard(previous), input.now, grade).card;
+  const preset=effectiveStudyPreset(data,content.deckId,input.now),parameters=fsrsParameters(preset);
+  const next = fsrs(parameters).next(hydrateCard(previous), input.now, grade).card;
   const resultingState = serializeCard(next, previous.version + 1);
   const event: ReviewEvent = {
     kind: 'review', id: input.id, userId: data.userId, cardId: input.cardId,
@@ -111,12 +117,18 @@ export function applyReview(data: State, input: ReviewInput): State {
     rating: input.rating, grade, previousStateVersion: previous.version,
     previousState: structuredClone(previous), resultingState: structuredClone(resultingState),
     schedulerVersion: data.scheduler.version, configVersion: data.scheduler.configVersion,
-    mode: 'scheduled', activeMs: Math.max(0, Math.min(120000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
-    ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(120000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
+    studyPresetId:preset.id,schedulerParameters:structuredClone(parameters),
+    mode: 'scheduled', activeMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
+    ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
   };
   const remaining = data.session?.queue.slice(1) ?? [];
+  const cardControls={...data.cardControls};
+  if(content.siblingGroupId){for(const sibling of data.cards){if(sibling.id===content.id||sibling.siblingGroupId!==content.siblingGroupId)continue;const siblingState=data.states[sibling.id],shouldBury=!siblingState?.reps?preset.buryNewSiblings:[1,3].includes(siblingState.state)?preset.buryLearningSiblings:preset.buryReviewSiblings;if(shouldBury)cardControls[sibling.id]={...cardControls[sibling.id],buriedOnDay:dayKey(input.now,data.preferences.timeZone)};}}
+  const failures=activeReviews(data).filter(review=>review.cardId===content.id&&review.rating===1).length+(input.rating===1?1:0),leech=failures>=preset.leechThreshold;
+  if(leech)cardControls[content.id]={...cardControls[content.id],leech:true};
+  const cards=leech&&preset.leechAction==='suspend'?data.cards.map(card=>card.id===content.id?{...card,suspended:true}:card):data.cards;
   return {
-    ...data, version: data.version + 1, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event],
+    ...data, version: data.version + 1,cards,cardControls, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event],
     rewardEvents: [...data.rewardEvents, ...rewardEventsForReview(data, event, dayKey(input.now, data.preferences.timeZone))],
     session: data.session ? { ...data.session, queue: remaining, completed: data.session.completed + 1, revealed: false, activeMs: 0, recallMs: undefined, cardStartedAt: input.now.toISOString(), lastReviewCardId: input.cardId, ...(remaining.length ? {} : { endedAt: input.now.toISOString(), partial: false }) } : null,
   };

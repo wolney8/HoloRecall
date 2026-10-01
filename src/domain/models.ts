@@ -26,9 +26,11 @@ export interface CardContent {
   backAudio?: string[];
   archived?: boolean;
   createdAt?: string;
+  /** Stable relationship shared by reversed/template/cloze siblings. */
+  siblingGroupId?: string;
 }
 
-export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean }
+export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides }
 export type ConfidenceRating = 1 | 2 | 3 | 4 | 5;
 export interface Preferences {
   effects: boolean;
@@ -37,6 +39,24 @@ export interface Preferences {
   newCardLimit: number;
   reviewLimit: number;
 }
+export type NewGatherOrder='deck'|'position'|'random';
+export type NewSortOrder='gathered'|'random';
+export type NewReviewOrder='before'|'mixed'|'after';
+export type ReviewOrder='due'|'random'|'retrievability';
+export type StudyStep=`${number}m`|`${number}h`;
+export interface StudyPreset {
+  id:string;name:string;builtIn?:boolean;
+  newCardsPerDay:number;maxReviewsPerDay:number;newCardsIgnoreReviewLimit:boolean;
+  desiredRetention:number;maximumInterval:number;learningSteps:StudyStep[];relearningSteps:StudyStep[];
+  newGatherOrder:NewGatherOrder;newSortOrder:NewSortOrder;newReviewOrder:NewReviewOrder;reviewOrder:ReviewOrder;
+  buryNewSiblings:boolean;buryReviewSiblings:boolean;buryLearningSiblings:boolean;
+  leechThreshold:number;leechAction:'flag'|'suspend';
+  showRemainingCounts:boolean;showNextReviewTimes:boolean;audioAutoplay:boolean;stopAudioOnAction:boolean;
+  maxAnswerSeconds:number;showAnswerTimer:boolean;
+}
+export interface DeckStudyOverrides { newCardsPerDay?:number;maxReviewsPerDay?:number;newCardsIgnoreReviewLimit?:boolean }
+export interface TodayStudyOverride extends DeckStudyOverrides { deckId:string;studyDay:string }
+export interface CardControl { manualBuried?:boolean;buriedOnDay?:string;leech?:boolean;newPosition?:number }
 export type CardState = Omit<FsrsCard, 'due' | 'last_review'> & {
   due: string;
   last_review?: string;
@@ -62,6 +82,8 @@ export interface ReviewEvent {
   activeMs?: number;
   /** Focused, non-idle time from question display to reveal. */
   recallMs?: number;
+  studyPresetId?:string;
+  schedulerParameters?:FSRSParameters;
 }
 
 export interface ReversalEvent {
@@ -76,8 +98,14 @@ export interface ReversalEvent {
 }
 export type StudyEvent = ReviewEvent | ReversalEvent;
 
+export interface AdministrativeEvent {
+  id:string;userId:string;cardId:string;timestamp:string;
+  action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'|'reposition';
+  previousState?:CardState;resultingState?:CardState;detail?:string;
+}
+
 export interface State {
-  schemaVersion: 4;
+  schemaVersion: 5;
   version: number;
   userId: string;
   decks: Deck[];
@@ -92,6 +120,10 @@ export interface State {
   preferences: Preferences;
   scheduler: { version: string; configVersion: string; parameters: FSRSParameters };
   ankiMappings: AnkiMappingPreset[];
+  studyPresets:StudyPreset[];
+  todayOverrides:TodayStudyOverride[];
+  cardControls:Record<string,CardControl>;
+  administrativeEvents:AdministrativeEvent[];
 }
 
 
@@ -152,6 +184,7 @@ export interface StudySession {
   recallMs?: number;
   activeMs: number;
   lastReviewCardId?: string;
+  scopeDeckId?:string;
 }
 
 export interface RewardContribution {

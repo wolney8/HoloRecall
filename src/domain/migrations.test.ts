@@ -43,7 +43,7 @@ describe('non-destructive v1 migration and backups', () => {
   it('restores a v1 backup and round-trips v3 uploaded media, designs, mappings, and persisted session', () => {
     const json = JSON.stringify({ format: 'holorecall-backup', version: 1, exportedAt: now.toISOString(), state: legacySnapshot() });
     const restored = parseBackup(json);
-    expect(restored.schemaVersion).toBe(4);
+    expect(restored.schemaVersion).toBe(5);
     const withBundledArt = parseBackup(json, [{ ...fresh().cards[0]!, image: '/art/mela.svg', imageDescription: 'A red fruit.' }]);
     expect(withBundledArt.cards[0]!.image).toBe('/art/mela.svg');
     const next = { ...restored, session: { id: 'session', queue: ['it-mela'], total: 1, completed: 0, revealed: true, activeMs: 1000 } } satisfies State;

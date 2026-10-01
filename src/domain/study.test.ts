@@ -105,7 +105,7 @@ describe('local study limits and day boundaries', () => {
     expect(dueCards(reviewed, now)).toHaveLength(0);
   });
 
-  it('prioritizes due reviews and respects daily new-card and total-review limits', () => {
+  it('keeps scheduler-critical learning due and applies category-correct daily limits', () => {
     let data = fresh();
     data.preferences.newCardLimit = 1;
     expect(dueCards(data, now).map(card => card.id)).toEqual(['one']);
@@ -116,14 +116,16 @@ describe('local study limits and day boundaries', () => {
     data.preferences.newCardLimit = 3;
     expect(dueCards(data, dueTime).map(card => card.id)).toEqual(['one', 'two', 'three']);
     data.preferences.reviewLimit = 1;
-    expect(dueCards(data, dueTime)).toEqual([]);
+    expect(dueCards(data, dueTime).map(card=>card.id)).toEqual(['one','two','three']);
+    let reviewCapped=fresh();reviewCapped.preferences.reviewLimit=1;reviewCapped=review(reviewCapped,5,'intro');const reviewDue=new Date(reviewCapped.states['one']!.due);reviewCapped=review(reviewCapped,3,'mature-review','one',reviewDue);
+    expect(dueCards(reviewCapped,reviewDue)).toEqual([]);
   });
 
-  it('counts global limits even when selecting one deck and excludes suspended content', () => {
+  it('does not count new introductions as mature reviews and excludes suspended content', () => {
     let data = fresh();
     data.preferences.reviewLimit = 1;
     data = review(data);
-    expect(dueCards(data, now, 'italian')).toEqual([]);
+    expect(dueCards(data, now, 'italian').map(card=>card.id)).toEqual(['two','three']);
     data = fresh();
     data.cards[0]!.suspended = true;
     expect(dueCards(data, now).map(card => card.id)).toEqual(['two', 'three']);
