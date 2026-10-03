@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { LocalStudyStore } from '../data/study-store';
-import type { CardState,ReviewEvent } from '../../domain/models';
+import type { AdministrativeEvent,CardState,ReviewEvent } from '../../domain/models';
 import { dayKey } from '../../domain/time';
 
 @Component({selector:'hr-review-history',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule],templateUrl:'./review-history.html',styleUrl:'./review-history.css'})
@@ -17,4 +17,9 @@ export class ReviewHistoryComponent{
  readonly rows=computed(()=>[...this.reviews().map(event=>({timestamp:event.timestamp,id:event.id,type:'Review' as const,event})),...this.administrative().map(event=>({timestamp:event.timestamp,id:event.id,type:'Management' as const,event}))].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,this.limit()));
  state(value:CardState):string{return ['New','Learning','Review','Relearning'][value.state]??'Unavailable';}date(value:string):string{return new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZone:this.store.data()?.preferences.timeZone??'Europe/London'}).format(new Date(value));}duration(ms?:number):string{return ms===undefined?'Unavailable':`${(ms/1000).toFixed(1)} s`;}
  async manage(action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'):Promise<void>{const id=this.cardId();if(!id)return;try{if(action==='set-due'&&!this.due)throw new Error('Choose a due date.');await this.store.manageCards([id],action,action==='set-due'?`${this.due}T12:00:00.000Z`:undefined);this.confirmReset.set(false);this.message.set(action==='reset'?'Card returned to New. Review history was preserved.':'Card schedule updated.');this.error.set('');}catch(error){this.error.set(error instanceof Error?error.message:'Could not update the card.');}}
+ administrativeLabel(event:AdministrativeEvent):string{return event.action==='undo'?`Undid ${event.detail??'management change'}`:event.action.replace('-',' ');}
+ isUndone(event:AdministrativeEvent):boolean{return !!this.store.data()?.administrativeEvents.some(item=>item.action==='undo'&&item.reversesEventId===event.id);}
+ undoStatus(event:AdministrativeEvent){return this.store.administrativeUndoStatus(event.id);}
+ isUndoLeader(event:AdministrativeEvent):boolean{const status=this.undoStatus(event);return status.eventIds[0]===event.id;}
+ async undoAdministrative(event:AdministrativeEvent):Promise<void>{try{await this.store.undoAdministrative(event.id);this.message.set('Management change undone. Review history and cosmetics were unchanged.');this.error.set('');}catch(error){this.error.set(error instanceof Error?error.message:'Could not undo this management change.');}}
 }

@@ -154,8 +154,15 @@ export interface PracticeEvent {
 
 export interface AdministrativeEvent {
   id:string;userId:string;cardId:string;timestamp:string;
-  action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'|'reposition';
-  previousState?:CardState;resultingState?:CardState;detail?:string;
+  action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'|'reposition'|'undo';
+  /** One user operation, including every member of a bulk change. */
+  groupId?:string;
+  /** Present only on immutable reversal records. */
+  reversesEventId?:string;
+  previousState?:CardState;resultingState?:CardState;
+  previousControl?:CardControl;resultingControl?:CardControl;
+  previousSuspended?:boolean;resultingSuspended?:boolean;
+  detail?:string;
 }
 
 export interface State {

@@ -4,6 +4,18 @@ Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build loca
 
 ## Current durable handoff
 
+### 3 October 2026 Review workflow closure recovery
+
+- **Recovered state:** clean `main` at `9a05e75`; accepted schema-6 Focus/Practice, Study settings/history, Anki conversion, organisation/media, rewards and platform evidence are intact. No reset or learner-data mutation occurred.
+- **Tracked scope:** HR-PERF-01 moved to `IN_PROGRESS`; HR-HIST-04, HR-STUDY-09–12 and HR-PLAN-04 are recorded `IN_PROGRESS` before implementation. HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION`.
+- **Baseline:** production initial bundle 867.32 kB / 199.15 kB transfer against the unchanged 850 kB warning. Existing Anki/SQLite/XLSX/ZIP/Focus secondary code is lazy; the exact eager graph is being measured before adding UI weight.
+- **Delegation:** the lead owns event/scheduler contracts, tracker, integration and performance acceptance. Two bounded read-only delegates are reviewing the bundle graph and reviewer/history seams; Easy Days semantics remain lead-owned.
+- **Performance batch:** HR-PERF-01 is `DONE`. The root Appearance controls were separated into a deferred standalone component, removing an otherwise root-only Material slide-toggle dependency from startup. The production initial bundle fell from **867.32 kB / 199.15 kB transfer** to **842.72 kB / 197.31 kB transfer**; the existing 850 kB ceiling is unchanged. `ng build --stats-json` and Chromium/WebKit effects-preference persistence (2/2) pass. Study remains intentionally eager as the primary workflow.
+- **Relevant uncommitted changes:** `src/app/settings/appearance-settings.ts`, the root Settings integration in `app.ts`/`app.html`, and this tracker/handoff evidence. No schema or learner-data change was made in this batch.
+- **Administrative undo batch:** HR-HIST-04 is `DONE`. New management operations retain grouped before/after projections and use one atomic stale-state check before appending immutable reversal records. Set-due, reset, bury/unbury, suspend/unsuspend and reposition are covered; review and reward logs are unchanged. Legacy records without snapshots stay visible and non-undoable. Focused store/domain tests pass **16/16**, History reset/undo/reload passes Chromium and WebKit **2/2**, and the production build passes at **847.86 kB / 198.41 kB transfer**, still below the unchanged ceiling.
+- **Relevant uncommitted changes:** performance split; `src/domain/administrative.ts` and administrative model/backup validation; LocalStudyStore and Collection suspension routing; History UI; focused unit/browser tests; tracker/handoff evidence. No IndexedDB clearing or destructive migration occurred.
+- **Exact next action:** checkpoint these completed batches, then implement default-off Auto Advance with generation-bound timers, deliberate lifecycle pause, explicit rating and audio-aware settlement.
+
 ### 3 October 2026 Custom Study and Focused Practice final handoff
 
 - **Branch/worktree:** `main` at local checkpoint `f88a37b` (`Add focused practice sessions`), clean after this handoff amendment; nothing is pushed or deployed. No IndexedDB clearing or learner-data mutation was performed.
