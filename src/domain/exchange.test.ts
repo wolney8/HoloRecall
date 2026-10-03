@@ -14,8 +14,8 @@ const asset: LocalAsset = { id: 'test-art', name: 'test.png', mime: 'image/png',
 const audioAsset: LocalAsset = { id: 'test-audio', name: 'test.mp3', mime: 'audio/mpeg', dataUrl: 'data:audio/mpeg;base64,SUQzBAAAAAA=', credit: 'Speaker', source: '', license: 'Original' };
 function sample(): ContentBundle {
   return {
-    decks: [{ id: 'exchange-italian', name: 'Italiano: caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame' }],
-    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', frontAudio: ['asset:test-audio'], backAudio: ['asset:test-audio'], designSetId: 'warm-frame', tags: ['caffè', 'Due parole'] }],
+    decks: [{ id: 'exchange-course', name: 'Italiano',description:'Course',suspended:false},{ id: 'exchange-italian', name: 'Caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame',parentId:'exchange-course' }],
+    cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', frontAudio: ['asset:test-audio'], backAudio: ['asset:test-audio'], designSetId: 'warm-frame', tags: ['caffè', 'Due parole'],siblingGroupId:'exchange-caffe-note' }],
     designs: [{ id: 'warm-frame', name: 'Warm frame', background: 'asset:test-art', texture: 'asset:test-art', frames: { 'secret-rare': 'asset:test-art' }, finish: 'metallic', finishes: { 'secret-rare': 'starfield' }, layout: 'ornate', backgroundFit: 'cover', backgroundPositionX: 25, backgroundPositionY: 60, frameFit: 'contain', credit: 'Artist', source: 'Local', license: 'Original' }],
     assets: [asset, audioAsset],
   };
@@ -23,14 +23,14 @@ function sample(): ContentBundle {
 
 describe('versioned content exchange', () => {
   it('ships valid downloadable workbooks and a self-contained sixteen-illustration example', async () => {
-    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v3.xlsx')), 'blank.xlsx', state());
+    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v4.xlsx')), 'blank.xlsx', state());
     expect(blank.errors).toEqual([]); expect(blank.bundle.cards).toHaveLength(0);
-    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v3.xlsx')), 'example.xlsx', state());
+    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v4.xlsx')), 'example.xlsx', state());
     expect(example.errors).toEqual([]); expect(example.bundle.cards).toHaveLength(16); expect(example.bundle.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
-    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v3.zip')), 'portable.zip', state());
+    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v4.zip')), 'portable.zip', state());
     expect(portable.errors).toEqual([]); expect(portable.bundle.assets).toHaveLength(16); expect(portable.bundle.cards.every(card => card.image?.startsWith('asset:'))).toBe(true);
   });
-  it.each(['v1', 'v2'])('keeps published %s content packages readable', async version => {
+  it.each(['v1', 'v2','v3'])('keeps published %s content packages readable', async version => {
     const workbook = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.xlsx`)), `${version}.xlsx`, state());
     const portable = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.zip`)), `${version}.zip`, state());
     expect(workbook.errors).toEqual([]); expect(workbook.bundle.cards).toHaveLength(16);
@@ -47,6 +47,7 @@ describe('versioned content exchange', () => {
     expect(preview.errors).toEqual([]); expect(preview.newCards).toEqual(['exchange-caffe']);
     expect(preview.bundle.cards[0]).toEqual(original.cards[0]); expect(preview.bundle.designs).toEqual(original.designs);
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
+    expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
   });
   it('preserves repeated tags already permitted by the card editor', async () => {
     const data = state(); const bundle = contentFromState(data); bundle.cards[0].tags = ['Verbs', 'Verbs'];

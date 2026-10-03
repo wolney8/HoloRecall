@@ -77,7 +77,7 @@ export class AppComponent {
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
   selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
-  bulkDeckId='';bulkTags='';bulkRemoveTags='';renameTagFrom='';renameTagTo='';
+  bulkDeckId='';bulkTags='';bulkRemoveTags='';bulkDue='';bulkPosition:number|null=null;renameTagFrom='';renameTagTo='';
   private editorBaseline='';
   settings={newCardLimit:10,reviewLimit:100,timeZone:'Europe/London'};
   rewardSettings:Record<Rarity,number>={common:1,uncommon:2,rare:3,'holo-rare':5,'ultra-rare':8,'secret-rare':12,relic:20};
@@ -116,6 +116,8 @@ export class AppComponent {
   private confidenceTimer=0;
   private feedbackResolve:(()=>void)|null=null;
   private studyPresentationRun=0;
+  private studyDealAnimation:Animation|null=null;
+  readonly expandedDecks=new Set<string>();
   constructor(){
     void this.store.init();
     effect(()=>{
@@ -128,7 +130,7 @@ export class AppComponent {
       if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}
     });
     const activity=()=>{this.lastActivity=performance.now();};
-    const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();this.settleConfidenceFeedback();}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
+    const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();this.cancelStudyDealAnimation();this.settleConfidenceFeedback();}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
     const timer=setInterval(()=>{
       const tick=performance.now();
       if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min((this.currentPreset()?.maxAnswerSeconds??120)*1000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
@@ -137,7 +139,7 @@ export class AppComponent {
       if(this.ticks%30===0)this.now.set(new Date());
     },1000);
     document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);
-    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearResultMotion();window.clearTimeout(this.confidenceTimer);document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
+    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1);return ['dashboard','library','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
@@ -146,7 +148,13 @@ export class AppComponent {
   predictedInterval(rating:1|2|3|4|5):string{const data=this.data(),card=this.current(),preset=this.currentPreset();if(!data||!card||!preset)return'';const previous=data.states[card.id]?hydrateCard(data.states[card.id]!):createEmptyCard(new Date());const result=fsrs(fsrsParameters(preset)).next(previous,new Date(),mapRating(rating)).card,days=result.scheduled_days;return days<1?'Soon':days===1?'1 day':`${days} days`;}
   visibleTimer():string{const seconds=Math.floor(this.elapsedMs/1000);return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;}
   go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study')this.cancelStudyPresentation();if(screen!=='library')this.selectedCardIds=new Set();this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);if(screen==='settings')this.loadSettings();window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
-  deckCards(id:string):CardContent[]{return this.data()?.cards.filter(c=>c.deckId===id)??[];}
+  topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}
+  deckChildren(id:string):Deck[]{return this.data()?.decks.filter(deck=>deck.parentId===id)??[];}
+  private deckBranchIds(id:string):Set<string>{const state=this.data(),ids=new Set<string>([id]);if(!state)return ids;let changed=true;while(changed){changed=false;for(const deck of state.decks)if(deck.parentId&&ids.has(deck.parentId)&&!ids.has(deck.id)){ids.add(deck.id);changed=true;}}return ids;}
+  deckCards(id:string):CardContent[]{const state=this.data();if(!state)return[];const ids=this.deckBranchIds(id);return state.cards.filter(card=>ids.has(card.deckId));}
+  deckSubdeckCount(id:string):number{return this.deckBranchIds(id).size-1;}
+  deckRows(id:string):{deck:Deck;depth:number}[]{const rows:{deck:Deck;depth:number}[]=[];const visit=(parent:string,depth:number)=>{for(const deck of this.deckChildren(parent)){rows.push({deck,depth});visit(deck.id,depth+1);}};visit(id,1);return rows;}
+  toggleDeck(id:string):void{if(this.expandedDecks.has(id))this.expandedDecks.delete(id);else this.expandedDecks.add(id);}
   deckReady(id:string):number{return this.data()?dueCards(this.data()!,this.now(),id).length:0;}
   filteredCards():CardContent[]{return this.library.page().items.map(item=>item.card);}
   deckPath(id:string):string{return this.data()?deckPath(this.data()!,id):'';}
@@ -216,18 +224,35 @@ export class AppComponent {
     await new Promise<void>(resolve=>{this.feedbackResolve=resolve;this.confidenceTimer=window.setTimeout(()=>this.settleConfidenceFeedback(),900);});
   }
   private async playDealTransition(run:number):Promise<void>{
-    if(!this.motionEnabled()||run!==this.studyPresentationRun)return;
+    if(!this.motionEnabled()||!this.lifecycle.active()||run!==this.studyPresentationRun)return;
     this.studyTransition.set('deal');
     const stage=document.querySelector<HTMLElement>('[data-testid="study-deck-stage"]');
     if(!stage)return;
     const outgoing=stage.animate([{opacity:1,transform:'translateX(0) rotate(0)'},{opacity:0,transform:'translateX(-34px) rotate(-1.5deg)'}],{duration:180,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
-    await Promise.race([outgoing.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,260))]);
-    if(run!==this.studyPresentationRun)return;
-    this.studyPresentationCard.set(null);await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
-    if(this.current()){const incoming=stage.animate([{opacity:0,transform:'translateX(32px) rotate(1.5deg)'},{opacity:1,transform:'translateX(0) rotate(0)'}],{duration:260,easing:'cubic-bezier(.16,1,.3,1)'});await Promise.race([incoming.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,340))]);}
+    let owned:Animation=outgoing;
+    this.studyDealAnimation=outgoing;
+    try{
+      await Promise.race([outgoing.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,260))]);
+      if(run!==this.studyPresentationRun||!this.lifecycle.active())return;
+      this.studyPresentationCard.set(null);await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
+      if(run!==this.studyPresentationRun||!this.lifecycle.active())return;
+      // The outgoing fill belongs to the previous card. Cancel it before the
+      // incoming animation so it can never hide a later card after that
+      // animation releases its temporary effect.
+      outgoing.cancel();
+      if(this.current()){
+        const incoming=stage.animate([{opacity:0,transform:'translateX(32px) rotate(1.5deg)'},{opacity:1,transform:'translateX(0) rotate(0)'}],{duration:260,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'});
+        owned=incoming;
+        this.studyDealAnimation=incoming;
+        await Promise.race([incoming.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,340))]);
+      }
+    }finally{
+      if(this.studyDealAnimation===owned){owned.cancel();this.studyDealAnimation=null;}
+    }
   }
   private settleConfidenceFeedback():void{window.clearTimeout(this.confidenceTimer);this.confidenceTimer=0;this.confidenceFeedback.set(null);const resolve=this.feedbackResolve;this.feedbackResolve=null;resolve?.();}
-  private clearStudyPresentation():void{this.settleConfidenceFeedback();this.studyPresentationCard.set(null);this.studyPresentationRating.set(null);this.studyTransition.set('idle');}
+  private cancelStudyDealAnimation():void{this.studyDealAnimation?.cancel();this.studyDealAnimation=null;}
+  private clearStudyPresentation():void{this.settleConfidenceFeedback();this.cancelStudyDealAnimation();this.studyPresentationCard.set(null);this.studyPresentationRating.set(null);this.studyTransition.set('idle');}
   private cancelStudyPresentation():void{this.studyPresentationRun++;this.clearStudyPresentation();this.busy.set(false);}
   duration(ms:number):string{const seconds=Math.round(ms/1000);if(ms>0&&seconds===0)return'<1s';return seconds>=60?`${Math.floor(seconds/60)}m ${seconds%60}s`:`${seconds}s`;}
   private fail(error:unknown):void{this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}
@@ -245,6 +270,7 @@ export class AppComponent {
   selectShown():void{this.selectedCardIds=new Set(this.filteredCards().map(card=>card.id));}
   selectAllMatching():void{this.selectedCardIds=new Set(this.library.allMatchingIds());}
   async restoreSelected():Promise<void>{if(!this.selectedCardIds.size)return;this.busy.set(true);try{await this.store.bulkOrganizeCards([...this.selectedCardIds],{archived:false});this.message.set(`${this.selectedCardIds.size} cards restored.`);this.selectedCardIds=new Set();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async manageSelected(action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'|'reposition'):Promise<void>{if(this.busy()||!this.selectedCardIds.size)return;if(action==='reset'&&!confirm(`Reset ${this.selectedCardIds.size} selected cards to New? Review history and cosmetics will be preserved.`))return;this.busy.set(true);try{const value=action==='set-due'?`${this.bulkDue}T12:00:00.000Z`:action==='reposition'?this.bulkPosition??undefined:undefined;await this.store.manageCards([...this.selectedCardIds],action,value);this.message.set(`${this.selectedCardIds.size} cards updated. Administrative changes do not count as reviews.`);}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   tagUsage(tag:string):number{return this.library.index()?.cards.filter(item=>item.tags.some(value=>value.toLocaleLowerCase('en')===tag.toLocaleLowerCase('en'))).length??0;}
   onSearchKey(event:KeyboardEvent):void{const results=this.library.page().results.slice(0,8);if(event.key==='Escape'){this.setLibrarySearch('');return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();const direction=event.key==='ArrowDown'?1:-1;this.searchResultIndex.set((this.searchResultIndex()+direction+results.length)%Math.max(1,results.length));return;}if(event.key==='Enter'&&results[this.searchResultIndex()]){event.preventDefault();this.chooseSearchResult(results[this.searchResultIndex()]!);}}
   async cleanUnusedMedia():Promise<void>{const assets=this.store.unusedAssets();if(!assets.length){this.message.set('No unused local media.');return;}if(!confirm(`Remove ${assets.length} unreferenced media ${assets.length===1?'file':'files'}? This does not remove card or design content.`))return;try{const count=await this.store.removeUnusedAssets(assets.map(asset=>asset.id));this.message.set(`${count} unused media ${count===1?'file':'files'} removed.`);}catch(e){this.fail(e);}}

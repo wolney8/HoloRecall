@@ -25,6 +25,21 @@ async function legacyPackage(schemaExtra = false): Promise<Uint8Array> {
   const zip = new JSZip(); zip.file('collection.anki2', db.export()); zip.file('media', '{}'); db.close(); return zip.generateAsync({ type: 'uint8array' });
 }
 
+async function warningPackage(): Promise<Uint8Array> {
+  const SQL = await initSqlJs(); const db = new SQL.Database();
+  db.run('create table col (models text, decks text)'); db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)'); db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models = {
+    1: { name: 'TTS reference', type: 0, flds: [{ name: 'Front' }, { name: 'Back' }], tmpls: [{ name: 'Spoken card', qfmt: '{{Front}} {{tts en_US voices=Apple_Samantha:Front}} <a href="https://www.treccani.it/vocabolario/ciao">Treccani</a>', afmt: '{{Back}} [anki:tts lang=en_US]{{Back}}[/anki:tts]' }] },
+    2: { name: 'Remote image', type: 0, flds: [{ name: 'Front' }, { name: 'Back' }], tmpls: [{ name: 'Remote', qfmt: '{{Front}}<img src="https://example.test/required.png">', afmt: '{{Back}}' }] },
+    3: { name: 'Remote-only prompt', type: 0, flds: [{ name: 'Back' }], tmpls: [{ name: 'Remote only', qfmt: '<img src="https://example.test/only.png">', afmt: '{{Back}}' }] },
+  };
+  db.run('insert into col values (?,?)', [JSON.stringify(models), JSON.stringify({ 10: { name: 'Italian Lesson::01 Greetings' } })]);
+  db.run('insert into notes values (?,?,?,?,?)', [100, 'tts-guid', 1, '', 'ciao\x1fhello']); db.run('insert into cards values (?,?,?,?)', [200, 100, 10, 0]);
+  db.run('insert into notes values (?,?,?,?,?)', [101, 'remote-guid', 2, '', 'salve\x1fgreetings']); db.run('insert into cards values (?,?,?,?)', [201, 101, 10, 0]);
+  db.run('insert into notes values (?,?,?,?,?)', [102, 'remote-only-guid', 3, '', 'unavailable image']); db.run('insert into cards values (?,?,?,?)', [202, 102, 10, 0]);
+  const zip = new JSZip(); zip.file('collection.anki2', db.export()); zip.file('media', '{}'); db.close(); return zip.generateAsync({ type: 'uint8array' });
+}
+
 describe('Anki content-only import', () => {
   it('analyses a legacy schema package as notes and generated cards, including reversed and cloze cards', async () => {
     const analysis = await analyseAnkiPackage(await legacyPackage(), 'tiny.apkg');
@@ -46,6 +61,25 @@ describe('Anki content-only import', () => {
     const changedSource = changed.modelSchemas.find(model => model.name.startsWith('Basic'))!;
     expect(changedSource.signature).not.toBe(source.signature);
     expect(changed.cards.find(card => card.id.includes('basic-guid-0'))?.pronunciation).toBe('');
+  });
+  it('keeps TTS/filter learning text, ignores safe hyperlinks and classifies remote media separately', async () => {
+    const analysis=await analyseAnkiPackage(await warningPackage(),'warnings.apkg');
+    const spoken=analysis.cards.find(card=>card.id.includes('tts-guid'))!;
+    expect(spoken.front).toContain('ciao');expect(spoken.front).toContain('Treccani');expect(spoken.front).not.toMatch(/{{|anki:tts/);
+    expect(spoken.answer).toContain('hello');expect(spoken.answer).not.toMatch(/{{|anki:tts/);
+    expect(analysis.conversion).toEqual({normal:0,simplified:2,excluded:1,unsafe:0});
+    const info=analysis.issues.find(issue=>issue.severity==='info'&&issue.message.includes('TTS'))!;expect(info).toMatchObject({count:1,occurrences:1});
+    expect(info.examples).toContain('TTS reference / Spoken card');
+    const remote=analysis.issues.find(issue=>issue.kind==='remote-dependency')!;expect(remote).toMatchObject({severity:'warning',count:2,occurrences:2});
+    expect(remote.examples).toContain('https://example.test/required.png');
+    expect(analysis.issues.flatMap(issue=>issue.examples)).not.toContain('https://www.treccani.it/vocabolario/ciao');
+    expect(analysis.cards.some(card=>card.id.includes('remote-only-guid'))).toBe(false);expect(analysis.issues.some(issue=>issue.severity==='error'&&issue.message.includes('no usable prompt'))).toBe(true);
+  });
+  it('preserves the authoritative imported hierarchy with stable identities',async()=>{
+    const first=await analyseAnkiPackage(await warningPackage(),'first.apkg'),second=await analyseAnkiPackage(await warningPackage(),'renamed.apkg');
+    const parent=first.decks.find(deck=>deck.name==='Italian Lesson')!,child=first.decks.find(deck=>deck.name==='01 Greetings')!;
+    expect(child.parentId).toBe(parent.id);expect(first.cards.every(card=>card.deckId===child.id)).toBe(true);
+    expect(second.decks).toEqual(first.decks.map(deck=>({...deck,description:deck.description.replace('first.apkg','renamed.apkg')})));
   });
   it('rejects collection backups and malformed archives without mutation', async () => {
     await expect(analyseAnkiPackage(await legacyPackage(), 'collection.apkg')).rejects.toThrow(/collection backup/i);

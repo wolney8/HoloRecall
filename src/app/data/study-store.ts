@@ -244,7 +244,8 @@ export class LocalStudyStore {
   async restoreJson(json: string): Promise<void> {
     const parsed=parseBackup(json,SEED_CARDS),assets=await Promise.all(parsed.assets.map(describeAsset)),restored={...parsed,assets};
     await this.change(data => {
-      if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(createInitialState(SEED_DECKS, SEED_CARDS).cards) || JSON.stringify(data.decks) !== JSON.stringify(SEED_DECKS)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
+      const initial=createInitialState(SEED_DECKS,SEED_CARDS);
+      if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(initial.cards) || JSON.stringify(data.decks) !== JSON.stringify(initial.decks)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
       return { ...restored, version: data.version + 1 };
     });
   }

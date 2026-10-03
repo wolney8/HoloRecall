@@ -1,8 +1,37 @@
 # Project status and durable handoff
 
-Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
+Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
 ## Search and organisation milestone handoff
+
+### 3 October 2026 defect-recovery final handoff
+
+- **Requirement state:** HR-BUG-ANKI-01, HR-BUG-ANKI-02 and HR-BUG-STUDY-01 are `DONE` in the canonical tracker. Recovery and destructive checks used isolated browser fixtures; no IndexedDB clearing, reset or mutation of Will's imported decks/reviews occurred.
+- **Delivered:** semantic Anki conversion outcomes and compact disclosures; safe TTS/filter simplification; hyperlink/resource distinction; required-prompt validation; aggregate parent journeys with scoped subdecks; parent/child Study semantics; content-format v4 hierarchy/sibling portability; and generation-owned, fail-visible Study deal animations.
+- **Checks:** unit/domain **104/104 passed**; production build succeeded at **850.03 kB initial / 194.34 kB estimated transfer** with a 33-byte budget warning; the updated animation-enabled defect suite passed **8/8**; complete Chromium/WebKit desktop passed **118/118** in 6.1 minutes; WebKit compact/large/landscape passed **18/18** after a real 200%-text import-summary overflow was fixed and the complete phone matrix rerun. No skips, retries or timeout increases.
+- **Evidence:** durable screenshots and Chromium/WebKit recordings are under `.runtime/evidence/hr-anki-defects-20261003/`. They cover classified import preview, imported hierarchy and consecutive visible imported-card transitions.
+- **Platform boundary:** Playwright WebKit is engine evidence only. Safari, WKWebView, VoiceOver, simulator, physical iPhone and native macOS packaging remain unverified.
+- **Interrupted Study Settings state:** schema-5 presets/history/import-normalisation work at `91800ea` plus preserved follow-up UI/tests now passes the complete regression gate. HR-STUDY-02 is moved back to `VERIFY` because recovery review found global completed-today counting can consume an unrelated selected deck's cap and per-child counters do not yet seed earlier same-day sessions. Other documented deferred capabilities remain unchanged.
+- **Exact next action:** correct and test HR-STUDY-02 selected-branch/repeated-session daily-limit accounting. Do not begin another milestone.
+
+### 3 October 2026 defect-recovery checkpoint
+
+- **Recovered branch/state:** `main` at `91800ea` with the interrupted Study Settings follow-up changes preserved in the working tree. No reset, storage clearing or learner-data mutation was performed. The local Angular server is retained on port 4200.
+- **Priority scope:** HR-BUG-ANKI-01, HR-BUG-ANKI-02 and HR-BUG-STUDY-01 are recorded `IN_PROGRESS` in the canonical tracker before implementation. Broader Study Settings work is paused until these defects have evidence-backed fixes.
+- **Interrupted milestone state:** the schema/domain/settings/history implementation is checkpointed in `91800ea`; follow-up UI, browser-test and documentation changes remain uncommitted. Existing tracker entries currently say DONE based on prior focused evidence, but final full-suite reconciliation was interrupted and must be retained honestly.
+- **Known interrupted regression evidence:** the prior desktop Chromium/WebKit run exposed failures in full-backup restore, uploaded-design backup and page-reveal inventory. These remain open integration checks; they are not being discarded while the three reported Anki defects take priority.
+- **Delegation:** two bounded read-only investigations cover Anki warning/hierarchy conversion and Study presentation lifecycle. The lead owns tracker state, shared schemas, integration and final acceptance.
+- **Exact next action:** reproduce the observed TTS/URL classifications, imported hierarchy flattening and multi-card disappearance with isolated Anki-derived fixtures; then implement minimal shared fixes and targeted evidence before resuming broader milestone reconciliation.
+
+### 3 October 2026 defect implementation batch
+
+- **Requirement state:** HR-BUG-ANKI-01, HR-BUG-ANKI-02 and HR-BUG-STUDY-01 are `VERIFY`. None is marked DONE until the complete regression gate finishes.
+- **Import fix:** conversion now records normal/simplified/excluded/unsafe card outcomes, keeps occurrence details separate, renders semantic Material states and requires acknowledgement only for excluded/unsafe cards. Supported Anki TTS/filter/type-answer constructs retain inert field text. Anchor `href` values are not remote dependencies; resource-bearing remote elements remain unfetched warnings. Missing required image-only prompts are excluded instead of becoming empty cards.
+- **Hierarchy fix:** genuine fixture inspection showed the importer already produced stable parent relationships. Dashboard/Decks had flattened all levels and mixed direct card totals with recursive ready counts. They now show aggregate top-level journeys with expandable branch-scoped subdecks. Portable content format v4 carries parent and sibling IDs; v1–v3 remain readable.
+- **Study fix:** the outgoing stage animation's uncancelled `fill:forwards` reasserted opacity 0 after the incoming animation ended. Deal animations are now explicitly owned and cancelled on every settlement/interruption path. The new current card remains fail-visible.
+- **Checks so far:** full unit/domain **104/104 passed**; production build passed at **849.96 kB initial / 194.26 kB estimated transfer**; dedicated animation-enabled Chromium/WebKit defect suite **6/6 passed**. Previously interrupted JSON restore, design-backup version and page-reveal inventory regressions were corrected and reran **6/6** across both engines.
+- **Visual evidence:** `test-results/anki-defects-HR-BUG-ANKI-0-27152-remote-media-and-safe-links-{chromium,webkit}/`, `test-results/anki-defects-HR-BUG-ANKI-0-d0377-urneys-with-scoped-subdecks-{chromium,webkit}/`, and `test-results/anki-defects-HR-BUG-STUDY--bfd76-le-visible-after-every-deal-{chromium,webkit}/` contain recordings and screenshots.
+- **Exact next action:** run the complete desktop and phone-profile browser regressions, fix any material failures without weakening assertions, then update requirement status/evidence and checkpoint the defect recovery.
 
 ### Study configuration/history milestone recovery
 
@@ -55,7 +84,7 @@ Updated: 30 September 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build l
 - **Checks:** unit/domain **88/88 passed**; production build passed at **827.98 kB raw / 188.50 kB estimated transfer**; final stable Playwright run **119/119 passed** in **3.1 minutes** with no skips. A prior 118/119 run found a real lazy-Collection assertion race; the assertion now waits for the owned collection rows and passed in both engines before the stable full rerun. No timeout was increased.
 - **Performance:** Node 24.3/macOS observed 1k under the 500/100 ms index/query test budgets and 10k at **777.8/10.9 ms**. Final browser observations: Chromium **1,985/47 ms**, WebKit **1,096/55 ms** for 10k index+render/query+render. These are local desktop baselines, not service-level promises.
 - **Visual evidence:** animation-enabled search and filter/navigation recordings for Chromium and WebKit are under ignored `test-results/organisation-HR-ORG-01-*/video.webm` and `test-results/organisation-HR-ORG-02-*/video.webm`.
-- **Limitations:** deck-content format v3 flattens schema-4 hierarchy/archive/creation metadata; full JSON backup preserves it. Initial web load still hydrates registered media into memory. Native storage, Safari/WKWebView, simulator/device, VoiceOver and macOS packaging remain unverified.
+- **Historical limitation at this checkpoint:** deck-content format v3 flattened hierarchy; the 3 October defect-recovery work supersedes this with format v4 parent/sibling portability while keeping v1–v3 readable. Archive/creation metadata remains full-backup only. Initial web load still hydrates registered media into memory. Native storage, Safari/WKWebView, simulator/device, VoiceOver and macOS packaging remain unverified.
 - **Recommended next bounded milestone:** study configuration and review-history management: per-deck queue options with clear precedence, searchable event/correction history and bounded custom-study/practice controls. Do not start it without a new authorization.
 - **Exact restart point:** HR-ORG-06 evidence expansion is the only unfinished item in this milestone. For product work, begin from the recommended bounded milestone after authorization; preserve the local search/media contracts and content-format limitation above.
 

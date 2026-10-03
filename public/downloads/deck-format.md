@@ -1,8 +1,10 @@
-# HoloRecall deck-content format, version 3
+# HoloRecall deck-content format, version 4
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Download the [blank workbook](/downloads/holorecall-blank-v3.xlsx), [16-card Italian example](/downloads/holorecall-italian-v3.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v3.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 3 adds separate front/answer audio references. Versions 1 and 2 remain import-compatible.
+Version 4 preserves explicit deck parent relationships and card sibling groups. These identities keep imported learning journeys and reversed/cloze sibling behavior intact across HoloRecall portable exchange. Versions 1–3 remain readable; because they did not contain these columns, their missing hierarchy is never guessed from punctuation. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+
+Download the [blank workbook](/downloads/holorecall-blank-v4.xlsx), [16-card Italian example](/downloads/holorecall-italian-v4.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v4.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 4 builds on version 3 audio support with explicit hierarchy and sibling identity.
 
 ## Workbook contract
 
@@ -16,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 3
+format_version | 4
 content_only | true
 ```
 
@@ -25,7 +27,7 @@ Exactly these two data rows are required, in either order. No other metadata ent
 ### Decks
 
 ```text
-deck_id | title | description | design_set_id | suspended
+deck_id | title | description | design_set_id | suspended | parent_deck_id
 ```
 
 | Field | Meaning and validation |
@@ -35,11 +37,12 @@ deck_id | title | description | design_set_id | suspended
 | `description` | Optional text, maximum 2,000 characters; defaults to empty. |
 | `design_set_id` | Optional ID from Designs or an existing local design; blank uses the application default. |
 | `suspended` | Literal `true` or `false`; blank defaults to `false`. |
+| `parent_deck_id` | Optional ID of another row in Decks or an existing local deck. Self-reference, missing parents and cycles are rejected. Blank creates a top-level journey. |
 
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id
 ```
 
 | Field | Meaning and validation |
@@ -62,6 +65,7 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `finish` | Optional card-level override: `matte`, `metallic`, `holographic`, `prismatic`, `etched`, `starfield`, `crystal`, `gilded`, or `aurora`. |
 | `front_audio` | JSON array of up to eight `asset:` references. These controls are available before reveal. Blank means `[]`. |
 | `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
+| `sibling_group_id` | Optional stable ID shared by cards generated from the same note, such as reversed or cloze siblings. It carries content relationships only, never review history. |
 
 ### Designs
 
@@ -113,4 +117,4 @@ Changing an existing card's meaning substantially while retaining its ID preserv
 
 The implementation uses pinned ExcelJS 4.4.0 and JSZip 3.10.2. It uses ExcelJS's supported `Workbook`, `xlsx.load`, `xlsx.writeBuffer`, worksheet/cell APIs and JSZip's supported asynchronous read/write APIs. See the [ExcelJS v4.4.0 documentation](https://github.com/exceljs/exceljs/blob/v4.4.0/README.md), [JSZip loadAsync](https://stuk.github.io/jszip/documentation/api_jszip/load_async.html) and [JSZip generateAsync](https://stuk.github.io/jszip/documentation/api_jszip/generate_async.html). Limits are checked before decompression, and browser image decoding is required before application.
 
-Regenerate checked-in templates/examples using `node scripts/generate-workbooks.mjs` from the project root after dependencies and the project Playwright Chromium are installed. The command writes only the documented public downloads and ignored build scratch files.
+Regenerate checked-in templates/examples with the repository workbook generator after dependencies and the project Playwright Chromium are installed. The generator writes only the documented public downloads and build scratch files.
