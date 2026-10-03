@@ -30,6 +30,7 @@ describe('non-destructive v1 migration and backups', () => {
     validateState(migrated);
   });
   it('round-trips immutable review deck/day attribution and accepts legacy events without it',()=>{const reviewed=applyReview(fresh(),{id:'attributed',cardId:'it-mela',rating:4,sessionId:'session',now});const restored=parseBackup(exportBackup(reviewed,now));expect(restored.events[0]).toMatchObject({studyDeckId:'it',studyDeckPath:['it'],studyRootDeckId:'it',studyDay:'2026-09-28',studyTimeZone:'Europe/London'});const legacy=structuredClone(reviewed);const event=legacy.events[0]!;if(event.kind==='review'){delete event.studyDeckId;delete event.studyDeckPath;delete event.studyRootDeckId;delete event.studyDay;delete event.studyTimeZone;}expect(()=>validateState(legacy)).not.toThrow();});
+  it('rejects restored daily attribution that is not a real deck ancestry',()=>{const reviewed=applyReview(fresh(),{id:'attributed',cardId:'it-mela',rating:4,sessionId:'session',now});reviewed.decks.push({id:'unrelated',name:'Unrelated',description:'',suspended:false});const event=reviewed.events[0]!;if(event.kind!=='review')throw new Error('expected review');event.studyDeckPath=['it','unrelated'];event.studyRootDeckId='unrelated';expect(()=>validateState(reviewed)).toThrow('invalid review deck path');});
   it('backfills only missing seed illustrations on matching unedited content', () => {
     const state = fresh();
     const seed = [{ ...state.cards[0]!, image: '/art/mela.svg', imageDescription: 'A red fruit.', rarity: 'rare' as const }];
