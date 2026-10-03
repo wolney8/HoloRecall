@@ -1,6 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from '../../domain/models';
-import { applyReview, createInitialState, dueCards, serializeCard, undoLatestReview } from '../../domain/study';
+import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from '../../domain/models';
+import { applyScheduledReview, createInitialState, dayKey, dueCards, serializeCard, undoLatestReview } from '../../domain/study';
 import { createEmptyCard } from 'ts-fsrs';
 import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
@@ -9,6 +9,8 @@ import type { StudyPersistence } from './study-persistence';
 import { canonicalTags, validateDeckMove } from '../../domain/library';
 import { deduplicateContent, describeAsset, removableAssets } from '../../domain/media-registry';
 import { BALANCED_PRESET_ID, BUILT_IN_PRESETS, validateStudyPreset, validateTodayOverride } from '../../domain/study-settings';
+import { recordPracticeRating } from '../../domain/practice';
+import { validateFocusPreset } from '../../domain/focus-validation';
 
 export interface BulkCardPatch {
   deckId?: string; addTags?: string[]; removeTags?: string[]; rarity?: Rarity;
@@ -124,9 +126,14 @@ export class LocalStudyStore {
 
   async review(cardId: string, rating: ConfidenceRating, sessionId: string, eventId = crypto.randomUUID(), activeMs = 0): Promise<void> {
     await this.change(data => {
-      const next = applyReview(data, { cardId, rating, sessionId, id: eventId, now: new Date(), activeMs, recallMs: data.session?.recallMs });
+      if(data.session?.mode!=='scheduled')throw new Error('Only scheduled Study can update FSRS.');
+      const next = applyScheduledReview(data, { cardId, rating, sessionId, id: eventId, now: new Date(), activeMs, recallMs: data.session?.recallMs });
       return next === data ? data : reconcileSession(next, data);
     });
+  }
+
+  async practice(cardId:string,rating:ConfidenceRating,sessionId:string,eventId=crypto.randomUUID(),activeMs=0):Promise<void>{
+    await this.change(data=>reconcileSession(recordPracticeRating(data,{cardId,rating,sessionId,id:eventId,now:new Date(),activeMs,recallMs:data.session?.recallMs}),data));
   }
 
   async undo(expectedCardId?: string, expectedSessionId?: string): Promise<void> {
@@ -147,11 +154,14 @@ export class LocalStudyStore {
     await this.change(data => {
       const now = new Date();
       const reconciled = reconcileSession(data, data, now);
-      if (reconciled.session?.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
+      if (reconciled.session?.mode==='scheduled' && !reconciled.session.focus && reconciled.session.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
       const queue = dueCards(data, now, deckId).map(card => card.id);
-      return { ...data, version: data.version + 1, session: { id: crypto.randomUUID(), queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),...(deckId?{scopeDeckId:deckId}:{}) } };
+      return { ...data, version: data.version + 1, session: { id: crypto.randomUUID(), mode:'scheduled', label:'Study', queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),...(deckId?{scopeDeckId:deckId}:{}) } };
     });
   }
+  async startFocusSession(request:FocusSessionRequest):Promise<void>{const {focusPreview}=await import('../../domain/focus');await this.change(data=>{const now=new Date(),effective={...request,seed:request.seed??`run-${crypto.randomUUID()}`},preview=focusPreview(data,effective,now),queue=preview.cards.map(card=>card.id);return{...data,version:data.version+1,session:{id:crypto.randomUUID(),mode:effective.mode,label:effective.label,focus:structuredClone(effective),queue,total:queue.length,plannedTotal:queue.length,completed:0,revealed:false,activeMs:0,cardStartedAt:now.toISOString(),startedAt:now.toISOString(),...(effective.criteria.deckId?{scopeDeckId:effective.criteria.deckId}:{})}};});}
+  async saveFocusPreset(preset:FocusPreset):Promise<void>{validateFocusPreset(preset);await this.change(data=>{if(data.focusPresets.some(item=>item.name.trim().toLocaleLowerCase('en')===preset.name.trim().toLocaleLowerCase('en')&&item.id!==preset.id))throw new Error('Choose a unique Focus preset name.');const copy=structuredClone(preset);return{...data,version:data.version+1,focusPresets:data.focusPresets.some(item=>item.id===preset.id)?data.focusPresets.map(item=>item.id===preset.id?copy:item):[...data.focusPresets,copy]};});}
+  async deleteFocusPreset(id:string):Promise<void>{await this.change(data=>{const focusPresets=data.focusPresets.filter(item=>item.id!==id);return focusPresets.length===data.focusPresets.length?data:{...data,version:data.version+1,focusPresets};});}
   async revealSession(recallMs?: number): Promise<void> {
     await this.change(data => !data.session || data.session.revealed || !data.session.queue.length ? data : { ...data, version: data.version + 1, session: { ...data.session, revealed: true, ...(Number.isFinite(recallMs) ? { recallMs: Math.max(0, Math.min(120000, Math.round(recallMs!))) } : {}) } });
   }
@@ -261,15 +271,16 @@ function sameCardContent(a: CardContent, b: CardContent): boolean {
 /** Keep scheduler order while pruning content/limits that became ineligible after queue creation. */
 function reconcileSession(data: State, previous: State, now = new Date()): State {
   if (!data.session) return data;
-  const eligible = new Set(dueCards(data,now,data.session.scopeDeckId).map(card=>card.id));
-  const queue = data.session.queue.filter(id => {
-    return eligible.has(id);
-  });
+  const session=data.session;
+  const eligible = session.mode==='scheduled'
+    ? new Set(dueCards(data,now,session.scopeDeckId).map(card=>card.id))
+    : new Set(data.cards.filter(card=>{const allowSuspended=session.focus?.criteria.includeSuspended||session.focus?.criteria.studyStates?.includes('suspended'),allowBuried=session.focus?.criteria.studyStates?.includes('buried'),control=data.cardControls[card.id],today=dayKey(now,data.preferences.timeZone),seen=new Set<string>();let deck=data.decks.find(item=>item.id===card.deckId),blocked=false;while(deck&&!seen.has(deck.id)){seen.add(deck.id);if(deck.archived||(!allowSuspended&&deck.suspended)){blocked=true;break;}deck=deck.parentId?data.decks.find(item=>item.id===deck!.parentId):undefined;}return !card.archived&&!blocked&&(allowSuspended||!card.suspended)&&(allowBuried||!control?.manualBuried&&control?.buriedOnDay!==today);}).map(card=>card.id));
+  const queue = session.queue.filter(id => eligible.has(id));
   const currentId = queue[0];
   const previousId = previous.session?.queue[0];
   const changed = currentId !== previousId || (currentId && data.cards.find(card => card.id === currentId)?.revision !== previous.cards.find(card => card.id === currentId)?.revision);
-  const session = { ...data.session, queue, total: data.session.completed + queue.length,
+  const nextSession = { ...session, queue, total: session.completed + queue.length,
     ...(changed ? { revealed: false, activeMs: 0, recallMs: undefined, cardStartedAt: now.toISOString() } : {}),
   };
-  return JSON.stringify(session) === JSON.stringify(data.session) ? data : { ...data, session };
+  return JSON.stringify(nextSession) === JSON.stringify(data.session) ? data : { ...data, session:nextSession };
 }

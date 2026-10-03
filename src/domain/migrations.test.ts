@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyReview, createInitialState } from './study';
+import { createInitialState } from './study';
+import { acceptScheduledReview as applyReview } from '../test/scheduled-review';
 import { exportBackup, parseBackup, validateAsset, validateDesign, validateState } from './backup';
 import { migrateState } from './migrations';
 import { rewardProgress } from './rewards';
@@ -31,6 +32,7 @@ describe('non-destructive v1 migration and backups', () => {
   });
   it('round-trips immutable review deck/day attribution and accepts legacy events without it',()=>{const reviewed=applyReview(fresh(),{id:'attributed',cardId:'it-mela',rating:4,sessionId:'session',now});const restored=parseBackup(exportBackup(reviewed,now));expect(restored.events[0]).toMatchObject({studyDeckId:'it',studyDeckPath:['it'],studyRootDeckId:'it',studyDay:'2026-09-28',studyTimeZone:'Europe/London'});const legacy=structuredClone(reviewed);const event=legacy.events[0]!;if(event.kind==='review'){delete event.studyDeckId;delete event.studyDeckPath;delete event.studyRootDeckId;delete event.studyDay;delete event.studyTimeZone;}expect(()=>validateState(legacy)).not.toThrow();});
   it('rejects restored daily attribution that is not a real deck ancestry',()=>{const reviewed=applyReview(fresh(),{id:'attributed',cardId:'it-mela',rating:4,sessionId:'session',now});reviewed.decks.push({id:'unrelated',name:'Unrelated',description:'',suspended:false});const event=reviewed.events[0]!;if(event.kind!=='review')throw new Error('expected review');event.studyDeckPath=['it','unrelated'];event.studyRootDeckId='unrelated';expect(()=>validateState(reviewed)).toThrow('invalid review deck path');});
+  it('migrates a valid schema-5 pseudo-practice review without breaking its scheduler chain',()=>{const reviewed=applyReview(fresh(),{id:'legacy-practice',cardId:'it-mela',rating:3,sessionId:'session',now}),legacy=structuredClone(reviewed) as unknown as Record<string,unknown>;legacy['schemaVersion']=5;delete legacy['practiceEvents'];delete legacy['focusPresets'];const events=legacy['events'] as Array<Record<string,unknown>>;events[0]!['mode']='practice';const migrated=migrateState(legacy);expect(migrated.events[0]).toMatchObject({id:'legacy-practice',mode:'scheduled'});expect(migrated.states).toEqual(reviewed.states);expect(()=>validateState(migrated)).not.toThrow();});
   it('backfills only missing seed illustrations on matching unedited content', () => {
     const state = fresh();
     const seed = [{ ...state.cards[0]!, image: '/art/mela.svg', imageDescription: 'A red fruit.', rarity: 'rare' as const }];
@@ -45,10 +47,10 @@ describe('non-destructive v1 migration and backups', () => {
   it('restores a v1 backup and round-trips v3 uploaded media, designs, mappings, and persisted session', () => {
     const json = JSON.stringify({ format: 'holorecall-backup', version: 1, exportedAt: now.toISOString(), state: legacySnapshot() });
     const restored = parseBackup(json);
-    expect(restored.schemaVersion).toBe(5);
+    expect(restored.schemaVersion).toBe(6);
     const withBundledArt = parseBackup(json, [{ ...fresh().cards[0]!, image: '/art/mela.svg', imageDescription: 'A red fruit.' }]);
     expect(withBundledArt.cards[0]!.image).toBe('/art/mela.svg');
-    const next = { ...restored, session: { id: 'session', queue: ['it-mela'], total: 1, completed: 0, revealed: true, activeMs: 1000 } } satisfies State;
+    const next = { ...restored, session: { id: 'session', mode: 'scheduled' as const, queue: ['it-mela'], total: 1, completed: 0, revealed: true, activeMs: 1000 } } satisfies State;
     next.assets.push({ id: 'picture', name: 'apple.png', mime: 'image/png', dataUrl: 'data:image/png;base64,iVBORw0KGgo=', width: 16, height: 16 });
     next.assets.push({ id: 'voice', name: 'apple.mp3', mime: 'audio/mpeg', dataUrl: 'data:audio/mpeg;base64,SUQzBAAAAAA=' });
     next.designs.push({ id: 'set', name: 'My artwork', background: 'asset:picture', backgroundFit: 'cover', frameFit: 'contain', backgroundPositionX: 50, backgroundPositionY: 50, credit: 'Me', source: '', license: 'Original' });

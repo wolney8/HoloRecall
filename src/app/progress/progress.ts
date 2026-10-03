@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, EventEmitter, inject, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +14,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
 
 @Component({selector:'hr-progress',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective,ReviewHistoryComponent],templateUrl:'./progress.html'})
 export class ProgressComponent {
+  @Output() readonly practiceCards=new EventEmitter<string[]>();
   readonly Math=Math;
   readonly store=inject(LocalStudyStore);
   readonly from=signal('');readonly to=signal('');

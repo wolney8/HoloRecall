@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildLibraryIndex, canonicalTags, queryLibrary, validateDeckMove } from './library';
 import type { CardContent, Deck } from './models';
-import { applyReview,createInitialState } from './study';
+import { createInitialState } from './study';
+import { acceptScheduledReview as applyReview } from '../test/scheduled-review';
 
 const decks: Deck[]=[{id:'languages',name:'Languages',description:'All languages',suspended:false},{id:'italian',name:'Italian',description:'Everyday phrases',suspended:false,parentId:'languages'}];
 const cards: CardContent[]=[{id:'c1',deckId:'italian',kind:'text',front:'The coffee',answer:'il caffè',pronunciation:'eel kah-FEH',meaning:'coffee',notes:'At the bar',tags:[' Drinks ','drinks','Travel'],rarity:'rare',revision:1,suspended:false},{id:'c2',deckId:'italian',kind:'visual',front:'Recall',answer:'la città',pronunciation:'lah cheet-TAH',meaning:'city',notes:'Urban noun',tags:['Places'],image:'/art/casa.svg',imageDescription:'A warm street scene',revision:1,suspended:false}];

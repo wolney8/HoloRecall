@@ -1,8 +1,9 @@
-import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
+import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
 import { migrateState } from './migrations';
 import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
 import { validateDeckOverrides, validateStudyPreset, validateTodayOverride } from './study-settings';
+import { validateFocusPreset, validateFocusRequest } from './focus-validation';
 
 function fail(message: string): never { throw new Error(`Invalid HoloRecall data: ${message}`); }
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : fail('expected an object.');
@@ -58,7 +59,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 5 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 6 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -94,7 +95,7 @@ export function validateState(value: unknown): asserts value is State {
     if (result.version !== event['previousStateVersion'] + 1) fail('broken scheduling version history.');
     if (event['kind'] === 'review') {
       if (!id(event['sessionId']) || !integer(event['contentRevision'], 1) || !integer(event['rating'], 1) || event['rating'] > 5 || event['grade'] !== mapRating(event['rating'] as 1 | 2 | 3 | 4 | 5) || event['schedulerVersion'] !== SCHEDULER_VERSION || event['configVersion'] !== CONFIG_VERSION) fail('invalid review details.');
-      if (event['mode'] !== undefined && !['scheduled', 'practice'].includes(String(event['mode']))) fail('invalid review mode.');
+      if (event['mode'] !== undefined && event['mode'] !== 'scheduled') fail('invalid review mode.');
       if (event['activeMs'] !== undefined && (!integer(event['activeMs']) || event['activeMs'] > 120000)) fail('invalid active study time.');
       if (event['recallMs'] !== undefined && (!integer(event['recallMs']) || event['recallMs'] > 120000)) fail('invalid recall time.');
       if(event['studyPresetId']!==undefined&&!id(event['studyPresetId']))fail('invalid review study preset.');
@@ -113,6 +114,7 @@ export function validateState(value: unknown): asserts value is State {
     const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous:event['previousStateVersion'] as number,result}]);
   }
   for(const value of data['administrativeEvents'] as unknown[]){const event=object(value);if(!id(event['id'])||eventIds.has(event['id'])||!id(event['cardId'])||!cardIds.has(event['cardId'])||event['userId']!==data['userId']||!instant(event['timestamp'])||!['set-due','reset','bury','unbury','suspend','unsuspend','reposition'].includes(String(event['action'])))fail('invalid administrative event.');eventIds.add(event['id']);if(event['detail']!==undefined&&!text(event['detail'],500))fail('invalid administrative event detail.');if(event['resultingState']!==undefined){validateCardState(event['resultingState']);if(event['previousState']!==undefined)validateCardState(event['previousState']);const result=event['resultingState'] as CardState,previous=(event['previousState'] as CardState|undefined)?.version??0;if(result.version!==previous+1)fail('broken administrative scheduling version.');const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous,result}]);}}
+  for(const event of data['practiceEvents'] as Array<{id:string}>)if(eventIds.has(event.id))fail('duplicate history event ID.');else eventIds.add(event.id);
   for(const [cardId,items] of transitions){items.sort((a,b)=>a.result.version-b.result.version);let prior=0;for(const item of items){if(item.previous!==prior)fail('broken scheduling version history.');prior=item.result.version;}if(JSON.stringify(states[cardId])!==JSON.stringify(items.at(-1)!.result))fail('current scheduling state does not match history.');}
   for (const cardId of Object.keys(states)) if (!transitions.has(cardId)) fail('scheduling state is missing its history.');
   validateReferences(data as unknown as State);
@@ -120,7 +122,7 @@ export function validateState(value: unknown): asserts value is State {
 }
 
 export function exportBackup(data: State, now: Date): string {
-  return JSON.stringify({ format: 'holorecall-backup', version: 5, exportedAt: now.toISOString(), state: data }, null, 2);
+  return JSON.stringify({ format: 'holorecall-backup', version: 6, exportedAt: now.toISOString(), state: data }, null, 2);
 }
 
 export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
@@ -128,7 +130,7 @@ export function parseBackup(json: string, bundledCards: CardContent[] = []): Sta
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
-  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3, 4, 5].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
+  if (backup['format'] !== 'holorecall-backup' || ![1, 2, 3, 4, 5, 6].includes(Number(backup['version'])) || !instant(backup['exportedAt'])) fail('unsupported backup format.');
   return migrateState(backup['state'], bundledCards);
 }
 
@@ -189,9 +191,11 @@ function validateExtensions(data: Record<string, unknown>): void {
   data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
   if (!Array.isArray(data['ankiMappings'])) fail('missing Anki mapping presets.');
   data['ankiMappings'].forEach(validateAnkiMapping);
-  if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents']))fail('missing study configuration or management history.');
-  try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
+  if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents'])||!Array.isArray(data['practiceEvents'])||!Array.isArray(data['focusPresets']))fail('missing study configuration or management history.');
+  try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);(data['focusPresets'] as FocusPreset[]).forEach(validateFocusPreset);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
   if(new Set((data['studyPresets'] as StudyPreset[]).map(item=>item.id)).size!==(data['studyPresets'] as StudyPreset[]).length)fail('duplicate study preset IDs.');
+  if(new Set((data['focusPresets'] as FocusPreset[]).map(item=>item.id)).size!==(data['focusPresets'] as FocusPreset[]).length)fail('duplicate Focus preset IDs.');
+  const practiceIds=new Set<string>();for(const value of data['practiceEvents'] as unknown[]){const event=object(value);if(event['kind']!=='practice'||!id(event['id'])||practiceIds.has(event['id'])||event['userId']!==data['userId']||!id(event['cardId'])||!id(event['sessionId'])||!instant(event['timestamp'])||!integer(event['rating'],1)||Number(event['rating'])>5||!integer(event['activeMs'])||Number(event['activeMs'])>120000||event['recallMs']!==undefined&&(!integer(event['recallMs'])||Number(event['recallMs'])>120000))fail('invalid practice event.');practiceIds.add(event['id'] as string);}
   const controls=object(data['cardControls']);for(const [cardId,value] of Object.entries(controls)){if(!id(cardId))fail('invalid card control ID.');const control=object(value);if(control['manualBuried']!==undefined&&typeof control['manualBuried']!=='boolean'||control['leech']!==undefined&&typeof control['leech']!=='boolean'||control['leechSuspended']!==undefined&&typeof control['leechSuspended']!=='boolean'||control['buriedOnDay']!==undefined&&!/^\d{4}-\d{2}-\d{2}$/.test(String(control['buriedOnDay']))||control['newPosition']!==undefined&&!integer(control['newPosition']))fail('invalid card scheduling control.');}
   validateRewardConfig(data['rewardConfig']);
   const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
@@ -208,6 +212,10 @@ function validateExtensions(data: Record<string, unknown>): void {
     if (session['recallMs'] !== undefined && (!integer(session['recallMs']) || session['recallMs'] > 120000)) fail('invalid persisted recall time.');
     if (session['lastReviewCardId'] !== undefined && !id(session['lastReviewCardId'])) fail('invalid previous session card.');
     if(session['scopeDeckId']!==undefined&&!id(session['scopeDeckId']))fail('invalid session deck scope.');
+    if(!['scheduled','practice'].includes(String(session['mode'])))fail('invalid session mode.');
+    if(session['label']!==undefined&&!text(session['label'],160))fail('invalid session label.');
+    if(session['lastPracticeEventId']!==undefined&&!id(session['lastPracticeEventId']))fail('invalid practice event reference.');
+    if(session['focus']!==undefined)try{validateFocusRequest(session['focus'] as never);}catch(error){fail(error instanceof Error?error.message:'invalid Focus session.');}
   }
 }
 export function validateReferences(data: State): void {
@@ -218,7 +226,10 @@ export function validateReferences(data: State): void {
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
   if (data.session?.queue.some(cardId => !data.cards.some(card => card.id === cardId))) fail('study session references a missing card.');
   if(data.decks.some(deck=>deck.studyPresetId&&!presets.has(deck.studyPresetId))||data.todayOverrides.some(item=>!decks.has(item.deckId)))fail('study configuration references a missing preset or deck.');
-  if(Object.keys(data.cardControls).some(cardId=>!cards.has(cardId))||data.administrativeEvents.some(event=>!cards.has(event.cardId)))fail('card management references missing content.');
+  if(Object.keys(data.cardControls).some(cardId=>!cards.has(cardId))||data.administrativeEvents.some(event=>!cards.has(event.cardId))||data.practiceEvents.some(event=>!cards.has(event.cardId)))fail('card management references missing content.');
+  const invalidFocus=(focus:FocusSessionRequest|FocusPreset)=>focus.criteria.deckId&&!decks.has(focus.criteria.deckId)||focus.criteria.explicitCardIds?.some(cardId=>!cards.has(cardId));
+  if(data.focusPresets.some(invalidFocus)||data.session?.focus&&invalidFocus(data.session.focus)||data.session?.focus?.presetId&&!data.focusPresets.some(preset=>preset.id===data.session!.focus!.presetId))fail('Focus selection references missing content.');
+  if(data.session?.lastPracticeEventId&&!data.practiceEvents.some(event=>event.id===data.session!.lastPracticeEventId&&event.sessionId===data.session!.id))fail('session practice event reference does not resolve.');
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
   const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
@@ -234,7 +245,7 @@ function validateRewards(data: State): void {
     const review = reviews.get(event.reviewEventId);
     if (!review || review.cardId !== event.cardId) fail('reward must reference its real review.');
     if (event.kind === 'contribution') {
-      if (review.rating < 4 || review.mode === 'practice' || event.configVersion !== 'confidence-days-v1' || !/^\d{4}-\d{2}-\d{2}$/.test(event.studyDay) || !text(event.timeZone, 100) || [...seen.values()].some(prior => prior.kind === 'contribution' && prior.reviewEventId === event.reviewEventId)) fail('invalid reward contribution.');
+      if (review.rating < 4 || event.configVersion !== 'confidence-days-v1' || !/^\d{4}-\d{2}-\d{2}$/.test(event.studyDay) || !text(event.timeZone, 100) || [...seen.values()].some(prior => prior.kind === 'contribution' && prior.reviewEventId === event.reviewEventId)) fail('invalid reward contribution.');
     } else if (event.kind === 'unlock') {
       if (!RARITIES.some(tier => tier.id === event.rarity) || !integer(event.required, 1) || !Array.isArray(event.contributionIds) || event.contributionIds.length < event.required || new Set(event.contributionIds).size !== event.contributionIds.length || event.contributionIds.some(id => seen.get(id)?.kind !== 'contribution' || seen.get(id)?.cardId !== event.cardId || reversed.has(id))) fail('invalid unlock evidence.');
     } else if (event.kind === 'reward-reversal') {

@@ -39,8 +39,8 @@ export function buildReport(state: State, now: Date, range: DateRange = {}) {
       earned: cards.filter(card => rewardProgress(state, card.id).earned).length };
   });
   const cosmetics = state.cards.map(card => ({ cardId: card.id, answer: card.answer, rarity: card.rarity ?? 'common', ...rewardProgress(state, card.id) }));
-  const reversed = new Set(state.events.flatMap(event => event.kind === 'reversal' ? [event.reviewEventId] : []));
-  const practiceCount = state.events.filter(event => event.kind === 'review' && event.mode === 'practice' && !reversed.has(event.id) && (!range.from || dayKey(new Date(event.timestamp), state.preferences.timeZone) >= range.from) && (!range.to || dayKey(new Date(event.timestamp), state.preferences.timeZone) <= range.to)).length;
+  const practice = state.practiceEvents.filter(event => (!range.from || dayKey(new Date(event.timestamp), state.preferences.timeZone) >= range.from) && (!range.to || dayKey(new Date(event.timestamp), state.preferences.timeZone) <= range.to));
+  const practiceCount = practice.length;
   return {
     due, newCards: newCards.length, available: dueCards(state, now).length, reviewedCards: reviewedIds.size, reviewCount: reviews.length,
     activeMs: reviews.reduce((sum, review) => sum + (review.activeMs ?? 0), 0), activeTimeSamples: reviews.filter(review => review.activeMs !== undefined).length,
@@ -48,6 +48,7 @@ export function buildReport(state: State, now: Date, range: DateRange = {}) {
     earnedCount: cosmetics.filter(item => item.earned).length,
     estimatedRetrievability: estimates.length ? estimates.reduce((a, b) => a + b, 0) / estimates.length : null,
     retrievabilitySampleSize: estimates.length, practiceCount,
+    practiceActiveMs:practice.reduce((sum,event)=>sum+event.activeMs,0),practiceUniqueCards:new Set(practice.map(event=>event.cardId)).size,
   };
 }
 export type ProgressReport = ReturnType<typeof buildReport>;

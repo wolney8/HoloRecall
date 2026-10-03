@@ -4,10 +4,12 @@ import { activeRewardEvents, rewardEventsForReview, rewardProgress } from './rew
 import { validateRewardConfig, validateState } from './backup';
 import { buildReport } from './reports';
 import type { ConfidenceRating, State } from './models';
+import { recordPracticeRating } from './practice';
+import { acceptScheduledReview } from '../test/scheduled-review';
 
 const first = new Date('2026-09-28T12:00:00Z');
 const initial = () => createInitialState([{ id: 'it', name: 'Italian', description: '', suspended: false }], [{ id: 'card', deckId: 'it', kind: 'text', front: 'coffee', answer: 'il caffè', pronunciation: '', meaning: '', notes: '', tags: [], revision: 1, suspended: false, rarity: 'rare' }]);
-const rate = (data: State, id: string, rating: ConfidenceRating = 4, now = first) => applyReview(data, { id, cardId: 'card', sessionId: 'session', rating, now, activeMs: 3000 });
+const rate = (data: State, id: string, rating: ConfidenceRating = 4, now = first) => acceptScheduledReview(data, { id, cardId: 'card', sessionId: 'session', rating, now, activeMs: 3000 });
 const nextTime = (data: State) => new Date(Math.max(Date.parse(data.states['card']!.due), Date.parse(data.states['card']!.last_review!) + 86400000));
 
 describe('auditable cosmetic earning', () => {
@@ -63,10 +65,10 @@ describe('auditable cosmetic earning', () => {
     validateState(reversed);
   });
   it('never grants rewards for practice events or lower self-ratings', () => {
-    const state = rate(initial(), 'first', 3);
-    const review = state.events[0]!;
-    if (review.kind !== 'review') throw new Error('expected review');
-    expect(rewardEventsForReview(state, { ...review, id: 'practice', rating: 5, mode: 'practice' }, '2026-09-28')).toEqual([]);
+    let state = rate(initial(), 'first', 3);
+    const rewards=structuredClone(state.rewardEvents);state.session={id:'practice-session',mode:'practice',queue:['card'],total:1,completed:0,revealed:true,activeMs:0};
+    state=recordPracticeRating(state,{id:'practice',cardId:'card',sessionId:'practice-session',rating:5,now:first});
+    expect(state.practiceEvents).toHaveLength(1);expect(state.rewardEvents).toEqual(rewards);
     expect(activeRewardEvents(state)).toEqual([]);
   });
 });
@@ -100,9 +102,9 @@ describe('event-derived reports', () => {
     let state = rate(initial(), 'first', 1);
     state = rate(state, 'second', 1, new Date(state.states['card']!.due));
     expect(buildReport(state, first).attention[0]).toMatchObject({ failures: 2, sampleSize: 2 });
-    const event = state.events[1]!;
+    const event = state.events.pop()!;
     if (event.kind !== 'review') throw new Error('expected review');
-    event.mode = 'practice';
+    state.practiceEvents.push({kind:'practice',id:'practice',userId:state.userId,cardId:event.cardId,sessionId:'practice-session',timestamp:event.timestamp,rating:event.rating,activeMs:event.activeMs??0});
     const report = buildReport(state, first);
     expect(report.reviewCount).toBe(1);
     expect(report.practiceCount).toBe(1);

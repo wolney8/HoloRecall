@@ -1,0 +1,66 @@
+<div class="page-heading focus-heading" hrReveal>
+  <div><p class="eyebrow">CUSTOM STUDY</p><h1>Focus</h1><p>Choose scheduled study or practise selected material without changing its schedule.</p></div>
+  <button mat-button type="button" (click)="close.emit()">Close</button>
+</div>
+
+@if(error()){<p class="inline-notice" role="alert">{{error()}}</p>}
+@if(message()){<p class="inline-notice success" role="status">{{message()}}</p>}
+
+<section class="panel focus-scope" hrReveal [hrRevealDelay]="45" aria-labelledby="focus-scope-title">
+  <div><h2 id="focus-scope-title">Choose a deck</h2><p class="hint">The selected deck includes its subdecks.</p></div>
+  <mat-form-field appearance="outline"><mat-label>Deck or journey</mat-label><mat-select [ngModel]="limitDeckId()" (ngModelChange)="limitDeckId.set($event);patchCriteria({deckId:$event||undefined})"><mat-option value="">All active decks</mat-option>@for(deck of decks();track deck.id){<mat-option [value]="deck.id">{{deckLabel(deck.id)}}</mat-option>}</mat-select></mat-form-field>
+</section>
+
+<section class="quick-section" hrReveal [hrRevealDelay]="90" aria-labelledby="quick-focus-title">
+  <div class="section-heading"><div><h2 id="quick-focus-title">Quick focus</h2><p class="hint">Start with a useful selection. Scheduled study includes only genuinely eligible cards.</p></div></div>
+  <div class="quick-grid">
+    <article class="quick-card limit-card">
+      <div><h3>More new cards today</h3><p>Current limit: {{currentLimits()?.newCards ?? '—'}}</p></div>
+      <mat-form-field appearance="outline"><mat-label>Add cards</mat-label><input matInput type="number" min="1" max="1000" inputmode="numeric" [(ngModel)]="extraNew"></mat-form-field>
+      <button mat-flat-button type="button" (click)="addToday('new')" [disabled]="!limitDeckId()||saving()">Apply and study</button>
+    </article>
+    <article class="quick-card limit-card">
+      <div><h3>More reviews today</h3><p>Current limit: {{currentLimits()?.reviews ?? '—'}}</p></div>
+      <mat-form-field appearance="outline"><mat-label>Add reviews</mat-label><input matInput type="number" min="1" max="10000" inputmode="numeric" [(ngModel)]="extraReviews"></mat-form-field>
+      <button mat-flat-button type="button" (click)="addToday('reviews')" [disabled]="!limitDeckId()||saving()">Apply and study</button>
+    </article>
+    <article class="quick-card choice-card"><div><strong>Recent mistakes</strong><small>Practise Confidence 1 cards.</small></div><div class="actions"><button mat-button type="button" (click)="runQuick('Missed today','practice',quickCriteria({missedWithinDays:0}),'lapses')">Today</button><button mat-button type="button" (click)="runQuick('Recent mistakes','practice',quickCriteria({missedWithinDays:7}),'lapses')">7 days</button></div></article>
+    <button class="quick-card quick-button" type="button" (click)="runQuick('Due and overdue','scheduled',quickCriteria({studyStates:['due','overdue']}),'overdue')"><span><strong>Due and overdue</strong><small>Study eligible scheduled cards only.</small></span><span aria-hidden="true">→</span></button>
+    <button class="quick-card quick-button" type="button" (click)="runQuick('Preview new cards','practice',quickCriteria({studyStates:['new']}),'recently-added')"><span><strong>Preview new cards</strong><small>Practise New cards without introducing them.</small></span><span aria-hidden="true">→</span></button>
+    <article class="quick-card choice-card"><div><strong>Review ahead</strong><small>Practise future cards without rescheduling them.</small></div><div class="actions"><button mat-button type="button" (click)="runQuick('Review ahead · 1 day','practice',quickCriteria({studyStates:['review'],dueWithinDays:1}),'due')">1 day</button><button mat-button type="button" (click)="runQuick('Review ahead · 3 days','practice',quickCriteria({studyStates:['review'],dueWithinDays:3}),'due')">3 days</button><button mat-button type="button" (click)="runQuick('Review ahead · 7 days','practice',quickCriteria({studyStates:['review'],dueWithinDays:7}),'due')">7 days</button></div></article>
+    <button class="quick-card quick-button" type="button" (click)="openBuilder()"><span><strong>Study by tag or state</strong><small>Combine tags, schedule states and an ordering.</small></span><span aria-hidden="true">＋</span></button>
+  </div>
+</section>
+
+<section class="panel builder-section" hrReveal [hrRevealDelay]="135" aria-labelledby="focus-builder-title">
+  <button mat-stroked-button type="button" class="builder-toggle" (click)="advancedOpen.set(!advancedOpen())" [attr.aria-expanded]="advancedOpen()" aria-controls="focus-builder-fields">{{advancedOpen()?'Hide':'Build'}} custom session</button>
+  @if(advancedOpen()){
+    <div id="focus-builder-fields" class="builder-fields">
+      <div class="builder-heading"><div><h2 id="focus-builder-title" tabindex="-1">Build custom session</h2><p class="hint">Saved criteria rerun against your current cards.</p></div><span class="status-chip" aria-live="polite">{{preview().matched}} match · {{preview().eligible}} eligible</span></div>
+      <div class="mode-row"><span id="focus-mode-label">Study mode</span><mat-button-toggle-group [value]="mode()" (change)="setMode($event.value)" aria-labelledby="focus-mode-label"><mat-button-toggle value="practice">Practice</mat-button-toggle><mat-button-toggle value="scheduled">Scheduled</mat-button-toggle></mat-button-toggle-group></div>
+      <p class="mode-note">{{mode()==='practice'?'Ratings stay separate and do not change FSRS, due dates, limits or cosmetics.':'Only genuinely due or introducible cards can enter this session.'}}</p>
+      <div class="builder-grid">
+        <mat-form-field appearance="outline" class="wide"><mat-label>Session name</mat-label><input matInput [ngModel]="label()" (ngModelChange)="label.set($event)" maxlength="160"></mat-form-field>
+        <mat-form-field appearance="outline" class="wide"><mat-label>Search content</mat-label><input matInput [ngModel]="criteria().query ?? ''" (ngModelChange)="patchCriteria({query:$event||undefined})" maxlength="500"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Tags</mat-label><mat-select multiple [ngModel]="criteria().tags ?? []" (ngModelChange)="patchCriteria({tags:$event})">@for(tag of tags();track tag){<mat-option [value]="tag">{{tag}}</mat-option>}</mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Study states</mat-label><mat-select multiple [ngModel]="criteria().studyStates ?? []" (ngModelChange)="patchCriteria({studyStates:$event})">@for(option of stateOptions;track option.id){<mat-option [value]="option.id">{{option.label}}</mat-option>}</mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Missed within days</mat-label><input matInput type="number" min="0" max="3650" inputmode="numeric" [ngModel]="criteria().missedWithinDays ?? null" (ngModelChange)="patchCriteria({missedWithinDays:optionalDays($event)})"><mat-hint>0 means today</mat-hint></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Due within days</mat-label><input matInput type="number" min="0" max="3650" inputmode="numeric" [ngModel]="criteria().dueWithinDays ?? null" (ngModelChange)="patchCriteria({dueWithinDays:optionalDays($event)})"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Overdue by days</mat-label><input matInput type="number" min="0" max="3650" inputmode="numeric" [ngModel]="criteria().overdueByDays ?? null" (ngModelChange)="patchCriteria({overdueByDays:optionalDays($event)})"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Added within days</mat-label><input matInput type="number" min="1" max="3650" inputmode="numeric" [ngModel]="criteria().recentlyAddedDays ?? null" (ngModelChange)="patchCriteria({recentlyAddedDays:optionalDays($event,1)})"></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Order</mat-label><mat-select [ngModel]="order()" (ngModelChange)="order.set($event)">@for(option of orderOptions;track option.id){<mat-option [value]="option.id">{{option.label}}</mat-option>}</mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Maximum cards</mat-label><input matInput type="number" min="1" max="10000" inputmode="numeric" [ngModel]="limit()" (ngModelChange)="limit.set($event)"></mat-form-field>
+        @if(mode()==='practice'){<mat-checkbox [checked]="criteria().includeSuspended" (change)="patchCriteria({includeSuspended:$event.checked||undefined})">Include suspended cards</mat-checkbox>}
+      </div>
+      @if(mode()==='scheduled'&&preview().excluded){<p class="hint">{{preview().excluded}} matching {{preview().excluded===1?'card is':'cards are'}} excluded because {{preview().excluded===1?'it is':'they are'}} not currently eligible.</p>}
+      @if(!preview().cards.length){<p class="empty-inline">No cards match this focus.</p>}
+      <div class="builder-actions"><button mat-flat-button type="button" (click)="run()" [disabled]="saving()||!preview().cards.length||(mode()==='scheduled'&&!preview().eligible)">Start {{mode()==='practice'?'practice':'scheduled study'}}</button><button mat-button type="button" (click)="newPreset()">Save as new preset</button></div>
+      <div class="save-preset"><mat-form-field appearance="outline"><mat-label>Focus preset name</mat-label><input matInput [ngModel]="presetName()" (ngModelChange)="presetName.set($event)" maxlength="160"></mat-form-field><button mat-stroked-button type="button" (click)="savePreset()" [disabled]="saving()">{{editingPresetId()?'Update preset':'Save preset'}}</button></div>
+    </div>
+  }
+</section>
+
+<section class="saved-section" hrReveal aria-labelledby="saved-focus-title">
+  <div class="section-heading"><div><h2 id="saved-focus-title">Focus presets</h2><p class="hint">Selection criteria only. Cards stay in their original decks.</p></div></div>
+  <div class="preset-list">@for(preset of presets();track preset.id){<article class="panel preset-row"><div><strong>{{preset.name}}</strong><span>{{preset.mode==='practice'?'Practice':'Scheduled'}} · up to {{preset.limit}} cards</span></div><div class="actions"><button mat-flat-button type="button" (click)="runPreset(preset)">Run</button><button mat-button type="button" (click)="editPreset(preset)">Edit</button><button mat-button type="button" (click)="duplicatePreset(preset)" [disabled]="saving()">Duplicate</button><button mat-button type="button" (click)="removePreset(preset)" [disabled]="saving()" [attr.aria-label]="'Delete '+preset.name+' Focus preset'">Delete</button></div></article>}@empty{<p class="empty-inline">No saved Focus presets.</p>}</div>
+</section>

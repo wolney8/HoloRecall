@@ -291,17 +291,109 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Dependencies:** Angular route/chunk ownership review
 - **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
-- **Implementation notes:** Exchange, ExcelJS, JSZip, SQLite/WASM and Anki conversion remain lazy. The current 852.98 kB initial bundle is 2.98 kB above the unchanged ceiling; a safe unused-import removal was insufficient to recover the full gap. Avoid risky refactoring solely for this small overage.
-- **Verification / evidence:** Production build passes and reports the measured warning. Re-measure after the next bounded route/chunk refactor.
+- **Implementation notes:** Focus query/UI code is a lazy 27.11 kB chunk and Exchange, ExcelJS, JSZip, SQLite/WASM and Anki conversion remain lazy. The final milestone build measures 867.32 kB initial / 199.15 kB transfer, 17.32 kB above the unchanged ceiling. The new root session/result integration is still eager; further recovery needs a deliberate root-shell split rather than unsafe minification or a raised budget.
+- **Verification / evidence:** Production build passes with the exact warning. Requirement remains visible in BACKLOG; the budget was not raised.
 
 ### HR-TEST-01 — Strengthen queue-order and audio-action assertions
 - **Product area / milestone / priority:** Verification / Study configuration / P2
-- **Status:** BACKLOG
+- **Status:** DONE
 - **Source:** Independent acceptance review, 3 October 2026
 - **Dependencies:** Existing deterministic queue fixtures and bundled-audio browser fixture
 - **Requirement / acceptance:** Add expected-order fixtures that distinguish random and retrievability policies, and a focused browser assertion that accepted rating pauses active card audio after persistence succeeds. Preserve current general audio/lifecycle and queue regression coverage.
 - **Platform implications:** Run in Chromium and Playwright WebKit; native audio interruption remains separate device evidence.
-- **Verification / evidence:** Existing full suites pass, but their assertions are broader than these two interaction-specific claims.
+- **Verification / evidence:** `study-settings.test.ts` now asserts exact random and retrievability order, and the genuine Anki MP3 Chromium/WebKit journey proves accepted persistence dispatches `pause` before advancing. Full unit and both desktop browser suites pass.
+
+## Completed milestone — Custom Study and Focused Practice
+
+Source: Will's 3 October 2026 milestone. Anki's current filtered-deck, studying and searching documentation is a capability reference; HoloRecall uses non-destructive Focused Sessions over original cards.
+
+### HR-FOCUS-01 — Explicit scheduled and practice modes
+- **Product area / milestone / priority:** Study / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Persisted Study session and immutable scheduled reviews
+- **Requirement / acceptance:** Persist mode explicitly. Scheduled mode alone may update FSRS, due dates, daily usage, statistics and rewards. Practice may record separate activity but never scheduling/reward state.
+- **Platform implications:** Platform-neutral domain contract and interruption-safe persistence.
+- **Verification / evidence:** Schema 6 persists explicit mode plus separate immutable Practice events. Domain and browser tests prove Practice leaves FSRS, due dates, allowance, reviews, controls and rewards unchanged; Scheduled Focus creates a real FSRS transition.
+
+### HR-FOCUS-02 — Focus entry and quick actions
+- **Product area / milestone / priority:** Decks / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Today overrides; library index
+- **Requirement / acceptance:** Deck Focus entry with more-new, more-review, missed, due/overdue, preview-new, review-ahead and tag/state actions. Scheduled choices remain genuinely eligible.
+- **Platform implications:** Material 3, keyboard/touch, compact and 200% reflow.
+- **Verification / evidence:** Deck/Dashboard Focus entry plus today-only new/review actions, Today/7-day mistakes, due/overdue, preview-new, 1/3/7-day ahead and tag/state builder pass Chromium/WebKit and phone reflow checks.
+
+### HR-FOCUS-03 — Focused Session builder
+- **Product area / milestone / priority:** Study / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Existing indexed filters and scheduler eligibility
+- **Requirement / acceptance:** Combine branch, tags, state, due/missed/attention/added criteria, bounded card count, mode and evidence-backed order without a second query language.
+- **Platform implications:** Large result sets remain bounded and platform-neutral.
+- **Verification / evidence:** Versioned criteria reuse the library index and support branch, query, tags, schedule states, missed/due/overdue/added windows, suspension opt-in, limit, mode and backed orderings. A 10,000-card domain fixture returns the bounded slice within the 3 s local budget.
+
+### HR-FOCUS-04 — Saved Focus presets
+- **Product area / milestone / priority:** Study / Focused Practice / P1
+- **Status:** DONE
+- **Dependencies:** Focus criteria schema
+- **Requirement / acceptance:** Stable-ID save, rename, duplicate, delete and run; presets store criteria, not duplicated card IDs, and remain distinct from scheduler Study presets.
+- **Platform implications:** Versioned local persistence and backup.
+- **Verification / evidence:** Stable-ID schema-6 presets support save, edit/rename, duplicate, delete and run. Each run reevaluates criteria; random runs receive a persisted per-session seed. Full backups validate preset/session references.
+
+### HR-FOCUS-05 — Study from search and selection
+- **Product area / milestone / priority:** Collection / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Library query/selection state
+- **Requirement / acceptance:** Practice selected/current-filter cards and Study eligible cards without duplicating search logic or rendering the whole result set.
+- **Platform implications:** Keyboard multi-select and touch-friendly actions.
+- **Verification / evidence:** Collection current results and selected IDs expose Practice and Study eligible actions through the same Focus request; scheduled selection is intersected with the genuine due queue.
+
+### HR-FOCUS-06 — Shared Practice player
+- **Product area / milestone / priority:** Study / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** HR-FOCUS-01
+- **Requirement / acceptance:** Reuse the accepted card player, reveal, five-confidence controls, feedback, audio and responsive layout with a subtle persisted Practice label. Ratings never invoke FSRS.
+- **Platform implications:** Preserve Study geometry, animation ownership and WebKit cleanup.
+- **Verification / evidence:** The shared Study player branches only at the persisted writer. Two consecutive motion-enabled Practice ratings remain visibly settled in Chromium/WebKit; audio, five controls, feedback and phone layouts are reused.
+
+### HR-FOCUS-07 — Practice results
+- **Product area / milestone / priority:** Results / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Separate practice events/session state
+- **Requirement / acceptance:** Show real practice count, unique cards, active time, confidence, recall timing and low-confidence cards without intervals, due movement or cosmetics.
+- **Platform implications:** Reuse accessible Results motion with reduced-motion settlement.
+- **Verification / evidence:** Results show event count, unique cards, active time, average and 1–5 confidence distribution, timed recall sample and low-confidence cards, with repeat/view/return actions and no cosmetic or interval claims.
+
+### HR-FOCUS-08 — Weak-card contextual practice
+- **Product area / milestone / priority:** Progress / Focused Practice / P1
+- **Status:** DONE
+- **Dependencies:** Needs-attention and leech filters
+- **Requirement / acceptance:** Contextual Practice actions for needs attention, recent confidence 1, leeches and low-confidence results reuse the shared Focus builder.
+- **Platform implications:** No bespoke or duplicated queue implementations.
+- **Verification / evidence:** Progress Needs Attention emits the shared Practice selection; Focus exposes Today/recent Confidence 1 plus attention/leech states; Collection can practise the active filtered result without bespoke queues.
+
+### HR-FOCUS-09 — Focus lifecycle and recovery
+- **Product area / milestone / priority:** Persistence / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** Persisted session schema and lifecycle port
+- **Requirement / acceptance:** Recover mode, focus criteria, ordered IDs, position and outcomes without duplicate reviews/rewards/practice events; safely skip removed or newly ineligible cards.
+- **Platform implications:** Background/resume, offline local state and future Capacitor lifecycle.
+- **Verification / evidence:** Mode, criteria, seeded order, queue position and accepted outcomes persist. Reload resumes Practice without converting it; normal Study cannot resume a Practice queue. Reconciliation safely prunes missing, archived, ancestor-suspended and newly buried cards.
+
+### HR-FOCUS-10 — Scheduler safety boundary
+- **Product area / milestone / priority:** Scheduling / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** HR-FOCUS-01
+- **Requirement / acceptance:** Scheduled review recording requires scheduled context; Practice has a separate event operation and cannot mutate FSRS, due dates, allowance, leeches or rewards. Scheduled Undo remains unchanged.
+- **Platform implications:** Pure domain/type separation shared by every platform.
+- **Verification / evidence:** `applyScheduledReview` now requires a revealed active Scheduled session. `recordPracticeRating` owns a distinct operation/event namespace and rejects cross-namespace IDs. Independent review found and the lead fixed the prior no-session bypass and Study-resumes-Practice defect; 128/128 domain tests pass.
+
+### HR-PLAN-03 — Custom Study capability matrix
+- **Product area / milestone / priority:** Planning / Focused Practice / P0
+- **Status:** DONE
+- **Dependencies:** HR-FOCUS-01–10 evidence
+- **Requirement / acceptance:** Accurately classify limit increases, forgotten/ahead/new/state/tag/arbitrary selection, limits, ordering, saved selection, rescheduling and home-deck identity. Document Focused Session versus literal filtered deck.
+- **Platform implications:** Distinguish browser evidence from native verification.
+- **Verification / evidence:** `docs/product-brief.md` records the exact comparison and the non-destructive Focused Session architecture; review-ahead rescheduling remains intentionally not implemented.
 
 ## Preserved completed history
 

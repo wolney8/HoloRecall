@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it, vi } from 'vitest';
-import { applyReview, createInitialState, undoLatestReview } from '../../domain/study';
+import { createInitialState, undoLatestReview } from '../../domain/study';
+import { acceptScheduledReview as applyReview } from '../../test/scheduled-review';
 import { LocalDatabase, StaleStateError } from './local-database';
 
 const now = new Date('2026-09-28T12:00:00Z');
@@ -92,7 +93,7 @@ describe('v2 persistence migration and session recovery', () => {
     const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(legacy, 'snapshot'); transaction.oncomplete = () => resolve(); });
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(5);
+    expect(restored.schemaVersion).toBe(6);
     expect(restored.events).toEqual(legacy['events']);
     expect(restored.states).toEqual(legacy['states']);
     expect(restored.rewardEvents).toEqual([]);
@@ -109,7 +110,7 @@ describe('v2 persistence migration and session recovery', () => {
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(versionTwo, 'snapshot'); transaction.oncomplete = () => resolve(); });
     raw.close();
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(5); expect(restored.ankiMappings).toEqual([]);
+    expect(restored.schemaVersion).toBe(6); expect(restored.ankiMappings).toEqual([]);
     const migrated = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
     const backup = await new Promise<unknown>(resolve => { const request = migrated.transaction('local-study').objectStore('local-study').get('migration-v2-original'); request.onsuccess = () => resolve(request.result); });
     expect(backup).toEqual(versionTwo); migrated.close(); await database.close();
@@ -120,7 +121,7 @@ describe('v2 persistence migration and session recovery', () => {
     const before = await database.load(initial());
     const prepared = { ...before, version: 1,
       assets: [{ id: 'my-image', name: 'frame.png', mime: 'image/png' as const, dataUrl: 'data:image/png;base64,iVBORw0KGgo=', width: 10, height: 10 }],
-      session: { id: 'session', queue: ['one'], total: 1, completed: 0, revealed: true, activeMs: 3500 },
+      session: { id: 'session', mode: 'scheduled' as const, queue: ['one'], total: 1, completed: 0, revealed: true, activeMs: 3500 },
     };
     prepared.cards[0] = { ...prepared.cards[0]!, image: 'asset:my-image' };
     await database.commit(prepared, 0); await database.close();

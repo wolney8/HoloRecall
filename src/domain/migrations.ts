@@ -7,7 +7,7 @@ import { BALANCED_PRESET_ID, cloneBuiltInPresets } from './study-settings';
 export function migrateState(input: unknown, bundledCards: CardContent[] = []): State {
   if (!input || typeof input !== 'object') throw new Error('Invalid HoloRecall data: expected an object.');
   const raw = structuredClone(input) as Record<string, unknown>;
-  if (![1, 2, 3, 4, 5].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
+  if (![1, 2, 3, 4, 5, 6].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
   if (raw['schemaVersion'] === 1) {
     raw['schemaVersion'] = 2;
     raw['designs'] = [];
@@ -28,6 +28,13 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     const presets=cloneBuiltInPresets();presets[0]={...presets[0]!,newCardsPerDay:preferences.newCardLimit??10,maxReviewsPerDay:preferences.reviewLimit??100};
     raw['schemaVersion']=5;raw['studyPresets']=presets;raw['todayOverrides']=[];raw['cardControls']={};raw['administrativeEvents']=[];
     raw['decks']=(raw['decks'] as Array<Record<string,unknown>>).map(deck=>({...deck,studyPresetId:BALANCED_PRESET_ID}));
+  }
+  if (raw['schemaVersion'] === 5) {
+    raw['schemaVersion'] = 6;
+    raw['practiceEvents'] = [];
+    raw['focusPresets'] = [];
+    if (Array.isArray(raw['events'])) raw['events'] = (raw['events'] as Array<Record<string, unknown>>).map(event => event['kind'] === 'review' && event['mode'] === 'practice' ? { ...event, mode: 'scheduled' } : event);
+    if (raw['session'] && typeof raw['session'] === 'object') raw['session'] = { ...(raw['session'] as Record<string, unknown>), mode: 'scheduled' };
   }
   validateState(raw);
   return raw;

@@ -27,7 +27,7 @@ export function rewardProgress(state: State, cardId: string, rarity?: Rarity): {
 
 /** Only newly recorded scheduled reviews can create contributions. Imported/legacy events are never replayed. */
 export function rewardEventsForReview(state: State, review: ReviewEvent, studyDay: string): RewardEvent[] {
-  if (review.mode === 'practice' || review.rating < 4 || state.rewardEvents.some(event => event.reviewEventId === review.id)) return [];
+  if (review.rating < 4 || state.rewardEvents.some(event => event.reviewEventId === review.id)) return [];
   const active = activeRewardEvents(state).filter(event => event.cardId === review.cardId);
   const contributions = active.filter((event): event is RewardContribution => event.kind === 'contribution');
   const latest = contributions.at(-1);

@@ -78,7 +78,7 @@ export interface ReviewEvent {
   resultingState: CardState;
   schedulerVersion: string;
   configVersion: string;
-  mode?: 'scheduled' | 'practice';
+  mode?: 'scheduled';
   activeMs?: number;
   /** Focused, non-idle time from question display to reveal. */
   recallMs?: number;
@@ -105,6 +105,53 @@ export interface ReversalEvent {
 }
 export type StudyEvent = ReviewEvent | ReversalEvent;
 
+export type StudyMode = 'scheduled' | 'practice';
+export type FocusOrder = 'deck' | 'due' | 'overdue' | 'retrievability' | 'lapses' | 'oldest-reviewed' | 'recently-added' | 'random';
+export type FocusStudyState = 'new' | 'learning' | 'review' | 'due' | 'overdue' | 'attention' | 'leech' | 'suspended' | 'buried' | 'recently-reviewed';
+export interface FocusCriteria {
+  version: 1;
+  deckId?: string;
+  query?: string;
+  tags?: string[];
+  studyStates?: FocusStudyState[];
+  explicitCardIds?: string[];
+  missedWithinDays?: number;
+  dueWithinDays?: number;
+  overdueByDays?: number;
+  recentlyAddedDays?: number;
+  includeSuspended?: boolean;
+}
+export interface FocusPreset {
+  id: string;
+  version: 1;
+  name: string;
+  mode: StudyMode;
+  criteria: FocusCriteria;
+  order: FocusOrder;
+  limit: number;
+}
+export interface FocusSessionRequest {
+  mode: StudyMode;
+  label: string;
+  criteria: FocusCriteria;
+  order: FocusOrder;
+  limit: number;
+  presetId?: string;
+  /** Per-run ordering seed. Persisted with the session so reload never reshuffles it. */
+  seed?: string;
+}
+export interface PracticeEvent {
+  kind: 'practice';
+  id: string;
+  userId: string;
+  cardId: string;
+  sessionId: string;
+  timestamp: string;
+  rating: ConfidenceRating;
+  activeMs: number;
+  recallMs?: number;
+}
+
 export interface AdministrativeEvent {
   id:string;userId:string;cardId:string;timestamp:string;
   action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'|'reposition';
@@ -112,7 +159,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 5;
+  schemaVersion: 6;
   version: number;
   userId: string;
   decks: Deck[];
@@ -131,6 +178,8 @@ export interface State {
   todayOverrides:TodayStudyOverride[];
   cardControls:Record<string,CardControl>;
   administrativeEvents:AdministrativeEvent[];
+  practiceEvents: PracticeEvent[];
+  focusPresets: FocusPreset[];
 }
 
 
@@ -192,6 +241,10 @@ export interface StudySession {
   activeMs: number;
   lastReviewCardId?: string;
   scopeDeckId?:string;
+  mode: StudyMode;
+  label?: string;
+  focus?: FocusSessionRequest;
+  lastPracticeEventId?: string;
 }
 
 export interface RewardContribution {

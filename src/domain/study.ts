@@ -24,7 +24,7 @@ export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'A
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     version: 0,
     userId: 'local-learner',
     decks: structuredClone(decks).map(deck=>({...deck,studyPresetId:deck.studyPresetId??BALANCED_PRESET_ID})),
@@ -32,7 +32,7 @@ export function createInitialState(decks: Deck[], cards: CardContent[]): State {
     states: {},
     events: [],
     designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null, ankiMappings: [],
-    studyPresets:cloneBuiltInPresets(),todayOverrides:[],cardControls:{},administrativeEvents:[],
+    studyPresets:cloneBuiltInPresets(),todayOverrides:[],cardControls:{},administrativeEvents:[],practiceEvents:[],focusPresets:[],
     preferences: { effects: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };
@@ -57,7 +57,7 @@ export function hydrateCard(state: CardState): FsrsCard {
 
 export function activeReviews(data: State): ReviewEvent[] {
   const reversed = new Set(data.events.flatMap(event => event.kind === 'reversal' ? [event.reviewEventId] : []));
-  return data.events.filter((event): event is ReviewEvent => event.kind === 'review' && event.mode !== 'practice' && !reversed.has(event.id));
+  return data.events.filter((event): event is ReviewEvent => event.kind === 'review' && !reversed.has(event.id));
 }
 
 export function dueCards(data: State, now: Date, deckId?: string): CardContent[] {
@@ -104,16 +104,17 @@ export interface ReviewInput {
   recallMs?: number;
 }
 
-export function applyReview(data: State, input: ReviewInput): State {
+export function applyScheduledReview(data: State, input: ReviewInput): State {
   const duplicate = data.events.find(event => event.id === input.id);
   if (duplicate) {
     if (duplicate.kind === 'review' && duplicate.cardId === input.cardId && duplicate.rating === input.rating && duplicate.sessionId === input.sessionId) return data;
     throw new Error('This review ID already belongs to a different action.');
   }
   if (!input.id || !input.sessionId || !Number.isFinite(input.now.getTime())) throw new Error('The review is missing a valid ID, session or time.');
-  if (data.session && (data.session.id !== input.sessionId || data.session.queue[0] !== input.cardId || !data.session.revealed)) throw new Error('Reveal the current session card before rating it.');
+  if (data.session?.mode === 'practice') throw new Error('Practice ratings cannot update scheduling.');
+  if (!data.session || data.session.mode !== 'scheduled' || data.session.id !== input.sessionId || data.session.queue[0] !== input.cardId || !data.session.revealed) throw new Error('Reveal the current scheduled card before rating it.');
   const content = data.cards.find(card => card.id === input.cardId);
-  if (!content || (!data.session&&!dueCards(data,input.now,content.deckId).some(card=>card.id===input.cardId))) throw new Error('This card is no longer available in the due queue. Refresh your study session.');
+  if (!content) throw new Error('This card is no longer available in the due queue. Refresh your study session.');
   if (data.scheduler.version !== SCHEDULER_VERSION || data.scheduler.configVersion !== CONFIG_VERSION) throw new Error('This study data needs a scheduler migration before another review.');
   const previous = data.states[input.cardId] ?? serializeCard(createEmptyCard(input.now), 0);
   if (previous.last_review && input.now.getTime() < Date.parse(previous.last_review)) throw new Error('Your clock is earlier than the last review. Check the system time before continuing.');
@@ -146,6 +147,9 @@ export function applyReview(data: State, input: ReviewInput): State {
     session: data.session ? { ...data.session, queue: remaining, completed: data.session.completed + 1, revealed: false, activeMs: 0, recallMs: undefined, cardStartedAt: input.now.toISOString(), lastReviewCardId: input.cardId, ...(remaining.length ? {} : { endedAt: input.now.toISOString(), partial: false }) } : null,
   };
 }
+
+/** @deprecated Use the explicit scheduled-review entry point. Retained for older domain callers. */
+export const applyReview = applyScheduledReview;
 
 function sameSchedulingState(a: CardState, b: CardState): boolean {
   const { version: _a, ...left } = a;

@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, EventEmitter, inject, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,6 +23,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
       @if(library.filterChips().length){<div class="active-filter-chips" aria-label="Active collection filters">@for(chip of library.filterChips();track chip.key+chip.value){<button type="button" (click)="library.removeFilterChip(chip.key,chip.value)" [attr.aria-label]="'Remove '+chip.label+' filter'">{{chip.label}} <span aria-hidden="true">×</span></button>}</div>}
       @if(filtersOpen()){<div class="collection-filter-panel"><fieldset><legend>Deck</legend>@for(deck of store.decks();track deck.id){<mat-checkbox [checked]="library.filters().deckIds?.includes(deck.id)" (change)="toggle('deckIds',deck.id)">{{deck.name}}</mat-checkbox>}</fieldset><fieldset><legend>Tags</legend>@for(tag of library.tags();track tag){<mat-checkbox [checked]="library.filters().tags?.includes(tag)" (change)="toggle('tags',tag)">{{tag}}</mat-checkbox>}</fieldset><fieldset><legend>Study</legend>@for(state of studyFilters;track state){<mat-checkbox [checked]="library.filters().studyStates?.includes(state)" (change)="toggle('studyStates',state)">{{state}}</mat-checkbox>}</fieldset><fieldset><legend>Media</legend>@for(media of mediaFilters;track media){<mat-checkbox [checked]="library.filters().media?.includes(media)" (change)="toggle('media',media)">{{media}}</mat-checkbox>}</fieldset><fieldset><legend>Rarity</legend>@for(tier of tiers;track tier.id){<mat-checkbox [checked]="library.filters().rarities?.includes(tier.id)" (change)="toggle('rarities',tier.id)">{{tier.label}}</mat-checkbox>}</fieldset><fieldset><legend>Design</legend>@for(design of store.data()!.designs;track design.id){<mat-checkbox [checked]="library.filters().designSetIds?.includes(design.id)" (change)="toggle('designSetIds',design.id)">{{design.name}}</mat-checkbox>}</fieldset></div>}
       @if(library.status()==='building'){<p class="hint" aria-live="polite">Updating local index…</p>}@else if(library.query()&&!library.page().total){<p class="empty-inline">No results.</p>}</section>
+    @if(library.page().total){<div class="actions collection-practice-actions" hrReveal><button mat-flat-button (click)="practiceCards.emit(library.allMatchingIds())">Practice current results</button></div>}
     @if (selected(); as card) {
       <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
@@ -34,6 +35,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
           <p class="deck-name">{{ deckName(card.deckId) }}</p>
           @if (!sampleTier() && !progress(card).earned && (card.rarity || 'common') !== 'common') { <div class="inspection-actions"><button mat-stroked-button (click)="previewLocked.set(!previewLocked())">{{ previewLocked() ? 'Show current appearance' : 'Preview authored cosmetic' }}</button></div> }
           <dl class="card-details"><div><dt>Authored rarity</dt><dd>{{ tierName(card.rarity || 'common') }}</dd></div><div><dt>Current view</dt><dd>{{ tierName(displayRarity()) }}{{ isPreview() ? ' · preview' : '' }}</dd></div><div><dt>Design</dt><dd>{{ store.designFor(card)?.name || 'HoloRecall original' }}</dd></div><div><dt>Design credit</dt><dd>{{ store.designFor(card) ? (store.designFor(card)?.credit || 'No credit provided') : 'Original HoloRecall artwork and frame' }}</dd></div>@if (store.designFor(card)?.source) {<div><dt>Source</dt><dd>{{ store.designFor(card)?.source }}</dd></div>}@if (store.designFor(card)?.license) {<div><dt>Licence</dt><dd>{{ store.designFor(card)?.license }}</dd></div>}</dl>
+          @if(!sampleTier()){<div class="inspection-actions"><button mat-flat-button (click)="practiceCards.emit([card.id])">Practice this card</button></div>}
           @if (sampleTier()) {
             <div class="unlock-panel"><h3>Sample presentation</h3><p>This view demonstrates a treatment. It creates no reviews, reward events or earned progress.</p><p>{{ required(sampleTier()!) }} qualifying study {{ required(sampleTier()!) === 1 ? 'day' : 'days' }} currently required to earn this tier.</p></div>
           } @else {
@@ -55,6 +57,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
   styleUrl: './collection.css',
 })
 export class CollectionComponent {
+  @Output() readonly practiceCards=new EventEmitter<string[]>();
   readonly store = inject(LocalStudyStore);
   readonly library = inject(LibraryViewService);
   readonly tiers = RARITIES;

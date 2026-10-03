@@ -4,6 +4,25 @@ Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build loca
 
 ## Current durable handoff
 
+### 3 October 2026 Custom Study and Focused Practice final handoff
+
+- **Branch/worktree:** `main` based on accepted `91aafaa`; implementation is complete in the current reviewable worktree and has not been pushed or deployed. No IndexedDB clearing or learner-data mutation was performed.
+- **Delivered:** schema 6 explicit Scheduled/Practice sessions; separate immutable Practice events; non-destructive Focus requests and saved presets; today-only workload actions; learner-day recent mistakes; due/overdue, preview-new and 1/3/7/custom review-ahead Practice; tag/state/branch builder; Collection/Progress entry points; shared Study player; Practice Results and interruption recovery.
+- **Safety corrections from independent review:** normal Study cannot resume Practice; the FSRS writer requires an active revealed Scheduled session; schema-5 pseudo-practice records migrate without breaking scheduler history; restored criteria/references and cross-namespace IDs are validated; paused Practice prunes archived, ancestor-suspended and buried cards; launch criteria no longer leak into later navigation; random runs receive a persisted seed.
+- **Checks:** unit/domain **128/128 passed**. Production build passes at **867.32 kB initial / 199.15 kB transfer**, 17.32 kB over the unchanged 850 kB warning ceiling; Focus is a 27.11 kB lazy chunk and HR-PERF-01 remains BACKLOG. Complete desktop WebKit **63/63** and WebKit phone profiles **21/21** pass. The complete Chromium run passed **61/63** before two stale assertions expecting backup v5 failed; both were corrected to the real v6 contract and reran **2/2 passed**. No timeout was raised and no assertion was weakened.
+- **Measured scale:** a 10,000-card Focus query returns a bounded 40-card slice under the 3,000 ms domain budget; the established browser library baseline remains Chromium 2,789 ms index/render and 97 ms query/render, WebKit 1,777 ms and 924 ms in this final run.
+- **Delegation:** one delegate implemented the bounded Material 3 Focus surface under lead-owned contracts. A separate read-only acceptance delegate ran 33 focused checks and found scheduler/session, migration, reconciliation and validation gaps; the lead fixed them and added regression evidence.
+- **Preserved pending acceptance:** HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION` for Will's exact package. It is not represented as automated.
+- **Platform limits:** Playwright WebKit and phone presets are browser evidence only. Safari, WKWebView, native iOS/macOS storage, VoiceOver, Dynamic Type, native audio interruption and physical devices remain unverified.
+- **Local review:** `http://127.0.0.1:4200/`. Exact next action for a future run: address the recommended bounded **review workflow completion** milestone (administrative-event undo plus safe Auto Advance evaluation); do not begin it automatically. HR-PERF-01 should be handled with the next deliberate root-shell split.
+
+### 3 October 2026 Focused Practice recovery
+
+- **Recovered state:** `main` at clean `91aafaa`; accepted Study presets/history, hierarchy limits, Anki conversion, rewards and media remain intact. No storage reset or learner-data mutation occurred.
+- **Active scope:** HR-PERF-01 and HR-TEST-01 are reviewed first; HR-FOCUS-01–10 and HR-PLAN-03 are `IN_PROGRESS` in the canonical tracker. The exact real-package HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION`.
+- **Ownership/delegation:** the lead owns schema, session modes, scheduler boundaries and integration. Two bounded read-only delegates cover capability/scheduler comparison and Material 3/platform UX; they cannot redefine scheduling semantics.
+- **Exact next action:** establish schema-compatible explicit scheduled/practice session contracts and separate practice events, then add domain acceptance tests before UI integration.
+
 ### 3 October 2026 Study Settings continuation recovery
 
 - **Recovered state:** `main` at clean checkpoint `69f129d`; schema 5, accepted Anki defect fixes and existing Study/history implementation are intact. No reset, IndexedDB clearing or learner-data mutation occurred.

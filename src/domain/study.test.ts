@@ -3,13 +3,14 @@ import { Rating } from 'ts-fsrs';
 import type { CardContent, State } from './models';
 import { activeReviews, applyReview, createInitialState, dayKey, dueCards, mapRating, undoLatestReview } from './study';
 import { exportBackup, parseBackup, validateState } from './backup';
+import { acceptScheduledReview } from '../test/scheduled-review';
 
 const now = new Date('2026-09-28T12:00:00.000Z');
 const cards: CardContent[] = ['one', 'two', 'three'].map(id => ({
   id, deckId: 'italian', kind: 'text', front: 'The apple', answer: 'la mela', pronunciation: 'lah MEH-lah', meaning: 'the apple', notes: '', tags: ['noun'], revision: 1, suspended: false,
 }));
 const fresh = () => createInitialState([{ id: 'italian', name: 'Italian', description: '', suspended: false }], cards);
-const review = (data: State, rating: 1 | 2 | 3 | 4 | 5 = 3, id = 'review-one', cardId = 'one', at = now) => applyReview(data, { id, cardId, sessionId: 'session-one', rating, now: at });
+const review = (data: State, rating: 1 | 2 | 3 | 4 | 5 = 3, id = 'review-one', cardId = 'one', at = now) => acceptScheduledReview(data, { id, cardId, sessionId: 'session-one', rating, now: at });
 
 describe('FSRS review domain', () => {
   it('maps five self-ratings to four FSRS grades while preserving the original rating', () => {
@@ -45,7 +46,7 @@ describe('FSRS review domain', () => {
 
   it('rejects rapid new review IDs after a card leaves the queue', () => {
     const data = review(fresh(), 3);
-    expect(() => review(data, 3, 'rapid-double-tap')).toThrow('no longer available');
+    expect(() => applyReview(data, { id:'rapid-double-tap',cardId:'one',sessionId:'session-one',rating:3,now })).toThrow('Reveal the current scheduled card');
     expect(data.events).toHaveLength(1);
   });
 

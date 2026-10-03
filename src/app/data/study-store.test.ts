@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { LocalStudyStore } from './study-store';
-import { applyReview, createInitialState } from '../../domain/study';
+import { createInitialState } from '../../domain/study';
+import { acceptScheduledReview as applyReview } from '../../test/scheduled-review';
 import type { ContentImport, State } from '../../domain/models';
 
 function fixture() {
@@ -118,7 +119,7 @@ describe('atomic content imports and persistent sessions', () => {
   it('refreshes a persisted stale queue on resume and never retains an ineligible head card', async () => {
     const state = fixture(); state.cards.push({ ...state.cards[0]!, id: 'second' });
     state.cards[0]!.suspended = true;
-    state.session = { id: 'old-session', queue: ['card', 'second'], total: 2, completed: 0, revealed: true, activeMs: 3000 };
+    state.session = { id: 'old-session', mode:'scheduled', queue: ['card', 'second'], total: 2, completed: 0, revealed: true, activeMs: 3000 };
     const store = createStore(state); await store.startSession();
     expect(store.data()!.session).toMatchObject({ id: 'old-session', queue: ['second'], total: 1, revealed: false, activeMs: 0 });
     await store.revealSession(); await store.review('second', 4, 'old-session');
@@ -152,4 +153,5 @@ describe('atomic content imports and persistent sessions', () => {
     expect(store.data()!.session).toMatchObject({ queue: [], completed: 0, total: 0, plannedTotal: 1, partial: true });
     expect(store.data()!.events).toHaveLength(2);
   });
+  it('never resumes a Practice queue from normal Study and reconciles paused ancestor and bury changes',async()=>{const state=fixture();state.decks.push({id:'child',name:'Child',description:'',suspended:false,parentId:'deck'});state.cards[0]!.deckId='child';state.cards.push({...state.cards[0]!,id:'second'});const store=createStore(state);await store.startFocusSession({mode:'practice',label:'Weak cards',criteria:{version:1,deckId:'deck'},order:'deck',limit:10});const practiceId=store.data()!.session!.id;await store.startSession('deck');expect(store.data()!.session).toMatchObject({mode:'scheduled',scopeDeckId:'deck'});expect(store.data()!.session!.id).not.toBe(practiceId);await store.startFocusSession({mode:'practice',label:'Weak cards',criteria:{version:1,deckId:'deck'},order:'deck',limit:10});await store.saveDeck({...store.decks().find(deck=>deck.id==='deck')!,suspended:true});expect(store.data()!.session!.queue).toEqual([]);await store.saveDeck({...store.decks().find(deck=>deck.id==='deck')!,suspended:false});await store.startFocusSession({mode:'practice',label:'Weak cards',criteria:{version:1,deckId:'deck'},order:'deck',limit:10});await store.manageCards(['card'],'bury');expect(store.data()!.session!.queue).toEqual(['second']);});
 });

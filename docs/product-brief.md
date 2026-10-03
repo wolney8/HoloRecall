@@ -73,12 +73,13 @@ Commercial labels below are proposals for product planning, not enforced policy 
 | HR-CAP-ORG-02 | Search, combinable filters, sorting and organisation views | Complete for local query/filter/sort and Collection presets; no named saved-view feature | Maintain responsive indexed search and stable filter navigation at larger real libraries | Current Worker/index boundary | Proposed full-license candidate remains undecided |
 | HR-CAP-STUDY-01 | Five-point UI with real FSRS scheduling | Complete for local web; domain plus Chromium/WebKit persistence/dedup/undo evidence | Mapping/version/state/history invariants and interruption recovery | Native durable storage for apps | Core/free |
 | HR-CAP-STUDY-02 | Study presets, workload, supported FSRS policy and queue order | Complete for the documented local-web scope: reusable presets; deck/today limits; retention/max interval/same-day steps; supported order policies; sibling/leech rules; reviewer preferences | Preserve deterministic queue/state/history invariants; native read-back remains pending | Schema 5 and `ts-fsrs` 5.4.2 | Core/free baseline; advanced undecided |
+| HR-CAP-STUDY-03 | Custom Study and non-rewarding focused practice | Complete for local web: quick Focus actions, advanced criteria/order/limit, saved presets, Collection/Progress entry points, separate Practice events/results and genuine Scheduled eligibility | Native lifecycle/read-back; early scheduled review remains intentionally unsupported | Schema 6, local index and current scheduler | Core/free learning control |
 | HR-CAP-HISTORY-01 | Reconstructable reviews, session summaries, undo and management history | Complete for local web: truthful card/global timeline plus distinct scheduling-management events | Native durability/read-back and future administrative-operation undo | Current event model | Safety baseline/core |
 | HR-CAP-STAT-01 | Honest progress and report metrics | Complete for current local metrics; no Anki-statistics parity claim | Defined sample/time windows, accessibility, practice/undo exclusions | More real usage evidence | Core/free baseline; advanced undecided |
 | HR-CAP-IMPORT-ANKI-01 | Content-only `.apkg` import normalized to HoloRecall study | Complete for documented subset; preset selection, New-state initialization and progress-preserving reimport join real Anki 26.9.3 legacy/modern fixture evidence | Maintain exact compatibility matrix and genuine fixtures | Ongoing format fixtures | Core portability |
 | HR-CAP-EXPORT-ANKI-01 | Export back to `.apkg` | Not started and separate from import | Defined supported loss model and genuine Anki reopen evidence | Format/product decision | Undecided |
 | HR-CAP-EXCHANGE-01 | HoloRecall XLSX and portable ZIP deck exchange | Complete format v4 with explicit hierarchy/sibling identity; v1–v3 remain readable; unit/browser round trips | Atomic preview/apply, literal cells, bundled advertised media, no history grants | Current exchange boundary | Core portability |
-| HR-CAP-BACKUP-01 | Full learner JSON backup and safe restore | Complete locally with schema 1–5 migration and media/mapping/reward/history/preset/hierarchy state | Recovery drill, nonempty-profile protection and native read-back | Native store later | Safety baseline/core |
+| HR-CAP-BACKUP-01 | Full learner JSON backup and safe restore | Complete locally with schema 1–6 migration and media/mapping/reward/history/preset/focus/hierarchy state | Recovery drill, nonempty-profile protection and native read-back | Native store later | Safety baseline/core |
 | HR-CAP-COLLECT-01 | Seven rarities, designs, finishes and earned cosmetics | Complete for local web scope; both engines cover renderer/rewards | Content/rarity/finish/earned/scheduling stay separate | Physical performance testing | Ordinary collection core; advanced studio proposed full-license candidate |
 | HR-CAP-CONT-WEB-01 | Responsive local web application | Complete for loaded-page local prototype in Chromium/WebKit; cold offline start unsupported | Supported-browser matrix, recovery/export, release accessibility review | Hosting/release approval later | Core/free |
 | HR-CAP-CONT-IOS-01 | Packaged iOS application with native durability/files | Pending; browser WebKit and phone viewports are readiness evidence only | Authorized shell, storage/files/lifecycle adapters, simulator and device tests | Capacitor decision, Xcode/signing | Proposed full licence/app access; undecided |
@@ -112,7 +113,26 @@ Statuses describe implemented HoloRecall behavior, not visual similarity to Anki
 | AnkiWeb Sync | **NOT PLANNED** | HoloRecall does not intend to operate as an AnkiWeb client |
 | Future HoloRecall-owned sync | PLANNED | Separate authenticated outbox/conflict architecture decision |
 
-The recommended next bounded milestone is **custom study and focused practice controls**: saved filtered study scopes, previewable custom queues and an explicitly non-rewarding practice mode. It builds on presets, indexed scheduling filters and immutable events without requiring cloud, payments or native provisioning.
+### Custom Study / Filtered Deck capability comparison
+
+HoloRecall implements these capabilities as a non-destructive **Focused Session** that references original cards. Cards retain their real deck/subdeck identity; no temporary deck object is created. Official comparison source: current Anki Manual [filtered decks](https://docs.ankiweb.net/filtered-decks.html), [studying](https://docs.ankiweb.net/studying.html) and [searching](https://docs.ankiweb.net/searching.html).
+
+| Capability | Status | HoloRecall boundary / evidence |
+| --- | --- | --- |
+| Increase today's new limit | DONE | Scoped today-only override followed by genuine Scheduled Study |
+| Increase today's review limit | DONE | Scoped today-only override; history is unchanged |
+| Review forgotten cards | DONE | Confidence 1 Today or configurable recent learner-calendar days; defaults to Practice |
+| Review ahead | PARTIAL | Practice for 1/3/7/custom future days; early scheduled rescheduling is intentionally absent because `ts-fsrs` exposes no sanctioned early-review operation |
+| Preview new cards | DONE | Practice only; cards remain New and do not consume allowance |
+| Study by scheduling state or tag | DONE | Reuses the indexed query/filter domain, including due/overdue/attention/leech and explicit suspended Practice opt-in |
+| Arbitrary filtered selection | DONE | Branch + query + tags + state + date criteria, current Collection results or explicit selection |
+| Selection limit and ordering | DONE | Bounded 1–10,000; deck/due/overdue/risk/lapses/oldest/recent/random orders backed by persisted data |
+| Saved/reusable selections | DONE | Versioned stable-ID Focus presets rerun current criteria; they do not duplicate cards |
+| Rescheduling arbitrary filtered cards | NOT PLANNED for Focus | Scheduled Focus only intersects genuinely eligible cards; Set Due remains a distinct administrative action |
+| Preserve home-deck identity | DONE | Focus queues retain original card/deck IDs and parent/subdeck semantics |
+| Practice results | DONE | Separate events, time, confidence distribution, recall samples and low-confidence follow-up; no FSRS/cosmetic claims |
+
+The recommended next bounded milestone is **review workflow completion**: add atomic undo for administrative scheduling actions and evaluate a save-gated Auto Advance option without weakening confidence feedback, audio cleanup or history integrity. Other cloud/native work remains separate.
 
 ## Delivery checkpoints
 
