@@ -182,8 +182,8 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Dependencies:** HR-STUDY-01; hierarchy-aware queue
 - **Requirement / acceptance:** New/review limits, new-after-review-limit policy, per-deck and today-only overrides, deterministic parent/subdeck caps and honest limited-work explanations without history mutation.
 - **Platform implications:** Local-day/DST behavior remains platform-neutral and interruption safe.
-- **Implementation notes:** Accepted review events retain owning deck, ancestry, selected Study root, learner day and IANA time zone. The selected root caps the aggregate queue; each card's owning deck caps its contribution. Direct child Study uses the selected child's policy and excludes unrelated branches. New introductions and mature reviews have separate ledgers; learning/relearning remains scheduler-correct.
-- **Verification / commits:** Fixed-clock Course/Lesson A/Greetings/Introductions/Lesson B tests prove unrelated-deck isolation, repeated same-day seeding, selected-parent aggregation, child caps, shared-parent state, learner-day reset, today-only expiry, distinct new/review limits, exact-once undo and administrative/practice exclusion. Backup migration tests cover new attribution plus legacy events. Chromium and WebKit verify apply/reload/clear of today-only limits without review mutation. Implementation commit `4df9d61`.
+- **Implementation notes:** Accepted review events retain owning deck, full ancestry, selected Study root, learner day and IANA time zone. The selected root caps the aggregate queue; every applicable branch between each card's owning deck and that selected root caps its descendant contribution. Direct child Study stops limit resolution at that child and excludes unrelated branches. New introductions and mature reviews have separate ledgers; only cards admitted inside the root cap consume contribution allowance; learning/relearning remains scheduler-correct.
+- **Verification / commits:** Fixed-clock Course/Lesson A/Greetings/Introductions/Lesson B tests prove unrelated-deck isolation, repeated same-day seeding, selected-parent aggregation, intermediate and leaf caps, shared-parent state, learner-day reset, today-only expiry, distinct new/review limits, bounded candidate charging, exact-once undo and administrative/practice exclusion. Backup validation checks that attribution is a real parent chain while retaining legacy events. Chromium and WebKit verify apply/reload/clear without review mutation. Implementation commits `4df9d61` and `cb2bbce`.
 
 ### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
 - **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
@@ -218,7 +218,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Dependencies:** HR-STUDY-01/02; stable new-card position
 - **Requirement / acceptance:** Supported gather/sort, new-versus-review and review due/random/retrievability orders alter only the persisted queue; animations follow it. Deterministic tests cover every option.
 - **Platform implications:** Platform-neutral randomness injection and reload recovery.
-- **Verification / commits:** Stable due, deterministic hash-random, explicit position, gathered/random, before/mixed/after and per-card FSRS retrievability ordering are domain-owned; the persisted session queue remains the renderer/deal order. Fixed-state deterministic tests pass.
+- **Verification / commits:** Stable due, deterministic hash-random, explicit position, gathered/random, before/mixed/after and per-card FSRS retrievability ordering are domain-owned; the persisted session queue remains the renderer/deal order. Due/position outcomes and repeatability pass fixed-state tests; stronger expected-order fixtures for random/retrievability are tracked under HR-TEST-01.
 
 ### HR-STUDY-06 — Siblings, burying and suspension
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -291,8 +291,17 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Dependencies:** Angular route/chunk ownership review
 - **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
-- **Implementation notes:** Exchange, ExcelJS, JSZip, SQLite/WASM and Anki conversion remain lazy. The current 852.71 kB initial bundle is 2.71 kB above the unchanged ceiling; a safe unused-import removal was insufficient to recover the full gap. Avoid risky refactoring solely for this small overage.
+- **Implementation notes:** Exchange, ExcelJS, JSZip, SQLite/WASM and Anki conversion remain lazy. The current 852.98 kB initial bundle is 2.98 kB above the unchanged ceiling; a safe unused-import removal was insufficient to recover the full gap. Avoid risky refactoring solely for this small overage.
 - **Verification / evidence:** Production build passes and reports the measured warning. Re-measure after the next bounded route/chunk refactor.
+
+### HR-TEST-01 — Strengthen queue-order and audio-action assertions
+- **Product area / milestone / priority:** Verification / Study configuration / P2
+- **Status:** BACKLOG
+- **Source:** Independent acceptance review, 3 October 2026
+- **Dependencies:** Existing deterministic queue fixtures and bundled-audio browser fixture
+- **Requirement / acceptance:** Add expected-order fixtures that distinguish random and retrievability policies, and a focused browser assertion that accepted rating pauses active card audio after persistence succeeds. Preserve current general audio/lifecycle and queue regression coverage.
+- **Platform implications:** Run in Chromium and Playwright WebKit; native audio interruption remains separate device evidence.
+- **Verification / evidence:** Existing full suites pass, but their assertions are broader than these two interaction-specific claims.
 
 ## Preserved completed history
 

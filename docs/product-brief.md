@@ -94,7 +94,7 @@ Statuses describe implemented HoloRecall behavior, not visual similarity to Anki
 | Capability | Status | HoloRecall boundary / evidence |
 | --- | --- | --- |
 | Reusable presets | DONE | Balanced/Light/Intensive defaults plus create, duplicate, rename, restore, referenced replacement/delete and bounded deck assignment UI |
-| New/review limits; per-deck and today-only limits | DONE | Persisted branch-attributed usage; selected-parent aggregate cap; owning-child contribution caps; direct-child isolation; distinct new/review ledgers; visible apply/clear |
+| New/review limits; per-deck and today-only limits | DONE | Persisted branch-attributed usage; selected-parent aggregate cap; intermediate/leaf descendant caps; direct-child isolation; distinct new/review ledgers; visible apply/clear |
 | Learning and relearning steps | DONE | Strict 1–4 same-day `m`/`h` steps; long or ambiguous tokens rejected |
 | Gather/sort, new-v-review and review order | DONE | Deck/position/random; gathered/random; before/mixed/after; due/random/FSRS most-at-risk |
 | Sibling burying; manual bury; suspend | DONE | Stable imported/native sibling groups; learner-day auto expiry; archive remains distinct |
