@@ -178,11 +178,23 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-STUDY-02 — Daily workload and hierarchy limits
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
-- **Status:** VERIFY
+- **Status:** DONE
 - **Dependencies:** HR-STUDY-01; hierarchy-aware queue
 - **Requirement / acceptance:** New/review limits, new-after-review-limit policy, per-deck and today-only overrides, deterministic parent/subdeck caps and honest limited-work explanations without history mutation.
 - **Platform implications:** Local-day/DST behavior remains platform-neutral and interruption safe.
-- **Verification / commits:** Category-correct new/review limits, selected-parent total/child contribution limits, direct-child behavior, per-deck overrides and learner-day today overrides pass the existing fixed-clock domain/store tests; changing them appends no review events. Independent recovery review found that completed-today counters are currently computed globally before selected-branch scoping and child contribution maps are not seeded from prior same-day reviews. This item remains `VERIFY` until isolated-deck and repeated-session regression cases are corrected; no learner data was changed during this defect pass.
+- **Implementation notes:** Accepted review events retain owning deck, ancestry, selected Study root, learner day and IANA time zone. The selected root caps the aggregate queue; each card's owning deck caps its contribution. Direct child Study uses the selected child's policy and excludes unrelated branches. New introductions and mature reviews have separate ledgers; learning/relearning remains scheduler-correct.
+- **Verification / commits:** Fixed-clock Course/Lesson A/Greetings/Introductions/Lesson B tests prove unrelated-deck isolation, repeated same-day seeding, selected-parent aggregation, child caps, shared-parent state, learner-day reset, today-only expiry, distinct new/review limits, exact-once undo and administrative/practice exclusion. Backup migration tests cover new attribution plus legacy events. Chromium and WebKit verify apply/reload/clear of today-only limits without review mutation. Implementation commit `4df9d61`.
+
+### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
+- **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
+- **Status:** VERIFY
+- **Source:** Will, 3 October 2026 follow-up acceptance direction
+- **Dependencies:** Will's exact real-world `.apkg`; accepted HR-BUG-ANKI-01/02 and HR-BUG-STUDY-01 implementation
+- **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
+- **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
+- **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
+- **Verification / evidence:** Pending Will's manual report. This item does not block continued Study Settings implementation.
+- **Commits:** Tracker checkpoint in the final milestone documentation commit; manual evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -271,6 +283,16 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Classify every requested settings/history capability as DONE/PARTIAL/PLANNED/NOT APPLICABLE/NOT PLANNED. Record **AnkiWeb Sync — NOT PLANNED** and keep future HoloRecall sync separate.
 - **Platform implications:** Evidence must distinguish web, WebKit and native verification.
 - **Verification / commits:** `docs/product-brief.md` contains the explicit settings/review matrix and separates Anki content import, HoloRecall exchange/backup, future HoloRecall sync and **AnkiWeb Sync — NOT PLANNED**.
+
+### HR-PERF-01 — Recover initial bundle warning headroom
+- **Product area / milestone / priority:** Performance / Study configuration / P2
+- **Status:** BACKLOG
+- **Source:** Production build measurement, 3 October 2026
+- **Dependencies:** Angular route/chunk ownership review
+- **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
+- **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
+- **Implementation notes:** Exchange, ExcelJS, JSZip, SQLite/WASM and Anki conversion remain lazy. The current 852.71 kB initial bundle is 2.71 kB above the unchanged ceiling; a safe unused-import removal was insufficient to recover the full gap. Avoid risky refactoring solely for this small overage.
+- **Verification / evidence:** Production build passes and reports the measured warning. Re-measure after the next bounded route/chunk refactor.
 
 ## Preserved completed history
 

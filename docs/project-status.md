@@ -2,7 +2,18 @@
 
 Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
-## Search and organisation milestone handoff
+## Current durable handoff
+
+### 3 October 2026 Study Settings continuation recovery
+
+- **Recovered state:** `main` at clean checkpoint `69f129d`; schema 5, accepted Anki defect fixes and existing Study/history implementation are intact. No reset, IndexedDB clearing or learner-data mutation occurred.
+- **Implemented:** HR-STUDY-02 now rebuilds same-day usage from persisted owning-deck/ancestry, selected-root, learner-day and time-zone attribution. Selected parents cap aggregate work, each owning child caps its contribution, direct-child Study excludes unrelated branches, and new/review ledgers remain distinct. Legacy events retain a conservative card/deck fallback.
+- **Acceptance corrections:** a true safe-default preset creation action, bounded deck-assignment rendering, visible today-only apply/clear state, learner-time-zone history filtering, expired automatic-bury filtering, due-filter eligibility, rating-time audio stop, reversible automatic leech suspension and stable sequential bulk repositioning close the independent review findings.
+- **Checks:** unit/domain **115/115 passed**; production build passes at **852.71 kB initial / 195.03 kB estimated transfer**, 2.71 kB above the unchanged 850 kB warning ceiling and tracked as HR-PERF-01. Focused Study/settings/history Chromium and WebKit passed **8/8** after one selector-only rerun; the full desktop matrix passed **120/120** and WebKit compact/large/landscape passed **18/18**. No product flake, skip or timeout change occurred.
+- **Manual acceptance:** HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION` for Will's exact package. It is not represented as automated evidence and does not block the completed Study implementation.
+- **Delegation:** the lead owned scheduler semantics, schema and integration. Two bounded read-only delegates reviewed daily hierarchy limits and the remaining Study/history acceptance surface; the lead inspected and resolved their findings.
+- **Checkpoint:** implementation commit `4df9d61`; final documentation checkpoint follows this handoff. The local server remains available at `http://127.0.0.1:4200/`.
+- **Exact next action:** stop at the completed milestone. The recommended next bounded product milestone remains custom study and focused practice controls; HR-PERF-01 should recover bundle headroom alongside the next safe route/chunk change. Do not begin either automatically.
 
 ### 3 October 2026 defect-recovery final handoff
 

@@ -93,7 +93,8 @@ Statuses describe implemented HoloRecall behavior, not visual similarity to Anki
 
 | Capability | Status | HoloRecall boundary / evidence |
 | --- | --- | --- |
-| Reusable presets; new/review limits; per-deck and today-only limits | DONE | Stable IDs, replacement-safe deletion and deterministic parent/child cap tests |
+| Reusable presets | DONE | Balanced/Light/Intensive defaults plus create, duplicate, rename, restore, referenced replacement/delete and bounded deck assignment UI |
+| New/review limits; per-deck and today-only limits | DONE | Persisted branch-attributed usage; selected-parent aggregate cap; owning-child contribution caps; direct-child isolation; distinct new/review ledgers; visible apply/clear |
 | Learning and relearning steps | DONE | Strict 1–4 same-day `m`/`h` steps; long or ambiguous tokens rejected |
 | Gather/sort, new-v-review and review order | DONE | Deck/position/random; gathered/random; before/mixed/after; due/random/FSRS most-at-risk |
 | Sibling burying; manual bury; suspend | DONE | Stable imported/native sibling groups; learner-day auto expiry; archive remains distinct |
@@ -105,7 +106,7 @@ Statuses describe implemented HoloRecall behavior, not visual similarity to Anki
 | Legacy SM-2 ease/bonus/graduating-interval settings | NOT APPLICABLE | HoloRecall is FSRS-only |
 | Leech handling | DONE | Real-failure threshold; default flag, optional suspend; no rarity/reward coupling |
 | Card/review history and date filtering | DONE | Persisted values only; historical retrievability says unavailable |
-| Set due, reset/forget, suspend, bury and reposition | DONE | Atomic management events excluded from review/reward statistics; dedicated management undo is a future refinement |
+| Set due, reset/forget, suspend, bury and reposition | PARTIAL | Atomic management events are excluded from review/reward statistics and bulk positions are stable; dedicated management undo remains a future refinement |
 | Search/filter by scheduling state | DONE | New, learning, review, due, overdue, suspended, buried, leech/attention and recently reviewed |
 | Anki scheduling/history/options/parameter import | NOT PLANNED | `.apkg` is a content source; HoloRecall owns post-import learning state |
 | AnkiWeb Sync | **NOT PLANNED** | HoloRecall does not intend to operate as an AnkiWeb client |
