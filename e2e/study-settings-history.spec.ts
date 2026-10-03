@@ -22,4 +22,10 @@ test('HR-HIST review history shows persisted truth and management events do not 
 
 test('HR-IMPORT-02 presents HoloRecall study normalization before Anki apply',async({page})=>{await openApp(page);await navigate(page,'Import / export');await expect(page.getByRole('heading',{name:'Import an Anki deck'})).toBeVisible();await expect(page.getByText(/never imports scheduling history/)).toBeVisible();});
 
+test('Study settings entry points share one deck-aware settings surface',async({page})=>{
+ await openApp(page);await navigate(page,'Decks');await page.getByRole('button',{name:'Study settings',exact:true}).first().click();await expect(page.getByText('DECK CONTEXT')).toBeVisible();await expect(page.getByRole('heading',{name:'Italian essentials'})).toBeVisible();await expect(page.getByText('Assigned preset')).toBeVisible();
+ await navigate(page,'Study');await page.getByRole('button',{name:'Check for due cards'}).click();await page.getByRole('button',{name:'Study settings',exact:true}).click();await expect(page.getByText('DECK CONTEXT')).toBeVisible();await expect(page.getByRole('heading',{name:'Italian essentials'})).toBeVisible();
+ await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Settings',exact:false}).click();await expect(page.getByText('DECK CONTEXT')).toHaveCount(0);await expect(page.getByRole('heading',{name:'Study settings'})).toBeVisible();
+});
+
 test('study settings and history reflow at enlarged phone widths @ios-compact @ios-large @ios-landscape',async({page})=>{await openApp(page);await navigate(page,'Settings');await page.addStyleTag({content:'html{-webkit-text-size-adjust:200%;text-size-adjust:200%}'});await expect(page.getByRole('heading',{name:'Study settings'})).toBeVisible();await expectNoOverflow(page);await page.getByText('Advanced').click();await expect(page.getByRole('textbox',{name:'Learning steps',exact:true})).toBeVisible();await expectNoOverflow(page);});

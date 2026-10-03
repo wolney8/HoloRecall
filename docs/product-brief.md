@@ -74,7 +74,7 @@ Commercial labels below are proposals for product planning, not enforced policy 
 | HR-CAP-STUDY-01 | Five-point UI with real FSRS scheduling | Complete for local web; domain plus Chromium/WebKit persistence/dedup/undo evidence | Mapping/version/state/history invariants and interruption recovery | Native durable storage for apps | Core/free |
 | HR-CAP-STUDY-02 | Study presets, workload, supported FSRS policy and queue order | Complete for the documented local-web scope: reusable presets; deck/today limits; retention/max interval/same-day steps; supported order policies; sibling/leech rules; reviewer preferences | Preserve deterministic queue/state/history invariants; native read-back remains pending | Schema 5 and `ts-fsrs` 5.4.2 | Core/free baseline; advanced undecided |
 | HR-CAP-STUDY-03 | Custom Study and non-rewarding focused practice | Complete for local web: quick Focus actions, advanced criteria/order/limit, saved presets, Collection/Progress entry points, separate Practice events/results and genuine Scheduled eligibility | Native lifecycle/read-back; early scheduled review remains intentionally unsupported | Schema 6, local index and current scheduler | Core/free learning control |
-| HR-CAP-HISTORY-01 | Reconstructable reviews, session summaries, undo and management history | Complete for local web: truthful card/global timeline plus distinct scheduling-management events | Native durability/read-back and future administrative-operation undo | Current event model | Safety baseline/core |
+| HR-CAP-HISTORY-01 | Reconstructable reviews, session summaries, undo and management history | Complete for local web: truthful card/global timeline, distinct scheduling-management events and exact valid single/bulk administrative undo | Native durability/read-back; snapshot-free legacy management records remain intentionally non-undoable | Current event model | Safety baseline/core |
 | HR-CAP-STAT-01 | Honest progress and report metrics | Complete for current local metrics; no Anki-statistics parity claim | Defined sample/time windows, accessibility, practice/undo exclusions | More real usage evidence | Core/free baseline; advanced undecided |
 | HR-CAP-IMPORT-ANKI-01 | Content-only `.apkg` import normalized to HoloRecall study | Complete for documented subset; preset selection, New-state initialization and progress-preserving reimport join real Anki 26.9.3 legacy/modern fixture evidence | Maintain exact compatibility matrix and genuine fixtures | Ongoing format fixtures | Core portability |
 | HR-CAP-EXPORT-ANKI-01 | Export back to `.apkg` | Not started and separate from import | Defined supported loss model and genuine Anki reopen evidence | Format/product decision | Undecided |
@@ -100,14 +100,14 @@ Statuses describe implemented HoloRecall behavior, not visual similarity to Anki
 | Gather/sort, new-v-review and review order | DONE | Deck/position/random; gathered/random; before/mixed/after; due/random/FSRS most-at-risk |
 | Sibling burying; manual bury; suspend | DONE | Stable imported/native sibling groups; learner-day auto expiry; archive remains distinct |
 | Audio behavior; recorded/on-screen timers; counts and interval previews | DONE | Preset preferences with lifecycle cleanup and accessible manual audio fallback |
-| Auto Advance | PLANNED | Must preserve save-gated confidence feedback and audio/timer lifecycle |
-| Easy Days | PLANNED | `ts-fsrs` 5.4.2 has no sanctioned weekday workload-shift primitive; due dates are not post-hoc invented |
+| Auto Advance | DONE | Optional/default-off preset control auto-reveals after a bounded question delay, pauses on lifecycle/audio interruption, requires an intentional confidence rating, and retains the existing feedback/deal sequence in Scheduled and Practice modes. Configured answer time is a minimum revealed-card dwell after the rating is saved; it never supplies a rating. |
+| Easy Days | PLANNED — evaluated | Installed `ts-fsrs` 5.4.2 exposes interval fuzzing and history rescheduling, but no sanctioned weekday workload-distribution input. HoloRecall will not hide due cards or post-process due dates independently of FSRS. Dependency: a scheduler-supported weekday distribution strategy with state-valid deterministic tests. |
 | Desired retention and maximum interval | DONE | Validated per-home-deck settings apply to future reviews; history is not rewritten |
 | Low-level FSRS parameters / optimization | PARTIAL | Raw weights remain hidden; installed library has no trustworthy optimizer, so no fake Optimize action exists |
 | Legacy SM-2 ease/bonus/graduating-interval settings | NOT APPLICABLE | HoloRecall is FSRS-only |
 | Leech handling | DONE | Real-failure threshold; default flag, optional suspend; no rarity/reward coupling |
 | Card/review history and date filtering | DONE | Persisted values only; historical retrievability says unavailable |
-| Set due, reset/forget, suspend, bury and reposition | PARTIAL | Atomic management events are excluded from review/reward statistics and bulk positions are stable; dedicated management undo remains a future refinement |
+| Set due, reset/forget, suspend, bury and reposition | DONE | Atomic management events remain outside review/reward statistics. New operations retain grouped before/after projections; valid single/bulk actions undo through immutable reversal records, while stale and legacy snapshot-free actions remain visibly non-undoable. |
 | Search/filter by scheduling state | DONE | New, learning, review, due, overdue, suspended, buried, leech/attention and recently reviewed |
 | Anki scheduling/history/options/parameter import | NOT PLANNED | `.apkg` is a content source; HoloRecall owns post-import learning state |
 | AnkiWeb Sync | **NOT PLANNED** | HoloRecall does not intend to operate as an AnkiWeb client |
@@ -132,7 +132,7 @@ HoloRecall implements these capabilities as a non-destructive **Focused Session*
 | Preserve home-deck identity | DONE | Focus queues retain original card/deck IDs and parent/subdeck semantics |
 | Practice results | DONE | Separate events, time, confidence distribution, recall samples and low-confidence follow-up; no FSRS/cosmetic claims |
 
-The recommended next bounded milestone is **review workflow completion**: add atomic undo for administrative scheduling actions and evaluate a save-gated Auto Advance option without weakening confidence feedback, audio cleanup or history integrity. Other cloud/native work remains separate.
+The recommended next bounded milestone is **native iOS/macOS feasibility**, limited to toolchain confirmation, one reviewable shell/build path and evidence for storage, lifecycle, files, audio and accessibility risks. Provisioning, signing, cloud services and release work remain separate decisions.
 
 ## Delivery checkpoints
 

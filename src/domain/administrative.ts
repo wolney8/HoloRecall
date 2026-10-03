@@ -9,6 +9,11 @@ const same=(left:unknown,right:unknown)=>JSON.stringify(left)===JSON.stringify(r
 const control=(state:State,cardId:string):CardControl|undefined=>state.cardControls[cardId];
 const card=(state:State,cardId:string)=>state.cards.find(item=>item.id===cardId);
 const group=(state:State,event:AdministrativeEvent)=>event.groupId?state.administrativeEvents.filter(item=>item.groupId===event.groupId&&item.action!=='undo'):[event];
+const projections=(event:AdministrativeEvent):Set<'state'|'control'|'suspension'>=>{
+  if(event.action==='set-due'||event.action==='reset')return new Set(['state']);
+  if(event.action==='suspend'||event.action==='unsuspend')return new Set(['control','suspension']);
+  return event.action==='undo'?new Set():new Set(['control']);
+};
 
 function hasRequiredSnapshot(event:AdministrativeEvent):boolean{
   if(event.action==='set-due'||event.action==='reset')return !!event.previousState&&!!event.resultingState;
@@ -22,7 +27,11 @@ export function administrativeUndoStatus(state:State,eventId:string):Administrat
   const members=group(state,event),eventIds=members.map(item=>item.id);
   if(!event.groupId||members.some(item=>!hasRequiredSnapshot(item)))return{allowed:false,reason:'This older management record does not contain a safe undo snapshot.',eventIds};
   if(state.administrativeEvents.some(item=>item.action==='undo'&&item.reversesEventId&&eventIds.includes(item.reversesEventId)))return{allowed:false,reason:'This management change has already been undone.',groupId:event.groupId,eventIds};
+  const reversed=new Set(state.administrativeEvents.flatMap(item=>item.action==='undo'&&item.reversesEventId?[item.reversesEventId]:[]));
   for(const item of members){
+    const itemIndex=state.administrativeEvents.findIndex(candidate=>candidate.id===item.id),affected=projections(item);
+    const superseded=state.administrativeEvents.slice(itemIndex+1).some(candidate=>candidate.action!=='undo'&&!eventIds.includes(candidate.id)&&candidate.cardId===item.cardId&&!reversed.has(candidate.id)&&[...projections(candidate)].some(value=>affected.has(value)));
+    if(superseded)return{allowed:false,reason:'A later management change superseded this action, so it is no longer safe to undo.',groupId:event.groupId,eventIds};
     const currentCard=card(state,item.cardId);
     if(!currentCard)return{allowed:false,reason:'A card in this change no longer exists.',groupId:event.groupId,eventIds};
     if(item.resultingState&&!same(state.states[item.cardId],item.resultingState))return{allowed:false,reason:'The card schedule changed afterwards, so this action is no longer safe to undo.',groupId:event.groupId,eventIds};

@@ -113,7 +113,7 @@ export function validateState(value: unknown): asserts value is State {
     } else fail('unknown history event.');
     const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous:event['previousStateVersion'] as number,result}]);
   }
-  const administrativeIds=new Map<string,string>(),administrativeReversals=new Set<string>();
+  const administrativeIds=new Map<string,string>(),administrativeRecords=new Map<string,Record<string,unknown>>(),administrativeReversals=new Set<string>();
   const validateControlSnapshot=(value:unknown)=>{const control=object(value);if(control['manualBuried']!==undefined&&typeof control['manualBuried']!=='boolean'||control['leech']!==undefined&&typeof control['leech']!=='boolean'||control['leechSuspended']!==undefined&&typeof control['leechSuspended']!=='boolean'||control['buriedOnDay']!==undefined&&!/^\d{4}-\d{2}-\d{2}$/.test(String(control['buriedOnDay']))||control['newPosition']!==undefined&&!integer(control['newPosition']))fail('invalid administrative control snapshot.');};
   for(const value of data['administrativeEvents'] as unknown[]){
     const event=object(value),action=String(event['action']);
@@ -122,9 +122,29 @@ export function validateState(value: unknown): asserts value is State {
     if(event['detail']!==undefined&&!text(event['detail'],500))fail('invalid administrative event detail.');
     if(event['previousControl']!==undefined)validateControlSnapshot(event['previousControl']);if(event['resultingControl']!==undefined)validateControlSnapshot(event['resultingControl']);
     if(event['previousSuspended']!==undefined&&typeof event['previousSuspended']!=='boolean'||event['resultingSuspended']!==undefined&&typeof event['resultingSuspended']!=='boolean')fail('invalid administrative card status snapshot.');
-    if(action==='undo'){if(!id(event['reversesEventId'])||administrativeIds.get(event['reversesEventId'] as string)!==event['cardId']||administrativeReversals.has(event['reversesEventId'] as string))fail('invalid administrative reversal.');administrativeReversals.add(event['reversesEventId'] as string);}else if(event['reversesEventId']!==undefined)fail('invalid administrative reversal reference.');
-    eventIds.add(event['id']);administrativeIds.set(event['id'] as string,event['cardId'] as string);
+    if(action==='undo'){const target=administrativeRecords.get(event['reversesEventId'] as string);if(!id(event['reversesEventId'])||!target||target['action']==='undo'||administrativeIds.get(event['reversesEventId'] as string)!==event['cardId']||administrativeReversals.has(event['reversesEventId'] as string))fail('invalid administrative reversal.');administrativeReversals.add(event['reversesEventId'] as string);}else if(event['reversesEventId']!==undefined)fail('invalid administrative reversal reference.');
+    eventIds.add(event['id']);administrativeIds.set(event['id'] as string,event['cardId'] as string);administrativeRecords.set(event['id'] as string,event);
     if(event['resultingState']!==undefined){validateCardState(event['resultingState']);if(event['previousState']!==undefined)validateCardState(event['previousState']);const result=event['resultingState'] as CardState,previous=(event['previousState'] as CardState|undefined)?.version??0;if(result.version!==previous+1)fail('broken administrative scheduling version.');const cardId=event['cardId'] as string;transitions.set(cardId,[...(transitions.get(cardId)??[]),{previous,result}]);}
+  }
+  const adminValues=[...administrativeRecords.values()];
+  const undoGroups=new Map<string,Record<string,unknown>[]>();
+  for(const event of adminValues)if(event['action']==='undo'){
+    if(!id(event['groupId']))fail('administrative reversal is missing its atomic group.');
+    undoGroups.set(event['groupId'] as string,[...(undoGroups.get(event['groupId'] as string)??[]),event]);
+  }
+  for(const reversals of undoGroups.values()){
+    const targets=reversals.map(event=>administrativeRecords.get(event['reversesEventId'] as string)!);
+    const originalGroup=targets[0]?.['groupId'];
+    if(!id(originalGroup)||targets.some(target=>target['groupId']!==originalGroup||target['action']==='undo'))fail('invalid administrative reversal group.');
+    const originals=adminValues.filter(event=>event['action']!=='undo'&&event['groupId']===originalGroup);
+    const targetIds=new Set(targets.map(target=>target['id'] as string));
+    if(originals.length!==reversals.length||originals.some(original=>!targetIds.has(original['id'] as string)))fail('partial administrative reversal group.');
+    for(let index=0;index<reversals.length;index++){
+      const reversal=reversals[index]!,original=targets[index]!,action=String(original['action']);
+      if((action==='set-due'||action==='reset')&&(reversal['previousState']===undefined||reversal['resultingState']===undefined))fail('administrative reversal is missing its scheduling snapshot.');
+      if(['bury','unbury','suspend','unsuspend','reposition'].includes(action)&&(reversal['previousControl']===undefined||reversal['resultingControl']===undefined))fail('administrative reversal is missing its control snapshot.');
+      if((action==='suspend'||action==='unsuspend')&&(reversal['previousSuspended']===undefined||reversal['resultingSuspended']===undefined))fail('administrative reversal is missing its card-status snapshot.');
+    }
   }
   for(const event of data['practiceEvents'] as Array<{id:string}>)if(eventIds.has(event.id))fail('duplicate history event ID.');else eventIds.add(event.id);
   for(const [cardId,items] of transitions){items.sort((a,b)=>a.result.version-b.result.version);let prior=0;for(const item of items){if(item.previous!==prior)fail('broken scheduling version history.');prior=item.result.version;}if(JSON.stringify(states[cardId])!==JSON.stringify(items.at(-1)!.result))fail('current scheduling state does not match history.');}
@@ -227,6 +247,7 @@ function validateExtensions(data: Record<string, unknown>): void {
     if(!['scheduled','practice'].includes(String(session['mode'])))fail('invalid session mode.');
     if(session['label']!==undefined&&!text(session['label'],160))fail('invalid session label.');
     if(session['lastPracticeEventId']!==undefined&&!id(session['lastPracticeEventId']))fail('invalid practice event reference.');
+    if(session['autoAdvancePaused']!==undefined&&typeof session['autoAdvancePaused']!=='boolean'||session['autoAdvanceRemainingMs']!==undefined&&(!integer(session['autoAdvanceRemainingMs'])||Number(session['autoAdvanceRemainingMs'])>120000))fail('invalid Auto Advance recovery state.');
     if(session['focus']!==undefined)try{validateFocusRequest(session['focus'] as never);}catch(error){fail(error instanceof Error?error.message:'invalid Focus session.');}
   }
 }

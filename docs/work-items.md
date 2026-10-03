@@ -240,9 +240,9 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Product area / milestone / priority:** Study / Study configuration / P1
 - **Status:** DONE
 - **Dependencies:** Existing audio, timing and confidence controls
-- **Requirement / acceptance:** Remaining-count and predicted-interval visibility, audio autoplay/stop behavior, recorded-answer cap and optional visible timer preserve scheduling and active-time semantics. Auto Advance stays BACKLOG unless safely compatible; Easy Days is evidence-gated.
+- **Requirement / acceptance:** Remaining-count and predicted-interval visibility, audio autoplay/stop behavior, recorded-answer cap and optional visible timer preserve scheduling and active-time semantics. Auto Advance and Easy Days were evidence-gated here and are resolved under HR-STUDY-09 and HR-STUDY-10.
 - **Platform implications:** Audio/lifecycle cleanup, reduced motion, touch, future native interruption.
-- **Verification / commits:** Study supports optional counts, predicted next timing, visible timer, configurable recording cap, autoplay attempt with accessible fallback and stop-on-action/lifecycle cleanup. Existing audio playback and Chromium/WebKit interruption suites pass. Auto Advance and Easy Days remain explicitly PLANNED.
+- **Verification / commits:** Study supports optional counts, predicted next timing, visible timer, configurable recording cap, autoplay with accessible fallback and stop-on-action/lifecycle cleanup. HR-STUDY-09 is now DONE; HR-STUDY-10 records the evidence-based Easy Days dependency instead of simulating it.
 
 ### HR-HIST-01 — Truthful card review history
 - **Product area / milestone / priority:** History / Study configuration / P0
@@ -258,7 +258,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Dependencies:** Versioned administrative events and atomic store operations
 - **Requirement / acceptance:** Set due, suspend, bury, reset/forget and meaningful new-card reposition operations are confirmed, atomic and history-preserving. Administrative events never count as recall or rewards.
 - **Platform implications:** Durable reload/recovery and touch/keyboard confirmation.
-- **Verification / commits:** Atomic single/bulk set-due, reset, bury, suspend and reposition commands append distinct management events. Reset preserves reviews/rewards; Progress continues to count only review events. Store/domain and browser evidence pass; a dedicated administrative-operation undo is a future enhancement.
+- **Verification / commits:** Atomic single/bulk set-due, reset, bury, suspend and reposition commands append distinct management events. Reset preserves reviews/rewards; Progress continues to count only review events. HR-HIST-04 now supplies exact valid administrative undo without turning those records into reviews.
 
 ### HR-HIST-03 — Scheduling-state and history filters
 - **Product area / milestone / priority:** History / Study configuration / P1
@@ -292,7 +292,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
 - **Implementation notes:** The measured eager graph included Angular Material at 259.41 kB, Angular framework/forms/platform at 191.29 kB, application shell code at 165.21 kB, CDK at 85.61 kB, domain code at 46.53 kB and `ts-fsrs` at 21.14 kB. The root Settings shell eagerly imported `MatSlideToggle` solely for Appearance controls. Those controls now live in a deferred standalone `AppearanceSettingsComponent`; Study remains eager because it is part of the primary workflow. Existing Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing boundaries remain lazy.
-- **Verification / evidence:** Before: **867.32 kB raw / 199.15 kB transfer**. After: **842.72 kB raw / 197.31 kB transfer**, with Appearance in a **25.00 kB** lazy chunk and the unchanged 850 kB ceiling satisfied. `ng build --stats-json` passes without a budget warning. Chromium and WebKit both pass the effects-preference persistence/first-navigation journey (2/2); no budget change or feature removal was used.
+- **Verification / evidence:** Before: **867.32 kB raw / 199.15 kB transfer**. Final after adding this milestone's behavior: **847.67 kB raw / 198.69 kB transfer**, below the unchanged 850 kB ceiling. Appearance/Material toggle, Study Settings, local backup/media tools, History, Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing remain deferred; Study itself stays eager as the primary workflow. Production build and first-navigation regression pass without a budget change or feature removal.
 
 ### HR-TEST-01 — Strengthen queue-order and audio-action assertions
 - **Product area / milestone / priority:** Verification / Study configuration / P2
@@ -410,43 +410,46 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 
 ### HR-STUDY-09 — Safe Auto Advance
 - **Product area / milestone / priority:** Reviewer / Workflow closure / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Shared Study player, lifecycle, audio and finite confidence/deal choreography
 - **Requirement / acceptance:** Optional default-off auto-reveal timing with explicit rating always required; configurable question/answer presentation controls, immediate pause/resume, no timer burst after backgrounding, no audio/animation truncation and identical Scheduled/Practice safety. Auto Advance never invents a rating.
 - **Platform implications:** Shared web/iOS/macOS lifecycle boundary, keyboard/touch controls, reduced motion and accessible status without noisy announcements.
-- **Verification / evidence:** Pending implementation.
+- **Implementation notes:** Presets now hold default-off bounded question and minimum-answer timing. The one shared Study player owns a generation/session/card-bound auto-reveal timer; lifecycle or audio interruption preserves a bounded remainder and persists a paused state, while recovery requires deliberate Resume. Auto-reveal never rates. A real rating persists first, then the retained card completes confidence feedback, any remaining configured answer dwell and the existing deal. Recall/active time is captured before presentation delays. The outgoing card now retains its own preset while visible.
+- **Verification / evidence:** The complete desktop matrix passes **136/136** and WebKit phone profiles **24/24**. Dedicated checks cover pause/reload/deliberate resume, auto-reveal with zero reviews, explicit rating, owned answer dwell, next-card visibility, lifecycle interruption, valid playing audio, rejected playback recovery and Practice without FSRS/reward mutation. The full unit/domain suite passes **132/132**. A startup race was fixed by declaring pending autoplay before its asynchronous `play()` call; rejected playback now always releases that state.
 
 ### HR-STUDY-10 — Easy Days evaluation
 - **Product area / milestone / priority:** Scheduling / Workflow closure / P1
-- **Status:** IN_PROGRESS
+- **Status:** PLANNED
 - **Dependencies:** `ts-fsrs` 5.4.2 scheduling API and future-schedule integrity
 - **Requirement / acceptance:** Determine whether Normal/Reduced/Minimum weekday workload treatment has a supported scheduler integration. Implement only if future schedules can be adjusted without hiding due work, rewriting existing due dates or corrupting FSRS interval state; otherwise document the exact missing primitive and retain an honest PARTIAL/PLANNED state.
 - **Platform implications:** Pure scheduler decision shared across platforms; deterministic learner-time-zone tests if implemented.
-- **Verification / evidence:** Pending official/API and code investigation.
+- **Verification / evidence:** Current Anki documents Easy Days as FSRS-aware future workload redistribution. Installed `ts-fsrs` **5.4.2** type/runtime inspection exposes interval fuzzing and review-history rescheduling but no weekday workload-distribution input. Post-processing its returned due date would create a second unsanctioned scheduler policy, and hiding due work would violate the requirement. Exact dependency: a supported weekday distribution integration that returns internally valid scheduling state and can be tested deterministically. No setting or fake due-date shift was added.
 
 ### HR-STUDY-11 — Reviewer workflow consistency
 - **Product area / milestone / priority:** Reviewer / Workflow closure / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Scheduled, Focus and Practice session modes
 - **Requirement / acceptance:** Normal/parent/child/Scheduled Focus/Practice/saved Focus use the authoritative player and consistent reveal, confidence, help, keyboard, audio, timers, Auto Advance, Undo, progress, motion, end and Results behavior. Remove divergence through shared seams rather than copied CSS.
 - **Platform implications:** Desktop/touch/WebKit, lifecycle settlement, stable geometry and reduced-motion evidence.
-- **Verification / evidence:** Pending implementation and cross-mode browser matrix.
+- **Implementation notes:** Normal/parent/child/Scheduled Focus/Practice/saved Focus already converge on the root shared player. This pass adds Auto Advance only there, fixes retained outgoing cards to resolve the displayed card's preset/timing/audio policy, and keeps reveal, rating, persistence, motion and Results on the established paths.
+- **Verification / evidence:** Normal Scheduled, parent/child, Scheduled Focus, Practice and saved Focus remain on the single root player. The complete Chromium/WebKit matrix passes **136/136**, including consecutive-card visibility, animation ownership, audio, Results, rewards, history and Focus boundaries; WebKit phone profiles pass **24/24**.
 
 ### HR-STUDY-12 — Settings discoverability
 - **Product area / milestone / priority:** Settings / Workflow closure / P1
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Existing Study Settings component and deck preset assignment
 - **Requirement / acceptance:** Natural Deck details, Study and main Settings entry points all reach one underlying settings surface. Deck context clearly identifies assigned preset and override state; advanced controls remain progressively disclosed.
 - **Platform implications:** Material 3 alignment, touch targets, 200% reflow, focus and safe-area readiness.
-- **Verification / evidence:** Pending implementation.
+- **Implementation notes:** Deck and subdeck actions plus the active Study session open the same `StudySettingsComponent`; a deck-aware context panel shows the resolved preset, inheritance and direct workload overrides. The main Settings navigation opens the same surface without stale deck context. Opening it from Study pauses Auto Advance and preserves the session.
+- **Verification / evidence:** Deck → Settings, Study → Settings and global Settings context clearing pass both desktop engines. The complete WebKit compact/large/landscape gate passes **24/24**, including Study Settings at 200% text and touch-sized layouts.
 
 ### HR-PLAN-04 — Study capability closure matrix
 - **Product area / milestone / priority:** Planning / Workflow closure / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** HR-PERF-01, HR-HIST-04 and HR-STUDY-09–12 evidence
 - **Requirement / acceptance:** Reconcile presets, limits, steps, order, siblings, leeches, audio/timers, Auto Advance, Easy Days, retention/interval, optimization, history/admin undo, Focus/Practice, import and AnkiWeb status. Keep optimizer honest and **AnkiWeb Sync — NOT PLANNED**.
 - **Platform implications:** Distinguish implementation from Chromium/WebKit and native evidence.
-- **Verification / evidence:** Pending implementation.
+- **Verification / evidence:** `docs/product-brief.md` now records Auto Advance DONE, Easy Days evaluated/PLANNED with the missing scheduler primitive, administrative management/undo DONE, the existing preset/limits/steps/order/audio/timer/FSRS/history/Focus/Practice/import boundaries, optimizer PARTIAL and **AnkiWeb Sync — NOT PLANNED**. Intentional HoloRecall differences remain explicit.
 
 ## Preserved completed history
 

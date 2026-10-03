@@ -53,6 +53,8 @@ export interface StudyPreset {
   leechThreshold:number;leechAction:'flag'|'suspend';
   showRemainingCounts:boolean;showNextReviewTimes:boolean;audioAutoplay:boolean;stopAudioOnAction:boolean;
   maxAnswerSeconds:number;showAnswerTimer:boolean;
+  /** Optional for backward-compatible schema-6 snapshots; omitted means Off/manual. */
+  autoAdvanceEnabled?:boolean;autoRevealSeconds?:number;autoAnswerSeconds?:number;
 }
 export interface DeckStudyOverrides { newCardsPerDay?:number;maxReviewsPerDay?:number;newCardsIgnoreReviewLimit?:boolean }
 export interface TodayStudyOverride extends DeckStudyOverrides { deckId:string;studyDay:string }
@@ -252,6 +254,9 @@ export interface StudySession {
   label?: string;
   focus?: FocusSessionRequest;
   lastPracticeEventId?: string;
+  /** Interruption-safe presentation state. A recovered paused timer resumes only by learner action. */
+  autoAdvancePaused?: boolean;
+  autoAdvanceRemainingMs?: number;
 }
 
 export interface RewardContribution {

@@ -10,7 +10,7 @@ import { deduplicateContent, describeAsset, removableAssets } from '../../domain
 import { BALANCED_PRESET_ID, BUILT_IN_PRESETS, validateStudyPreset, validateTodayOverride } from '../../domain/study-settings';
 import { recordPracticeRating } from '../../domain/practice';
 import { validateFocusPreset } from '../../domain/focus-validation';
-import { administrativeUndoStatus, applyAdministrativeChange, applyAdministrativeUndo, type AdministrativeAction } from '../../domain/administrative';
+import type { AdministrativeAction } from '../../domain/administrative';
 
 export interface BulkCardPatch {
   deckId?: string; addTags?: string[]; removeTags?: string[]; rarity?: Rarity;
@@ -122,9 +122,8 @@ export class LocalStudyStore {
   async setTodayOverride(override:TodayStudyOverride):Promise<void>{validateTodayOverride(override);await this.change(data=>{if(!data.decks.some(deck=>deck.id===override.deckId))throw new Error('Choose an existing deck.');return{...data,version:data.version+1,todayOverrides:[...data.todayOverrides.filter(item=>!(item.deckId===override.deckId&&item.studyDay===override.studyDay)),structuredClone(override)]};});}
   async clearTodayOverride(deckId:string,studyDay:string):Promise<void>{await this.change(data=>{const next=data.todayOverrides.filter(item=>!(item.deckId===deckId&&item.studyDay===studyDay));return next.length===data.todayOverrides.length?data:{...data,version:data.version+1,todayOverrides:next};});}
 
-  async manageCards(ids:string[],action:AdministrativeAction,value?:string|number):Promise<void>{await this.change(data=>{const next=applyAdministrativeChange(data,ids,action,value);return next===data?data:reconcileSession(next,data);});}
-  administrativeUndoStatus(eventId:string){const data=this.data();return data?administrativeUndoStatus(data,eventId):{allowed:false,reason:'Local study data is not ready.',eventIds:[]};}
-  async undoAdministrative(eventId:string):Promise<void>{await this.change(data=>reconcileSession(applyAdministrativeUndo(data,eventId),data));}
+  async manageCards(ids:string[],action:AdministrativeAction,value?:string|number):Promise<void>{const {applyAdministrativeChange}=await import('../../domain/administrative');await this.change(data=>{const next=applyAdministrativeChange(data,ids,action,value);return next===data?data:reconcileSession(next,data);});}
+  async undoAdministrative(eventId:string):Promise<void>{const {applyAdministrativeUndo}=await import('../../domain/administrative');await this.change(data=>reconcileSession(applyAdministrativeUndo(data,eventId),data));}
 
   async review(cardId: string, rating: ConfidenceRating, sessionId: string, eventId = crypto.randomUUID(), activeMs = 0): Promise<void> {
     await this.change(data => {
@@ -158,10 +157,10 @@ export class LocalStudyStore {
       const reconciled = reconcileSession(data, data, now);
       if (reconciled.session?.mode==='scheduled' && !reconciled.session.focus && reconciled.session.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
       const queue = dueCards(data, now, deckId).map(card => card.id);
-      return { ...data, version: data.version + 1, session: { id: crypto.randomUUID(), mode:'scheduled', label:'Study', queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),...(deckId?{scopeDeckId:deckId}:{}) } };
+      return { ...data, version: data.version + 1, session: { id: crypto.randomUUID(), mode:'scheduled', label:'Study', queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),autoAdvancePaused:false,...(deckId?{scopeDeckId:deckId}:{}) } };
     });
   }
-  async startFocusSession(request:FocusSessionRequest):Promise<void>{const {focusPreview}=await import('../../domain/focus');await this.change(data=>{const now=new Date(),effective={...request,seed:request.seed??`run-${crypto.randomUUID()}`},preview=focusPreview(data,effective,now),queue=preview.cards.map(card=>card.id);return{...data,version:data.version+1,session:{id:crypto.randomUUID(),mode:effective.mode,label:effective.label,focus:structuredClone(effective),queue,total:queue.length,plannedTotal:queue.length,completed:0,revealed:false,activeMs:0,cardStartedAt:now.toISOString(),startedAt:now.toISOString(),...(effective.criteria.deckId?{scopeDeckId:effective.criteria.deckId}:{})}};});}
+  async startFocusSession(request:FocusSessionRequest):Promise<void>{const {focusPreview}=await import('../../domain/focus');await this.change(data=>{const now=new Date(),effective={...request,seed:request.seed??`run-${crypto.randomUUID()}`},preview=focusPreview(data,effective,now),queue=preview.cards.map(card=>card.id);return{...data,version:data.version+1,session:{id:crypto.randomUUID(),mode:effective.mode,label:effective.label,focus:structuredClone(effective),queue,total:queue.length,plannedTotal:queue.length,completed:0,revealed:false,activeMs:0,cardStartedAt:now.toISOString(),startedAt:now.toISOString(),autoAdvancePaused:false,...(effective.criteria.deckId?{scopeDeckId:effective.criteria.deckId}:{})}};});}
   async saveFocusPreset(preset:FocusPreset):Promise<void>{validateFocusPreset(preset);await this.change(data=>{if(data.focusPresets.some(item=>item.name.trim().toLocaleLowerCase('en')===preset.name.trim().toLocaleLowerCase('en')&&item.id!==preset.id))throw new Error('Choose a unique Focus preset name.');const copy=structuredClone(preset);return{...data,version:data.version+1,focusPresets:data.focusPresets.some(item=>item.id===preset.id)?data.focusPresets.map(item=>item.id===preset.id?copy:item):[...data.focusPresets,copy]};});}
   async deleteFocusPreset(id:string):Promise<void>{await this.change(data=>{const focusPresets=data.focusPresets.filter(item=>item.id!==id);return focusPresets.length===data.focusPresets.length?data:{...data,version:data.version+1,focusPresets};});}
   async revealSession(recallMs?: number): Promise<void> {
@@ -171,6 +170,7 @@ export class LocalStudyStore {
     if (this.saving) return;
     await this.change(data => !data.session || !data.session.queue.length ? data : { ...data, version: data.version + 1, session: { ...data.session, activeMs: Math.max(data.session.activeMs, Math.min(120000, Math.max(0, Math.round(ms)))) } });
   }
+  async updateSessionAutoAdvance(paused:boolean,remainingMs?:number):Promise<void>{await this.change(data=>{if(!data.session||data.session.endedAt)return data;const bounded=remainingMs===undefined?undefined:Math.max(0,Math.min(120000,Math.round(remainingMs)));if(data.session.autoAdvancePaused===paused&&data.session.autoAdvanceRemainingMs===bounded)return data;const session={...data.session,autoAdvancePaused:paused,...(bounded===undefined?{}:{autoAdvanceRemainingMs:bounded})};if(bounded===undefined)delete session.autoAdvanceRemainingMs;return{...data,version:data.version+1,session};});}
   async endSession(): Promise<void> {
     await this.change(data => !data.session || data.session.endedAt ? data : { ...data, version: data.version + 1, session: { ...data.session, plannedTotal: data.session.plannedTotal ?? data.session.total, total: data.session.completed, queue: [], revealed: false, activeMs: 0, recallMs: undefined, endedAt: new Date().toISOString(), partial: true } });
   }

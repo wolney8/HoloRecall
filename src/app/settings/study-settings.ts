@@ -1,4 +1,4 @@
-import { Component,computed,effect,inject,signal } from '@angular/core';
+import { Component,computed,effect,inject,input,signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,15 +8,18 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { LocalStudyStore } from '../data/study-store';
 import type { Deck,StudyPreset,StudyStep } from '../../domain/models';
-import { BALANCED_PRESET_ID } from '../../domain/study-settings';
+import { BALANCED_PRESET_ID,presetForDeck } from '../../domain/study-settings';
 import { dayKey } from '../../domain/study';
 import { PageRevealDirective } from '../motion/page-reveal';
 
 @Component({selector:'hr-study-settings',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatSlideToggleModule,MatTooltipModule,PageRevealDirective],templateUrl:'./study-settings.html',styleUrl:'./study-settings.css'})
 export class StudySettingsComponent{
-  readonly store=inject(LocalStudyStore);readonly selectedId=signal(BALANCED_PRESET_ID);readonly message=signal('');readonly error=signal('');readonly draft=signal<StudyPreset|null>(null);readonly assignmentLimit=signal(30);newName='';createName='';replacementId=BALANCED_PRESET_ID;todayDeck='';todayNew:number|null=null;todayReviews:number|null=null;
+  readonly store=inject(LocalStudyStore);readonly deckId=input('');readonly selectedId=signal(BALANCED_PRESET_ID);readonly message=signal('');readonly error=signal('');readonly draft=signal<StudyPreset|null>(null);readonly assignmentLimit=signal(30);newName='';createName='';replacementId=BALANCED_PRESET_ID;todayDeck='';todayNew:number|null=null;todayReviews:number|null=null;
   readonly presets=computed(()=>this.store.data()?.studyPresets??[]);readonly decks=computed(()=>this.store.decks());readonly visibleDecks=computed(()=>this.decks().slice(0,this.assignmentLimit()));readonly users=computed(()=>this.decks().filter(deck=>deck.studyPresetId===this.selectedId()));
-  constructor(){effect(()=>{const presets=this.presets();if(!presets.length)return;const selected=presets.find(item=>item.id===this.selectedId())??presets[0]!;if(selected.id!==this.selectedId())this.selectedId.set(selected.id);this.draft.set(structuredClone(selected));const decks=this.decks();if(!this.todayDeck&&decks.length)this.todayDeck=decks[0]!.id;});}
+  readonly contextDeck=computed(()=>this.decks().find(deck=>deck.id===this.deckId()));
+  readonly contextPreset=computed(()=>{const data=this.store.data(),deck=this.contextDeck();return data&&deck?presetForDeck(data,deck.id):undefined;});
+  private contextApplied='';
+  constructor(){effect(()=>{const presets=this.presets();if(!presets.length)return;const deck=this.contextDeck();if(deck&&this.contextApplied!==deck.id){this.contextApplied=deck.id;const assigned=presetForDeck(this.store.data()!,deck.id);this.selectedId.set(assigned.id);this.todayDeck=deck.id;}const selected=presets.find(item=>item.id===this.selectedId())??presets[0]!;if(selected.id!==this.selectedId())this.selectedId.set(selected.id);this.draft.set(structuredClone(selected));const decks=this.decks();if(!this.todayDeck&&decks.length)this.todayDeck=decks[0]!.id;});}
   choose(id:string):void{this.selectedId.set(id);this.message.set('');this.error.set('');}
   steps(value:string):StudyStep[]{return value.split(/[ ,]+/).map(item=>item.trim()).filter(Boolean) as StudyStep[];}
   stepText(steps:StudyStep[]):string{return steps.join(', ');}

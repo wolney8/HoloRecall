@@ -72,6 +72,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() dragTilt = false;
   @Input() flippable = false;
   @Output() flipped = new EventEmitter<boolean>();
+  @Output() audioPlayingChange = new EventEmitter<boolean>();
   @Input() demo = false;
   @Input() design?: DesignSet;
   @Input() imageUrl?: string;
@@ -141,14 +142,16 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.copyResize.observe(content);
       this.copyMutation.observe(content, { childList: true, subtree: true, characterData: true });
     }
-    queueMicrotask(()=>void this.autoplayAudio());
+    this.queueAutoplay();
   }
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['revealed']?.firstChange || changes['card']) this.displayedRevealed.set(this.revealed);
-    if (changes['revealed'] || (changes['card'] && changes['card'].previousValue?.id !== this.card.id)) {
+    const sideChanged=!!changes['revealed']&&!changes['revealed'].firstChange;
+    const cardChanged=!!changes['card']&&!changes['card'].firstChange&&changes['card'].previousValue?.id!==this.card.id;
+    if (sideChanged || cardChanged) {
       if(this.stopAudioOnAction||changes['card'])this.stopAudio();
       queueMicrotask(() => { if (this.copy) this.copy.nativeElement.scrollTo({ top: 0, left: 0, behavior: 'instant' }); });
-      queueMicrotask(()=>void this.autoplayAudio());
+      this.queueAutoplay();
     }
     if (changes['card'] || changes['imageUrl'] || changes['backImageUrl'] || changes['revealed']) this.failedImage.set(false);
     if (changes['backgroundUrl'] || changes['design']) this.failedBackground.set(false);
@@ -237,14 +240,15 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     event.stopPropagation(); this.audioError.set('');
     if (this.playingAudio() === ref) { this.stopAudio(); return; }
     this.stopAudio(); const url = this.store.mediaUrl(ref); if (!url) { this.audioError.set('Audio file unavailable. Reimport or replace this clip.'); return; }
-    const audio = new Audio(url); this.audio = audio;
+    const audio = new Audio(url); this.audio = audio;this.audioPlayingChange.emit(true);
     audio.addEventListener('playing', () => { if (this.audio === audio) this.playingAudio.set(ref); }, { once: true });
     audio.addEventListener('ended', () => { if (this.audio === audio) this.stopAudio(); }, { once: true });
     audio.addEventListener('error', () => { if (this.audio === audio) { this.stopAudio(); this.audioError.set('This audio could not be played.'); } }, { once: true });
     try { await audio.play(); } catch { if (this.audio === audio) { this.stopAudio(); this.audioError.set('Playback was blocked or the audio could not be decoded.'); } }
   }
-  private async autoplayAudio():Promise<void>{const ref=this.audioRefs[0];if(!this.audioAutoplay||!ref||!this.lifecycle.active())return;await this.toggleAudio(ref,new Event('autoplay'));}
-  private stopAudio(): void { if (this.audio) { this.audio.pause(); this.audio.currentTime = 0; this.audio.src = ''; this.audio.load(); } this.audio = undefined; this.playingAudio.set(''); }
+  private queueAutoplay():void{const ref=this.audioRefs[0];if(this.audioAutoplay&&ref&&this.lifecycle.active())this.audioPlayingChange.emit(true);queueMicrotask(()=>void this.autoplayAudio());}
+  private async autoplayAudio():Promise<void>{const ref=this.audioRefs[0];if(!this.audioAutoplay||!ref||!this.lifecycle.active())return;await this.toggleAudio(ref,new Event('autoplay'));if(!this.audio&&!this.playingAudio())this.audioPlayingChange.emit(false);}
+  private stopAudio(): void { const wasActive=!!this.audio||!!this.playingAudio();if (this.audio) { this.audio.pause(); this.audio.currentTime = 0; this.audio.src = ''; this.audio.load(); } this.audio = undefined; this.playingAudio.set('');if(wasActive)this.audioPlayingChange.emit(false); }
   @HostListener('stop-card-audio') stopAudioForAcceptedAction():void{if(this.stopAudioOnAction)this.stopAudio();}
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
