@@ -329,7 +329,7 @@ Source: Will's 3 October 2026 milestone. Anki's current filtered-deck, studying 
 - **Dependencies:** Existing indexed filters and scheduler eligibility
 - **Requirement / acceptance:** Combine branch, tags, state, due/missed/attention/added criteria, bounded card count, mode and evidence-backed order without a second query language.
 - **Platform implications:** Large result sets remain bounded and platform-neutral.
-- **Verification / evidence:** Versioned criteria reuse the library index and support branch, query, tags, schedule states, missed/due/overdue/added windows, suspension opt-in, limit, mode and backed orderings. A 10,000-card domain fixture returns the bounded slice within the 3 s local budget.
+- **Verification / evidence:** Versioned criteria reuse the library index and support branch, query, tags, schedule states, missed/due/overdue/added windows, suspension opt-in, limit, mode and backed orderings. The final 10,000-card Node/Vitest fixture returned its bounded 40-card slice in 1,640.5 ms within the 3 s local budget.
 
 ### HR-FOCUS-04 — Saved Focus presets
 - **Product area / milestone / priority:** Study / Focused Practice / P1
