@@ -1,6 +1,7 @@
 import type { CardContent, FinishPreset, Rarity, State } from './models';
 import { rewardProgress } from './rewards';
 import { activeReviews } from './study';
+import { dayKey } from './time';
 
 export type StudyStateFilter = 'new' | 'learning' | 'review' | 'due' | 'overdue' | 'suspended' | 'buried' | 'attention' | 'leech' | 'recently-reviewed';
 export type MediaFilter = 'image' | 'audio' | 'none';
@@ -60,7 +61,7 @@ export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex 
     const stateName: LibraryItem['state'] = reps === 0 ? 'new' : schedule?.state === 2 ? 'review' : 'learning';
     const media: LibraryItem['media'] = [...(card.image || card.backImage ? ['image' as const] : []), ...((card.frontAudio?.length || card.backAudio?.length) ? ['audio' as const] : [])];
     const lineage=deckLineage(card.deckId),deckArchived=lineage.some(id=>{const deck=deckById.get(id);return !!(deck?.archived||deck?.suspended);}),recent=history.get(card.id)??[];
-    const control=state.cardControls[card.id];return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:lineage, deckArchived, tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: recent.filter(rating=>rating===1).length>=2,suspended:card.suspended,buried:!!(control?.manualBuried||control?.buriedOnDay),leech:!!control?.leech, media };
+    const control=state.cardControls[card.id];return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:lineage, deckArchived, tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: recent.filter(rating=>rating===1).length>=2,suspended:card.suspended,buried:!!(control?.manualBuried||control?.buriedOnDay===dayKey(now,state.preferences.timeZone)),leech:!!control?.leech, media };
   });
   const results: SearchResult[] = [];
   for (const deck of state.decks) { const context=deck.description || paths.get(deck.id) || 'Deck'; results.push({ kind:'deck', id:deck.id, deckId:deck.id, label:deck.name, context, normalized:normalizeSearch(`${deck.name} ${context}`), score:80 }); }
@@ -82,7 +83,7 @@ export function queryLibrary(index: LibraryIndex, request: LibraryQuery, now = n
     if (tags?.length && !tags.some(tag => item.tags.some(value => normalizeTag(value) === tag))) return false;
     if (rarities && !rarities.has(card.rarity ?? 'common') || filters.earned && item.earned !== (filters.earned === 'earned')) return false;
     if (designs && !designs.has(card.designSetId ?? '') || finishes && !finishes.has(card.finish ?? 'matte')) return false;
-    if (filters.studyStates?.length && !filters.studyStates.some(value => value === item.state || value === 'attention' && item.attention || value==='leech'&&item.leech||value==='suspended'&&item.suspended||value==='buried'&&item.buried||value === 'due' && !!item.due && Date.parse(item.due) <= now.getTime()||value==='overdue'&&!!item.due&&Date.parse(item.due)<now.getTime()-86_400_000||value==='recently-reviewed'&&!!item.lastStudied&&Date.parse(item.lastStudied)>=now.getTime()-7*86_400_000)) return false;
+    if (filters.studyStates?.length && !filters.studyStates.some(value => value === item.state || value === 'attention' && item.attention || value==='leech'&&item.leech||value==='suspended'&&item.suspended||value==='buried'&&item.buried||value === 'due' && !item.suspended&&!item.buried&&!item.deckArchived&&!!item.due && Date.parse(item.due) <= now.getTime()||value==='overdue'&&!item.suspended&&!item.buried&&!item.deckArchived&&!!item.due&&Date.parse(item.due)<now.getTime()-86_400_000||value==='recently-reviewed'&&!!item.lastStudied&&Date.parse(item.lastStudied)>=now.getTime()-7*86_400_000)) return false;
     if (filters.media?.length && !filters.media.some(value => value === 'none' ? item.media.length === 0 : item.media.includes(value))) return false;
     return true;
   });

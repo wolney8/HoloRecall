@@ -97,6 +97,11 @@ export function validateState(value: unknown): asserts value is State {
       if (event['activeMs'] !== undefined && (!integer(event['activeMs']) || event['activeMs'] > 120000)) fail('invalid active study time.');
       if (event['recallMs'] !== undefined && (!integer(event['recallMs']) || event['recallMs'] > 120000)) fail('invalid recall time.');
       if(event['studyPresetId']!==undefined&&!id(event['studyPresetId']))fail('invalid review study preset.');
+      if(event['studyRootDeckId']!==undefined&&(!id(event['studyRootDeckId'])||!deckIds.has(event['studyRootDeckId'])))fail('invalid review study root.');
+      if(event['studyDeckId']!==undefined&&(!id(event['studyDeckId'])||!deckIds.has(event['studyDeckId'])))fail('invalid review study deck.');
+      if(event['studyDeckPath']!==undefined){if(!Array.isArray(event['studyDeckPath'])||!event['studyDeckPath'].length||event['studyDeckPath'].length>100||event['studyDeckPath'].some(item=>!id(item)||!deckIds.has(item))||new Set(event['studyDeckPath']).size!==event['studyDeckPath'].length||event['studyDeckId']!==undefined&&event['studyDeckPath'][0]!==event['studyDeckId'])fail('invalid review deck path.');}
+      if(event['studyDay']!==undefined&&(!text(event['studyDay'],10)||!/^\d{4}-\d{2}-\d{2}$/.test(event['studyDay'])))fail('invalid review study day.');
+      if(event['studyTimeZone']!==undefined){if(!text(event['studyTimeZone'],100))fail('invalid review time zone.');try{new Intl.DateTimeFormat('en',{timeZone:event['studyTimeZone']}).format();}catch{fail('invalid review time zone.');}}
       validateCardState(event['previousState']);
       if ((event['previousState'] as CardState).version !== event['previousStateVersion']) fail('mismatched previous version.');
       reviewIds.set(event['id'], event['cardId']);
@@ -186,7 +191,7 @@ function validateExtensions(data: Record<string, unknown>): void {
   if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents']))fail('missing study configuration or management history.');
   try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
   if(new Set((data['studyPresets'] as StudyPreset[]).map(item=>item.id)).size!==(data['studyPresets'] as StudyPreset[]).length)fail('duplicate study preset IDs.');
-  const controls=object(data['cardControls']);for(const [cardId,value] of Object.entries(controls)){if(!id(cardId))fail('invalid card control ID.');const control=object(value);if(control['manualBuried']!==undefined&&typeof control['manualBuried']!=='boolean'||control['leech']!==undefined&&typeof control['leech']!=='boolean'||control['buriedOnDay']!==undefined&&!/^\d{4}-\d{2}-\d{2}$/.test(String(control['buriedOnDay']))||control['newPosition']!==undefined&&!integer(control['newPosition']))fail('invalid card scheduling control.');}
+  const controls=object(data['cardControls']);for(const [cardId,value] of Object.entries(controls)){if(!id(cardId))fail('invalid card control ID.');const control=object(value);if(control['manualBuried']!==undefined&&typeof control['manualBuried']!=='boolean'||control['leech']!==undefined&&typeof control['leech']!=='boolean'||control['leechSuspended']!==undefined&&typeof control['leechSuspended']!=='boolean'||control['buriedOnDay']!==undefined&&!/^\d{4}-\d{2}-\d{2}$/.test(String(control['buriedOnDay']))||control['newPosition']!==undefined&&!integer(control['newPosition']))fail('invalid card scheduling control.');}
   validateRewardConfig(data['rewardConfig']);
   const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
   if (new Set(assets.map(item => item.id)).size !== assets.length || new Set(designs.map(item => item.id)).size !== designs.length) fail('duplicate asset or design IDs.');

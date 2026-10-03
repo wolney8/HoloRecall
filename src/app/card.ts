@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
 import type { CardContent, DesignSet, FinishPreset, Rarity } from '../domain/models';
 import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
@@ -245,6 +245,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
   private async autoplayAudio():Promise<void>{const ref=this.audioRefs[0];if(!this.audioAutoplay||!ref||!this.lifecycle.active())return;await this.toggleAudio(ref,new Event('autoplay'));}
   private stopAudio(): void { if (this.audio) { this.audio.pause(); this.audio.currentTime = 0; this.audio.src = ''; this.audio.load(); } this.audio = undefined; this.playingAudio.set(''); }
+  @HostListener('stop-card-audio') stopAudioForAcceptedAction():void{if(this.stopAudioOnAction)this.stopAudio();}
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
     this.observer?.disconnect();

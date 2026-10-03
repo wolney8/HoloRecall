@@ -62,23 +62,32 @@ export function activeReviews(data: State): ReviewEvent[] {
 
 export function dueCards(data: State, now: Date, deckId?: string): CardContent[] {
   const today = dayKey(now, data.preferences.timeZone);
-  const reviewsToday = activeReviews(data).filter(event => dayKey(new Date(event.timestamp), data.preferences.timeZone) === today);
+  const reviewsToday = activeReviews(data).filter(event => (event.studyDay??dayKey(new Date(event.timestamp), data.preferences.timeZone)) === today);
   const selectedPreset=effectiveStudyPreset(data,deckId,now);
-  const reviewCount=reviewsToday.filter(event=>event.previousState.reps>0&&![1,3].includes(event.previousState.state)).length;
-  const reviewsLeft = Math.max(0, selectedPreset.maxReviewsPerDay - reviewCount);
-  const introducedToday = new Set(reviewsToday.filter(event => event.previousState.reps === 0).map(event => event.cardId));
-  const newLeft = Math.max(0, selectedPreset.newCardsPerDay - introducedToday.size);
   const byId=new Map(data.decks.map(deck=>[deck.id,deck]));
+  const cardsById=new Map(data.cards.map(card=>[card.id,card]));
   const deckEnabled=(id:string):boolean=>{const seen=new Set<string>();let deck=byId.get(id);while(deck&&!seen.has(deck.id)){if(deck.suspended||deck.archived)return false;seen.add(deck.id);deck=deck.parentId?byId.get(deck.parentId):undefined;}return !!byId.get(id);};
   const selectedDecks=deckId?new Set<string>([deckId]):null;if(selectedDecks){let changed=true;while(changed){changed=false;for(const deck of data.decks)if(deck.parentId&&selectedDecks.has(deck.parentId)&&!selectedDecks.has(deck.id)){selectedDecks.add(deck.id);changed=true;}}}
+  const deckPath=(ownerId:string):string[]=>{const path:string[]=[];const seen=new Set<string>();let current=byId.get(ownerId);while(current&&!seen.has(current.id)){seen.add(current.id);path.push(current.id);if(deckId&&current.id===deckId)return path;current=current.parentId?byId.get(current.parentId):undefined;}return deckId?[]:path;};
+  const storedPath=(event:ReviewEvent):string[]=>event.studyDeckPath?.length?[...event.studyDeckPath]:event.studyDeckId?[event.studyDeckId]:cardsById.get(event.cardId)?deckPath(cardsById.get(event.cardId)!.deckId):[];
+  const branchReviews=reviewsToday.filter(event=>!deckId||storedPath(event).includes(deckId));
+  const reviewCount=branchReviews.filter(event=>event.previousState.reps>0&&![1,3].includes(event.previousState.state)).length;
+  const reviewsLeft = Math.max(0, selectedPreset.maxReviewsPerDay - reviewCount);
+  const introducedToday = new Set(branchReviews.filter(event => event.previousState.reps === 0).map(event => event.cardId));
+  const newLeft = Math.max(0, selectedPreset.newCardsPerDay - introducedToday.size);
+  const usedReviews=new Map<string,number>(),usedNew=new Map<string,number>();
+  const incrementEvent=(usage:Map<string,number>,event:ReviewEvent):void=>{const owner=event.studyDeckId??storedPath(event)[0];if(owner)usage.set(owner,(usage.get(owner)??0)+1);};
+  for(const event of branchReviews)if(event.previousState.reps>0&&![1,3].includes(event.previousState.state))incrementEvent(usedReviews,event);
+  for(const cardId of introducedToday){const event=branchReviews.find(item=>item.cardId===cardId&&item.previousState.reps===0);if(event)incrementEvent(usedNew,event);}
+  const withinDeckLimit=(card:CardContent,usage:Map<string,number>,field:'maxReviewsPerDay'|'newCardsPerDay'):boolean=>{const used=usage.get(card.deckId)??0;if(used>=effectiveStudyPreset(data,card.deckId,now)[field])return false;usage.set(card.deckId,used+1);return true;};
   const available = data.cards.filter(card => {const control=data.cardControls[card.id];return !card.suspended&&!card.archived&&!control?.manualBuried&&control?.buriedOnDay!==today&&deckEnabled(card.deckId)&&(!selectedDecks||selectedDecks.has(card.deckId));});
   const due=available.filter(card=>(data.states[card.id]?.reps??0)>0&&Date.parse(data.states[card.id]!.due)<=now.getTime());
   const learning=due.filter(card=>[1,3].includes(data.states[card.id]!.state)).sort((a,b)=>Date.parse(data.states[a.id]!.due)-Date.parse(data.states[b.id]!.due));
   let reviews=due.filter(card=>![1,3].includes(data.states[card.id]!.state));
   const stable=(card:CardContent)=>{let value=2166136261;for(const char of `${today}:${card.id}`)value=Math.imul(value^char.charCodeAt(0),16777619);return value>>>0;};
-  const reviewByDeck=new Map<string,number>();reviews=[...reviews].sort((a,b)=>selectedPreset.reviewOrder==='random'?stable(a)-stable(b):selectedPreset.reviewOrder==='retrievability'?fsrs(fsrsParameters(effectiveStudyPreset(data,a.deckId,now))).get_retrievability(hydrateCard(data.states[a.id]!),now,false)-fsrs(fsrsParameters(effectiveStudyPreset(data,b.deckId,now))).get_retrievability(hydrateCard(data.states[b.id]!),now,false):Date.parse(data.states[a.id]!.due)-Date.parse(data.states[b.id]!.due)).filter(card=>{const used=reviewByDeck.get(card.deckId)??0,limit=effectiveStudyPreset(data,card.deckId,now).maxReviewsPerDay;if(used>=limit)return false;reviewByDeck.set(card.deckId,used+1);return true;}).slice(0,reviewsLeft);
+  reviews=[...reviews].sort((a,b)=>selectedPreset.reviewOrder==='random'?stable(a)-stable(b):selectedPreset.reviewOrder==='retrievability'?fsrs(fsrsParameters(effectiveStudyPreset(data,a.deckId,now))).get_retrievability(hydrateCard(data.states[a.id]!),now,false)-fsrs(fsrsParameters(effectiveStudyPreset(data,b.deckId,now))).get_retrievability(hydrateCard(data.states[b.id]!),now,false):Date.parse(data.states[a.id]!.due)-Date.parse(data.states[b.id]!.due)).filter(card=>withinDeckLimit(card,usedReviews,'maxReviewsPerDay')).slice(0,reviewsLeft);
   let fresh=available.filter(card=>(data.states[card.id]?.reps??0)===0);
-  const newByDeck=new Map<string,number>();fresh=[...fresh].sort((a,b)=>selectedPreset.newGatherOrder==='random'||selectedPreset.newSortOrder==='random'?stable(a)-stable(b):selectedPreset.newGatherOrder==='position'?(data.cardControls[a.id]?.newPosition??Number.MAX_SAFE_INTEGER)-(data.cardControls[b.id]?.newPosition??Number.MAX_SAFE_INTEGER):data.decks.findIndex(deck=>deck.id===a.deckId)-data.decks.findIndex(deck=>deck.id===b.deckId)||data.cards.indexOf(a)-data.cards.indexOf(b)).filter(card=>{const used=newByDeck.get(card.deckId)??0,limit=effectiveStudyPreset(data,card.deckId,now).newCardsPerDay;if(used>=limit)return false;newByDeck.set(card.deckId,used+1);return true;}).slice(0,newLeft);
+  fresh=[...fresh].sort((a,b)=>selectedPreset.newGatherOrder==='random'||selectedPreset.newSortOrder==='random'?stable(a)-stable(b):selectedPreset.newGatherOrder==='position'?(data.cardControls[a.id]?.newPosition??Number.MAX_SAFE_INTEGER)-(data.cardControls[b.id]?.newPosition??Number.MAX_SAFE_INTEGER):data.decks.findIndex(deck=>deck.id===a.deckId)-data.decks.findIndex(deck=>deck.id===b.deckId)||data.cards.indexOf(a)-data.cards.indexOf(b)).filter(card=>{const policy=effectiveStudyPreset(data,card.deckId,now);return (policy.newCardsIgnoreReviewLimit||(usedReviews.get(card.deckId)??0)<policy.maxReviewsPerDay)&&withinDeckLimit(card,usedNew,'newCardsPerDay');}).slice(0,newLeft);
   if(!selectedPreset.newCardsIgnoreReviewLimit&&reviewsLeft<=reviews.length)fresh=[];
   let scheduled:CardContent[];if(selectedPreset.newReviewOrder==='before')scheduled=[...fresh,...reviews];else if(selectedPreset.newReviewOrder==='mixed'){scheduled=[];const length=Math.max(fresh.length,reviews.length);for(let index=0;index<length;index++){if(reviews[index])scheduled.push(reviews[index]!);if(fresh[index])scheduled.push(fresh[index]!);}}else scheduled=[...reviews,...fresh];
   return [...learning,...scheduled];
@@ -109,6 +118,7 @@ export function applyReview(data: State, input: ReviewInput): State {
   if (previous.last_review && input.now.getTime() < Date.parse(previous.last_review)) throw new Error('Your clock is earlier than the last review. Check the system time before continuing.');
   const grade = mapRating(input.rating);
   const preset=effectiveStudyPreset(data,content.deckId,input.now),parameters=fsrsParameters(preset);
+  const deckById=new Map(data.decks.map(deck=>[deck.id,deck])),studyDeckPath:string[]=[];let studyDeck=deckById.get(content.deckId);const seenDecks=new Set<string>();while(studyDeck&&!seenDecks.has(studyDeck.id)){seenDecks.add(studyDeck.id);studyDeckPath.push(studyDeck.id);studyDeck=studyDeck.parentId?deckById.get(studyDeck.parentId):undefined;}
   const next = fsrs(parameters).next(hydrateCard(previous), input.now, grade).card;
   const resultingState = serializeCard(next, previous.version + 1);
   const event: ReviewEvent = {
@@ -120,12 +130,14 @@ export function applyReview(data: State, input: ReviewInput): State {
     studyPresetId:preset.id,schedulerParameters:structuredClone(parameters),
     mode: 'scheduled', activeMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
     ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
+    studyRootDeckId:data.session?.scopeDeckId??content.deckId,
+    studyDeckId:content.deckId,studyDeckPath,studyDay:dayKey(input.now,data.preferences.timeZone),studyTimeZone:data.preferences.timeZone,
   };
   const remaining = data.session?.queue.slice(1) ?? [];
   const cardControls={...data.cardControls};
   if(content.siblingGroupId){for(const sibling of data.cards){if(sibling.id===content.id||sibling.siblingGroupId!==content.siblingGroupId)continue;const siblingState=data.states[sibling.id],shouldBury=!siblingState?.reps?preset.buryNewSiblings:[1,3].includes(siblingState.state)?preset.buryLearningSiblings:preset.buryReviewSiblings;if(shouldBury)cardControls[sibling.id]={...cardControls[sibling.id],buriedOnDay:dayKey(input.now,data.preferences.timeZone)};}}
   const failures=activeReviews(data).filter(review=>review.cardId===content.id&&review.rating===1).length+(input.rating===1?1:0),leech=failures>=preset.leechThreshold;
-  if(leech)cardControls[content.id]={...cardControls[content.id],leech:true};
+  if(leech)cardControls[content.id]={...cardControls[content.id],leech:true,...(preset.leechAction==='suspend'?{leechSuspended:true}:{})};
   const cards=leech&&preset.leechAction==='suspend'?data.cards.map(card=>card.id===content.id?{...card,suspended:true}:card):data.cards;
   return {
     ...data, version: data.version + 1,cards,cardControls, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event],
@@ -148,8 +160,9 @@ export function undoLatestReview(data: State, now: Date, id: string, expectedCar
   const current = data.states[latest.cardId];
   if (!current || !sameSchedulingState(current, latest.resultingState)) throw new Error('This card changed after the review. Refresh before undoing it.');
   const restored = { ...latest.previousState, version: current.version + 1 };
+  const content=data.cards.find(card=>card.id===latest.cardId),preset=data.studyPresets.find(item=>item.id===latest.studyPresetId)??effectiveStudyPreset(data,content?.deckId,now),remainingFailures=activeReviews(data).filter(review=>review.id!==latest.id&&review.cardId===latest.cardId&&review.rating===1).length,clearLeech=remainingFailures<preset.leechThreshold,control=data.cardControls[latest.cardId],cardControls=clearLeech?{...data.cardControls,[latest.cardId]:{...control,leech:false,leechSuspended:false}}:data.cardControls,cards=clearLeech&&control?.leechSuspended?data.cards.map(card=>card.id===latest.cardId?{...card,suspended:false}:card):data.cards;
   return {
-    ...data, version: data.version + 1,
+    ...data, version: data.version + 1,cards,cardControls,
     rewardEvents: [...data.rewardEvents, ...rewardReversal(data, latest.id, latest.cardId, now.toISOString(), id)],
     session: data.session?.id === latest.sessionId ? { ...data.session, queue: [latest.cardId, ...data.session.queue.filter(cardId => cardId !== latest.cardId)], completed: Math.max(0, data.session.completed - 1), revealed: false, activeMs: 0, recallMs: undefined, endedAt: undefined, partial: undefined, lastReviewCardId: undefined, cardStartedAt: now.toISOString() } : data.session,
     states: { ...data.states, [latest.cardId]: restored },

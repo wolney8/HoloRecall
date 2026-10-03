@@ -56,7 +56,7 @@ export interface StudyPreset {
 }
 export interface DeckStudyOverrides { newCardsPerDay?:number;maxReviewsPerDay?:number;newCardsIgnoreReviewLimit?:boolean }
 export interface TodayStudyOverride extends DeckStudyOverrides { deckId:string;studyDay:string }
-export interface CardControl { manualBuried?:boolean;buriedOnDay?:string;leech?:boolean;newPosition?:number }
+export interface CardControl { manualBuried?:boolean;buriedOnDay?:string;leech?:boolean;leechSuspended?:boolean;newPosition?:number }
 export type CardState = Omit<FsrsCard, 'due' | 'last_review'> & {
   due: string;
   last_review?: string;
@@ -82,6 +82,13 @@ export interface ReviewEvent {
   activeMs?: number;
   /** Focused, non-idle time from question display to reveal. */
   recallMs?: number;
+  /** Selected deck branch for the session that accepted this review. */
+  studyRootDeckId?: string;
+  /** Owning deck and ancestry at acceptance time, retained across later moves. */
+  studyDeckId?: string;
+  studyDeckPath?: string[];
+  studyDay?: string;
+  studyTimeZone?: string;
   studyPresetId?:string;
   schedulerParameters?:FSRSParameters;
 }
