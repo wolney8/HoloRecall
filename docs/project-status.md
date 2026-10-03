@@ -6,6 +6,7 @@ Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build loca
 
 ### 3 October 2026 defect-recovery final handoff
 
+- **Branch/checkpoint:** `main` at implementation commit `0687816`; nothing is pushed or deployed.
 - **Requirement state:** HR-BUG-ANKI-01, HR-BUG-ANKI-02 and HR-BUG-STUDY-01 are `DONE` in the canonical tracker. Recovery and destructive checks used isolated browser fixtures; no IndexedDB clearing, reset or mutation of Will's imported decks/reviews occurred.
 - **Delivered:** semantic Anki conversion outcomes and compact disclosures; safe TTS/filter simplification; hyperlink/resource distinction; required-prompt validation; aggregate parent journeys with scoped subdecks; parent/child Study semantics; content-format v4 hierarchy/sibling portability; and generation-owned, fail-visible Study deal animations.
 - **Checks:** unit/domain **104/104 passed**; production build succeeded at **850.03 kB initial / 194.34 kB estimated transfer** with a 33-byte budget warning; the updated animation-enabled defect suite passed **8/8**; complete Chromium/WebKit desktop passed **118/118** in 6.1 minutes; WebKit compact/large/landscape passed **18/18** after a real 200%-text import-summary overflow was fixed and the complete phone matrix rerun. No skips, retries or timeout increases.
