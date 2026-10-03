@@ -293,6 +293,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
 - **Implementation notes:** The measured eager graph included Angular Material at 259.41 kB, Angular framework/forms/platform at 191.29 kB, application shell code at 165.21 kB, CDK at 85.61 kB, domain code at 46.53 kB and `ts-fsrs` at 21.14 kB. The root Settings shell eagerly imported `MatSlideToggle` solely for Appearance controls. Those controls now live in a deferred standalone `AppearanceSettingsComponent`; Study remains eager because it is part of the primary workflow. Existing Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing boundaries remain lazy.
 - **Verification / evidence:** Before: **867.32 kB raw / 199.15 kB transfer**. Final after adding this milestone's behavior: **847.67 kB raw / 198.69 kB transfer**, below the unchanged 850 kB ceiling. Appearance/Material toggle, Study Settings, local backup/media tools, History, Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing remain deferred; Study itself stays eager as the primary workflow. Production build and first-navigation regression pass without a budget change or feature removal.
+- **Relevant commits:** `065a391`, `711cfc5`.
 
 ### HR-TEST-01 — Strengthen queue-order and audio-action assertions
 - **Product area / milestone / priority:** Verification / Study configuration / P2
@@ -407,6 +408,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Platform implications:** Platform-neutral event contract, atomic IndexedDB persistence, compact keyboard/touch History affordance and future native read-back.
 - **Implementation notes:** New administrative changes carry a stable bulk `groupId` and exact before/after projections for the scheduling state, card controls and suspension flag. Undo validates every group member against current persisted state before one atomic commit, advances scheduling versions rather than rewinding them, and appends immutable `undo` records referencing the original events. Legacy schema-6 records remain readable but are deliberately non-undoable because they lack safe snapshots. No-op reset/bury/suspend operations create no misleading history. Direct Collection suspension now uses the same management path.
 - **Verification / evidence:** Store/domain coverage exercises set-due, reset, bury/unbury, suspend/unsuspend, reposition, atomic bulk undo, duplicate undo, stale state after another control change or review, legacy records, no-op New reset, review/reward invariance and backup validation (16/16 focused tests). Chromium and WebKit both pass the History reset → undo → reload journey (2/2); the UI shows Undo only for a currently valid group and marks its original record Undone. Production build passes.
+- **Relevant commits:** `065a391`, `711cfc5`.
 
 ### HR-STUDY-09 — Safe Auto Advance
 - **Product area / milestone / priority:** Reviewer / Workflow closure / P0
@@ -416,6 +418,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Platform implications:** Shared web/iOS/macOS lifecycle boundary, keyboard/touch controls, reduced motion and accessible status without noisy announcements.
 - **Implementation notes:** Presets now hold default-off bounded question and minimum-answer timing. The one shared Study player owns a generation/session/card-bound auto-reveal timer; lifecycle or audio interruption preserves a bounded remainder and persists a paused state, while recovery requires deliberate Resume. Auto-reveal never rates. A real rating persists first, then the retained card completes confidence feedback, any remaining configured answer dwell and the existing deal. Recall/active time is captured before presentation delays. The outgoing card now retains its own preset while visible.
 - **Verification / evidence:** The complete desktop matrix passes **136/136** and WebKit phone profiles **24/24**. Dedicated checks cover pause/reload/deliberate resume, auto-reveal with zero reviews, explicit rating, owned answer dwell, next-card visibility, lifecycle interruption, valid playing audio, rejected playback recovery and Practice without FSRS/reward mutation. The full unit/domain suite passes **132/132**. A startup race was fixed by declaring pending autoplay before its asynchronous `play()` call; rejected playback now always releases that state.
+- **Relevant commit:** `711cfc5`.
 
 ### HR-STUDY-10 — Easy Days evaluation
 - **Product area / milestone / priority:** Scheduling / Workflow closure / P1
@@ -424,6 +427,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Requirement / acceptance:** Determine whether Normal/Reduced/Minimum weekday workload treatment has a supported scheduler integration. Implement only if future schedules can be adjusted without hiding due work, rewriting existing due dates or corrupting FSRS interval state; otherwise document the exact missing primitive and retain an honest PARTIAL/PLANNED state.
 - **Platform implications:** Pure scheduler decision shared across platforms; deterministic learner-time-zone tests if implemented.
 - **Verification / evidence:** Current Anki documents Easy Days as FSRS-aware future workload redistribution. Installed `ts-fsrs` **5.4.2** type/runtime inspection exposes interval fuzzing and review-history rescheduling but no weekday workload-distribution input. Post-processing its returned due date would create a second unsanctioned scheduler policy, and hiding due work would violate the requirement. Exact dependency: a supported weekday distribution integration that returns internally valid scheduling state and can be tested deterministically. No setting or fake due-date shift was added.
+- **Relevant commit:** `711cfc5` (evaluation and recorded decision).
 
 ### HR-STUDY-11 — Reviewer workflow consistency
 - **Product area / milestone / priority:** Reviewer / Workflow closure / P0
@@ -433,6 +437,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Platform implications:** Desktop/touch/WebKit, lifecycle settlement, stable geometry and reduced-motion evidence.
 - **Implementation notes:** Normal/parent/child/Scheduled Focus/Practice/saved Focus already converge on the root shared player. This pass adds Auto Advance only there, fixes retained outgoing cards to resolve the displayed card's preset/timing/audio policy, and keeps reveal, rating, persistence, motion and Results on the established paths.
 - **Verification / evidence:** Normal Scheduled, parent/child, Scheduled Focus, Practice and saved Focus remain on the single root player. The complete Chromium/WebKit matrix passes **136/136**, including consecutive-card visibility, animation ownership, audio, Results, rewards, history and Focus boundaries; WebKit phone profiles pass **24/24**.
+- **Relevant commit:** `711cfc5`.
 
 ### HR-STUDY-12 — Settings discoverability
 - **Product area / milestone / priority:** Settings / Workflow closure / P1
@@ -442,6 +447,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Platform implications:** Material 3 alignment, touch targets, 200% reflow, focus and safe-area readiness.
 - **Implementation notes:** Deck and subdeck actions plus the active Study session open the same `StudySettingsComponent`; a deck-aware context panel shows the resolved preset, inheritance and direct workload overrides. The main Settings navigation opens the same surface without stale deck context. Opening it from Study pauses Auto Advance and preserves the session.
 - **Verification / evidence:** Deck → Settings, Study → Settings and global Settings context clearing pass both desktop engines. The complete WebKit compact/large/landscape gate passes **24/24**, including Study Settings at 200% text and touch-sized layouts.
+- **Relevant commit:** `711cfc5`.
 
 ### HR-PLAN-04 — Study capability closure matrix
 - **Product area / milestone / priority:** Planning / Workflow closure / P0
@@ -450,6 +456,7 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Requirement / acceptance:** Reconcile presets, limits, steps, order, siblings, leeches, audio/timers, Auto Advance, Easy Days, retention/interval, optimization, history/admin undo, Focus/Practice, import and AnkiWeb status. Keep optimizer honest and **AnkiWeb Sync — NOT PLANNED**.
 - **Platform implications:** Distinguish implementation from Chromium/WebKit and native evidence.
 - **Verification / evidence:** `docs/product-brief.md` now records Auto Advance DONE, Easy Days evaluated/PLANNED with the missing scheduler primitive, administrative management/undo DONE, the existing preset/limits/steps/order/audio/timer/FSRS/history/Focus/Practice/import boundaries, optimizer PARTIAL and **AnkiWeb Sync — NOT PLANNED**. Intentional HoloRecall differences remain explicit.
+- **Relevant commit:** `711cfc5`.
 
 ## Preserved completed history
 
