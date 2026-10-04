@@ -540,7 +540,7 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 - **Requirement:** Coordinate reveal, accepted confidence, deal, session completion and real unlock haptics with existing visual/audio milestones without independent drifting timers.
 - **Acceptance:** Persistence and scheduling remain first; native-call failure cannot strand a transition; Practice/FSRS/reward boundaries remain unchanged.
 - **Platform implications:** Web remains unchanged; native calls are lifecycle-aware and require device tuning later.
-- **Verification / evidence:** Cues occur after successful reveal/review/practice persistence, after incoming-card settle, at live session completion and when a genuine persisted unlock card is revealed. Results replay/reopen/skip never rearms reward haptics; background lifecycle suppresses calls. Browser motion regression is required; native invocation remains pending.
+- **Verification / evidence:** Cues occur after successful reveal/review/practice persistence, after incoming-card settle, at live session completion and when a genuine persisted unlock card is revealed. Results replay/reopen/skip never rearms reward haptics; background lifecycle suppresses calls. Complete 160/160 browser motion regression passes; native invocation remains pending.
 - **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-04 — Mobile Session Complete presentation
@@ -550,7 +550,7 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 - **Requirement:** Inspect mobile results, correct evidenced clarity/action issues and add native haptic milestones while preserving real metrics and Practice separation.
 - **Acceptance:** Concise mobile layout, progressive reveal, accurate bars/unlocks, accessible Continue, reduced motion and Skip remain intact; no fabricated progress.
 - **Platform implications:** Phone/tablet portrait/landscape and native haptic timing need distinct evidence.
-- **Verification / evidence:** Existing progressive results/unlock choreography remains authoritative; action rows now wrap at enlarged compact widths. Practice remains reward-free. Browser mobile/reduced-motion evidence is required; native haptic timing remains pending.
+- **Verification / evidence:** Existing progressive results/unlock choreography remains authoritative; action rows wrap at enlarged compact widths. Practice remains reward-free. Compact/large/landscape and reduced-motion browser gates pass; native haptic timing remains pending.
 - **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-05 — Native application and delivery contract
@@ -570,7 +570,7 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 - **Requirement:** Audit splash/icon infrastructure, system bars, safe areas, edge-to-edge, keyboard, Android Back, orientation, lifecycle, share/picker and offline startup; fix safe in-scope configuration gaps.
 - **Acceptance:** No final-branding claim for generated placeholders; Back preserves expected navigation; permissions remain minimal.
 - **Platform implications:** Runtime-specific verification remains explicit.
-- **Verification / evidence:** Generated icon/splash assets are explicitly placeholders; Android manifest uses expected orientation/keyboard/screen config and only INTERNET plus FileProvider. A lazy Android Back adapter applies shell navigation and cleans up. System-bar/edge-to-edge/keyboard/share/picker/offline runtime remain blocked.
+- **Verification / evidence:** Generated icon/splash assets are explicitly placeholders; Android manifest uses expected orientation/keyboard/screen config, normal INTERNET, plugin-provided VIBRATE and FileProvider with no dangerous runtime permission. A lazy Android Back adapter applies shell navigation and cleans up. System-bar/edge-to-edge/keyboard/share/picker/offline runtime remain blocked.
 - **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-07 — Retrospective portability audit
@@ -591,7 +591,7 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 - **Acceptance:** Native plugins stay out of eager web startup where practical; web suites/build remain green; business logic has no platform forks.
 - **Platform implications:** Apple-silicon Mac normally follows iOS/iPad implementation.
 - **Verification / evidence:** Native services/plugins load lazily and domain rules remain shared. Unit/domain **145/145**, complete Chromium/WebKit/phone matrix **160/160**, and post-split settings regression **31/31** pass. Production build is **849.53 kB raw / 201.26 kB transfer**, below the unchanged ceiling.
-- **Relevant commits:** `f80042e`, current acceptance commit.
+- **Relevant commits:** `f80042e`, `3e37ac2`.
 
 ### HR-MOBILE-09 — Xcode blocker remains explicit
 - **Product area / milestone / priority:** Evidence / Mobile quality / P0
@@ -611,7 +611,7 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 - **Acceptance:** One authoritative product version can drive platform metadata; secrets remain outside Angular/native source.
 - **Platform implications:** Signing, provisioning and store configuration remain future authorised work.
 - **Verification / evidence:** `package.json` version 0.1.0 is authoritative; `native:version` writes iOS `MARKETING_VERSION` and Android `versionName`, while build number/versionCode remain independent integer inputs. Environments and non-secret/store boundaries are documented.
-- **Relevant commits:** `f80042e`.
+- **Relevant commits:** `f80042e`, `3e37ac2`.
 
 ### HR-PLAN-06 — Four-target platform matrix
 - **Product area / milestone / priority:** Planning / Mobile quality / P0
