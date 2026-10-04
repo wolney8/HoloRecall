@@ -4,6 +4,15 @@ Updated: 4 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build loca
 
 ## Current durable handoff
 
+### 4 October 2026 confirmed mobile-platform milestone
+
+- **Recovered state:** clean `main` at `ada5a80`; accepted web and Apple-feasibility code remains intact. The server responds at `http://127.0.0.1:4200/`. No learner storage, signing, store account, cloud service or payment resource was touched.
+- **Confirmed direction:** Web, iOS/iPadOS, Android and Apple-silicon Mac are product targets. Intel Mac and AnkiWeb Sync are not planned. The charter records Anki as functional reference, Duolingo as qualitative interaction reference, collectible games as collection reference, and HoloRecall as the original product identity.
+- **Tracked scope:** HR-GOV-04/05, HR-ANDROID-01–03, HR-MOBILE-01–10 and HR-PLAN-06 are recorded before implementation. HR-MOBILE-09 is blocked on full Xcode 26+; HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION`.
+- **Delegation:** lead owns shared contracts, dependency versions, tracker and integration. Three bounded read-only delegates cover Android/toolchain requirements, haptic choreography/settings, and independent portability/data-integrity acceptance; no delegate may edit shared platform services.
+- **Initial portability finding:** current narrow persistence, lifecycle, file-delivery and entitlement seams are sound. Evidenced debts include missing Android Back integration, a late-resolving native-lifecycle listener risk, whole-Blob native export memory cost, HTML-input native picker verification, eager data-URL media hydration, and placeholder native chrome/branding. Only safe milestone-local leaks will be corrected.
+- **Exact next action:** finish the Android environment audit and official Capacitor 8 compatibility check, then pin/generate the matching Android platform where safe before implementing the shared semantic haptic port.
+
 ### 4 October 2026 Apple native feasibility recovery
 
 - **Recovered state:** clean `main` at `2670f8b`; accepted web Study, Focus, history, organisation, Anki conversion, media, rewards, portability and closure evidence remain intact. No learner storage was opened, cleared or migrated.

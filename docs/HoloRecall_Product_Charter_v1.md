@@ -1,24 +1,31 @@
 # HoloRecall — Product Charter and Delivery Contract
 
-**Version:** 1.0  
-**Recorded:** 30 September 2026  
-**Product director:** Will  
-**Planning and architecture:** ChatGPT  
+**Version:** 1.1
+**Recorded:** 30 September 2026; platform contract confirmed 4 October 2026
+**Product director:** Will
+**Planning and architecture:** ChatGPT
 **Implementation and engineering coordination:** Codex
 
 **Document status:** Adopted as the repository's authoritative product-direction and delivery-contract baseline on 30 September 2026. Implementation status and evidence remain in `docs/project-status.md`; this charter does not itself prove that a capability exists. Commercial and implementation choices labelled proposed remain unapproved policy.
 
-**Current handoff:** The Study/reward/authoring/collectible-design milestone completed through `5bdf7a4`. The active bounded milestone operationalises this charter, completes the three tracked Anki-import gaps, adds a non-enforcing entitlement boundary and updates the capability/platform evidence. Recover the exact current state from `docs/project-status.md`; never reset to this recorded checkpoint.
+**Current handoff:** Recover the exact current state from `docs/project-status.md`; never reset to a checkpoint recorded in this charter. The confirmed targets are Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac and AnkiWeb Sync are not planned.
 
 ## 1. Product definition — confirmed direction
 
-HoloRecall is a configurable spaced-repetition learning application for **web, iOS and macOS**, with the functional ambition of Anki and an original collectible-card presentation inspired by the tactile appeal of trading-card games.
+HoloRecall is a configurable spaced-repetition learning application for **Web, iPhone, iPad, Android phones/tablets and Apple-silicon Macs**, with the functional ambition of Anki and an original collectible-card presentation inspired by the tactile appeal of trading-card games. Intel/older Mac support is **not planned**.
 
 It must be a capable learning tool, not a decorative flashcard demonstration. Users should be able to create and organise decks, configure study, import and export content, inspect their learning history, and carry their collection between supported platforms. Cards also belong in a visually rich collection: rarity organisation, reusable designs, foil and sparkle finishes, earned cosmetic reveals and progress toward future unlocks.
 
 The product has three equal obligations: dependable learning, satisfying collection presentation, and trustworthy ownership/portability. Animation cannot compensate for missing study controls or unsafe data handling. Advanced capability should sit behind progressive disclosure rather than overwhelm the everyday interface.
 
 Trading-card games are visual inspiration, not a requirement for combat mechanics, trading economies, branded artwork or copied card layouts. HoloRecall keeps its own identity.
+
+### Product reference model
+
+- **Anki is the functional reference.** Use its current documented capabilities to guide scheduling, learning configuration, authoring/templates, organisation/search, review history, imports/exports, backup and study controls. HoloRecall does not copy Anki's visual design, import authoritative Anki scheduling state or operate as an AnkiWeb client. **AnkiWeb Sync is not planned.**
+- **Duolingo is the qualitative interaction reference.** Learn from its tactile pacing, restrained haptics, concise mobile surfaces, progress feedback and post-study/reward choreography without copying its assets, sounds, branded layouts or proprietary animation work.
+- **Collectible card games are the collection reference.** Use their premium tactility, rarity, finishes, inspection and reveal qualities without copying copyrighted frames, characters, trademarks or layouts.
+- **HoloRecall remains the product identity.** Its five-confidence FSRS workflow, original artwork, Material 3 interface, collectible presentation and trustworthy local-first data model remain authoritative.
 
 ## 2. Authority and responsibilities
 
@@ -50,13 +57,15 @@ The existing default remains **content-only Anki import**. A later migration of 
 
 ## 4. Cross-platform contract
 
-Web, iOS and macOS are product targets for every meaningful change. They share learning semantics, stable data contracts and portable content; they do not need identical platform-specific implementations.
+Web, iOS/iPadOS, Android and Apple-silicon Mac are product targets for every meaningful change. They share learning semantics, stable data contracts and portable content; they do not need identical platform-specific implementations. Web remains a first-class product developed alongside the native applications.
 
-**Existing direction retained:** Angular and Angular Material/Material 3 for the application; Capacitor for the planned iOS shell; local-first operation; Vercel/Neon/authentication/sync as previously discussed future architecture, not authorised deployments. Capacitor documents its mobile/web runtime approach, but that is not proof of a finished macOS application. [S4]
+**Existing direction retained:** Angular and Angular Material/Material 3 for the shared application; Capacitor for normal iOS/iPadOS and Android native delivery; local-first operation; Vercel/Neon/authentication/sync as previously discussed future architecture, not authorised deployments. A Capacitor shell is a legitimate native-store delivery architecture, but generated projects alone do not prove native quality. [S4]
 
-**macOS delivery remains an explicit architecture decision.** Running the web UI in a Mac browser is web support, not completion of the macOS app goal. Runtime, distribution, supported hardware/OS versions, desktop input and purchase restoration must be assessed before a shell is selected or generated.
+**Apple-silicon Mac route:** first target the compatible iPhone/iPad application made available on Apple-silicon Macs, subject to actual Mac acceptance for resizing, keyboard/pointer, storage, Files/share, lifecycle and plugins. Intel Mac support is not planned. Capacitor itself is not represented as a standard macOS target.
 
-Keep scheduling, rewards, import conversion, session metrics and schemas independent of browser/native APIs. Reuse the existing narrow persistence, lifecycle, asset and file-delivery boundaries. Add new boundaries only for an actual portability need.
+**Supported-OS policy:** support the oldest OS/API level safely supported by the selected maintained Capacitor stack and required plugins. With Capacitor 8 the current expected baselines are iOS/iPadOS 15+ and Android minSdk 24 (Android 7+), with Android compile/target SDK matching Capacitor 8 requirements. Do not lower framework versions to support obsolete systems or raise minimums without evidenced technical, plugin or security need and a recorded product decision. Maintain a matrix of minimum, target/tested versions, Simulator/emulator evidence, physical-device evidence and known limitations.
+
+Keep scheduling, rewards, import conversion, session metrics and schemas independent of browser/native APIs. Reuse narrow persistence, lifecycle, asset, file-delivery and interaction-feedback boundaries. Capacitor APIs belong in platform adapters rather than domain logic or scattered components. Every meaningful feature assesses persistence, filesystem, lifecycle, offline behavior, touch, keyboard/pointer, safe/system areas, haptics, motion, accessibility, file sharing/import, performance and permissions across all confirmed targets.
 
 Local study, interruption-safe persistence and full backups remain priorities. Loaded-tab offline operation, offline cold start, native offline startup and synchronisation are different capabilities. Record each independently.
 
@@ -125,7 +134,7 @@ Anki interoperability must state supported package versions, note/template conve
 
 ## 8. Application-wide design and accessibility contract
 
-**Design target:** Material 3 through supported Angular Material APIs, with original HoloRecall collectible styling and appropriate Apple-platform behaviour. **Accessibility target:** WCAG 2.2 AA for the web interface, plus native accessibility verification for shipped Apple apps. Targets are not claims of conformance. [S7–S9]
+**Design target:** Material 3 through supported Angular Material APIs, with original HoloRecall collectible styling and appropriate iOS/iPadOS, Android and Apple-silicon Mac behavior. **Accessibility target:** WCAG 2.2 AA for the web interface, plus platform accessibility verification for shipped native apps. Targets are not claims of conformance. [S7–S9]
 
 WCAG is not a complete layout specification and does not impose a blanket ban on centred text. HoloRecall therefore needs its own stricter alignment rules alongside accessibility requirements. [S7]
 
@@ -171,7 +180,7 @@ Integrate this charter into the existing repository documentation after the curr
 | Product charter | Vision, roles, decision authority, confirmed principles and explicitly proposed commercial choices. |
 | Capability/roadmap matrix | Anki mapping, platform scope, tracked status, acceptance criteria and proposed free/paid classification. Reuse an existing equivalent. |
 | Existing architecture/design documentation | Platform decisions, domain boundaries, shared UI rules, data and future entitlement contracts. |
-| Existing readiness documentation | Web, iOS and macOS evidence/gaps, retaining the existing iOS history. |
+| Existing readiness documentation | Web, iOS/iPadOS, Android and Apple-silicon Mac evidence/gaps, retaining the existing Apple history. |
 | Existing deck-format/import specifications | Versioned interoperability, media, losses, migration and round-trip evidence. |
 | Existing project-status/handoff | Current task truth, change IDs, executed checks, evidence paths, limitations and restart context. |
 
@@ -181,7 +190,7 @@ For each meaningful change, review learning integrity, UI consistency, cross-pla
 
 ### Pending decisions, not blockers to the running task
 
-The exact macOS delivery route; the exhaustive Anki capability inventory and prioritisation; the commercial feature split and price; paid download versus permanent in-app unlock; cross-platform licence linking; cloud/sync allowances; family/upgrade policy; and future Anki export/history-migration scope remain explicit decisions.
+The detailed Apple-silicon Mac release acceptance; the exhaustive Anki capability inventory and prioritisation; the commercial feature split and price; paid download versus permanent in-app unlock; cross-platform licence linking; cloud/sync allowances; family/upgrade policy; and future Anki export/history-migration scope remain explicit decisions. Intel Mac and AnkiWeb Sync are not planned.
 
 **Immediate boundary:** implement only the currently authorised bounded milestone. This charter neither cancels already-authorised work nor authorises the whole long-term product in one run.
 
