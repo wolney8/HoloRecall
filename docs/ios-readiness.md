@@ -136,6 +136,8 @@ For each meaningful change, add a proportional note to the durable handoff cover
 
 ## Current gate evidence
 
+- Four-target baseline: Capacitor Android 8.5.2 and Haptics 8.0.2 are pinned alongside the existing iOS family. Both generated projects sync the same production output with no `server.url`. Android static baseline is minSdk 24 / compile-target 36 / Java 21; Gradle/emulator execution is blocked by absent Android Studio/JDK/SDK. Semantic haptics and Android Back are lazy platform adapters. Unit/domain **145/145**, complete Chromium/WebKit/phone profiles **160/160**, and post-split settings regression **31/31** pass. Final web build is **849.53 kB raw / 201.26 kB transfer**, below the unchanged 850 kB ceiling. Environment/add/sync/build-attempt logs live under `.runtime/evidence/hr-mobile-platforms-20261004/`.
+
 - Apple feasibility: `cap add ios` and `cap sync ios` succeed with SPM and copy the real 13 MB production web output; `capacitor.config.json` contains no `server.url`. The production build after lazy native adapters is **848.60 kB initial / 199.05 kB estimated transfer**, below the unchanged 850 kB limit. Exact local environment, generation/sync and failed Xcode command logs are under `.runtime/evidence/hr-apple-native-20261004/`.
 - Apple feasibility regression gate: native adapter/migration/persistence subset **34/34**; controlled unit/domain suite **141/141**; complete Chromium/Desktop WebKit/phone-profile Playwright **160/160**. The first parallel domain run had two resource-contention failures in pre-existing 10,000-card timing tests (3.47/3.79 s against 3.0 s); both passed individually and in the controlled full run. No browser result is counted as WKWebView or Simulator evidence.
 

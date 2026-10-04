@@ -98,7 +98,7 @@
             <div class="page-heading" hrReveal><div><p class="eyebrow">LOCAL PREFERENCES</p><h1>Settings</h1></div></div>
             @defer(on immediate){<hr-study-settings [deckId]="settingsDeckId()"/>}
             <div class="settings-grid"><section class="panel" hrReveal [hrRevealDelay]="55">@defer(on immediate){<hr-appearance-settings/><hr-local-data-settings/>}</section></div>
-            <section class="panel" hrReveal><h2>Cosmetic unlock thresholds</h2><p>Required qualifying days per card. The first scheduled introduction can count. Later contributions require rating 4 or 5 on a distinct study date and at least 20 elapsed hours since the previous contribution.</p><form (ngSubmit)="saveRewards()"><div class="threshold-grid">@for(tier of tiers;track tier.id){<mat-form-field appearance="outline"><mat-label>{{tier.label}}</mat-label><input matInput type="number" min="1" max="365" [name]="tier.id" [(ngModel)]="rewardSettings[tier.id]" required></mat-form-field>}</div><button mat-flat-button type="submit">Save unlock thresholds</button></form><p class="hint">Each higher tier must require more qualifying days. Changes apply to future qualifying reviews and do not grant unlocks immediately or remove previous unlocks. Repeated flips, previews, practice, imports and duplicate review submissions earn nothing. Scheduling remains unchanged.</p></section>
+            <section class="panel" hrReveal>@defer(on immediate){<hr-reward-settings/>}@placeholder{<p role="status">Loading reward settings…</p>}</section>
           }
         }
       }

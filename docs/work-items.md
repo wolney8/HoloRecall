@@ -292,8 +292,8 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
 - **Implementation notes:** The measured eager graph included Angular Material at 259.41 kB, Angular framework/forms/platform at 191.29 kB, application shell code at 165.21 kB, CDK at 85.61 kB, domain code at 46.53 kB and `ts-fsrs` at 21.14 kB. The root Settings shell eagerly imported `MatSlideToggle` solely for Appearance controls. Those controls now live in a deferred standalone `AppearanceSettingsComponent`; Study remains eager because it is part of the primary workflow. Existing Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing boundaries remain lazy.
-- **Verification / evidence:** Before: **867.32 kB raw / 199.15 kB transfer**. Final after adding this milestone's behavior: **847.67 kB raw / 198.69 kB transfer**, below the unchanged 850 kB ceiling. Appearance/Material toggle, Study Settings, local backup/media tools, History, Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing remain deferred; Study itself stays eager as the primary workflow. Production build and first-navigation regression pass without a budget change or feature removal.
-- **Relevant commits:** `065a391`, `711cfc5`.
+- **Verification / evidence:** Closure baseline: **847.67 kB raw / 198.69 kB transfer**. Native interaction initially measured **851.43 kB**; moving the settings-only reward editor into the existing deferred settings boundary produced **849.53 kB raw / 201.26 kB transfer**, below the unchanged ceiling. Capacitor/Haptics/Back and heavy exchange tooling remain lazy. No limit increase or accepted feature removal was used.
+- **Relevant commits:** `065a391`, `711cfc5`, `f80042e`, current acceptance commit.
 
 ### HR-TEST-01 — Strengthen queue-order and audio-action assertions
 - **Product area / milestone / priority:** Verification / Study configuration / P2
@@ -464,134 +464,134 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 
 ### HR-GOV-04 — Authoritative multi-platform product contract
 - **Product area / milestone / priority:** Governance / Mobile platform direction / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Existing charter and Apple feasibility decision
 - **Requirement:** Record the confirmed targets, Anki/Duolingo/collectible reference model, OS support policy, Intel Mac and AnkiWeb exclusions in the existing charter.
 - **Acceptance:** No authoritative record implies Android is out of scope; minimums remain evidence-based; references describe inspiration without copying product identity.
 - **Platform implications:** Web, iOS/iPadOS, Android and Apple-silicon Mac become the maintained target set.
 - **Implementation notes:** Update the existing charter only.
-- **Verification / evidence:** Pending documentation reconciliation.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Charter v1.1 names all four targets, OS policy, reference models and exclusions; architecture/readiness records agree.
+- **Relevant commits:** `fa33a27`, `f80042e`.
 
 ### HR-GOV-05 — Continuous portability rule
 - **Product area / milestone / priority:** Governance / Mobile platform direction / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** HR-GOV-04; canonical tracker cadence
 - **Requirement:** Make proportional four-target portability review and narrow adapter use a standing repository instruction.
 - **Acceptance:** `AGENTS.md` names every target and persistence/files/lifecycle/offline/input/safe areas/haptics/motion/accessibility/share/performance/permission considerations without claiming simultaneous device verification.
 - **Platform implications:** Prevent browser/native leakage into domain contracts.
-- **Verification / evidence:** Pending instruction review.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Root `AGENTS.md` has the proportional four-target review rule and links the canonical readiness record.
+- **Relevant commits:** `fa33a27`.
 
 ### HR-ANDROID-01 — Android environment audit
 - **Product area / milestone / priority:** Platform / Android feasibility / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Installed Mac Android Studio/SDK/JDK/emulator/adb state; official Capacitor 8 requirements
 - **Requirement:** Record exact Android tools, platforms/images, selected Java and blockers without installing Android Studio or large SDK packages.
 - **Acceptance:** Every runtime/build claim identifies actual tooling; missing requirements are explicit blockers.
 - **Platform implications:** Determines Gradle-build/emulator evidence, never physical-device evidence.
-- **Verification / evidence:** Environment audit in progress.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** macOS 26.5.1 arm64 supports virtualization. Android Studio, SDK/tools/images, selected Java and Gradle are absent. SideQuest adb 35.0.1 is present but is not a development SDK and reports no device. Evidence: `.runtime/evidence/hr-mobile-platforms-20261004/android-environment.log`.
+- **Relevant commits:** `f80042e`.
 
 ### HR-ANDROID-02 — Capacitor Android platform
 - **Product area / milestone / priority:** Platform / Android feasibility / P0
-- **Status:** PLANNED
+- **Status:** VERIFY
 - **Dependencies:** HR-ANDROID-01; pinned Capacitor 8 family
 - **Requirement:** Generate/sync the same production Angular application into an Android project, add repeatable build/sync/open/run scripts and keep native config free of a development URL.
 - **Acceptance:** Core/CLI/iOS/Android/plugin versions are compatible; static config passes; Gradle/emulator evidence runs only where tooling permits.
 - **Platform implications:** No second Angular application or web-only domain fork.
-- **Verification / evidence:** Pending environment result.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** `@capacitor/android` 8.5.2 is pinned; the generated project syncs the same production output with App/Filesystem/Haptics/Share and no `server.url`. Scripts build/sync/open/run the project. `./gradlew assembleDebug` is blocked by the absent JDK/SDK, so build/emulator claims remain unverified.
+- **Relevant commits:** `f80042e`.
 
 ### HR-ANDROID-03 — Android compatibility baseline
 - **Product area / milestone / priority:** Platform / Android feasibility / P0
-- **Status:** PLANNED
+- **Status:** VERIFY
 - **Dependencies:** HR-ANDROID-01/02 and official Capacitor/plugin requirements
 - **Requirement:** Retain minSdk 24 unless an evidenced dependency requires higher; use Capacitor 8's supported compile/target SDK and document old/current/latest representative emulator coverage.
 - **Acceptance:** Generated Gradle values and plugin minimums are recorded; testing on a newer image never silently raises the product minimum.
 - **Platform implications:** Emulator and physical-device evidence remain separate.
-- **Verification / evidence:** Pending generated project inspection.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Generated values are minSdk 24, compile/target 36, AGP 8.13.0, Gradle 8.14.3 and Java 21. API 24/middle/API 36 emulator coverage is blocked by the missing toolchain/images; no minimum was raised.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-01 — Shared semantic haptic feedback
 - **Product area / milestone / priority:** Interaction / Mobile quality / P0
-- **Status:** PLANNED
+- **Status:** VERIFY
 - **Dependencies:** Official Capacitor Haptics 8; existing owned Study/results presentation lifecycle
 - **Requirement:** Add one semantic feedback port for selection, reveal, accepted rating, deal, session completion, genuine unlock, warning and real error. Native uses official Haptics; web is a safe no-op without desktop vibration.
 - **Acceptance:** Components do not import Haptics directly; calls never delay saves/navigation; failures are swallowed safely; honest low ratings never use error feedback.
 - **Platform implications:** iOS/Android invoke the same semantics; Mac/web no-op unless future evidence supports otherwise.
-- **Verification / evidence:** Pending implementation/unit tests; physical tactile quality always pending device tests.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** `InteractionFeedback` and one official Capacitor driver map semantic cues to selection/light impact/success/warning/error. Web is a strict no-op; the adapter loads lazily, swallows and disables after failure. Unit mapping/suppression passes; native invocation and tactile quality remain pending.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-02 — Haptics setting and accessibility
 - **Product area / milestone / priority:** Settings / Mobile quality / P0
-- **Status:** PLANNED
+- **Status:** VERIFY
 - **Dependencies:** HR-MOBILE-01; versioned Preferences migration
 - **Requirement:** Persist an On/Off haptics preference, default on for supported native mobile platforms and fully suppress decorative tactile calls when off.
 - **Acceptance:** Setting is independent from reduced motion, errors remain visually understandable, unsupported hardware is not retried repeatedly and web avoids irrelevant prominence.
 - **Platform implications:** Compact touch/reflow, reload and platform-default behavior require separate evidence.
-- **Verification / evidence:** Pending.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Backward-compatible persisted `haptics` preference defaults on, is shown only when a native platform is detected, remains independent of reduced motion and suppresses every decorative call. Migration and settings persistence are unit/browser gated; native control and device behavior remain pending.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-03 — Coordinated Study feedback
 - **Product area / milestone / priority:** Study / Mobile quality / P0
-- **Status:** PLANNED
+- **Status:** VERIFY
 - **Dependencies:** HR-MOBILE-01/02 and owned flip/confidence/deal/results lifecycle
 - **Requirement:** Coordinate reveal, accepted confidence, deal, session completion and real unlock haptics with existing visual/audio milestones without independent drifting timers.
 - **Acceptance:** Persistence and scheduling remain first; native-call failure cannot strand a transition; Practice/FSRS/reward boundaries remain unchanged.
 - **Platform implications:** Web remains unchanged; native calls are lifecycle-aware and require device tuning later.
-- **Verification / evidence:** Pending animation-enabled tests plus adapter invocation evidence.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Cues occur after successful reveal/review/practice persistence, after incoming-card settle, at live session completion and when a genuine persisted unlock card is revealed. Results replay/reopen/skip never rearms reward haptics; background lifecycle suppresses calls. Browser motion regression is required; native invocation remains pending.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-04 — Mobile Session Complete presentation
 - **Product area / milestone / priority:** Results / Mobile quality / P1
-- **Status:** IN_PROGRESS
+- **Status:** VERIFY
 - **Dependencies:** Existing approved Results/Skip/Replay/unlock choreography; HR-MOBILE-03
 - **Requirement:** Inspect mobile results, correct evidenced clarity/action issues and add native haptic milestones while preserving real metrics and Practice separation.
 - **Acceptance:** Concise mobile layout, progressive reveal, accurate bars/unlocks, accessible Continue, reduced motion and Skip remain intact; no fabricated progress.
 - **Platform implications:** Phone/tablet portrait/landscape and native haptic timing need distinct evidence.
-- **Verification / evidence:** Code/visual audit in progress.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Existing progressive results/unlock choreography remains authoritative; action rows now wrap at enlarged compact widths. Practice remains reward-free. Browser mobile/reduced-motion evidence is required; native haptic timing remains pending.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-05 — Native application and delivery contract
 - **Product area / milestone / priority:** Release architecture / Mobile quality / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Confirmed platform targets and Capacitor direction
 - **Requirement:** Document normal Xcode/TestFlight/App Store, Gradle/AAB/Play testing, Apple-silicon iOS-app-on-Mac delivery and shared Angular/native-service architecture. Intel Mac is not planned.
 - **Acceptance:** Native-shell architecture is not described as a lesser website; store/signing resources remain uncreated.
 - **Platform implications:** Version/build metadata and platform services remain narrow adapters.
-- **Verification / evidence:** Pending architecture/readiness reconciliation.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Architecture/readiness define Xcode/TestFlight/App Store, Gradle/AAB/Play testing, Apple-silicon iOS-app-on-Mac, shared Angular/native services and explicit non-authorisation of stores/signing.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-06 — App chrome and platform integration audit
 - **Product area / milestone / priority:** Native shell / Mobile quality / P0
-- **Status:** IN_PROGRESS
+- **Status:** VERIFY
 - **Dependencies:** iOS and Android generated projects; official plugins
 - **Requirement:** Audit splash/icon infrastructure, system bars, safe areas, edge-to-edge, keyboard, Android Back, orientation, lifecycle, share/picker and offline startup; fix safe in-scope configuration gaps.
 - **Acceptance:** No final-branding claim for generated placeholders; Back preserves expected navigation; permissions remain minimal.
 - **Platform implications:** Runtime-specific verification remains explicit.
-- **Verification / evidence:** Audit in progress.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Generated icon/splash assets are explicitly placeholders; Android manifest uses expected orientation/keyboard/screen config and only INTERNET plus FileProvider. A lazy Android Back adapter applies shell navigation and cleans up. System-bar/edge-to-edge/keyboard/share/picker/offline runtime remain blocked.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-07 — Retrospective portability audit
 - **Product area / milestone / priority:** Architecture / Mobile quality / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Existing major feature set and platform boundaries
 - **Requirement:** Classify each requested major surface as portable, adapter-backed, native work/verification required or intentionally platform-specific; create debt only from evidence and repair small leaks safely.
 - **Acceptance:** Every listed feature appears in the maintained matrix; no functioning code is rewritten for symmetry alone.
 - **Platform implications:** Four-target evidence distinctions remain explicit.
-- **Verification / evidence:** Independent audit in progress.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** `docs/ios-readiness.md` classifies every requested surface. Safe fixes cover late native-listener cleanup and Android Back; evidenced native picker, bounded export/media, native storage/audio and confirmation-surface debt remains visible.
+- **Relevant commits:** `f80042e`.
 
 ### HR-MOBILE-08 — Web remains first class
 - **Product area / milestone / priority:** Architecture / Mobile quality / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Shared Angular/domain architecture and lazy native adapters
 - **Requirement:** Maintain one product/domain codebase, web behavior and the 850 kB initial-bundle ceiling while adding native platforms.
 - **Acceptance:** Native plugins stay out of eager web startup where practical; web suites/build remain green; business logic has no platform forks.
 - **Platform implications:** Apple-silicon Mac normally follows iOS/iPad implementation.
-- **Verification / evidence:** Pending final bundle/regression gate.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** Native services/plugins load lazily and domain rules remain shared. Unit/domain **145/145**, complete Chromium/WebKit/phone matrix **160/160**, and post-split settings regression **31/31** pass. Production build is **849.53 kB raw / 201.26 kB transfer**, below the unchanged ceiling.
+- **Relevant commits:** `f80042e`, current acceptance commit.
 
 ### HR-MOBILE-09 — Xcode blocker remains explicit
 - **Product area / milestone / priority:** Evidence / Mobile quality / P0
@@ -605,23 +605,23 @@ Source: Will's 4 October 2026 confirmed Web/iOS/iPadOS/Android/Apple-silicon Mac
 
 ### HR-MOBILE-10 — Release readiness structure
 - **Product area / milestone / priority:** Release architecture / Mobile quality / P1
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** Shared product version and generated native projects
 - **Requirement:** Define product version, iOS build number, Android versionCode and web release version plus development/local-native/beta/production environments without credentials or store resources.
 - **Acceptance:** One authoritative product version can drive platform metadata; secrets remain outside Angular/native source.
 - **Platform implications:** Signing, provisioning and store configuration remain future authorised work.
-- **Verification / evidence:** Pending generated metadata audit.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** `package.json` version 0.1.0 is authoritative; `native:version` writes iOS `MARKETING_VERSION` and Android `versionName`, while build number/versionCode remain independent integer inputs. Environments and non-secret/store boundaries are documented.
+- **Relevant commits:** `f80042e`.
 
 ### HR-PLAN-06 — Four-target platform matrix
 - **Product area / milestone / priority:** Planning / Mobile quality / P0
-- **Status:** IN_PROGRESS
+- **Status:** DONE
 - **Dependencies:** HR-GOV-04/05, HR-ANDROID-01–03 and HR-MOBILE-01–10
 - **Requirement:** Evolve the existing readiness matrix for Web, iOS/iPadOS, Android and Apple-silicon Mac across startup, persistence, Study, Focus, haptics, audio/effects/results, import/export/backup, offline, lifecycle, accessibility, layouts and distribution.
 - **Acceptance:** Evidence uses IMPLEMENTED/BROWSER VERIFIED/EMULATOR VERIFIED/PHYSICAL DEVICE VERIFIED/BLOCKED/NOT APPLICABLE accurately; no competing matrix is created.
 - **Platform implications:** Engine, emulator, Simulator, Mac and physical-device evidence remain distinct.
-- **Verification / evidence:** Pending milestone reconciliation.
-- **Relevant commits:** Pending.
+- **Verification / evidence:** The existing readiness document now contains one four-target compatibility/evidence matrix plus detailed historical browser/Apple evidence, with runtime and physical-device gaps kept distinct.
+- **Relevant commits:** `f80042e`.
 
 ## Apple native feasibility — preserved accepted baseline
 

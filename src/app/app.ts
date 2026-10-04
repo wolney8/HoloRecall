@@ -28,11 +28,12 @@ import { effectiveStudyPreset, fsrsParameters } from '../domain/study-settings';
 import { FocusComponent, type FocusLaunch } from './focus/focus';
 import { AppearanceSettingsComponent } from './settings/appearance-settings';
 import { LocalDataSettingsComponent } from './settings/local-data-settings';
+import { RewardSettingsComponent } from './settings/reward-settings';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -82,8 +83,6 @@ export class AppComponent {
   selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
   bulkDeckId='';bulkTags='';bulkRemoveTags='';bulkDue='';bulkPosition:number|null=null;renameTagFrom='';renameTagTo='';
   private editorBaseline='';
-  settings={newCardLimit:10,reviewLimit:100,timeZone:'Europe/London'};
-  rewardSettings:Record<Rarity,number>={common:1,uncommon:2,rare:3,'holo-rare':5,'ultra-rare':8,'secret-rare':12,relic:20};
   readonly reviews=computed(()=>this.data()?activeReviews(this.data()!):[]);
   readonly todayReviews=computed(()=>this.reviews().filter(e=>dayKey(new Date(e.timestamp),this.timeZone())===dayKey(this.now(),this.timeZone())));
   readonly ready=computed(()=>this.data()?dueCards(this.data()!,this.now()):[]);
@@ -115,7 +114,6 @@ export class AppComponent {
   private checkpointing=false;
   private ticks=0;
   private timedCard='';
-  private settingsLoaded=false;
   private resultSessionKey='';
   private initialRecoveryChecked=false;
   private resultUnobserve:(()=>void)[]=[];
@@ -143,7 +141,6 @@ export class AppComponent {
       if(cardId!==this.timedCard){this.timedCard=cardId;this.elapsedMs=this.session()?.activeMs??0;this.lastTick=performance.now();}
       const state=this.data();
       if(state&&!this.initialRecoveryChecked){this.initialRecoveryChecked=true;if(state.session&&!state.session.endedAt&&state.session.queue.length){this.autoAdvancePaused.set(true);this.autoAdvanceRemainingMs=state.session.autoAdvanceRemainingMs;queueMicrotask(()=>void this.store.updateSessionAutoAdvance(true,this.autoAdvanceRemainingMs).catch(()=>undefined));}if(this.screen()==='study'&&state.session?.endedAt&&!state.session.queue.length){queueMicrotask(()=>this.showResults());return;}}
-      if(state&&!this.settingsLoaded){this.settingsLoaded=true;this.loadSettings();}
       const resultKey=state&&this.screen()==='results'&&state.session?.endedAt?`${state.session.id}:${state.session.endedAt}`:'';
       if(resultKey&&resultKey!==this.resultSessionKey){this.resultSessionKey=resultKey;queueMicrotask(()=>this.startResultsPresentation());}
       const autoKey=`${this.screen()}:${state?.session?.id??''}:${this.current()?.id??''}:${this.revealed()}:${this.studyTransition()}:${this.busy()}:${this.lifecycle.active()}:${this.lifecycle.focused()}:${this.cardAudioPlaying()}:${this.autoAdvancePaused()}:${this.currentPreset()?.autoAdvanceEnabled??false}:${this.currentPreset()?.autoRevealSeconds??0}`;
@@ -165,7 +162,6 @@ export class AppComponent {
   }
   private initialScreen():Screen{const value=location.hash.slice(1);return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
-  private loadSettings():void{const state=this.data();if(!state)return;const {newCardLimit,reviewLimit,timeZone}=state.preferences;this.settings={newCardLimit,reviewLimit,timeZone};this.rewardSettings={...state.rewardConfig};}
   timeZone():string{return this.data()?.preferences.timeZone??'Europe/London';}
   predictedInterval(rating:1|2|3|4|5):string{const data=this.data(),card=this.displayedCard(),preset=this.currentPreset();if(!data||!card||!preset)return'';const previous=data.states[card.id]?hydrateCard(data.states[card.id]!):createEmptyCard(new Date());const result=fsrs(fsrsParameters(preset)).next(previous,new Date(),mapRating(rating)).card,days=result.scheduled_days;return days<1?'Soon':days===1?'1 day':`${days} days`;}
   visibleTimer():string{const seconds=Math.floor(this.elapsedMs/1000);return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;}
@@ -190,7 +186,7 @@ export class AppComponent {
   toggleAutoAdvance():void{void (this.autoAdvancePaused()?this.resumeAutoAdvance():this.pauseAutoAdvance());}
   onCardAudioPlaying(playing:boolean):void{this.cardAudioPlaying.set(playing);}
   private async waitForAnswerDwell(run:number):Promise<void>{const seconds=this.currentPreset()?.autoAdvanceEnabled?this.currentPreset()?.autoAnswerSeconds??0:0;if(!seconds||!this.answerRevealedAt)return;const remaining=Math.max(0,seconds*1000-(performance.now()-this.answerRevealedAt));if(!remaining)return;this.settleAnswerDwell();await new Promise<void>(resolve=>{this.answerDwellResolve=resolve;this.answerDwellTimer=window.setTimeout(()=>this.settleAnswerDwell(),Math.min(120000,remaining));});if(run!==this.studyPresentationRun)return;}
-  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);if(screen==='settings')this.loadSettings();window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
   openStudySettings(deckId?:string):void{if(this.screen()==='study')void this.pauseAutoAdvance(true);this.go('settings');this.settingsDeckId.set(deckId??'');}
   topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}
   deckChildren(id:string):Deck[]{return this.data()?.decks.filter(deck=>deck.parentId===id)??[];}
@@ -343,6 +339,4 @@ export class AppComponent {
   async suspend(card:CardContent):Promise<void>{try{await this.store.manageCards([card.id],card.suspended?'unsuspend':'suspend');this.message.set(card.suspended?'Card resumed.':'Card suspended. History preserved.');}catch(e){this.message.set(String(e));}}
   newDeck(deck?:Deck,parentId?:string):void{this.go('library');this.deckEditor=deck?{...deck}:{id:crypto.randomUUID(),name:'',description:'',suspended:false,...(parentId?{parentId}:{})};}
   async saveDeck():Promise<void>{if(!this.deckEditor?.name.trim())return;this.busy.set(true);try{const deck={...this.deckEditor,name:this.deckEditor.name.trim()};if(!deck.designSetId)delete deck.designSetId;await this.store.saveDeck(deck);this.deckEditor=null;this.message.set('Deck saved.');}catch(e){this.message.set(String(e));}finally{this.busy.set(false);}}
-  async saveSettings():Promise<void>{try{await this.store.updatePreferences(this.settings);this.message.set('Study settings saved.');}catch(e){this.message.set(String(e));}}
-  async saveRewards():Promise<void>{try{await this.store.updateRewardConfig(this.rewardSettings);this.message.set('Unlock thresholds saved. Existing earned cosmetics are preserved; changes apply on future qualifying reviews.');}catch(e){this.message.set(String(e));}}
 }

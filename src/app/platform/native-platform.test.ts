@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { connectCapacitorLifecycle } from './app-lifecycle';
 import { deliverNativeFile } from './file-delivery';
+import { connectNativeBack } from './native-navigation';
 
 describe('native platform adapters', () => {
   it('maps official Capacitor lifecycle events and removes every listener', async () => {
@@ -47,5 +48,11 @@ describe('native platform adapters', () => {
     };
     await expect(deliverNativeFile(new Blob(['x']), 'export.xlsx', modules as unknown as Parameters<typeof deliverNativeFile>[2])).rejects.toThrow('cancelled');
     expect(deleteFile).toHaveBeenCalledOnce();
+  });
+
+  it('owns Android Back at the shell boundary and removes the listener',async()=>{
+    let callback:((event:{canGoBack:boolean})=>void)|undefined;const remove=vi.fn(),exitApp=vi.fn();
+    const loader=async()=>({core:{Capacitor:{isNativePlatform:()=>true,getPlatform:()=> 'android'}},app:{App:{addListener:vi.fn(async(_name:string,next:(event:{canGoBack:boolean})=>void)=>{callback=next;return{remove};}),exitApp}}});
+    const handled=vi.fn(()=>true),cleanup=await connectNativeBack(handled,loader as unknown as Parameters<typeof connectNativeBack>[1]);callback?.({canGoBack:false});expect(handled).toHaveBeenCalledOnce();expect(exitApp).not.toHaveBeenCalled();await cleanup();expect(remove).toHaveBeenCalledOnce();
   });
 });
