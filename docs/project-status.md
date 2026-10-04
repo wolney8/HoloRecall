@@ -1,8 +1,17 @@
 # Project status and durable handoff
 
-Updated: 3 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
+Updated: 4 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build local HoloRecall study prototype`). Visual milestone checkpoint: `f7ed8d7`; HR-UX-07–11 implementation checkpoint: `268fd78` (`Polish study and results motion`). Nothing has been pushed or deployed.
 
 ## Current durable handoff
+
+### 4 October 2026 Apple native feasibility recovery
+
+- **Recovered state:** clean `main` at `2670f8b`; accepted web Study, Focus, history, organisation, Anki conversion, media, rewards, portability and closure evidence remain intact. No learner storage was opened, cleared or migrated.
+- **Tracked scope:** HR-NATIVE-01–12, HR-MAC-01 and HR-PLAN-05 are recorded before implementation. HR-ACCEPT-ANKI-01 remains `VERIFY — PENDING MANUAL USER VERIFICATION`.
+- **Environment finding:** Apple-silicon Mac (`arm64`, M1 Pro) on macOS 26.5.1; Node 24.3.0 and npm 11.4.2 match the pinned project. `xcode-select` points to `/Library/Developer/CommandLineTools`; full Xcode, `xcodebuild` and `simctl` are unavailable. No Capacitor packages, config or native directory existed at recovery.
+- **Immediate implication:** current official Capacitor 8 requires Node 22+ and Xcode 26+ for iOS. Node/macOS qualify, but native build, Simulator launch, WKWebView smoke, packaged offline and native UI evidence are blocked until Will installs Xcode separately. Continue only reversible shell/configuration and platform-independent storage/file/lifecycle/migration work; never count browser evidence as native.
+- **Delegation:** lead owns dependency/native-project integration and final evidence. Three bounded read-only delegates cover macOS delivery, native storage/files/privacy and independent acceptance/data-integrity review; no delegate may alter the shared native project.
+- **Exact next action:** confirm the pinned Capacitor 8 patch line from official package metadata, add the minimal dependency/configuration and attempt SPM iOS generation without claiming a build; record the exact Xcode blocker and continue architecture proofs.
 
 ### 3 October 2026 Review workflow closure recovery
 

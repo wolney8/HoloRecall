@@ -458,6 +458,122 @@ Source: Will's 3 October 2026 closure milestone. Current Anki deck-options docum
 - **Verification / evidence:** `docs/product-brief.md` now records Auto Advance DONE, Easy Days evaluated/PLANNED with the missing scheduler primitive, administrative management/undo DONE, the existing preset/limits/steps/order/audio/timer/FSRS/history/Focus/Practice/import boundaries, optimizer PARTIAL and **AnkiWeb Sync — NOT PLANNED**. Intentional HoloRecall differences remain explicit.
 - **Relevant commit:** `711cfc5`.
 
+## Active milestone — Apple Native Feasibility
+
+Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. Native work remains local; publication, signing/provisioning, payments and cloud sync are outside scope.
+
+### HR-NATIVE-01 — Apple development environment audit
+- **Product area / milestone / priority:** Platform / Apple feasibility / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** Installed macOS/Xcode/Simulator and current official Capacitor requirements
+- **Requirement / acceptance:** Record the actual Mac architecture, Node/npm, selected developer tools, Xcode/Simulator runtimes and existing Capacitor/native state before dependency or project generation. Missing mandatory tools remain explicit blockers rather than simulated evidence.
+- **Platform implications:** Determines which iOS/macOS claims can be made; no automatic Xcode installation or global toolchain upgrade.
+- **Verification / evidence:** Pending environment audit.
+
+### HR-NATIVE-02 — Capacitor iOS baseline
+- **Product area / milestone / priority:** Platform / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** HR-NATIVE-01; compatible pinned Capacitor core/CLI/iOS versions
+- **Requirement / acceptance:** Add the smallest supported Capacitor configuration to the existing Angular build, generate one local iOS shell and automate web build/sync. Native build, Simulator launch and real HoloRecall interaction require installed Xcode evidence.
+- **Platform implications:** Packaged WKWebView assets must use the production output without a development-server URL; generated artifacts remain reviewable and bounded.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-03 — Native smoke journey
+- **Product area / milestone / priority:** Study / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** HR-NATIVE-02 and an available Simulator runtime
+- **Requirement / acceptance:** Exercise the actual WKWebView launch → Decks → Study/reveal/rate/next/results → Collection/Progress/History/Settings path, including former disappearing-card regression, themes, orientation, safe areas, keyboard, motion and valid local audio.
+- **Platform implications:** Simulator evidence remains distinct from Playwright WebKit and physical-device verification.
+- **Verification / evidence:** Pending native toolchain.
+
+### HR-NATIVE-04 — Native persistence architecture spike
+- **Product area / milestone / priority:** Data / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** Existing `StudyPersistence` and media boundaries; candidate maintenance/security review
+- **Requirement / acceptance:** Recommend transactional native structured storage and durable media storage. If a sufficiently supported candidate exists, prove isolated fixture create/write/relaunch/read/update/rollback/version behavior without changing production persistence or real data.
+- **Platform implications:** Domain and scheduler remain storage-agnostic; Preferences/UserDefaults cannot hold the learning database.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-05 — Data migration design
+- **Product area / milestone / priority:** Data safety / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** HR-NATIVE-04; validated full-backup contract
+- **Requirement / acceptance:** Specify and fixture-test an idempotent backup-first IndexedDB → native staged migration with count/hash/invariant verification, interruption recovery, rollback, deduplication and retained recovery data. Do not touch genuine learner storage.
+- **Platform implications:** Protect every content, scheduling, reward, source-identity, media and administrative-history field across versions.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-06 — Native lifecycle adapter
+- **Product area / milestone / priority:** Runtime / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** Official Capacitor App plugin and existing `AppLifecycle`
+- **Requirement / acceptance:** Feed native active/background events into the shared lifecycle contract while retaining browser signals. Verify timing, animations, Auto Advance, audio, accepted-review durability, deduplication and resume behavior where native execution is available.
+- **Platform implications:** Components remain free of direct Capacitor calls; listeners are removed on destruction.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-07 — Native file import/export feasibility
+- **Product area / milestone / priority:** Portability / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** Existing `FileDelivery`; official Files/share APIs and picker-gap evaluation
+- **Requirement / acceptance:** Prove or precisely design Apple Files/share workflows for APKG, portable ZIP, XLSX and full backup import/export. Generated exports must become user-accessible files; cancellation and invalid input must remain safe.
+- **Platform implications:** Parsing/generation stays platform-neutral and no real collection is overwritten.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-08 — Native media feasibility
+- **Product area / milestone / priority:** Media / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** HR-NATIVE-04; media resolver boundary
+- **Requirement / acceptance:** Exercise or specify stable native references for images, WAV/MP3, backgrounds, frames and textures across reload/relaunch and Study transitions. Device paths cannot leak into portable card data.
+- **Platform implications:** WKWebView display URLs are adapter-owned; Simulator audio is not physical speaker/interruption evidence.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-09 — Packaged offline startup
+- **Product area / milestone / priority:** Offline / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** HR-NATIVE-02/04 and Simulator availability
+- **Requirement / acceptance:** Distinguish loaded-tab web offline from a terminated packaged app relaunching without network, studying local content, persisting a review and surviving another relaunch.
+- **Platform implications:** No cloud dependency or service-worker substitution.
+- **Verification / evidence:** Pending native toolchain.
+
+### HR-NATIVE-10 — Native accessibility and device UI audit
+- **Product area / milestone / priority:** Accessibility / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** Native shell and Simulator accessibility controls
+- **Requirement / acceptance:** Audit safe areas, orientation, software keyboard, larger text implications, touch/focus, reduced motion, themes, scrolling and dialogs inside the shell. VoiceOver remains unverified unless actually exercised.
+- **Platform implications:** Retain Material 3 identity and avoid unnecessary UIKit imitation.
+- **Verification / evidence:** Pending native toolchain.
+
+### HR-NATIVE-11 — Entitlement/purchase readiness check
+- **Product area / milestone / priority:** Entitlements / Apple feasibility / P1
+- **Status:** PLANNED
+- **Dependencies:** Existing central capability policy
+- **Requirement / acceptance:** Confirm native seams cannot bypass product access and that future verified Apple ownership/restore can be adapted without changing learning or cosmetic state. No StoreKit, product IDs or transactions.
+- **Platform implications:** Universal-purchase and commercial policy remain product decisions.
+- **Verification / evidence:** Pending.
+
+### HR-NATIVE-12 — Privacy and permission inventory
+- **Product area / milestone / priority:** Privacy / Apple feasibility / P0
+- **Status:** PLANNED
+- **Dependencies:** Every native dependency selected in this milestone
+- **Requirement / acceptance:** Record version, purpose, native APIs, permissions, plist and privacy-manifest implications, and platform support. Request no unnecessary permission and add no analytics/tracking.
+- **Platform implications:** Inventory must match generated native dependencies and official Apple/Capacitor requirements.
+- **Verification / evidence:** Pending.
+
+### HR-MAC-01 — macOS delivery decision
+- **Product area / milestone / priority:** Platform / Apple feasibility / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** HR-NATIVE-01/02/04/07 and Apple distribution/runtime evidence
+- **Requirement / acceptance:** Evaluate iOS/iPad app on Apple-silicon Mac, Mac Catalyst and a dedicated-wrapper option; run only legitimate local spikes. Recommend one first-release route with explicit hardware, file, window/input, purchase, maintenance and testing limitations. Intel/alternate-runtime scope requires product approval.
+- **Platform implications:** Capacitor itself is not represented as a supported macOS target.
+- **Verification / evidence:** Pending research and available toolchain evidence.
+
+### HR-PLAN-05 — Apple platform readiness matrix
+- **Product area / milestone / priority:** Planning / Apple feasibility / P0
+- **Status:** IN_PROGRESS
+- **Dependencies:** HR-NATIVE-01–12 and HR-MAC-01 evidence
+- **Requirement / acceptance:** Maintain separate implementation/browser/Simulator/physical-device/distribution evidence for startup, Study, persistence, media/audio, import/export, backup, lifecycle, offline, accessibility, input, entitlements and signing.
+- **Platform implications:** WebKit tests never count as WKWebView or physical-device evidence.
+- **Verification / evidence:** Pending milestone reconciliation.
+
 ## Preserved completed history
 
 The detailed acceptance evidence for these items remains in `docs/project-status.md`, `docs/architecture.md`, `docs/ios-readiness.md`, and `docs/anki-import.md`. They retain their original stable IDs and are not reopened by this milestone.
