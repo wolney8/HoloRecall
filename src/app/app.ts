@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, HostListener, inject, QueryList, signal, ViewChildren } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, QueryList, signal, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -43,6 +43,7 @@ export class AppComponent {
   readonly library=inject(LibraryViewService);
   private readonly viewportCoordinator=inject(VisualViewportCoordinator);
   private readonly viewportReveal=inject(ViewportRevealService);
+  private readonly injector=inject(Injector);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
   readonly now=signal(new Date());
@@ -119,6 +120,9 @@ export class AppComponent {
   private initialRecoveryChecked=false;
   private resultUnobserve:(()=>void)[]=[];
   private resultTimers:number[]=[];
+  private resultHapticsArmed=false;
+  private unlockHapticEvents=new Set<string>();
+  private feedbackService?:Promise<import('./platform/interaction-feedback').InteractionFeedback>;
   private confidenceTimer=0;
   private feedbackResolve:(()=>void)|null=null;
   private studyPresentationRun=0;
@@ -147,6 +151,8 @@ export class AppComponent {
     });
     const activity=()=>{this.lastActivity=performance.now();};
     const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active||!this.lifecycle.focused()){void this.pauseAutoAdvance(true);this.cancelStudyDealAnimation();this.settleConfidenceFeedback();this.settleAnswerDwell();if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();}}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
+    let destroyed=false,nativeBackCleanup:(()=>Promise<void>)|undefined;
+    void import('./platform/native-navigation').then(module=>this.injector.get(module.NativeBackNavigation).connect(()=>this.handleNativeBack())).then(cleanup=>{if(destroyed)void cleanup();else nativeBackCleanup=cleanup;}).catch(()=>undefined);
     const timer=setInterval(()=>{
       const tick=performance.now();
       if(this.screen()==='study'&&this.current()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.busy()&&tick-this.lastActivity<60_000){this.elapsedMs=Math.min((this.currentPreset()?.maxAnswerSeconds??120)*1000,this.elapsedMs+Math.min(1500,tick-this.lastTick));}
@@ -155,7 +161,7 @@ export class AppComponent {
       if(this.ticks%30===0)this.now.set(new Date());
     },1000);
     document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);
-    inject(DestroyRef).onDestroy(()=>{clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
+    inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1);return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
@@ -213,7 +219,7 @@ export class AppComponent {
   practiceMissedAgain():void{const cards=this.practiceLowCards();if(!cards.length)return;this.openFocus({explicitCardIds:cards.map(card=>card.id),sourceLabel:'Low-confidence cards'});}
   viewPracticeCards():void{this.go('collection');}
   returnFromPractice():void{this.go('library');}
-  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.answerRevealedAt=performance.now();setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.feedback('cardReveal');this.answerRevealedAt=performance.now();setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   async rate(rating:1|2|3|4|5):Promise<void>{
     const card=this.current(),session=this.session();if(!card||!session||!this.revealed()||this.busy())return;this.clearAutoAdvanceTimer(false);
     this.settleAnswerDwell();const run=++this.studyPresentationRun;this.busy.set(true);this.studyPresentationCard.set(card);
@@ -221,6 +227,7 @@ export class AppComponent {
       if(session.mode==='practice')await this.store.practice(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));
       else await this.store.review(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));
       if(run!==this.studyPresentationRun)return;
+      this.feedback('ratingAccepted',rating);
       document.querySelector('.study-card-area hr-card')?.dispatchEvent(new Event('stop-card-audio'));this.studyPresentationRating.set(rating);this.elapsedMs=0;this.now.set(new Date());this.message.set('');
       await this.playConfidenceFeedback(rating);
       if(run!==this.studyPresentationRun)return;
@@ -229,20 +236,20 @@ export class AppComponent {
       await this.playDealTransition(run);
       if(run!==this.studyPresentationRun)return;
       this.clearStudyPresentation();
-      if(!this.current()){this.go('results');this.startResultsPresentation();}
+      if(!this.current()){this.feedback('sessionComplete');this.go('results');this.startResultsPresentation(true);}
     }catch(e){this.clearStudyPresentation();this.fail(e);}finally{if(run===this.studyPresentationRun)this.busy.set(false);}
   }
   async undo():Promise<void>{const session=this.session();if(!session?.lastReviewCardId||this.busy())return;this.busy.set(true);try{await this.store.undo(session.lastReviewCardId,session.id);this.elapsedMs=0;this.message.set('');if(this.current())this.go('study');}catch(e){this.fail(e);}finally{this.busy.set(false);}}
-  async endStudy():Promise<void>{if(!this.session()||this.busy())return;this.busy.set(true);try{if(this.current())await this.store.updateSessionTime(Math.round(this.elapsedMs));await this.store.endSession();this.go('results');this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async endStudy():Promise<void>{if(!this.session()||this.busy())return;this.busy.set(true);try{if(this.current())await this.store.updateSessionTime(Math.round(this.elapsedMs));await this.store.endSession();this.go('results');this.startResultsPresentation(true);}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   showResults():void{this.go('results');this.startResultsPresentation();}
   motionEnabled():boolean{return !!this.data()?.preferences.effects&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
   showResultsSkip():boolean{return this.motionEnabled()&&!this.resultsSkipped()&&(this.resultsIntroPlaying()||this.activeResultSections()>0||['waiting','complete','pack'].includes(this.unlockRevealPhase()));}
   replayResults():void{this.startResultsPresentation();}
   resultSectionState(id:string):'waiting'|'active'|'settled'{return this.resultSectionStates()[id]??'settled';}
   skipResults():void{this.resultsSkipped.set(true);this.resultsIntroPlaying.set(false);this.clearResultMotion();this.unlockRevealPhase.set('settled');this.resultSectionStates.update(states=>Object.fromEntries(Object.keys(states).map(key=>[key,'settled'])));}
-  private startResultsPresentation():void{
+  private startResultsPresentation(live=false):void{
     const session=this.session();if(session?.endedAt)this.resultSessionKey=`${session.id}:${session.endedAt}`;
-    const practice=session?.mode==='practice';this.clearResultMotion();this.resultsSkipped.set(!this.motionEnabled());this.resultsIntroPlaying.set(this.motionEnabled());this.activeResultSections.set(0);this.unlockRevealIndex.set(0);this.unlockRevealPhase.set(!practice&&this.motionEnabled()&&this.resultUnlocks().length?'waiting':'settled');this.resultSectionStates.set(Object.fromEntries((practice?['definitions']:['cosmetics','definitions']).map(key=>[key,this.motionEnabled()?'waiting':'settled'])));this.resultsRun.update(value=>value+1);
+    const practice=session?.mode==='practice';this.clearResultMotion();this.resultHapticsArmed=live;if(live)this.unlockHapticEvents.clear();this.resultsSkipped.set(!this.motionEnabled());this.resultsIntroPlaying.set(this.motionEnabled());this.activeResultSections.set(0);this.unlockRevealIndex.set(0);this.unlockRevealPhase.set(!practice&&this.motionEnabled()&&this.resultUnlocks().length?'waiting':'settled');this.resultSectionStates.set(Object.fromEntries((practice?['definitions']:['cosmetics','definitions']).map(key=>[key,this.motionEnabled()?'waiting':'settled'])));this.resultsRun.update(value=>value+1);
     this.resultTimers.push(window.setTimeout(()=>this.observeResultSections(),0));
     if(this.motionEnabled())this.resultTimers.push(window.setTimeout(()=>this.resultsIntroPlaying.set(false),900));
   }
@@ -257,11 +264,12 @@ export class AppComponent {
     this.resultSectionStates.update(states=>({...states,[key]:'active'}));this.activeResultSections.update(value=>value+1);if(key==='cosmetics')this.beginUnlockReveal();
     this.resultTimers.push(window.setTimeout(()=>{this.resultSectionStates.update(states=>({...states,[key]:'settled'}));this.activeResultSections.update(value=>Math.max(0,value-1));},1450));
   }
-  continueUnlockReveal():void{const next=this.unlockRevealIndex()+1;if(next>=this.resultUnlocks().length){this.unlockRevealPhase.set('settled');return;}this.unlockRevealIndex.set(next);if(!this.motionEnabled()||this.resultsSkipped()){this.unlockRevealPhase.set('settled');return;}this.unlockRevealPhase.set('pack');this.resultTimers.push(window.setTimeout(()=>this.unlockRevealPhase.set('revealed'),650));}
+  continueUnlockReveal():void{const next=this.unlockRevealIndex()+1;if(next>=this.resultUnlocks().length){this.unlockRevealPhase.set('settled');this.resultHapticsArmed=false;return;}this.unlockRevealIndex.set(next);if(!this.motionEnabled()||this.resultsSkipped()){this.unlockRevealPhase.set('settled');this.resultHapticsArmed=false;return;}this.unlockRevealPhase.set('pack');this.resultTimers.push(window.setTimeout(()=>{this.unlockRevealPhase.set('revealed');this.hapticForActiveUnlock();},650));}
   unlockContinueLabel():string{return this.unlockRevealIndex()+1<this.resultUnlocks().length?'Continue':'Keep cards';}
   viewUnlockedCollection():void{this.go('collection');}
-  private beginUnlockReveal():void{if(!this.resultUnlocks().length||this.unlockRevealPhase()!=='waiting')return;if(!this.motionEnabled()||this.resultsSkipped()){this.unlockRevealPhase.set('settled');return;}this.resultTimers.push(window.setTimeout(()=>this.unlockRevealPhase.set('complete'),1250),window.setTimeout(()=>this.unlockRevealPhase.set('pack'),1650),window.setTimeout(()=>this.unlockRevealPhase.set('revealed'),2320));}
-  private clearResultMotion():void{for(const unobserve of this.resultUnobserve)unobserve();this.resultUnobserve=[];for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
+  private beginUnlockReveal():void{if(!this.resultUnlocks().length||this.unlockRevealPhase()!=='waiting')return;if(!this.motionEnabled()||this.resultsSkipped()){this.unlockRevealPhase.set('settled');this.resultHapticsArmed=false;return;}this.resultTimers.push(window.setTimeout(()=>this.unlockRevealPhase.set('complete'),1250),window.setTimeout(()=>this.unlockRevealPhase.set('pack'),1650),window.setTimeout(()=>{this.unlockRevealPhase.set('revealed');this.hapticForActiveUnlock();},2320));}
+  private hapticForActiveUnlock():void{const unlock=this.activeResultUnlock();if(!this.resultHapticsArmed||!unlock||this.unlockHapticEvents.has(unlock.event.id))return;this.unlockHapticEvents.add(unlock.event.id);this.feedback('cosmeticUnlock');}
+  private clearResultMotion():void{this.resultHapticsArmed=false;for(const unobserve of this.resultUnobserve)unobserve();this.resultUnobserve=[];for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
   toggleRatingHelp(rating:number,tip:MatTooltip,event:MouseEvent):void{event.stopPropagation();const close=this.openRatingHelp()===rating;this.ratingTips.forEach(item=>item.hide(0));this.openRatingHelp.set(close?null:rating);if(!close)tip.show(0);}
   private async playConfidenceFeedback(rating:1|2|3|4|5):Promise<void>{
     if(!this.motionEnabled()){this.studyTransition.set('feedback');await new Promise<void>(resolve=>window.setTimeout(resolve,40));return;}
@@ -292,6 +300,7 @@ export class AppComponent {
         owned=incoming;
         this.studyDealAnimation=incoming;
         await Promise.race([incoming.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,340))]);
+        if(run===this.studyPresentationRun&&this.lifecycle.active()&&this.lifecycle.focused())this.feedback('cardDeal');
       }
     }finally{
       if(this.studyDealAnimation===owned){owned.cancel();this.studyDealAnimation=null;}
@@ -303,7 +312,9 @@ export class AppComponent {
   private clearStudyPresentation():void{this.settleConfidenceFeedback();this.settleAnswerDwell();this.cancelStudyDealAnimation();this.studyPresentationCard.set(null);this.studyPresentationRating.set(null);this.studyTransition.set('idle');}
   private cancelStudyPresentation():void{this.studyPresentationRun++;this.clearStudyPresentation();this.busy.set(false);}
   duration(ms:number):string{const seconds=Math.round(ms/1000);if(ms>0&&seconds===0)return'<1s';return seconds>=60?`${Math.floor(seconds/60)}m ${seconds%60}s`:`${seconds}s`;}
-  private fail(error:unknown):void{this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}
+  private fail(error:unknown):void{this.feedback('error');this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}
+  private feedback(cue:'cardReveal'|'ratingAccepted'|'cardDeal'|'sessionComplete'|'cosmeticUnlock'|'error',rating?:1|2|3|4|5):void{this.feedbackService??=import('./platform/interaction-feedback').then(module=>this.injector.get(module.InteractionFeedback));void this.feedbackService.then(service=>cue==='ratingAccepted'?service.ratingAccepted(rating!):service[cue]()).catch(()=>undefined);}
+  private handleNativeBack():boolean{if(this.editor){this.cancelCardEditor();return true;}if(this.deckEditor){this.deckEditor=null;return true;}if(this.screen()==='dashboard')return false;if(this.screen()==='study'){this.go('library');return true;}this.go('dashboard');return true;}
   @HostListener('document:pointerdown',['$event']) dismissRatingHelp(event:PointerEvent):void{if(!(event.target as HTMLElement).closest('.rating-info')){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));}}
   @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));return;}const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if(event.code==='Space'&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
   edit(card?:CardContent,deckId?:string):void{this.go('library');if(this.screen()!=='library')return;this.tagInput=card?.tags.join(', ')??'';this.authorPreset=card?.kind==='visual'?'image-first':'basic';this.authorPreviewRevealed=false;this.editor=card?structuredClone(card):this.blankCard(deckId);this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}

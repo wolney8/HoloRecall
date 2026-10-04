@@ -36,6 +36,7 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     if (Array.isArray(raw['events'])) raw['events'] = (raw['events'] as Array<Record<string, unknown>>).map(event => event['kind'] === 'review' && event['mode'] === 'practice' ? { ...event, mode: 'scheduled' } : event);
     if (raw['session'] && typeof raw['session'] === 'object') raw['session'] = { ...(raw['session'] as Record<string, unknown>), mode: 'scheduled' };
   }
+  if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true, ...(raw['preferences'] as Record<string, unknown>) };
   validateState(raw);
   return raw;
 }

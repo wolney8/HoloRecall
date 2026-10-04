@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HoloRecall</string>
+    <string name="title_activity_main">HoloRecall</string>
+    <string name="package_name">com.holorecall.app</string>
+    <string name="custom_url_scheme">com.holorecall.app</string>
+</resources>

@@ -16,6 +16,7 @@ export const legacySnapshot = (state = fresh()): Record<string, unknown> => {
 };
 
 describe('non-destructive v1 migration and backups', () => {
+  it('defaults native haptics on for older snapshots without changing learner records',()=>{const before=fresh(),legacy=structuredClone(before);delete legacy.preferences.haptics;const migrated=migrateState(legacy);expect(migrated.preferences.haptics).toBe(true);expect(migrated.events).toEqual(before.events);expect(migrated.states).toEqual(before.states);});
   it('preserves every legacy review and schedule without retroactive reward grants', () => {
     const reviewed = applyReview(fresh(), { id: 'first', cardId: 'it-mela', rating: 5, sessionId: 'session', now });
     const legacy = legacySnapshot(reviewed);

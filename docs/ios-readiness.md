@@ -1,13 +1,36 @@
-# Apple-platform readiness
+# Web and native-platform readiness
 
-This retains the project's iOS-readiness history and adds macOS explicitly. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS simulator, a native iPhone app or a native macOS app was tested.
+This retains the project's iOS-readiness history and is the canonical evidence matrix for Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac is not planned. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS Simulator, Android WebView, an emulator, a physical device or a native Mac run was tested.
 
 ## Current toolchain constraints
 
 - Web application: Angular 21.2.24, Angular Material/CDK 21.2.14, TypeScript 5.9.3, Node 24.3.0 and npm 11.4.2.
 - Browser gate: Playwright 1.63.0 with repository-local Chromium and WebKit 26.6 build 2359 on macOS arm64.
-- Native baseline: pinned Capacitor core/CLI/iOS 8.5.2, App 8.1.2, Filesystem 8.1.4 and Share 8.0.3. Capacitor 8 requires Node 22+, Xcode 26+ and iOS 15+. The SPM iPhone/iPad project exists and syncs `dist/holorecall/browser`; Capacitor 9 is prerelease and is not selected.
+- Native baseline: pinned Capacitor core/CLI/iOS/Android 8.5.2, App 8.1.2, Filesystem 8.1.4, Haptics 8.0.2 and Share 8.0.3. Capacitor 8 requires Node 22+, Xcode 26+ and iOS 15+. The generated Android baseline is minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3 and Java 21. Both native projects sync `dist/holorecall/browser`; Capacitor 9 prerelease is not selected.
 - Host: macOS 26.5.1 on Apple M1 Pro (`arm64`), Command Line Tools 26.3, Node 24.3.0 and npm 11.4.2. Full Xcode, `xcodebuild`, `simctl` and Simulator runtimes are absent. Signing identity, provisioning, Apple account, bundle ownership and physical devices were deliberately not configured.
+- Android host audit: hardware virtualization is available. Android Studio, Android SDK, `sdkmanager`, `avdmanager`, emulator, selected Java/JDK and Gradle are absent. A standalone SideQuest `adb` 35.0.1 exists but is not a development SDK and reports no device. Install Android Studio 2025.2.1+ with its bundled Java 21, SDK platform/tools 36 and chosen emulator images before native Android acceptance; no automatic installation was attempted.
+
+## Supported-platform compatibility policy
+
+| Platform | Minimum supported | Target / tested OS | Simulator or emulator evidence | Physical-device evidence | Known limitation |
+| --- | --- | --- | --- | --- | --- |
+| Web | Current supported Chromium/WebKit browsers; exact release floor pending release policy | Chromium 153 and patched WebKit 26.6 on macOS arm64 | Not applicable | Browser evidence only | Cold offline start is not supported without an installed native package |
+| iPhone / iPad | iOS/iPadOS 15+ for Capacitor 8; do not raise without plugin/security evidence | SDK target unverified because full Xcode is absent | **BLOCKED** | **BLOCKED / not tested** | Xcode 26+ and Simulator runtimes required |
+| Android phone/tablet | API 24 / Android 7+ | compile/target 36 generated; no runtime tested | **BLOCKED** | **BLOCKED / not tested** | Android Studio/JDK/SDK/images required; test API 24, a middle API and current API 36 when images exist |
+| Apple-silicon Mac | Compatible iPhone/iPad app; macOS release floor pending Xcode evidence | macOS 26.5.1 host only | **BLOCKED** (`My Mac (Designed for iPad)`) | **BLOCKED / not tested** | Intel Mac is not planned; desktop acceptance still required |
+
+## Four-target evidence summary
+
+| Capability | Web | iOS/iPadOS | Android | Apple-silicon Mac |
+| --- | --- | --- | --- | --- |
+| Startup | IMPLEMENTED / BROWSER VERIFIED | Shell IMPLEMENTED; runtime BLOCKED | Shell IMPLEMENTED; build/emulator BLOCKED | Route selected; runtime BLOCKED |
+| Persistence / Study / Focus | IMPLEMENTED / BROWSER VERIFIED | Architecture ready; native durable store and runtime BLOCKED | Architecture ready; native durable store and runtime BLOCKED | Follows iOS candidate; native verification BLOCKED |
+| Haptics | NOT APPLICABLE on desktop web; safe no-op | IMPLEMENTED adapter; Simulator/device BLOCKED | IMPLEMENTED adapter; emulator/device BLOCKED | Intentionally no-op unless future Mac evidence supports it |
+| Audio / media / card effects / results | IMPLEMENTED / BROWSER VERIFIED | Native verification BLOCKED | Native verification BLOCKED | Native verification BLOCKED |
+| Anki, XLSX/ZIP, backup | IMPLEMENTED / BROWSER VERIFIED | Files/share adapters PARTIAL; picker/runtime BLOCKED | Files/share adapters PARTIAL; picker/runtime BLOCKED | Native files/share BLOCKED |
+| Offline packaged startup / lifecycle | Loaded-page web verified; cold web start unsupported | Packaged intent and App adapter IMPLEMENTED; runtime BLOCKED | Packaged intent and App adapter IMPLEMENTED; runtime BLOCKED | Runtime BLOCKED |
+| Accessibility / layouts | BROWSER VERIFIED for keyboard/touch/reflow/reduced motion | VoiceOver/Dynamic Type/device safe areas BLOCKED | TalkBack/font scale/system bars/device layouts BLOCKED | Full Keyboard Access/resizing/native accessibility BLOCKED |
+| Distribution | Web deployment outside this milestone | NOT IMPLEMENTED; no signing/store resources | NOT IMPLEMENTED; no signing/store resources | NOT IMPLEMENTED; compatible iOS/iPad app route only |
 
 ## Readiness matrix
 
@@ -56,11 +79,35 @@ The production provider has not changed. `StudyPersistence` is now injectable an
 | Package | Purpose / native API | Permissions and Apple declarations | Platforms / current evidence |
 | --- | --- | --- | --- |
 | `@capacitor/ios` 8.5.2 | WKWebView iPhone/iPad shell through SPM | No runtime permission added | iOS project generated/synced; compile blocked |
+| `@capacitor/android` 8.5.2 | Android WebView phone/tablet shell | Manifest currently adds only normal `INTERNET`; no runtime permission | Android project generated/synced; Gradle build blocked by absent Java/SDK |
 | `@capacitor/app` 8.1.2 | `appStateChange`, `pause`, `resume` | No usage description documented for these events | Lazy adapter and listener-cleanup unit evidence; native transitions blocked |
 | `@capacitor/filesystem` 8.1.4 | Cache file for portable export | `PrivacyInfo.xcprivacy`: `NSPrivacyAccessedAPICategoryFileTimestamp`, reason `C617.1`; no broad file permission requested | Byte-write adapter unit evidence; native file proof blocked |
 | `@capacitor/share` 8.0.3 | Apple share surface for the generated Cache file | No usage description/runtime permission documented for local file sharing | URI handoff/cleanup unit evidence; actual share/cancel/reopen blocked |
+| `@capacitor/haptics` 8.0.2 | Semantic selection/impact/notification feedback | No runtime permission or usage description; Android vibration capability is handled by the plugin | Lazy central adapter and mapping tests; tactile quality and native invocation remain device/emulator pending |
 
-No Photos, microphone, media-library, location, tracking or analytics SDK/permission was added. `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace` remain absent because exports use a temporary Cache file rather than exposing the app's Documents directory. A final Xcode privacy report and plugin Required Reason API scan remain pending.
+No Photos, microphone, media-library, location, tracking or analytics SDK/permission was added. Android currently declares only the normal `INTERNET` permission plus the generated FileProvider; no dangerous runtime permission was added. `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace` remain absent because exports use a temporary Cache file rather than exposing the app's Documents directory. Final Xcode privacy and Android merged-manifest/Play data-safety reviews remain pending.
+
+## Retrospective portability audit
+
+| Surface | Classification | Native work or verification still required |
+| --- | --- | --- |
+| Decks, Study, Focus/Practice, Session Complete, Collection, Progress/history, Search/filter, Study Settings | PORTABLE NOW; shared Angular/domain implementation | Native WebView layout/input/accessibility/performance; Android Back is adapter-backed but runtime unverified |
+| Card/deck authoring and Design Studio | PORTABLE NOW with stable asset IDs | Replace/augment HTML picker delivery for native Files/content URIs; keyboard, memory and cancellation evidence |
+| Anki import, XLSX/ZIP and backups | PLATFORM ADAPTER EXISTS for export; parser/package rules are platform neutral | Native document picking, URI copying, cancellation and large-file memory; generated export reopen through Files/share |
+| Persistence and media registry | PLATFORM ADAPTER EXISTS; IndexedDB web provider only | Transactional native structured store, filesystem media provider, staged migration and relaunch proof |
+| Audio/media | PORTABLE NOW at model/renderer level | Native URL translation, audio interruption/session policy, relaunch and physical speaker evidence |
+| Themes and accessibility | PORTABLE NOW for web semantics and preferences | System bars, Dynamic Type/font scale, VoiceOver/TalkBack, software keyboard and device safe areas |
+| Entitlement boundary | PORTABLE NOW and non-enforcing | Future verified store adapters, restore/revocation/account decisions; never infer ownership from a client flag |
+| App chrome | NATIVE WORK REQUIRED | Replace generated icon/splash placeholders; verify status/navigation bars, edge-to-edge and orientation before release |
+
+Evidenced debt stays explicit: native file import still begins with HTML inputs; native export currently materialises a complete Blob/base64 payload and needs bounded large-file work; media hydration remains eager for large native collections; `window.confirm` should eventually use a shared accessible confirmation surface. These do not justify rewriting working web flows during feasibility.
+
+## Native application and release contract
+
+- `package.json` is the authoritative product/web version. `npm run native:version` copies it to iOS `MARKETING_VERSION` and Android `versionName`; iOS build number and Android `versionCode` remain independent monotonic integers supplied to release automation later.
+- Development and local-native testing use local data and no embedded secrets. Beta/internal testing will use TestFlight and Play internal testing only after separate authorisation. Production signing, store records, credentials, privacy declarations and release promotion remain future controlled work.
+- iOS/iPadOS delivery is an Xcode-built, signed native application through TestFlight/App Store. Android delivery is a Gradle-built signed Android App Bundle through Play testing/production tracks. Apple-silicon Mac initially uses the compatible iPhone/iPad application after Mac acceptance. Intel Mac is not planned.
+- The shared Angular/Material 3 application and domain core remain the product. Native adapters supply lifecycle, durable storage, files/share, haptics and other evidenced platform services; native shells are normal store-deliverable applications and do not require a SwiftUI/UIKit/Android-view rewrite.
 
 ## macOS delivery recommendation
 

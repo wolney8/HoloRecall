@@ -49,6 +49,7 @@ export class AppLifecycle {
   readonly focused = signal(!document.hidden);
   private readonly listeners = new Set<LifecycleListener>();
   private nativeCleanup?: () => Promise<void>;
+  private destroyed = false;
 
   constructor() {
     const native = inject(NATIVE_LIFECYCLE);
@@ -62,10 +63,13 @@ export class AppLifecycle {
     window.addEventListener('pageshow', pageShow);
     window.addEventListener('focus', focus);
     window.addEventListener('blur', blur);
-    void native.connect(active => this.setState(active, active)).then(cleanup => { this.nativeCleanup = cleanup; }).catch(() => {
+    void native.connect(active => { if (!this.destroyed) this.setState(active, active); }).then(cleanup => {
+      if (this.destroyed) void cleanup(); else this.nativeCleanup = cleanup;
+    }).catch(() => {
       // Browser lifecycle remains authoritative if a native bridge cannot start.
     });
     inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('pagehide', pageHide);
       window.removeEventListener('pageshow', pageShow);

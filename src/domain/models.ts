@@ -34,6 +34,8 @@ export interface Deck { id: string; name: string; description: string; suspended
 export type ConfidenceRating = 1 | 2 | 3 | 4 | 5;
 export interface Preferences {
   effects: boolean;
+  /** Native tactile feedback. Omitted in older snapshots means enabled. */
+  haptics?: boolean;
   theme?: ThemePreference;
   timeZone: string;
   newCardLimit: number;

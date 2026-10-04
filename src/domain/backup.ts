@@ -17,6 +17,7 @@ const FINISHES = ['matte', 'metallic', 'holographic', 'prismatic', 'etched', 'st
 export function validatePreferences(value: unknown): asserts value is Preferences {
   const prefs = object(value);
   if (typeof prefs['effects'] !== 'boolean' || !text(prefs['timeZone'], 100) || !integer(prefs['newCardLimit']) || prefs['newCardLimit'] > 1000 || !integer(prefs['reviewLimit'], 1) || prefs['reviewLimit'] > 10000) fail('invalid study preferences.');
+  if (prefs['haptics'] !== undefined && typeof prefs['haptics'] !== 'boolean') fail('invalid haptics preference.');
   if (prefs['theme'] !== undefined && !['system', 'light', 'dark'].includes(String(prefs['theme']))) fail('invalid theme preference.');
   try { new Intl.DateTimeFormat('en', { timeZone: prefs['timeZone'] as string }).format(); } catch { fail('unknown time zone.'); }
 }
