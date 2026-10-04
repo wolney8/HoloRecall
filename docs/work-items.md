@@ -638,25 +638,27 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 
 ### HR-NATIVE-02 — Capacitor iOS baseline
 - **Product area / milestone / priority:** Platform / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** DONE
 - **Dependencies:** HR-NATIVE-01; compatible pinned Capacitor core/CLI/iOS versions
 - **Requirement / acceptance:** Add the smallest supported Capacitor configuration to the existing Angular build, generate one local iOS shell and automate web build/sync. Native build, Simulator launch and real HoloRecall interaction require installed Xcode evidence.
 - **Platform implications:** Packaged WKWebView assets must use the production output without a development-server URL; generated artifacts remain reviewable and bounded.
+- **Verification / evidence:** Xcode 26.6 built scheme `App` for the iOS 26.5 iPhone 17 Pro Simulator from the synced 849.53 kB production Angular output; install and command-line launch of `com.holorecall.app` succeeded. Logs and launch screenshot are under `.runtime/evidence/hr-apple-runtime-20261004/`. No signing team or development server was used.
 - **Verification / evidence:** Stable Capacitor 8.5.2 plus official App 8.1.2, Filesystem 8.1.4 and Share 8.0.3 are pinned. The real Angular output is configured as `dist/holorecall/browser`; `cap add ios` generated the SPM iOS 15 project and `cap sync ios` copied the 13 MB production asset set with no `server.url`. Native compile/launch is blocked only by absent full Xcode; the exact `xcodebuild` failure is retained in runtime evidence.
 - **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-03 — Native smoke journey
 - **Product area / milestone / priority:** Study / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** VERIFY
 - **Dependencies:** HR-NATIVE-02 and an available Simulator runtime
 - **Requirement / acceptance:** Exercise the actual WKWebView launch → Decks → Study/reveal/rate/next/results → Collection/Progress/History/Settings path, including former disappearing-card regression, themes, orientation, safe areas, keyboard, motion and valid local audio.
 - **Platform implications:** Simulator evidence remains distinct from Playwright WebKit and physical-device verification.
+- **Verification / evidence:** `NativeSmokeUITests.testPackagedStudyAndNavigationSmoke` passed on iPhone 17 Pro / iOS 26.5 after driving three reveal/rate/deal transitions, partial results, Collection, Progress and Settings. Run 3 passed in 32.706 s; two selector-development failures are retained. Theme/orientation/audio and broader screen evidence remain in progress.
 - **Verification / evidence:** Repeatable WKWebView checklist prepared; no native build or runtime exists on this Mac, so no launch, interaction, audio, disappearing-card, screenshot or video claim is made. Chromium and Playwright WebKit remain regression evidence only.
 - **Relevant commit:** `f6e4ffd` (shell/checklist); runtime evidence pending Xcode.
 
 ### HR-NATIVE-04 — Native persistence architecture spike
 - **Product area / milestone / priority:** Data / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** IN_PROGRESS
 - **Dependencies:** Existing `StudyPersistence` and media boundaries; candidate maintenance/security review
 - **Requirement / acceptance:** Recommend transactional native structured storage and durable media storage. If a sufficiently supported candidate exists, prove isolated fixture create/write/relaunch/read/update/rollback/version behavior without changing production persistence or real data.
 - **Platform implications:** Domain and scheduler remain storage-agnostic; Preferences/UserDefaults cannot hold the learning database.
@@ -674,16 +676,17 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 
 ### HR-NATIVE-06 — Native lifecycle adapter
 - **Product area / milestone / priority:** Runtime / Apple feasibility / P0
-- **Status:** VERIFY
+- **Status:** IN_PROGRESS
 - **Dependencies:** Official Capacitor App plugin and existing `AppLifecycle`
 - **Requirement / acceptance:** Feed native active/background events into the shared lifecycle contract while retaining browser signals. Verify timing, animations, Auto Advance, audio, accepted-review durability, deduplication and resume behavior where native execution is available.
 - **Platform implications:** Components remain free of direct Capacitor calls; listeners are removed on destruction.
+- **Verification / evidence:** Native UI automation is now available; background/resume acceptance is the next isolated test. Existing unit/browser evidence remains valid but does not close this native item.
 - **Verification / evidence:** Official Capacitor App state, pause and resume events feed the existing `AppLifecycle` through a dynamically loaded adapter; listener handles are removed. Resume refresh now waits for queued commits, avoiding stale replacement of an accepted review. Unit tests cover event mapping/cleanup; actual background/foreground, audio, timer and transition behavior remains blocked on Simulator/device.
 - **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-07 — Native file import/export feasibility
 - **Product area / milestone / priority:** Portability / Apple feasibility / P0
-- **Status:** VERIFY
+- **Status:** IN_PROGRESS
 - **Dependencies:** Existing `FileDelivery`; official Files/share APIs and picker-gap evaluation
 - **Requirement / acceptance:** Prove or precisely design Apple Files/share workflows for APKG, portable ZIP, XLSX and full backup import/export. Generated exports must become user-accessible files; cancellation and invalid input must remain safe.
 - **Platform implications:** Parsing/generation stays platform-neutral and no real collection is overwritten.
@@ -692,7 +695,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 
 ### HR-NATIVE-08 — Native media feasibility
 - **Product area / milestone / priority:** Media / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** IN_PROGRESS
 - **Dependencies:** HR-NATIVE-04; media resolver boundary
 - **Requirement / acceptance:** Exercise or specify stable native references for images, WAV/MP3, backgrounds, frames and textures across reload/relaunch and Study transitions. Device paths cannot leak into portable card data.
 - **Platform implications:** WKWebView display URLs are adapter-owned; Simulator audio is not physical speaker/interruption evidence.
@@ -701,16 +704,17 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 
 ### HR-NATIVE-09 — Packaged offline startup
 - **Product area / milestone / priority:** Offline / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** VERIFY
 - **Dependencies:** HR-NATIVE-02/04 and Simulator availability
 - **Requirement / acceptance:** Distinguish loaded-tab web offline from a terminated packaged app relaunching without network, studying local content, persisting a review and surviving another relaunch.
 - **Platform implications:** No cloud dependency or service-worker substitution.
+- **Verification / evidence:** With port 4200 stopped and no `server.url` in the generated Capacitor config, the installed app terminated/relaunched from packaged assets and restored its IndexedDB fixture (7 ready cards after three accepted reviews, down from 10). `.runtime/evidence/hr-apple-runtime-20261004/packaged-no-localhost-relaunch.log` and `iphone-no-localhost-relaunch.png` record the proof. Network-disabled launch and production native storage remain outstanding.
 - **Verification / evidence:** Synced production assets contain no development-server URL and are suitable for packaged cold start, but terminate/offline/relaunch/study/read-back is unexecuted because no Simulator runtime exists.
 - **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-10 — Native accessibility and device UI audit
 - **Product area / milestone / priority:** Accessibility / Apple feasibility / P0
-- **Status:** BLOCKED
+- **Status:** IN_PROGRESS
 - **Dependencies:** Native shell and Simulator accessibility controls
 - **Requirement / acceptance:** Audit safe areas, orientation, software keyboard, larger text implications, touch/focus, reduced motion, themes, scrolling and dialogs inside the shell. VoiceOver remains unverified unless actually exercised.
 - **Platform implications:** Retain Material 3 identity and avoid unnecessary UIKit imitation.
@@ -737,10 +741,11 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 
 ### HR-MAC-01 — macOS delivery decision
 - **Product area / milestone / priority:** Platform / Apple feasibility / P0
-- **Status:** VERIFY
+- **Status:** IN_PROGRESS
 - **Dependencies:** HR-NATIVE-01/02/04/07 and Apple distribution/runtime evidence
 - **Requirement / acceptance:** Evaluate iOS/iPad app on Apple-silicon Mac, Mac Catalyst and a dedicated-wrapper option; run only legitimate local spikes. Recommend one first-release route with explicit hardware, file, window/input, purchase, maintenance and testing limitations. Intel/alternate-runtime scope requires product approval.
 - **Platform implications:** Capacitor itself is not represented as a supported macOS target.
+- **Verification / evidence:** Xcode exposes the arm64 `My Mac` destination with variant `Designed for [iPad,iPhone]`; the project has `SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD=YES`, Catalyst disabled and iOS 15 deployment. Compile/run evidence remains in progress; unsigned compilation alone will not be counted as launch proof.
 - **Verification / evidence:** Decision 008 recommends the same iPad-capable iOS application on Apple-silicon Macs as the first candidate because it minimizes runtime and adapter duplication. It remains gated by `My Mac (Designed for iPad)` resizing/keyboard/pointer/files/storage/plugin tests. Catalyst is deferred because Capacitor does not support it and cannot be built here; a dedicated wrapper is deferred unless Intel support or desktop acceptance later requires it. Final product approval and executable Mac evidence remain pending.
 - **Relevant commit:** `f6e4ffd`.
 

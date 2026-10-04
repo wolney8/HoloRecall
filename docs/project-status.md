@@ -4,6 +4,17 @@ Updated: 4 October 2026. Branch: `main`. Baseline commit: `bb475eb` (`Build loca
 
 ## Current durable handoff
 
+### Apple native runtime recovery — 4 October 2026
+
+- **Recovered state:** `main` at `7bd5aee`, clean before this tracker update. Existing Capacitor 8.5.2 iOS/Android projects, native adapters, migration harness, web gates and learner-data boundaries are preserved.
+- **Environment:** full Xcode 26.6 (17F113) is active at `/Applications/Xcode.app/Contents/Developer`; iOS 26.5 (23F77), modern iPhone/iPad devices and the arm64 `My Mac (Designed for iPad/iPhone)` destination are available. First-launch status passes. An isolated runtime Swift-package/DerivedData directory avoids the unrelated corrupted global package cache without deleting it.
+- **Native build and launch:** `npm run native:sync:ios` built the real 849.53 kB production web output and synced four official plugins. Xcode resolved Capacitor 8.5.2/IONFilesystemLib 2.0.0, built scheme `App` for iPhone 17 Pro with `** BUILD SUCCEEDED **`, installed `com.holorecall.app` and launched it in the iOS 26.5 Simulator. The app contains no development-server URL.
+- **Real WKWebView smoke:** the checked-in `NativeSmokeUITests` target drove the packaged app through Dashboard → scheduled Study → reveal/rate/deal for three consecutive cards → partial results → Collection → Progress → Settings. All three incoming cards remained exposed after settlement; run 3 passed in 32.706 seconds. Runs 1–2 failed while refining selectors and are retained as honest evidence.
+- **Packaged persistence/offline evidence:** after stopping the local port-4200 server, terminating/relaunching the native app loaded bundled assets and showed 7 ready cards instead of 10, proving the three accepted fixture reviews survived native relaunch in the existing WKWebView IndexedDB. This proves packaged-asset offline startup and prototype persistence, not production native-storage durability.
+- **Evidence:** `.runtime/evidence/hr-apple-runtime-20261004/` contains environment/destination logs, `ios-simulator-build.log`, launch logs, screenshots, Xcode result bundles and the no-localhost relaunch record. `ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins the remote native package graph.
+- **Storage review:** `@capacitor-community/sqlite` 8.1.1 is the strongest open Capacitor 8 candidate for an isolated spike, with iOS 15/SPM/transactions/version upgrades; SQLCipher/export review and open v8 integration issues prevent production adoption without runtime proof. Capawesome is maintained but paid and outside this milestone's commercial authority.
+- **Exact next action:** complete native lifecycle/theme/orientation accessibility tests, file/share and media evidence, then run the isolated SQLite transaction/migration/relaunch spike without changing `StudyPersistence` or genuine learner data.
+
 ### 4 October 2026 confirmed mobile-platform milestone
 
 - **Recovered state:** clean `main` at `ada5a80`; accepted web and Apple-feasibility code remains intact. The server responds at `http://127.0.0.1:4200/`. No learner storage, signing, store account, cloud service or payment resource was touched.
