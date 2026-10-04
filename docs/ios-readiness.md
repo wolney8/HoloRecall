@@ -72,6 +72,17 @@ Use the iPad-capable iOS application on Apple-silicon Macs as the first candidat
 - **Cold web start offline:** unsupported; there is no service worker, and none is added solely for a checklist.
 - **Future installed native start offline:** intended because compiled assets are packaged, but unverified until a native build launches without a development server.
 
+## Exact native acceptance checklist once Xcode is available
+
+1. Run `npm run native:sync:ios`, compile the existing `ios/App/App.xcodeproj` without changing `webDir`, and record Xcode, SDK, Simulator runtime and device.
+2. Launch in the Simulator and capture Decks → parent/child deck → Study → reveal → rating → next card → finish/exit → Collection → Progress/History → Settings. Sample the former disappearing-card transition after the deal settles.
+3. Repeat System/Light/Dark, portrait/landscape, compact phone, software keyboard, scroll/modal, reduced motion, card flip/tilt, rarity overlay, confidence/results animation and a bundled MP3/WAV. Record VoiceOver separately if it is actually exercised.
+4. Background during question timing, audio, Auto Advance, accepted-review save, confidence feedback and deal; confirm time freezes, audio/timers stop, presentation settles, and each review/reward exists exactly once after resume and relaunch.
+5. With isolated data, import APKG, portable ZIP, XLSX and full backup through Files; cancel and submit invalid files without mutation. Export ZIP, XLSX and full backup through Share/Files, reopen each file and compare hashes.
+6. Run the isolated SQLite candidate proof only: create/write, terminate/relaunch/read, update, forced transaction rollback and migration/user-version read-back. Never point it at `holorecall-local-v1` or real data.
+7. Terminate the app, disable networking through a legitimate Simulator method, cold launch, study local cards, terminate/relaunch and verify the review. If network control is unavailable, record that blocker.
+8. Run the same app through `My Mac (Designed for iPad)` and verify resizing, keyboard/pointer, file/share, media, storage and every plugin. Do not treat Simulator or Playwright WebKit as this evidence.
+
 ## Change review note
 
 For each meaningful change, add a proportional note to the durable handoff covering WebKit/Capacitor compatibility, touch/safe areas/keyboard/accessibility, persistence/offline/interruption, animation cleanup, browser APIs requiring native work, tests run and unverified native behavior.
@@ -79,6 +90,7 @@ For each meaningful change, add a proportional note to the durable handoff cover
 ## Current gate evidence
 
 - Apple feasibility: `cap add ios` and `cap sync ios` succeed with SPM and copy the real 13 MB production web output; `capacitor.config.json` contains no `server.url`. The production build after lazy native adapters is **848.60 kB initial / 199.05 kB estimated transfer**, below the unchanged 850 kB limit. Exact local environment, generation/sync and failed Xcode command logs are under `.runtime/evidence/hr-apple-native-20261004/`.
+- Apple feasibility regression gate: native adapter/migration/persistence subset **34/34**; controlled unit/domain suite **141/141**; complete Chromium/Desktop WebKit/phone-profile Playwright **160/160**. The first parallel domain run had two resource-contention failures in pre-existing 10,000-card timing tests (3.47/3.79 s against 3.0 s); both passed individually and in the controlled full run. No browser result is counted as WKWebView or Simulator evidence.
 
 - Engines: Playwright 1.63.0, Chromium 153.0.8010.12 and patched WebKit 26.6 build 2359 on macOS arm64.
 - Focused Practice gate: unit/domain **128/128 passed**; complete desktop WebKit **63/63 passed**; complete Chromium produced **61/63** before two stale backup-version assertions were corrected, and both corrected tests then passed; WebKit compact/large/landscape **21/21 passed**. Targeted Focus journeys pass **3/3** in both desktop engines plus all three phone profiles. Practice remains separate from FSRS/rewards/allowance, and background/reload retains the explicit mode. These remain browser-engine and viewport results, not native app evidence.

@@ -469,6 +469,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Record the actual Mac architecture, Node/npm, selected developer tools, Xcode/Simulator runtimes and existing Capacitor/native state before dependency or project generation. Missing mandatory tools remain explicit blockers rather than simulated evidence.
 - **Platform implications:** Determines which iOS/macOS claims can be made; no automatic Xcode installation or global toolchain upgrade.
 - **Verification / evidence:** macOS 26.5.1 (`arm64`, M1 Pro), Node 24.3.0, npm 11.4.2 and Command Line Tools 26.3 were recorded. `xcode-select` points to `/Library/Developer/CommandLineTools`; full Xcode, `xcodebuild`, `simctl` and Simulator runtimes are absent. Exact logs are under `.runtime/evidence/hr-apple-native-20261004/`.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-02 — Capacitor iOS baseline
 - **Product area / milestone / priority:** Platform / Apple feasibility / P0
@@ -477,6 +478,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Add the smallest supported Capacitor configuration to the existing Angular build, generate one local iOS shell and automate web build/sync. Native build, Simulator launch and real HoloRecall interaction require installed Xcode evidence.
 - **Platform implications:** Packaged WKWebView assets must use the production output without a development-server URL; generated artifacts remain reviewable and bounded.
 - **Verification / evidence:** Stable Capacitor 8.5.2 plus official App 8.1.2, Filesystem 8.1.4 and Share 8.0.3 are pinned. The real Angular output is configured as `dist/holorecall/browser`; `cap add ios` generated the SPM iOS 15 project and `cap sync ios` copied the 13 MB production asset set with no `server.url`. Native compile/launch is blocked only by absent full Xcode; the exact `xcodebuild` failure is retained in runtime evidence.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-03 — Native smoke journey
 - **Product area / milestone / priority:** Study / Apple feasibility / P0
@@ -485,6 +487,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Exercise the actual WKWebView launch → Decks → Study/reveal/rate/next/results → Collection/Progress/History/Settings path, including former disappearing-card regression, themes, orientation, safe areas, keyboard, motion and valid local audio.
 - **Platform implications:** Simulator evidence remains distinct from Playwright WebKit and physical-device verification.
 - **Verification / evidence:** Repeatable WKWebView checklist prepared; no native build or runtime exists on this Mac, so no launch, interaction, audio, disappearing-card, screenshot or video claim is made. Chromium and Playwright WebKit remain regression evidence only.
+- **Relevant commit:** `f6e4ffd` (shell/checklist); runtime evidence pending Xcode.
 
 ### HR-NATIVE-04 — Native persistence architecture spike
 - **Product area / milestone / priority:** Data / Apple feasibility / P0
@@ -493,6 +496,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Recommend transactional native structured storage and durable media storage. If a sufficiently supported candidate exists, prove isolated fixture create/write/relaunch/read/update/rollback/version behavior without changing production persistence or real data.
 - **Platform implications:** Domain and scheduler remain storage-agnostic; Preferences/UserDefaults cannot hold the learning database.
 - **Verification / evidence:** `StudyPersistence` is now injected while the default production provider remains the untouched IndexedDB `LocalDatabase`. SQLite/filesystem shape and candidate review are recorded in architecture/readiness. No official Capacitor SQLite exists; the strongest community candidate (`@capacitor-community/sqlite` 8.1.1) carries SQLCipher/export and unverified Catalyst concerns. The required native create/relaunch/read/update/rollback spike is blocked by Xcode and no SQLite package was adopted.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-05 — Data migration design
 - **Product area / milestone / priority:** Data safety / Apple feasibility / P0
@@ -501,6 +505,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Specify and fixture-test an idempotent backup-first IndexedDB → native staged migration with count/hash/invariant verification, interruption recovery, rollback, deduplication and retained recovery data. Do not touch genuine learner storage.
 - **Platform implications:** Protect every content, scheduling, reward, source-identity, media and administrative-history field across versions.
 - **Verification / evidence:** A typed, production-unused migration staging contract validates the source, retains a hashed recovery backup, stages by deterministic fingerprint, reads back every State collection and media hash/count, activates only after verification, treats a completed fingerprint as idempotent and discards staging after injected interruption at backup/stage/verify/mark/activate. Fixture tests never open learner storage.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-06 — Native lifecycle adapter
 - **Product area / milestone / priority:** Runtime / Apple feasibility / P0
@@ -509,6 +514,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Feed native active/background events into the shared lifecycle contract while retaining browser signals. Verify timing, animations, Auto Advance, audio, accepted-review durability, deduplication and resume behavior where native execution is available.
 - **Platform implications:** Components remain free of direct Capacitor calls; listeners are removed on destruction.
 - **Verification / evidence:** Official Capacitor App state, pause and resume events feed the existing `AppLifecycle` through a dynamically loaded adapter; listener handles are removed. Resume refresh now waits for queued commits, avoiding stale replacement of an accepted review. Unit tests cover event mapping/cleanup; actual background/foreground, audio, timer and transition behavior remains blocked on Simulator/device.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-07 — Native file import/export feasibility
 - **Product area / milestone / priority:** Portability / Apple feasibility / P0
@@ -517,6 +523,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Prove or precisely design Apple Files/share workflows for APKG, portable ZIP, XLSX and full backup import/export. Generated exports must become user-accessible files; cancellation and invalid input must remain safe.
 - **Platform implications:** Parsing/generation stays platform-neutral and no real collection is overwritten.
 - **Verification / evidence:** Package generation remains platform-neutral. Native export dynamically writes the real bytes to Cache with official Filesystem, shares its `file://` URI with official Share and removes the temporary file on completion/failure; unit tests cover bytes, URI handoff and cleanup. Existing WKWebView file input is the no-new-dependency import candidate. Files picker, cancellation and reopening every generated format require Simulator/device evidence.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-08 — Native media feasibility
 - **Product area / milestone / priority:** Media / Apple feasibility / P0
@@ -525,6 +532,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Exercise or specify stable native references for images, WAV/MP3, backgrounds, frames and textures across reload/relaunch and Study transitions. Device paths cannot leak into portable card data.
 - **Platform implications:** WKWebView display URLs are adapter-owned; Simulator audio is not physical speaker/interruption evidence.
 - **Verification / evidence:** Stable `asset:` IDs and content hashes remain portable; proposed native Application Support bytes and transient `Filesystem.getUri`/`Capacitor.convertFileSrc` resolution are documented. Current eager data-URL hydration is an explicit scaling gap. No native image/audio/relaunch test can run without Xcode.
+- **Relevant commit:** `f6e4ffd` (architecture only); runtime provider pending.
 
 ### HR-NATIVE-09 — Packaged offline startup
 - **Product area / milestone / priority:** Offline / Apple feasibility / P0
@@ -533,6 +541,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Distinguish loaded-tab web offline from a terminated packaged app relaunching without network, studying local content, persisting a review and surviving another relaunch.
 - **Platform implications:** No cloud dependency or service-worker substitution.
 - **Verification / evidence:** Synced production assets contain no development-server URL and are suitable for packaged cold start, but terminate/offline/relaunch/study/read-back is unexecuted because no Simulator runtime exists.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-10 — Native accessibility and device UI audit
 - **Product area / milestone / priority:** Accessibility / Apple feasibility / P0
@@ -541,6 +550,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Audit safe areas, orientation, software keyboard, larger text implications, touch/focus, reduced motion, themes, scrolling and dialogs inside the shell. VoiceOver remains unverified unless actually exercised.
 - **Platform implications:** Retain Material 3 identity and avoid unnecessary UIKit imitation.
 - **Verification / evidence:** Generated project targets iPhone and iPad in portrait/landscape and the web UI retains safe-area, reflow, touch, keyboard and reduced-motion safeguards. Native safe-area, software-keyboard, Dynamic Type, VoiceOver and WKWebView modal/scroll evidence is blocked by the missing runtime.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-11 — Entitlement/purchase readiness check
 - **Product area / milestone / priority:** Entitlements / Apple feasibility / P1
@@ -549,6 +559,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Confirm native seams cannot bypass product access and that future verified Apple ownership/restore can be adapted without changing learning or cosmetic state. No StoreKit, product IDs or transactions.
 - **Platform implications:** Universal-purchase and commercial policy remain product decisions.
 - **Verification / evidence:** Native platform adapters contain no entitlement decisions and do not mutate learning/cosmetic state. Future verified Apple ownership must enter only through `CAPABILITY_POLICY`; current `development-unverified` access remains non-enforcing. No StoreKit/product IDs/transactions were introduced, and recovery/export access remains independent.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-NATIVE-12 — Privacy and permission inventory
 - **Product area / milestone / priority:** Privacy / Apple feasibility / P0
@@ -557,6 +568,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Record version, purpose, native APIs, permissions, plist and privacy-manifest implications, and platform support. Request no unnecessary permission and add no analytics/tracking.
 - **Platform implications:** Inventory must match generated native dependencies and official Apple/Capacitor requirements.
 - **Verification / evidence:** Exact dependency inventory is in `ios-readiness.md`. Filesystem's required `NSPrivacyAccessedAPICategoryFileTimestamp` / `C617.1` declaration is committed in `PrivacyInfo.xcprivacy`; App and Share document no runtime permission/usage-description need for this scope. No Photos, microphone, tracking or analytics permission was added. Final Xcode privacy report remains pending.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-MAC-01 — macOS delivery decision
 - **Product area / milestone / priority:** Platform / Apple feasibility / P0
@@ -565,6 +577,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Evaluate iOS/iPad app on Apple-silicon Mac, Mac Catalyst and a dedicated-wrapper option; run only legitimate local spikes. Recommend one first-release route with explicit hardware, file, window/input, purchase, maintenance and testing limitations. Intel/alternate-runtime scope requires product approval.
 - **Platform implications:** Capacitor itself is not represented as a supported macOS target.
 - **Verification / evidence:** Decision 008 recommends the same iPad-capable iOS application on Apple-silicon Macs as the first candidate because it minimizes runtime and adapter duplication. It remains gated by `My Mac (Designed for iPad)` resizing/keyboard/pointer/files/storage/plugin tests. Catalyst is deferred because Capacitor does not support it and cannot be built here; a dedicated wrapper is deferred unless Intel support or desktop acceptance later requires it. Final product approval and executable Mac evidence remain pending.
+- **Relevant commit:** `f6e4ffd`.
 
 ### HR-PLAN-05 — Apple platform readiness matrix
 - **Product area / milestone / priority:** Planning / Apple feasibility / P0
@@ -573,6 +586,7 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Requirement / acceptance:** Maintain separate implementation/browser/Simulator/physical-device/distribution evidence for startup, Study, persistence, media/audio, import/export, backup, lifecycle, offline, accessibility, input, entitlements and signing.
 - **Platform implications:** WebKit tests never count as WKWebView or physical-device evidence.
 - **Verification / evidence:** `docs/ios-readiness.md` now separates web implementation, Chromium, Playwright WebKit, iOS architecture, Simulator, physical device, macOS route and distribution evidence across every requested capability. Blocked and untested cells remain explicit.
+- **Relevant commit:** `f6e4ffd`.
 
 ## Preserved completed history
 

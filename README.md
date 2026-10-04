@@ -29,6 +29,15 @@ PLAYWRIGHT_BROWSERS_PATH=.runtime/playwright ./node_modules/.bin/playwright inst
 
 Actual results and limitations are in [project status](docs/project-status.md).
 
+The reviewable iPhone/iPad shell uses pinned Capacitor 8 and the same production Angular output:
+
+```sh
+npm run native:sync:ios
+npm run native:open:ios
+```
+
+`native:sync:ios` always rebuilds the web application before copying assets. Full Xcode 26+ is required to open, compile and run it; this Mac currently has Command Line Tools only, so Simulator execution remains blocked. The committed configuration contains no development-server URL. See [Apple-platform readiness](docs/ios-readiness.md) for exact evidence and limitations.
+
 ## Study, design and collect
 
 Start or resume a session from Dashboard or Decks. Study hides the application chrome, keeps the scheduler-ordered card in front of a concealed deck stack, and offers a persistent End session action. Attempt recall, reveal, then rate 1–5. A wrong or unrecalled answer is 1. The FSRS mapping remains Again / Hard / Good / Good / Easy. Space reveals; keys 1–5 grade. The selected queue, revealed face, saved reviews and session progress survive reload. Animation never shuffles the scheduler's order.
@@ -61,4 +70,4 @@ Validated restore accepts version 1 or 2 and writes only into untouched local st
 - [Deck format](docs/deck-format.md): workbook fields, validation and media portability.
 - [API boundary](api/README.md): future server responsibilities.
 
-Work continues from verified local commit `bb475eb`; no history was reset. No push, deployment, paid resource or native/cloud provisioning is part of this milestone.
+No history was reset. No push, deployment, paid resource, signing/provisioning or cloud work is part of this milestone.
