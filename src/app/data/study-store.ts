@@ -1,10 +1,10 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Inject, Injectable, computed, signal } from '@angular/core';
 import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from '../../domain/models';
 import { applyScheduledReview, createInitialState, dayKey, dueCards, undoLatestReview } from '../../domain/study';
 import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
 import { LocalDatabase } from './local-database';
-import type { StudyPersistence } from './study-persistence';
+import { STUDY_PERSISTENCE, type StudyPersistence } from './study-persistence';
 import { canonicalTags, validateDeckMove } from '../../domain/library';
 import { deduplicateContent, describeAsset, removableAssets } from '../../domain/media-registry';
 import { BALANCED_PRESET_ID, BUILT_IN_PRESETS, validateStudyPreset, validateTodayOverride } from '../../domain/study-settings';
@@ -26,9 +26,13 @@ export class LocalStudyStore {
   private readonly assetById = computed(() => new Map((this.data()?.assets ?? []).map(asset => [asset.id, asset])));
   private readonly deckById = computed(() => new Map((this.data()?.decks ?? []).map(deck => [deck.id, deck])));
   private readonly designById = computed(() => new Map((this.data()?.designs ?? []).map(design => [design.id, design])));
-  private readonly database: StudyPersistence = new LocalDatabase();
+  private readonly database: StudyPersistence;
   private saving = false;
   private pendingChange: Promise<void> = Promise.resolve();
+
+  constructor(@Inject(STUDY_PERSISTENCE) database: StudyPersistence = new LocalDatabase()) {
+    this.database = database;
+  }
 
   async init(): Promise<void> {
     try { await this.refresh(); await this.ensureAssetMetadata(); } catch { /* error signal presents the storage failure; never fall back to volatile progress. */ }
@@ -36,6 +40,9 @@ export class LocalStudyStore {
 
   async refresh(): Promise<void> {
     try {
+      // Native resume may arrive while the last accepted review is still committing.
+      // Read only after queued mutations settle so a stale snapshot cannot replace it.
+      await this.pendingChange;
       const result = await this.database.load(createInitialState(SEED_DECKS, SEED_CARDS));
       this.data.set(result);
       this.error.set('');

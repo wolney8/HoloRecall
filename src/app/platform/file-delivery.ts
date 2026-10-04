@@ -41,7 +41,49 @@ export class BrowserFileDelivery implements FileDelivery {
   }
 }
 
+type NativeFileModules = {
+  core: typeof import('@capacitor/core');
+  filesystem: typeof import('@capacitor/filesystem');
+  share: typeof import('@capacitor/share');
+};
+
+/** Writes an actual temporary file before presenting the native share surface. */
+@Injectable({ providedIn: 'root' })
+export class PlatformFileDelivery implements FileDelivery {
+  private readonly browser = inject(BrowserFileDelivery);
+
+  async deliver(blob: Blob, suggestedName: string): Promise<void> {
+    const modules = await loadNativeFileModules();
+    if (!modules.core.Capacitor.isNativePlatform()) return this.browser.deliver(blob, suggestedName);
+    return deliverNativeFile(blob, suggestedName, modules);
+  }
+}
+
+export async function deliverNativeFile(blob: Blob, suggestedName: string, modules: NativeFileModules): Promise<void> {
+    const safeName = suggestedName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '') || 'holorecall-export';
+    const path = `holorecall-exports/${crypto.randomUUID()}-${safeName}`;
+    const data = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
+    const written = await modules.filesystem.Filesystem.writeFile({ path, data, directory: modules.filesystem.Directory.Cache, recursive: true });
+    try {
+      const capability = await modules.share.Share.canShare();
+      if (!capability.value) throw new Error('Sharing files is unavailable on this device.');
+      await modules.share.Share.share({ title: safeName, files: [written.uri], dialogTitle: 'Save or share HoloRecall export' });
+    } finally {
+      await modules.filesystem.Filesystem.deleteFile({ path, directory: modules.filesystem.Directory.Cache }).catch(() => undefined);
+    }
+}
+
+async function loadNativeFileModules(): Promise<NativeFileModules> {
+  return { core: await import('@capacitor/core'), filesystem: await import('@capacitor/filesystem'), share: await import('@capacitor/share') };
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+  return btoa(binary);
+}
+
 export const FILE_DELIVERY = new InjectionToken<FileDelivery>('FileDelivery', {
   providedIn: 'root',
-  factory: () => inject(BrowserFileDelivery),
+  factory: () => inject(PlatformFileDelivery),
 });

@@ -1,6 +1,41 @@
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
 
 export type LifecycleListener = (active: boolean) => void;
+
+export interface NativeLifecycleConnection {
+  connect(listener: (active: boolean) => void): Promise<() => Promise<void>>;
+}
+
+type CapacitorModules = {
+  core: typeof import('@capacitor/core');
+  app: typeof import('@capacitor/app');
+};
+
+@Injectable({ providedIn: 'root' })
+export class CapacitorLifecycleConnection implements NativeLifecycleConnection {
+  async connect(listener: (active: boolean) => void): Promise<() => Promise<void>> {
+    return connectCapacitorLifecycle(listener);
+  }
+}
+
+export async function connectCapacitorLifecycle(
+  listener: (active: boolean) => void,
+  loader: () => Promise<CapacitorModules> = async () => ({ core: await import('@capacitor/core'), app: await import('@capacitor/app') }),
+): Promise<() => Promise<void>> {
+    const { core, app } = await loader();
+    if (!core.Capacitor.isNativePlatform()) return async () => undefined;
+    const handles = await Promise.all([
+      app.App.addListener('appStateChange', state => listener(state.isActive)),
+      app.App.addListener('pause', () => listener(false)),
+      app.App.addListener('resume', () => listener(true)),
+    ]);
+    return async () => { await Promise.all(handles.map(handle => handle.remove())); };
+}
+
+export const NATIVE_LIFECYCLE = new InjectionToken<NativeLifecycleConnection>('Native lifecycle connection', {
+  providedIn: 'root',
+  factory: () => inject(CapacitorLifecycleConnection),
+});
 
 /**
  * Web lifecycle source. A future Capacitor adapter can expose the same contract
@@ -13,8 +48,10 @@ export class AppLifecycle {
   // document.hasFocus() during WebKit startup and automation.
   readonly focused = signal(!document.hidden);
   private readonly listeners = new Set<LifecycleListener>();
+  private nativeCleanup?: () => Promise<void>;
 
   constructor() {
+    const native = inject(NATIVE_LIFECYCLE);
     const refresh = () => this.setState(!document.hidden, !document.hidden);
     const pageHide = () => this.setState(false, false);
     const pageShow = () => refresh();
@@ -25,12 +62,16 @@ export class AppLifecycle {
     window.addEventListener('pageshow', pageShow);
     window.addEventListener('focus', focus);
     window.addEventListener('blur', blur);
+    void native.connect(active => this.setState(active, active)).then(cleanup => { this.nativeCleanup = cleanup; }).catch(() => {
+      // Browser lifecycle remains authoritative if a native bridge cannot start.
+    });
     inject(DestroyRef).onDestroy(() => {
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('pagehide', pageHide);
       window.removeEventListener('pageshow', pageShow);
       window.removeEventListener('focus', focus);
       window.removeEventListener('blur', blur);
+      void this.nativeCleanup?.();
       this.listeners.clear();
     });
   }
@@ -41,10 +82,11 @@ export class AppLifecycle {
   }
 
   private setState(active: boolean, focused: boolean): void {
+    const changed = this.active() !== active || this.focused() !== focused;
     this.active.set(active);
     this.focused.set(focused);
     document.documentElement.classList.toggle('app-inactive', !active);
-    this.notify();
+    if (changed) this.notify();
   }
 
   private notify(): void {

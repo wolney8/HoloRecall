@@ -6,22 +6,22 @@ This retains the project's iOS-readiness history and adds macOS explicitly. “W
 
 - Web application: Angular 21.2.24, Angular Material/CDK 21.2.14, TypeScript 5.9.3, Node 24.3.0 and npm 11.4.2.
 - Browser gate: Playwright 1.63.0 with repository-local Chromium and WebKit 26.6 build 2359 on macOS arm64.
-- Proposed native baseline: stable Capacitor 8, whose official requirements are Node 22+, Xcode 26+ and iOS 15+. Capacitor is not installed and no native project exists. Capacitor 9 is prerelease and is not selected.
-- Native build tools, signing identity, provisioning, bundle ownership, simulator runtime and physical devices have not been checked.
+- Native baseline: pinned Capacitor core/CLI/iOS 8.5.2, App 8.1.2, Filesystem 8.1.4 and Share 8.0.3. Capacitor 8 requires Node 22+, Xcode 26+ and iOS 15+. The SPM iPhone/iPad project exists and syncs `dist/holorecall/browser`; Capacitor 9 is prerelease and is not selected.
+- Host: macOS 26.5.1 on Apple M1 Pro (`arm64`), Command Line Tools 26.3, Node 24.3.0 and npm 11.4.2. Full Xcode, `xcodebuild`, `simctl` and Simulator runtimes are absent. Signing identity, provisioning, Apple account, bundle ownership and physical devices were deliberately not configured.
 
 ## Readiness matrix
 
 | Area | Web implementation | Chromium evidence | WebKit evidence | Native implementation needed | Simulator | Physical device |
 | --- | --- | --- | --- | --- | --- | --- |
-| Study and scheduling | Atomic IndexedDB transaction; platform-neutral schema-6 presets, Focus criteria/session modes, separate Practice events, queue, FSRS/reward and management-history rules | Chromium 153 scheduled/practice isolation, Focus/reload/results plus established Study gates pass | WebKit 26.6 Focus, consecutive-card visibility, audio and established Study gates pass | Durable native store adapter and lifecycle hookup; native audio/timer interruption verification | Not tested | Not tested |
-| Lifecycle and active time | Shared visibility/page/focus source pauses timing and effects, checkpoints, refreshes and cleans up | Chromium interruption/reload passes | WebKit interruption/reload passes | Bind Capacitor App state events to the same port | Not tested | Not tested |
+| Study and scheduling | Atomic IndexedDB transaction; platform-neutral schema-6 presets, Focus criteria/session modes, separate Practice events, queue, FSRS/reward and management-history rules | Chromium 153 scheduled/practice isolation, Focus/reload/results plus established Study gates pass | WebKit 26.6 Focus, consecutive-card visibility, audio and established Study gates pass | Injectable persistence seam and fixture migration contract exist; durable SQLite/filesystem provider and native audio/timer evidence remain | Blocked: full Xcode absent | Not tested |
+| Lifecycle and active time | Shared visibility/page/focus source pauses timing and effects, checkpoints, refreshes and cleans up; native App adapter is lazy and resume reads wait for queued writes | Chromium interruption/reload plus adapter unit tests pass | WebKit interruption/reload passes | Official App listener implementation exists; actual native transitions remain to verify | Blocked: full Xcode absent | Not tested |
 | Card motion/effects | Shared CSS/Web Animations renderer and page-reveal observer; reduced motion/effects controls; interrupted motion settles without replay | Intermediate flip/effect/page-entrance assertions pass | Seven overlay tiers, flip, confidence/results/page-entrance motion and reduced motion pass | Profile WKWebView compositing and app backgrounding | Not tested | Not tested |
 | Layout/input/a11y | Safe-area owners, visual-viewport focused-field recovery, touch sizes, semantic controls and text zoom | Desktop/390 px and keyboard checks pass | Compact/large portrait, landscape and 200% text checks pass | VoiceOver, Dynamic Type, software keyboard and real safe areas | Not tested | Not tested |
-| Content/media storage | Stable `asset:` IDs; IndexedDB v2 metadata/payload stores; recomputed hashes, dedupe and reference-safe cleanup | Upload/reload/backup, unchanged-payload commit and portable media pass | Design upload/reload, all illustrations and ZIP media decode pass | SQLite records plus Filesystem media; on-demand resolution and crash-safe coordinated migration | Not tested | Not tested |
+| Content/media storage | Stable `asset:` IDs; IndexedDB v2 metadata/payload stores; recomputed hashes, dedupe and reference-safe cleanup | Upload/reload/backup, unchanged-payload commit, migration interruption fixtures and portable media pass | Design upload/reload, all illustrations and ZIP media decode pass | SQLite records plus Application Support media; on-demand resolver; candidate transaction/relaunch proof | Blocked: full Xcode absent | Not tested |
 | Library search/organisation | Reconstructable Worker index, 60-item slices, hierarchy/tags/archive, combined filters and atomic bulk changes | 10,000-card index/query/render and navigation checks pass | 10,000-card index/query/render plus compact/large/landscape 200% reflow pass | Profile Worker/storage boundary in WKWebView; bind queries to native durable store | Not tested | Not tested |
-| XLSX/ZIP exchange | Platform-neutral package generation; `FileDelivery` handles web download; atomic preview/apply | Round trips, download and formula rejection pass | XLSX/ZIP round trips, download, media and formula rejection pass | Document picker/security-scoped URI handling, temporary files, share sheet and cancellation | Not tested | Not tested |
+| XLSX/ZIP exchange | Platform-neutral package generation; `FileDelivery` handles web download and lazy native Cache + Share delivery; atomic preview/apply | Round trips, download, formula rejection and native adapter byte/cleanup tests pass | XLSX/ZIP round trips, download, media and formula rejection pass | Files picker/security-scoped URI handling and real share cancellation/reopen | Blocked: full Xcode absent | Not tested |
 | Anki package import | Lazy typed Worker runs bounded ZIP/zstd/SQLite conversion, semantic issue severity, inert TTS/filter simplification, explicit hierarchy/sibling identity, reviewed mappings, PNG and side-specific MP3/WAV; atomic content-only apply selects a HoloRecall preset and preserves native progress on reimport | Genuine Anki 26.9.3 legacy/modern packages plus TTS/link/resource regression fixtures cover the documented conversion and hierarchy | The same severity/hierarchy and consecutive imported-card Study journeys pass in desktop Playwright WebKit | Native document URI/cancellation, media playback and memory-pressure profiling | Not tested | Not tested |
-| Offline | Bundled font, UI and demonstration art; loaded-page study works offline | Active loaded-page recovery passes | Active loaded-page review/reload passes | Packaged assets should cold-start offline after native build verification | Not tested | Not tested |
+| Offline | Bundled font, UI and demonstration art; loaded-page study works offline; native config has no `server.url` | Active loaded-page recovery passes | Active loaded-page review/reload passes | Terminate/offline/relaunch/study/read-back proof | Blocked: full Xcode absent | Not tested |
 | Themes | Local early-paint preference plus IndexedDB preference | Light/Dark/System persistence passes | System/explicit themes and reduced motion pass | Status/splash bars and native appearance integration | Not tested | Not tested |
 
 ## macOS readiness matrix
@@ -29,7 +29,7 @@ This retains the project's iOS-readiness history and adds macOS explicitly. “W
 | Area | Current evidence | Native macOS implementation / decision still needed |
 | --- | --- | --- |
 | Browser application | Angular application and Playwright Chromium/WebKit execute on macOS arm64; keyboard, responsive layout and local file inputs are browser evidence | Define supported Safari/macOS versions and complete release accessibility testing |
-| Desktop packaging | None. A Mac browser session is not a packaged macOS application | Decide browser/PWA versus Catalyst/Capacitor/another maintained shell before generating one |
+| Desktop packaging | Route A is recommended: the same iPad-capable iOS app on Apple-silicon Mac. No local native Mac execution exists because Xcode is absent. | Test `My Mac (Designed for iPad)` resizing, keyboard/pointer, files, storage, offline and plugins; distribution remains pending. Catalyst and a dedicated wrapper are deferred. |
 | Storage and recovery | Split IndexedDB metadata/media, content ZIP and full JSON backup work in tested browsers | Select durable sandbox storage, on-demand asset resolution, coordinated migration, backup location and crash recovery for any native shell |
 | Files and sharing | Browser picker/download through `FileDelivery`; package bytes remain platform-neutral | Native open/save panels, security-scoped URLs, cancellation, temporary-file cleanup and share behavior |
 | Lifecycle/audio/motion | Visibility lifecycle and explicit audio cleanup pass in browser engines | Verify native window/background behavior, media session/audio interruptions and resource pressure |
@@ -42,12 +42,29 @@ Keep IndexedDB for the working browser prototype. For native packaging, select a
 
 A native migration must be versioned, atomic and recoverable: verify the source snapshot, write the new database and media into a staging location, validate a read-back and backup export, then switch the active version. Retain a recovery marker/source backup until the new store has opened successfully after restart. Restore must continue refusing to overwrite a nonempty profile silently. Local native persistence does not imply cloud sync.
 
+The production provider has not changed. `StudyPersistence` is now injectable and defaults to IndexedDB. The isolated migration contract proves hashed-backup retention, deterministic fingerprinting, read-back counts/media verification, idempotent completion and rollback after injected interruption. It does not prove SQLite, process-relaunch durability or native filesystem atomicity. Candidate evaluation currently favors an isolated `@capacitor-community/sqlite` 8.1.1 spike, with SQLCipher/export review and Catalyst behavior unresolved; no SQLite package is installed.
+
 ## Native file and lifecycle requirements
 
 - File import must handle picker cancellation, security-scoped/content URIs, in-place versus copied files, size checks before full reads where possible, and cleanup of temporary copies.
 - Export must generate the same bytes as web, write a temporary/cache file, invoke Files/share, distinguish cancellation from success where the plugin permits, and remove temporary files after the consumer is finished.
 - Capacitor App foreground/background events must drive the lifecycle port. Accepted transactions are saved before feedback; app-close callbacks are never the sole save path.
 - Each plugin requires a version/maintenance/licence review, privacy manifest and `Info.plist` usage-description audit. Signing, provisioning, app identifiers and Apple services remain unprovisioned.
+
+## Native dependency and privacy inventory
+
+| Package | Purpose / native API | Permissions and Apple declarations | Platforms / current evidence |
+| --- | --- | --- | --- |
+| `@capacitor/ios` 8.5.2 | WKWebView iPhone/iPad shell through SPM | No runtime permission added | iOS project generated/synced; compile blocked |
+| `@capacitor/app` 8.1.2 | `appStateChange`, `pause`, `resume` | No usage description documented for these events | Lazy adapter and listener-cleanup unit evidence; native transitions blocked |
+| `@capacitor/filesystem` 8.1.4 | Cache file for portable export | `PrivacyInfo.xcprivacy`: `NSPrivacyAccessedAPICategoryFileTimestamp`, reason `C617.1`; no broad file permission requested | Byte-write adapter unit evidence; native file proof blocked |
+| `@capacitor/share` 8.0.3 | Apple share surface for the generated Cache file | No usage description/runtime permission documented for local file sharing | URI handoff/cleanup unit evidence; actual share/cancel/reopen blocked |
+
+No Photos, microphone, media-library, location, tracking or analytics SDK/permission was added. `UIFileSharingEnabled` and `LSSupportsOpeningDocumentsInPlace` remain absent because exports use a temporary Cache file rather than exposing the app's Documents directory. A final Xcode privacy report and plugin Required Reason API scan remain pending.
+
+## macOS delivery recommendation
+
+Use the iPad-capable iOS application on Apple-silicon Macs as the first candidate. It reuses the iOS runtime, binary, plugins and entitlement seam and has the lowest maintenance burden. It is Apple-silicon-only, keeps an iPad/WebView interaction model and needs native evidence for resizable windows, pointer/keyboard, Files/share and every plugin. Mac Catalyst is deferred because it is not an official Capacitor target and cannot be assumed compatible. A dedicated wrapper is deferred unless Intel support receives product approval or Route A fails desktop acceptance. See Decision 008 in `architecture.md`.
 
 ## Offline meanings
 
@@ -60,6 +77,8 @@ A native migration must be versioned, atomic and recoverable: verify the source 
 For each meaningful change, add a proportional note to the durable handoff covering WebKit/Capacitor compatibility, touch/safe areas/keyboard/accessibility, persistence/offline/interruption, animation cleanup, browser APIs requiring native work, tests run and unverified native behavior.
 
 ## Current gate evidence
+
+- Apple feasibility: `cap add ios` and `cap sync ios` succeed with SPM and copy the real 13 MB production web output; `capacitor.config.json` contains no `server.url`. The production build after lazy native adapters is **848.60 kB initial / 199.05 kB estimated transfer**, below the unchanged 850 kB limit. Exact local environment, generation/sync and failed Xcode command logs are under `.runtime/evidence/hr-apple-native-20261004/`.
 
 - Engines: Playwright 1.63.0, Chromium 153.0.8010.12 and patched WebKit 26.6 build 2359 on macOS arm64.
 - Focused Practice gate: unit/domain **128/128 passed**; complete desktop WebKit **63/63 passed**; complete Chromium produced **61/63** before two stale backup-version assertions were corrected, and both corrected tests then passed; WebKit compact/large/landscape **21/21 passed**. Targeted Focus journeys pass **3/3** in both desktop engines plus all three phone profiles. Practice remains separate from FSRS/rewards/allowance, and background/reload retains the explicit mode. These remain browser-engine and viewport results, not native app evidence.
