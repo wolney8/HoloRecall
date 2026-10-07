@@ -52,8 +52,10 @@ test('HR-NAV-01 uses one semantic context trail on wide layouts', async ({ page 
   const trail = page.getByRole('navigation', { name: 'Breadcrumb' });
   await expect(trail).toBeVisible();
   await expect(trail).toContainText('Decks');
-  await expect(trail).toContainText('New card');
-  await expect(trail.locator('[aria-current="page"]')).toHaveText('New card');
+  await expect(trail).not.toContainText('New card');
+  expect(await trail.evaluate(element=>getComputedStyle(element).flexDirection)).toBe('row');
+  const centres=await trail.locator('button, span').evaluateAll(elements=>elements.map(element=>{const box=element.getBoundingClientRect();return box.y+box.height/2;}));
+  expect(Math.max(...centres)-Math.min(...centres)).toBeLessThan(2);
   await trail.getByRole('button', { name: 'Decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Decks', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Create card' })).toBeHidden();

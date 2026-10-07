@@ -74,6 +74,8 @@ input,textarea,select,[contenteditable=true]{scroll-margin-block:18vh}
 .result-actions{flex-wrap:wrap}
 
 /* Adaptive app chrome. Phone navigation is compact and fixed; wider layouts retain the rail. */
+.breadcrumbs{flex-direction:row;flex-wrap:wrap;align-items:center;align-content:center;gap:8px}.breadcrumbs button{width:auto;min-height:32px;flex:0 0 auto;justify-content:flex-start}.breadcrumbs>span{flex:0 0 auto}
+.session-bar>button{margin-left:0}.session-bar>.end-session-button{margin-left:auto}.study-mode .session-bar{padding-block:9px;margin-bottom:14px}.study-layout{margin-top:14px}
 .mobile-header,.mobile-bottom-nav,.mobile-more-sheet,.mobile-more-scrim,.mobile-rating-help{display:none}.breadcrumbs{display:flex;align-items:center;gap:8px;min-height:32px;margin:-14px 0 18px;color:var(--mat-sys-on-surface-variant);font:var(--mat-sys-label-medium)}.breadcrumbs button{border:0;background:transparent;color:var(--mat-sys-primary);padding:6px 2px;font:inherit}.breadcrumbs [aria-current=page]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-context-title{display:flex;min-width:0;flex-direction:column;align-items:center;line-height:1.05}.mobile-context-title small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mat-sys-on-surface-variant);font:var(--mat-sys-label-small)}.mobile-context-title strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:var(--mat-sys-title-medium)}
 .keyboard-help{max-width:24rem}
 @media(max-width:720px), (max-height:600px) and (pointer:coarse){

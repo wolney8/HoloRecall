@@ -810,14 +810,18 @@ Source: Will's 7 October 2026 manual test of the exact real Anki package. Normal
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-BUG-ANKI-05 | Updated cards receive incorrect `it` answer | Import/data integrity | Stop-ship recovery | P0 | IN_PROGRESS | Existing mapping presets, source baselines and update preview |
-| HR-BUG-ANKI-06 | Contextual Anki update workflow | Import/UX | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-05 and lazy exchange route |
-| HR-BUG-ANKI-07 | Update visual hierarchy and spacing | Import/UX | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-06 and Material 3 tokens |
-| HR-BUG-NAV-02 | Breadcrumbs break page layout | Navigation/layout | Stop-ship recovery | P0 | IN_PROGRESS | Shared navigation context component |
-| HR-BUG-STUDY-02 | Excessive Study dead space | Study/layout | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-NAV-02 and responsive Study workspace |
-| HR-BUG-STUDY-03 | Protect imported-answer semantics | Import/scheduler boundary | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-05 and explicit mapping provenance |
+| HR-BUG-ANKI-05 | Updated cards receive incorrect `it` answer | Import/data integrity | Stop-ship recovery | P0 | VERIFY | Existing mapping presets, source baselines and update preview |
+| HR-BUG-ANKI-06 | Contextual Anki update workflow | Import/UX | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-05 and lazy exchange route |
+| HR-BUG-ANKI-07 | Update visual hierarchy and spacing | Import/UX | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-06 and Material 3 tokens |
+| HR-BUG-NAV-02 | Breadcrumbs break page layout | Navigation/layout | Stop-ship recovery | P0 | VERIFY | Shared navigation context component |
+| HR-BUG-STUDY-02 | Excessive Study dead space | Study/layout | Stop-ship recovery | P0 | VERIFY | HR-BUG-NAV-02 and responsive Study workspace |
+| HR-BUG-STUDY-03 | Protect imported-answer semantics | Import/scheduler boundary | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-05 and explicit mapping provenance |
 
 Acceptance is the complete stop-ship request. The lead owns mapping/source schema, persistence integration, shared navigation and tracker state. Work must preserve review events, FSRS state, due dates, presets, cosmetics, Focus history, hierarchy and media. All destructive verification uses sanitised fixtures; the user's collection is read-only.
+
+- **Root cause / implementation batch:** the UI mapping suggester treated any unrecognised ordinal-1 field as Answer. A sanitised `Prompt / Language / Pronunciation / Italian` model therefore mapped `Language = it` over the correct `{{Italian}}` template result; persistence and CardRenderer then correctly retained/displayed that corrupted converted value. Positional inference is removed. A shared conservative suggester uses semantic names plus unambiguous template-side references, mappings are checked against the canonical template, one preset is retained per signature, and each converted card records prompt/answer provenance. Unresolved semantics block Apply.
+- **Context/layout batch:** the deck action now opens the platform file chooser directly and passes the chosen package into a focused lazy update screen. Generic exports/downloads are absent, conflicts require an explicit choice, representative structured Before/After values are visible, and success returns to the originating deck. The breadcrumb defect was an unscoped legacy `nav` column/full-width-button rule; shared breadcrumbs now explicitly own a compact wrapping row, omit the duplicate current-page crumb, and the Study toolbar/workspace margins are compacted without negative offsets.
+- **Verification so far:** focused importer/store tests **29/29** and production build pass. Targeted Chromium/WebKit journeys passed **12/14**; the two failures were a new assertion comparing element top edges despite intentionally different crumb/separator heights. A corrected centre-line assertion then passed **2/2**. Full regression, Simulator evidence and visual captures remain before DONE.
 
 ## Preserved completed history
 

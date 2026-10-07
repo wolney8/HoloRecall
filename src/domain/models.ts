@@ -42,6 +42,13 @@ export interface AnkiCardSource {
   templateName: string;
   modelSignature: string;
   importedContentHash: string;
+  /** Auditable origin of the native prompt/answer produced by the converter. */
+  contentProvenance?: {
+    front: 'mapping' | 'template' | 'cloze';
+    answer: 'mapping' | 'template' | 'cloze';
+    frontFields: string[];
+    answerFields: string[];
+  };
 }
 export interface AnkiDeckSource {
   kind: 'anki';

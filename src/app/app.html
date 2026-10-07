@@ -1,5 +1,6 @@
 <div class="app-shell" [class.effects-off]="!data()?.preferences?.effects" [class.study-mode]="screen()==='study'" [class.results-mode]="screen()==='results'" [class.has-previous]="!!session()?.lastReviewCardId">
   <a class="skip-link" href="#main-content">Skip to content</a>
+  <input id="contextual-anki-update" class="sr-only" tabindex="-1" type="file" accept=".apkg,application/zip" (change)="selectAnkiUpdatePackage($event)" aria-hidden="true">
   <aside class="sidebar">
     <a class="brand" href="#dashboard" (click)="$event.preventDefault();go('dashboard')" aria-label="HoloRecall dashboard"><img src="favicon.svg" alt=""><span>HoloRecall<span class="brand-dot">.</span></span></a>
     <nav aria-label="Main navigation">
@@ -27,7 +28,7 @@
       @if(store.error()){<div class="error-banner" role="alert"><span>{{store.error()}}</span><button mat-button (click)="store.init()">Reload local data</button></div>}
       @if(!data()){<section class="empty-state"><h1>Loading local workspace</h1><p>Opening your saved cards and history.</p></section>}
       @else{
-        @if(navigationContext().length>1){<nav class="breadcrumbs" aria-label="Breadcrumb">@for(item of navigationContext();track item.label+$index;let last=$last){@if(!last){<button type="button" (click)="navigateContext(item)">{{item.label}}</button><span aria-hidden="true">›</span>}@else{<span aria-current="page">{{item.label}}</span>}}</nav>}
+        @if(breadcrumbAncestors().length){<nav class="breadcrumbs" aria-label="Breadcrumb">@for(item of breadcrumbAncestors();track item.label+$index;let last=$last){<button type="button" (click)="navigateContext(item)">{{item.label}}</button>@if(!last){<span aria-hidden="true">›</span>}}</nav>}
         @switch(screen()){
           @case('dashboard'){
             <div class="page-heading" hrReveal><div><p class="eyebrow">{{dateLabel()}}</p><h1>Study dashboard</h1><p>{{data()!.cards.length}} cards across {{data()!.decks.length}} decks.</p></div><button mat-flat-button (click)="edit()">＋ Create a card</button></div>
@@ -108,7 +109,7 @@
           @case('collection'){@defer(on immediate){<hr-collection (practiceCards)="startSelection('practice',$event,'Collection cards')"/>}@placeholder{<p role="status">Loading Collection…</p>}}
           @case('studio'){@defer(on immediate){<hr-design-studio/>}@placeholder{<p role="status">Loading Design Studio…</p>}}
           @case('progress'){@defer(on immediate){<hr-progress (practiceCards)="startSelection('practice',$event,'Needs attention')"/>}@placeholder{<p role="status">Loading Progress…</p>}}
-          @case('exchange'){@defer(on immediate){<hr-exchange [updateDeckId]="selectedDeck"/>}@placeholder{<p role="status">Loading import / export…</p>}}
+          @case('exchange'){@defer(on immediate){<hr-exchange [updateDeckId]="selectedDeck" [initialAnkiFile]="ankiUpdateFile()" (cancelUpdate)="cancelAnkiUpdate()" (updateComplete)="finishAnkiUpdate($event)"/>}@placeholder{<p role="status">Loading import / export…</p>}}
           @case('settings'){
             <div class="page-heading" hrReveal><div><p class="eyebrow">LOCAL PREFERENCES</p><h1>Settings</h1></div></div>
             @defer(on immediate){<hr-study-settings [deckId]="settingsDeckId()"/>}

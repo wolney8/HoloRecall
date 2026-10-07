@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnDestroy, signal } from '@angular/core';
+import { Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,6 +10,7 @@ import { decodeRaster } from '../upload';
 import { FILE_DELIVERY } from '../platform/file-delivery';
 import type { ImportPreview } from '../../domain/exchange';
 import type { AnkiAnalysis, AnkiImportPreview, AnkiModelSchema, AnkiProgress } from '../../domain/anki';
+import { suggestedAnkiMapping } from '../../domain/anki';
 import type { AnkiFieldTarget, AnkiMappingPreset, Rarity } from '../../domain/models';
 import { PageRevealDirective } from '../motion/page-reveal';
 import { AnkiWorkerClient } from './anki-worker-client';
@@ -20,6 +21,7 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
   selector: 'hr-exchange', standalone: true,
   imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, PageRevealDirective],
   template: `
+    @if(updateDeckId){<div class="exchange-heading contextual-update-heading"><div><p class="eyebrow">ANKI SOURCE UPDATE</p><h1>Update from Anki package</h1><p>Review revised source content for <strong>{{updateDeckName()}}</strong>. Learning history and scheduling stay intact.</p></div><button mat-button type="button" (click)="cancelUpdate.emit()">Cancel</button></div><ol class="update-steps" aria-label="Update progress"><li [class.active]="!ankiAnalysis()">Choose package</li><li [class.active]="!!busy()">Analyse</li><li [class.active]="!!ankiAnalysis()">Review</li><li [class.active]="!!ankiPreview()&&!conflictsResolved()">Resolve</li><li [class.active]="!!ankiPreview()&&conflictsResolved()">Apply</li></ol>}@else{
     <div class="exchange-heading" hrReveal><div><p class="eyebrow">CONTENT EXCHANGE</p><h1>Import & export</h1><p>Share decks and designs. Your study history stays in this browser.</p></div><span class="version">Format v5</span></div>
     <div class="exchange-grid">
       <section class="exchange-panel" hrReveal><h2>Download</h2><p>Start from a workbook or export your current content.</p>
@@ -34,6 +36,7 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
         <p class="help">A deck import never grants cosmetics or imports reviews. Stable IDs update matching content; missing rows never delete existing cards.</p>
       </section>
     </div>
+    }
     @if (busy()) { <div class="busy" role="status"><mat-spinner diameter="24" /><span>{{ busy() }}</span></div> }
     @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
     @if (failure()) { <p class="failure" role="alert">{{ failure() }}</p> }
@@ -51,8 +54,8 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
         }
       </section>
     }
-    <section class="exchange-panel anki-import" aria-label="Anki package import" hrReveal>
-      <p class="eyebrow">LOCAL PACKAGE CONVERSION</p><h2>{{updateDeckId?'Update from Anki package':'Import an Anki deck'}}</h2><p>Choose an <code>.apkg</code> file. HoloRecall analyses it locally, converts safe learning content, and never imports scheduling history or earned cosmetics.</p>
+    <section class="exchange-panel anki-import" [class.contextual-update]="!!updateDeckId" aria-label="Anki package import" hrReveal>
+      <p class="eyebrow">LOCAL PACKAGE CONVERSION</p><h2>{{updateDeckId?'Choose the revised package':'Import an Anki deck'}}</h2><p>{{updateDeckId?'The selected package must contain this deck’s stable Anki source identity.':'Choose an .apkg file. HoloRecall converts safe learning content locally without importing Anki scheduling history.'}}</p>
       <label class="file-label" for="anki-import">Anki package</label><input id="anki-import" type="file" accept=".apkg,application/zip" (change)="selectAnki($event)" [disabled]="!!busy() || !ankiAllowed" />
       @if(!ankiAllowed){<p class="failure" role="alert">{{ankiUnavailable}}</p>}
       @if(ankiRunning()){<button mat-stroked-button type="button" (click)="cancelAnki()">Cancel analysis</button>}
@@ -65,18 +68,21 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
         @if(ankiPreview();as item){
           <div class="update-summary" aria-label="Anki source comparison"><div><strong>{{item.update.newCards.length}}</strong><span>New cards</span></div><div><strong>{{item.update.changedCards.length}}</strong><span>Changed source</span></div><div><strong>{{item.update.changedMediaCards.length}}</strong><span>Changed media</span></div><div><strong>{{item.update.unchangedCards.length}}</strong><span>Unchanged</span></div><div><strong>{{item.update.conflicts.length}}</strong><span>Local conflicts</span></div><div><strong>{{item.update.removedSourceCards.length}}</strong><span>Source removed</span></div></div>
           @if(item.errors.length){<p class="failure" role="alert">{{item.errors.join(' ')}}</p>}
+          @if(comparisonCards().length){<section class="comparison-preview" aria-label="Representative before and after card preview"><div class="preview-heading"><h3>Before and after</h3><span>{{comparisonCards().length}} representative {{comparisonCards().length===1?'card':'cards'}}</span></div>@for(row of comparisonCards();track row.id){<article><div><span class="eyebrow">BEFORE</span><dl><dt>Front</dt><dd>{{row.before?.front||'Unavailable'}}</dd><dt>Answer</dt><dd class="answer-value">{{row.before?.answer||'Unavailable'}}</dd><dt>Pronunciation</dt><dd>{{row.before?.pronunciation||'—'}}</dd><dt>Meaning</dt><dd>{{row.before?.meaning||'—'}}</dd><dt>Notes</dt><dd>{{row.before?.notes||'—'}}</dd></dl></div><div><span class="eyebrow">AFTER</span><dl><dt>Front</dt><dd>{{row.after.front}}</dd><dt>Answer</dt><dd class="answer-value">{{row.after.answer}}</dd><dt>Pronunciation</dt><dd>{{row.after.pronunciation||'—'}}</dd><dt>Meaning</dt><dd>{{row.after.meaning||'—'}}</dd><dt>Notes</dt><dd>{{row.after.notes||'—'}}</dd></dl></div></article>}</section>}
           @if(item.update.changedCards.length){<details><summary>Changed source fields · {{item.update.changedCards.length}}</summary>@for(id of item.update.changedCards;track id){<div class="conflict-diff"><strong>{{id}}</strong><p>{{conflictDiff(id)}}</p></div>}</details>}
           @if(item.update.changedMediaCards.length){<details><summary>Changed media · {{item.update.changedMediaCards.length}}</summary><p class="ids">{{item.update.changedMediaCards.join(', ')}}</p></details>}
           @if(item.update.newDecks.length||item.update.changedDecks.length){<details><summary>New or changed deck hierarchy · {{item.update.newDecks.length+item.update.changedDecks.length}}</summary><p>{{item.update.newDecks.length}} new · {{item.update.changedDecks.length}} changed</p><p class="ids">{{item.update.newDecks.concat(item.update.changedDecks).join(', ')}}</p></details>}
-          @if(item.update.conflicts.length||item.update.deckConflicts.length){<section class="conflict-panel"><h3>Local edits need a choice</h3><p>{{preserveAnkiEdits?'Keeping local HoloRecall content.':'Using the revised Anki source for these items.'}} Learning history, scheduling and cosmetics remain unchanged.</p><div class="actions"><button mat-stroked-button type="button" (click)="setConflictPolicy(true)">Keep local</button><button mat-stroked-button type="button" (click)="setConflictPolicy(false)">Use updated Anki source</button></div>@if(item.update.conflicts.length){<details><summary>Review {{item.update.conflicts.length}} affected {{item.update.conflicts.length===1?'card':'cards'}}</summary>@for(id of item.update.conflicts;track id){<div class="conflict-diff"><strong>{{id}}</strong><p>{{conflictDiff(id)}}</p></div>}</details>}@if(item.update.deckConflicts.length){<details><summary>Review {{item.update.deckConflicts.length}} affected {{item.update.deckConflicts.length===1?'deck':'decks'}}</summary><p class="ids">{{item.update.deckConflicts.join(', ')}}</p></details>}@if(item.update.legacyReviewRequired.length){<p class="hint">{{item.update.legacyReviewRequired.length}} legacy imported {{item.update.legacyReviewRequired.length===1?'card has':'cards have'}} no prior converter baseline. Review them before choosing the revised source to repair old formatting.</p>}</section>}
+          @if(item.update.conflicts.length||item.update.deckConflicts.length){<section class="conflict-panel"><h3>Local edits need a choice</h3><p>{{conflictsResolved()?(preserveAnkiEdits?'Keep local content is selected.':'Use the revised Anki source is selected.'):'Choose how to resolve these conflicts before applying.'}} Learning history, scheduling and cosmetics remain unchanged.</p><div class="actions"><button mat-stroked-button type="button" (click)="setConflictPolicy(true)" [attr.aria-pressed]="conflictsResolved()&&preserveAnkiEdits">Keep local</button><button mat-stroked-button type="button" (click)="setConflictPolicy(false)" [attr.aria-pressed]="conflictsResolved()&&!preserveAnkiEdits">Use updated Anki source</button></div>@if(item.update.conflicts.length){<details><summary>Review {{item.update.conflicts.length}} affected {{item.update.conflicts.length===1?'card':'cards'}}</summary>@for(id of item.update.conflicts;track id){<div class="conflict-diff"><strong>{{id}}</strong><p>{{conflictDiff(id)}}</p></div>}</details>}@if(item.update.deckConflicts.length){<details><summary>Review {{item.update.deckConflicts.length}} affected {{item.update.deckConflicts.length===1?'deck':'decks'}}</summary><p class="ids">{{item.update.deckConflicts.join(', ')}}</p></details>}@if(item.update.legacyReviewRequired.length){<p class="hint">{{item.update.legacyReviewRequired.length}} legacy imported {{item.update.legacyReviewRequired.length===1?'card has':'cards have'}} no prior converter baseline. Review them before choosing the revised source to repair old formatting.</p>}</section>}
           @if(item.update.removedSourceCards.length){<details><summary>{{item.update.removedSourceCards.length}} source-removed {{item.update.removedSourceCards.length===1?'card':'cards'}} kept safely</summary><p>They remain in HoloRecall as archive candidates. This update never deletes cards or learning history.</p><p class="ids">{{item.update.removedSourceCards.join(', ')}}</p></details>}
-          <p>{{item.newCards.length}} new · {{item.updatedCards.length}} updates ready · {{item.update.unchangedCards.length}} unchanged. Imported rarity is authored presentation only; it does not unlock cosmetics.</p><div class="study-choice"><mat-form-field appearance="outline"><mat-label>Study using</mat-label><mat-select [(ngModel)]="ankiStudyPresetId">@for(preset of store.data()?.studyPresets??[];track preset.id){<mat-option [value]="preset.id">{{preset.name}}</mat-option>}</mat-select></mat-form-field><p class="hint">Anki learning history isn't imported. These cards will use your HoloRecall study settings.</p></div><button mat-flat-button (click)="applyAnki()" [disabled]="!!busy() || item.errors.length || (requiresExclusion(analysis) && !acceptAnkiIssues)">{{updateDeckId?'Apply update':'Import'}} {{item.newCards.length + item.updatedCards.length}} supported cards</button> <button mat-button (click)="cancelAnki()">Cancel</button>}
+          <p>{{item.newCards.length}} new · {{item.updatedCards.length}} updates ready · {{item.update.unchangedCards.length}} unchanged. Imported rarity is authored presentation only; it does not unlock cosmetics.</p><div class="study-choice"><mat-form-field appearance="outline"><mat-label>Study using</mat-label><mat-select [(ngModel)]="ankiStudyPresetId">@for(preset of store.data()?.studyPresets??[];track preset.id){<mat-option [value]="preset.id">{{preset.name}}</mat-option>}</mat-select></mat-form-field><p class="hint">Anki learning history isn't imported. These cards will use your HoloRecall study settings.</p></div><div class="primary-actions"><button mat-flat-button (click)="applyAnki()" [disabled]="!canApplyAnki(item,analysis)">{{updateDeckId?'Apply update':'Import'}} {{item.newCards.length + item.updatedCards.length}} supported cards</button> <button mat-button (click)="updateDeckId?cancelUpdate.emit():cancelAnki()">Cancel</button></div>}
       </div>}
       <details><summary>Supported package scope</summary><p>Legacy <code>collection.anki2</code>, legacy <code>collection.anki21</code>, and detected modern <code>collection.anki21b</code> databases are analysed in a bounded background Worker. Basic, reversed, conditional and standard cloze templates convert to inert HoloRecall text. PNG, JPEG, WebP, MP3 and WAV media are bundled. Text-to-speech directives, script-dependent templates without an explicit safe mapping, answer checking, image occlusion, active SVG, remote resources and fonts remain unsupported.</p></details>
     </section>
   `,
   styleUrl: './exchange.css',
   styles: [`
+    .update-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.5rem;margin:0 0 1rem;padding:0;list-style:none;counter-reset:update}.update-steps li{display:flex;align-items:center;gap:.45rem;padding:.65rem .7rem;border-radius:var(--mat-sys-corner-medium);background:var(--mat-sys-surface-container);color:var(--mat-sys-on-surface-variant);font:var(--mat-sys-label-medium)}.update-steps li:before{counter-increment:update;content:counter(update);display:grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--mat-sys-surface-container-high)}.update-steps li.active{background:var(--mat-sys-secondary-container);color:var(--mat-sys-on-secondary-container)}
+    .contextual-update{max-width:72rem;margin-inline:auto}.comparison-preview{margin:1rem 0}.comparison-preview article{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.75rem 0;padding:1rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-large)}.comparison-preview article>div{min-width:0}.comparison-preview dl{grid-template-columns:minmax(6rem,auto) minmax(0,1fr);margin:.65rem 0 0}.comparison-preview dd{white-space:pre-line}.comparison-preview .answer-value{padding:.35rem .55rem;border-radius:var(--mat-sys-corner-small);background:var(--mat-sys-primary-container);color:var(--mat-sys-on-primary-container);font:var(--mat-sys-title-medium);font-weight:650}.primary-actions{display:flex;align-items:center;gap:.75rem;margin-top:1rem}
     .mapping-model{padding:1rem 0;border-bottom:1px solid var(--mat-sys-outline-variant)}
     .mapping-model>div:first-child{display:flex;align-items:center;justify-content:space-between;gap:1rem}.mapping-model h3{margin:0;text-align:start}
     .mapping-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:.75rem}.mapping-grid mat-form-field,.mapping-model>mat-form-field{width:100%;min-width:0}
@@ -86,12 +92,16 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
     .conversion-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1rem 0}.conversion-counts>div{display:grid;gap:.15rem;padding:.8rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-medium);background:var(--mat-sys-surface-container-low)}.conversion-counts strong{font:var(--mat-sys-title-large)}.conversion-counts span{font:var(--mat-sys-label-small);color:var(--mat-sys-on-surface-variant)}
     .issue-summary{margin:1rem 0;padding:1rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-large);background:var(--mat-sys-surface-container-low)}.issue-summary>p{color:var(--mat-sys-on-surface-variant);margin:.4rem 0 1rem}.issue-panel{margin:.5rem 0;padding:.75rem;border-inline-start:4px solid var(--mat-sys-outline);background:var(--mat-sys-surface)}.issue-panel.error{border-inline-start-color:var(--mat-sys-error)}.issue-panel.warning{border-inline-start-color:var(--mat-sys-tertiary)}.issue-panel.info{border-inline-start-color:var(--mat-sys-primary)}.issue-panel summary{font-weight:600;cursor:pointer}.issue-panel li{margin:.5rem 0}.issue-panel .ids{display:block;color:var(--mat-sys-on-surface-variant);overflow-wrap:anywhere}.exclusion-choice{display:flex;align-items:flex-start;gap:.65rem;margin-top:1rem}
     .update-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0}.update-summary>div{display:grid;gap:.15rem;padding:.75rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-medium)}.update-summary strong{font:var(--mat-sys-title-large)}.update-summary span{font:var(--mat-sys-label-small);color:var(--mat-sys-on-surface-variant)}.conflict-panel{margin:1rem 0;padding:1rem;border-inline-start:4px solid var(--mat-sys-tertiary);background:var(--mat-sys-tertiary-container);color:var(--mat-sys-on-tertiary-container);border-radius:var(--mat-sys-corner-medium)}.conflict-panel h3{margin-top:0}.conflict-diff{padding:.6rem 0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent)}.conflict-diff p{white-space:pre-line;margin:.25rem 0}
-    @media(max-width:760px){.exchange-heading{flex-direction:column}.mapping-grid{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}.preview-counts,.conversion-counts,.update-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:760px){.exchange-heading{flex-direction:column}.mapping-grid{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}.preview-counts,.conversion-counts,.update-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.update-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.comparison-preview article{grid-template-columns:1fr}.contextual-update-heading h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.contextual-update-heading{margin-bottom:1rem}}
+    @media(max-width:460px){.update-steps{grid-template-columns:1fr 1fr}.update-steps li{padding:.5rem;font-size:.72rem}}
     @media(max-width:420px){.conversion-counts{grid-template-columns:1fr}}
   `],
 })
-export class ExchangeComponent implements OnDestroy {
+export class ExchangeComponent implements OnDestroy, OnInit {
   @Input() updateDeckId='';
+  @Input() initialAnkiFile: File | null = null;
+  @Output() readonly updateComplete = new EventEmitter<string>();
+  @Output() readonly cancelUpdate = new EventEmitter<void>();
   readonly issueSeverities=['error','warning','info'] as const;
   readonly rarityIds: Rarity[] = ['common','uncommon','rare','holo-rare','ultra-rare','secret-rare','relic'];
   readonly store = inject(LocalStudyStore);
@@ -103,9 +113,13 @@ export class ExchangeComponent implements OnDestroy {
   readonly preview = signal<ImportPreview | null>(null);
   readonly ankiAnalysis = signal<AnkiAnalysis | null>(null); readonly ankiPreview = signal<AnkiImportPreview | null>(null);
   preserveAnkiEdits = true; acceptAnkiIssues = false;ankiStudyPresetId=BALANCED_PRESET_ID; private ankiAbort?: AbortController; private ankiBytes?: Uint8Array; private ankiPackageName = '';
+  readonly conflictsResolved=signal(true);
   readonly ankiRunning = signal(false); readonly mappingDrafts = new Map<string, AnkiMappingPreset>();
   readonly mappingTargets: { id: AnkiFieldTarget; label: string }[] = [{id:'ignore',label:'Keep as source metadata'},{id:'front',label:'Front'},{id:'answer',label:'Answer'},{id:'pronunciation',label:'Pronunciation'},{id:'meaning',label:'Meaning'},{id:'notes',label:'Notes'},{id:'front-media',label:'Front media'},{id:'back-media',label:'Answer media'}];
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
+
+  ngOnInit():void{if(this.initialAnkiFile)void this.analyseAnkiFile(this.initialAnkiFile);}
+  updateDeckName():string{return this.store.decks().find(deck=>deck.id===this.updateDeckId)?.name??'Imported deck';}
 
   hasChanges(preview: ImportPreview): boolean { return !!(preview.newCards.length + preview.updatedCards.length + preview.newDecks.length + preview.updatedDecks.length + preview.newDesigns.length + preview.updatedDesigns.length + preview.bundle.assets.length); }
 
@@ -140,23 +154,28 @@ export class ExchangeComponent implements OnDestroy {
 
   async selectAnki(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement, file = input.files?.[0]; if (!file) return;
+    await this.analyseAnkiFile(file); input.value = '';
+  }
+  private async analyseAnkiFile(file:File):Promise<void>{
     this.cancelAnki(); this.failure.set(''); this.message.set(''); this.ankiAbort = new AbortController(); this.busy.set('Opening the Anki archive…');
     try {
       if (file.size > 30 * 1024 * 1024) throw new Error('Choose an Anki package of at most 30 MiB compressed.');
       this.ankiBytes = new Uint8Array(await file.arrayBuffer()); this.ankiPackageName = file.name;
       await this.runAnkiAnalysis();
     } catch (error) { if ((error as Error).name !== 'AbortError') this.failure.set(this.errorMessage(error)); }
-    finally { this.ankiRunning.set(false); this.busy.set(''); input.value = ''; }
+    finally { this.ankiRunning.set(false); this.busy.set(''); }
   }
   refreshAnkiPreview(): void { const analysis = this.ankiAnalysis(), state = this.store.data(); if (!analysis || !state) return; void import('../../domain/anki').then(({ previewAnkiImport }) => this.ankiPreview.set(previewAnkiImport(analysis, state, this.preserveAnkiEdits,this.updateDeckId||undefined))); }
-  setConflictPolicy(preserve:boolean):void{this.preserveAnkiEdits=preserve;this.refreshAnkiPreview();}
+  setConflictPolicy(preserve:boolean):void{this.preserveAnkiEdits=preserve;this.conflictsResolved.set(true);this.refreshAnkiPreview();}
+  comparisonCards(){const analysis=this.ankiAnalysis();if(!analysis)return[];const changed=new Set(this.ankiPreview()?.update.changedCards??[]);return analysis.cards.filter(card=>changed.has(card.id)).slice(0,3).map(after=>({id:after.id,before:this.store.cards().find(card=>card.id===after.id),after}));}
   conflictDiff(id:string):string{const existing=this.store.cards().find(card=>card.id===id),incoming=this.ankiAnalysis()?.cards.find(card=>card.id===id);if(!existing||!incoming)return'Content comparison unavailable.';const changed=(['front','answer','pronunciation','meaning','notes','tags','image','backImage','frontAudio','backAudio'] as const).filter(key=>JSON.stringify(existing[key])!==JSON.stringify(incoming[key]));return changed.length?`Changed: ${changed.join(', ')}.`:'Source identity requires review before reconversion.';}
   cancelAnki(): void { this.ankiAbort?.abort(); this.ankiWorker.cancel(); this.ankiAbort = undefined; this.ankiRunning.set(false); this.ankiAnalysis.set(null); this.ankiPreview.set(null); this.ankiBytes=undefined; this.ankiPackageName=''; this.busy.set(''); }
   issuesFor(analysis:AnkiAnalysis,severity:'error'|'warning'|'info'){return analysis.issues.filter(issue=>issue.severity===severity);}
   affectedCount(analysis:AnkiAnalysis,severity:'error'|'warning'|'info'):number{return new Set(this.issuesFor(analysis,severity).flatMap(issue=>issue.cardIds)).size;}
   issueHeading(severity:'error'|'warning'|'info'):string{return severity==='error'?'Cannot convert safely':severity==='warning'?'Content or media omitted':'Anki presentation simplified';}
   requiresExclusion(analysis:AnkiAnalysis):boolean{return analysis.conversion.excluded+analysis.conversion.unsafe>0;}
-  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || preview.errors.length || !analysis || (this.requiresExclusion(analysis) && !this.acceptAnkiIssues)) return; this.busy.set('Saving the supported Anki content atomically…'); try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion,this.ankiStudyPresetId,true); this.message.set(`${this.updateDeckId?'Updated':'Imported'} ${preview.newCards.length} new and ${preview.updatedCards.length} changed Anki cards. Scheduling, review history and cosmetic unlocks were preserved.`); this.cancelAnki(); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
+  canApplyAnki(preview:AnkiImportPreview,analysis:AnkiAnalysis):boolean{return !this.busy()&&!preview.errors.length&&(!this.requiresExclusion(analysis)||this.acceptAnkiIssues)&&this.conflictsResolved();}
+  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || !analysis || !this.canApplyAnki(preview,analysis)) return; this.busy.set('Saving the supported Anki content atomically…'); try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion,this.ankiStudyPresetId,true); const result=`${this.updateDeckId?'Updated':'Imported'} ${preview.newCards.length} new and ${preview.updatedCards.length} changed Anki cards. Scheduling, review history and cosmetic unlocks were preserved.`;this.message.set(result); const completedDeck=this.updateDeckId;this.cancelAnki();if(completedDeck)this.updateComplete.emit(completedDeck); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
 
   async export(portable: boolean): Promise<void> {
     this.message.set(''); this.failure.set(''); this.busy.set(portable ? 'Packaging workbook, media and designs…' : 'Building content workbook…');
@@ -173,19 +192,18 @@ export class ExchangeComponent implements OnDestroy {
     finally { this.busy.set(''); }
   }
   private errorMessage(error: unknown): string { return error instanceof Error ? error.message : 'The operation could not be completed. No existing data was removed.'; }
-  private async runAnkiAnalysis(mappings = this.store.data()?.ankiMappings ?? []): Promise<void> {
+  private async runAnkiAnalysis(mappings = this.store.data()?.ankiMappings ?? []): Promise<AnkiAnalysis> {
     const state = this.store.data(), bytes = this.ankiBytes; if (!state || !bytes) throw new Error('Select the Anki package again.');
     this.ankiAbort?.abort(); this.ankiAbort = new AbortController(); this.ankiRunning.set(true); this.busy.set('Opening archive…');
     const analysis = await this.ankiWorker.analyse(bytes, this.ankiPackageName, mappings, progress => this.busy.set(this.progressLabel(progress)), this.ankiAbort.signal);
     this.ankiAnalysis.set(analysis); this.mappingDrafts.clear(); for (const model of analysis.modelSchemas) this.mappingDrafts.set(model.signature, structuredClone(this.savedMapping(model) ?? this.suggestMapping(model)));
-    const { previewAnkiImport } = await import('../../domain/anki'); this.ankiPreview.set(previewAnkiImport(analysis, this.store.data()!, this.preserveAnkiEdits,this.updateDeckId||undefined)); this.acceptAnkiIssues = false; this.ankiRunning.set(false);
+    const { previewAnkiImport } = await import('../../domain/anki'); const preview=previewAnkiImport(analysis, this.store.data()!, this.preserveAnkiEdits,this.updateDeckId||undefined);this.ankiPreview.set(preview);this.conflictsResolved.set(!(preview.update.conflicts.length||preview.update.deckConflicts.length)); this.acceptAnkiIssues = false; this.ankiRunning.set(false);return analysis;
   }
   mappingDraft(model: AnkiModelSchema): AnkiMappingPreset { return this.mappingDrafts.get(model.signature) ?? this.suggestMapping(model); }
   savedMapping(model: AnkiModelSchema): AnkiMappingPreset | undefined { return this.store.data()?.ankiMappings.find(item => item.sourceSignature === model.signature); }
-  private suggestMapping(model: AnkiModelSchema): AnkiMappingPreset { const fields = Object.fromEntries(model.fields.map((field,index) => [field, this.suggestTarget(field,index)])) as Record<string,AnkiFieldTarget>; return {id:`mapping-${model.signature.slice(14)}`,version:1,name:`${model.name} mapping`,sourceSignature:model.signature,modelName:model.name,fields}; }
-  private suggestTarget(field: string, index: number): AnkiFieldTarget { const value=field.toLowerCase(); if (/pron|reading|phonetic/.test(value))return'pronunciation';if(/breakdown|usage|use|example|note|extra|remark|context/.test(value))return'notes';if(/meaning|translation|definition/.test(value))return'meaning';if(/audio|sound/.test(value))return /question|front/.test(value)?'front-media':'back-media';if(/front|question|prompt|term|word|phrase/.test(value))return'front';if(/back|answer|response/.test(value))return'answer';return index===0?'front':index===1?'answer':'ignore'; }
+  private suggestMapping(model: AnkiModelSchema): AnkiMappingPreset { return suggestedAnkiMapping(model); }
   async previewMappings():Promise<void>{this.failure.set('');try{await this.runAnkiAnalysis([...this.mappingDrafts.values()]);}catch(error){if((error as Error).name!=='AbortError')this.failure.set(this.errorMessage(error));}finally{this.ankiRunning.set(false);this.busy.set('');}}
-  async saveMappings():Promise<void>{this.failure.set('');try{const mappings=[...this.mappingDrafts.values()];await this.store.saveAnkiMappings(mappings);await this.runAnkiAnalysis(mappings);this.message.set('Mapping presets saved for these exact source schemas.');}catch(error){if((error as Error).name!=='AbortError')this.failure.set(this.errorMessage(error));}finally{this.ankiRunning.set(false);this.busy.set('');}}
+  async saveMappings():Promise<void>{this.failure.set('');try{const mappings=[...this.mappingDrafts.values()],analysis=await this.runAnkiAnalysis(mappings);if(analysis.issues.some(issue=>issue.severity==='error'&&issue.message==='Field mapping requires review before conversion'))throw new Error('Review the source mapping. It does not produce a trustworthy prompt and answer yet.');await this.store.saveAnkiMappings(mappings);await this.runAnkiAnalysis(mappings);this.message.set('Mapping presets saved for these exact source schemas.');}catch(error){if((error as Error).name!=='AbortError')this.failure.set(this.errorMessage(error));}finally{this.ankiRunning.set(false);this.busy.set('');}}
   private progressLabel(progress:AnkiProgress):string{return progress.total===undefined?`${progress.label}…`:`${progress.label} · ${progress.completed??0} of ${progress.total}`;}
   ngOnDestroy():void{this.ankiAbort?.abort();this.ankiWorker.cancel();}
 }

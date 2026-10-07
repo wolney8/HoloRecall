@@ -8,7 +8,10 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 - **Recovered state:** clean `main` at `3719b04`. The exact real package retest failed: updated cards can display `it` as the primary answer, and the shared breadcrumb presentation produces vertical dead space and duplicate headings. No learner data or native work has been reset.
 - **Tracker state:** HR-BUG-ANKI-05–07, HR-BUG-NAV-02 and HR-BUG-STUDY-02–03 are `IN_PROGRESS`. HR-ACCEPT-ANKI-01 is **FAILED — REAL USER DATA DEFECT REPRODUCED**.
-- **Exact next action:** trace raw Anki fields/model/template/mapping through the proposed update, stored card and renderer input using sanitised fixtures; independently isolate the shared breadcrumb CSS/DOM defect before changing page-specific layouts.
+- **Root cause:** the update UI's positional fallback mapped any unrecognised second field to Answer. In the reproduced `Prompt / Language / Pronunciation / Italian` schema this converted `Language = it`, hashed it as the source baseline and persisted it; CardRenderer was correct. Legacy global `nav` column/full-width rules independently turned breadcrumbs into tall stacked page sections.
+- **Implemented batch now in VERIFY:** positional mapping is gone; semantic/template-side mapping validation and converter provenance block unresolved answers. The contextual deck action launches the file picker, then a focused lazy update comparison with explicit conflict resolution and safe return. Wide breadcrumbs are compact rows with the duplicate current crumb omitted; Study toolbar spacing no longer distributes every button with auto margins.
+- **Evidence so far:** focused importer/store **29/29** and production build pass at **842.65 kB raw / 199.87 kB transfer**. Chromium/WebKit targeted journeys passed **12/14**; both failures were the same new breadcrumb assertion comparing top edges of differently sized but centre-aligned elements. The corrected centre-line assertion passed **2/2**. No timeout changed.
+- **Exact next action:** complete full domain/browser/native Simulator regression and visual evidence, then move only evidenced stop-ship items to DONE. HR-ACCEPT-ANKI-01 remains failed until implementation closure, then returns to user-retest VERIFY.
 
 ### Data fidelity/settings/navigation recovery — 7 October 2026
 

@@ -14,6 +14,15 @@ async function warningApkg():Promise<Buffer>{
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
+async function languageMetadataApkg(answer='Mi chiamo'):Promise<Buffer>{
+  const SQL=await initSqlJs(),db=new SQL.Database();
+  db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models={1:{name:'Language-labelled prompt',type:0,flds:[{name:'Prompt'},{name:'Language'},{name:'Pronunciation'},{name:'Italian'}],tmpls:[{name:'Italian answer',qfmt:'{{Prompt}}',afmt:'{{FrontSide}}<hr>{{Italian}}<div>{{Pronunciation}}</div>'}]}};
+  db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian Lesson::02 Introductions'}})]);
+  db.run('insert into notes values (?,?,?,?,?)',[100,'introductions-browser-guid',1,'introduction',`Introduce yourself\x1fit\x1fmee KYAH-moh\x1f${answer}`]);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
+}
+
 async function importOfficial(page:Parameters<typeof openApp>[0]):Promise<void>{
   await page.getByRole('button',{name:'Import / export'}).click();
   await page.locator('#anki-import').setInputFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
@@ -74,11 +83,34 @@ test('HR-BUG-STUDY-01 consecutive imported cards settle visible after every deal
   }
   await page.screenshot({path:testInfo.outputPath('second-imported-card-settled.png'),fullPage:true});
   const beforeReimport=await snapshot(page);await page.getByRole('button',{name:'End session'}).click();await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Decks',exact:true}).click();
-  await parent.getByRole('button',{name:'Update from Anki package'}).click();
-  await page.locator('#anki-import').setInputFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
+  const chooserPromise=page.waitForEvent('filechooser');await parent.getByRole('button',{name:'Update from Anki package'}).click();const chooser=await chooserPromise;
+  await chooser.setFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
   await expect(page.locator('.update-summary')).toContainText('7Unchanged');
   await page.getByRole('button',{name:'Apply update 0 supported cards'}).click();const afterReimport=await snapshot(page);
   expect(afterReimport.decks.map(deck=>[deck.id,deck.parentId])).toEqual(beforeReimport.decks.map(deck=>[deck.id,deck.parentId]));expect(afterReimport.cards.map(card=>[card.id,card.rarity])).toEqual(beforeReimport.cards.map(card=>[card.id,card.rarity]));expect(afterReimport.states).toEqual(beforeReimport.states);expect(afterReimport.events).toEqual(beforeReimport.events);expect(afterReimport.rewardEvents).toEqual(beforeReimport.rewardEvents);
+});
+
+test('HR-BUG-ANKI-05/06 contextual update repairs structured answers without touching learner state',async({page})=>{
+  await openApp(page);await page.getByRole('button',{name:'Import / export'}).click();
+  await page.locator('#anki-import').setInputFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:await languageMetadataApkg()});
+  await expect(page.getByText('Mi chiamo',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Import 1 supported cards'}).click();
+  await page.getByRole('button',{name:'Decks',exact:true}).click();
+  const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:'Italian Lesson',exact:true})});
+  const before=await snapshot(page),beforeCard=before.cards.find(card=>card.id.includes('introductions-browser-guid'))!;
+  expect(beforeCard).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});
+  const chooserPromise=page.waitForEvent('filechooser');await parent.getByRole('button',{name:'Update from Anki package'}).click();const chooser=await chooserPromise;
+  await chooser.setFiles({name:'introductions-updated.apkg',mimeType:'application/zip',buffer:await languageMetadataApkg('Mi presento')});
+  await expect(page.getByRole('heading',{name:'Update from Anki package'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Download'})).toHaveCount(0);
+  await expect(page.getByRole('heading',{name:'Import content'})).toHaveCount(0);
+  const comparison=page.getByLabel('Representative before and after card preview');
+  await expect(comparison).toContainText('Mi chiamo');await expect(comparison).toContainText('Mi presento');await expect(comparison).toContainText('mee KYAH-moh');
+  await page.getByRole('button',{name:'Apply update 1 supported cards'}).click();
+  await expect(page.getByRole('heading',{name:'Decks',exact:true})).toBeVisible();
+  const after=await snapshot(page),afterCard=after.cards.find(card=>card.id===beforeCard.id)!;
+  expect(afterCard).toMatchObject({answer:'Mi presento',pronunciation:'mee KYAH-moh'});expect(afterCard.answer).not.toBe('it');
+  expect(after.states[beforeCard.id]).toEqual(before.states[beforeCard.id]);expect(after.events).toEqual(before.events);expect(after.rewardEvents).toEqual(before.rewardEvents);
 });
 
 test('HR-BUG-STUDY-01 background interruption settles the accepted imported review visibly once',async({page})=>{

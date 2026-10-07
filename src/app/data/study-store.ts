@@ -211,10 +211,11 @@ export class LocalStudyStore {
   async saveAnkiMappings(mappings: AnkiMappingPreset[]): Promise<void> {
     mappings.forEach(validateAnkiMapping);
     if (new Set(mappings.map(mapping => mapping.id)).size !== mappings.length) throw new Error('Mapping preset IDs must be unique.');
+    if (new Set(mappings.map(mapping => mapping.sourceSignature)).size !== mappings.length) throw new Error('Keep one reviewed mapping preset for each exact Anki source schema.');
     await this.change(data => {
-      const replacements = new Map(mappings.map(mapping => [mapping.id, structuredClone(mapping)]));
-      const ankiMappings = data.ankiMappings.map(mapping => replacements.get(mapping.id) ?? mapping);
-      for (const mapping of replacements.values()) if (!data.ankiMappings.some(item => item.id === mapping.id)) ankiMappings.push(mapping);
+      const signatures=new Set(mappings.map(mapping=>mapping.sourceSignature));
+      const ankiMappings = data.ankiMappings.filter(mapping=>!signatures.has(mapping.sourceSignature));
+      ankiMappings.push(...mappings.map(mapping=>structuredClone(mapping)));
       return { ...data, version: data.version + 1, ankiMappings };
     });
   }

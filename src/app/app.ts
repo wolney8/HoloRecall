@@ -68,6 +68,7 @@ export class AppComponent {
   readonly searchResultIndex=signal(0);
   readonly focusLaunch=signal<FocusLaunch|undefined>(undefined);
   readonly settingsDeckId=signal('');
+  readonly ankiUpdateFile=signal<File|null>(null);
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
   readonly Math=Math;
@@ -198,19 +199,23 @@ export class AppComponent {
     if(screen==='study'||screen==='results')return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:screen==='results'?'Session complete':this.session()?.mode==='practice'?'Practice':'Study',screen}];
     if(screen==='focus')return [{label:'Decks',screen:'library'},{label:'Focus',screen:'focus'}];
     if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
-    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Import & export',screen:'exchange'}];
+    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Update from Anki',screen:'exchange'}];
     const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[screen];
     return [{label:title,screen}];
   }
   private deckContext(deckId:string):Deck[]{const state=this.data();if(!state)return[];const byId=new Map(state.decks.map(deck=>[deck.id,deck])),path:Deck[]=[];let current=byId.get(deckId),guard=0;while(current&&guard++<state.decks.length){path.unshift(current);current=current.parentId?byId.get(current.parentId):undefined;}return path;}
   mobileTitle():string{return this.navigationContext().at(-1)?.label??'HoloRecall';}
+  breadcrumbAncestors():NavigationContext[]{return this.navigationContext().slice(0,-1);}
   mobileParentTitle():string{return this.navigationContext().at(-2)?.label??'';}
   mobileHasBack():boolean{return this.navigationContext().length>1||!!this.editor||!!this.deckEditor;}
   mobileBack():void{if(this.editor){this.cancelCardEditor();return;}if(this.deckEditor){this.deckEditor=null;return;}const trail=this.navigationContext(),parent=trail.at(-2);if(parent)this.navigateContext(parent);else this.go('dashboard');}
   navigateContext(item:NavigationContext):void{if(item.deckId){this.selectedDeck=item.deckId;for(const deck of this.deckContext(item.deckId))this.expandedDecks.add(deck.id);this.go('library');setTimeout(()=>document.getElementById(`deck-${item.deckId}`)?.scrollIntoView({block:'start'}));return;}this.go(item.screen);}
   mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','progress','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
   toggleMobileMore():void{this.mobileMoreOpen.update(open=>!open);}
-  openExchange(deckId=''):void{const updateDeckId=deckId&&this.data()?.decks.some(deck=>deck.id===deckId&&this.isAnkiDeck(deck))?deckId:'';this.selectedDeck=updateDeckId;this.go('exchange');this.selectedDeck=updateDeckId;}
+  openExchange(deckId=''):void{const updateDeckId=deckId&&this.data()?.decks.some(deck=>deck.id===deckId&&this.isAnkiDeck(deck))?deckId:'';if(updateDeckId){this.selectedDeck=updateDeckId;this.ankiUpdateFile.set(null);document.getElementById('contextual-anki-update')?.click();return;}this.selectedDeck='';this.ankiUpdateFile.set(null);this.go('exchange');}
+  selectAnkiUpdatePackage(event:Event):void{const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(!file)return;this.ankiUpdateFile.set(file);this.go('exchange');}
+  cancelAnkiUpdate():void{const deckId=this.selectedDeck;this.ankiUpdateFile.set(null);this.go('library');if(deckId){this.selectedDeck=deckId;this.expandedDecks.add(deckId);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}}
+  finishAnkiUpdate(deckId:string):void{this.ankiUpdateFile.set(null);this.selectedDeck=deckId;this.go('library');this.selectedDeck=deckId;for(const deck of this.deckContext(deckId))this.expandedDecks.add(deck.id);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}
   isAnkiDeck(deck:Deck):boolean{return deck.ankiSource?.kind==='anki'||deck.id.startsWith('anki-');}
   openStudySettings(deckId?:string):void{if(this.screen()==='study')void this.pauseAutoAdvance(true);this.go('settings');this.settingsDeckId.set(deckId??'');}
   topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}

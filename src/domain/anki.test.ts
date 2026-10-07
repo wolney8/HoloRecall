@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
-import { analyseAnkiPackage, plainAnkiText, previewAnkiImport, suggestedRarity } from './anki';
+import { analyseAnkiPackage, plainAnkiText, previewAnkiImport, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
 import { createInitialState } from './study';
 
 beforeAll(async () => {
@@ -50,6 +50,16 @@ async function structuredItalianPackage(answer = 'Good evening'): Promise<Uint8A
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
 }
 
+async function languageMetadataPackage(answer = 'Mi chiamo'): Promise<Uint8Array> {
+  const SQL = await initSqlJs(); const db = new SQL.Database();
+  db.run('create table col (models text, decks text)'); db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)'); db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models = { 1: { name: 'Language-labelled prompt', type: 0, flds: [{name:'Prompt'},{name:'Language'},{name:'Pronunciation'},{name:'Italian'}], tmpls: [{name:'Italian answer',qfmt:'{{Prompt}}',afmt:'{{FrontSide}}<hr>{{Italian}}<div>{{Pronunciation}}</div>'}] } };
+  db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian Lesson::02 Introductions'}})]);
+  db.run('insert into notes values (?,?,?,?,?)',[100,'introductions-guid',1,'introduction',`Introduce yourself\x1fit\x1fmee KYAH-moh\x1f${answer}`]);
+  db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
+}
+
 describe('Anki content-only import', () => {
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
@@ -73,6 +83,26 @@ describe('Anki content-only import', () => {
     expect(card.answer).not.toContain('Meaning & notes');
     expect(card.ankiSource).toMatchObject({kind:'anki',noteGuid:'buonasera-guid',templateOrdinal:0,modelSignature:schema.signature});
     expect(card.ankiSource?.importedContentHash).toMatch(/^[a-f0-9]{8}$/);
+  });
+
+  it('never guesses a positional answer and blocks a metadata field mapped against the answer template', async () => {
+    expect(suggestedAnkiFieldTarget('Language')).toBe('ignore');
+    expect(suggestedAnkiFieldTarget('Italian')).toBe('ignore');
+    const bytes=await languageMetadataPackage();
+    const safe=await analyseAnkiPackage(bytes,'introductions.apkg');
+    expect(safe.cards[0]).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});
+    expect(safe.cards[0]!.ankiSource?.contentProvenance).toMatchObject({front:'mapping',answer:'mapping',frontFields:['Prompt'],answerFields:['Italian']});
+    const schema=safe.modelSchemas[0]!;
+    const invalid={id:'language-map',version:1 as const,name:'Bad positional mapping',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Language:'answer',Pronunciation:'pronunciation',Italian:'ignore'} as const};
+    const blocked=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,[invalid]);
+    expect(blocked.cards).toHaveLength(0);
+    expect(blocked.conversion.excluded).toBe(1);
+    expect(blocked.issues.find(issue=>issue.message==='Field mapping requires review before conversion')?.examples[0]).toContain('Answer mapping does not match');
+
+    const repaired={...invalid,name:'Reviewed mapping',fields:{Prompt:'front',Language:'ignore',Pronunciation:'pronunciation',Italian:'answer'} as const};
+    const corrected=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,[repaired]);
+    expect(corrected.cards[0]).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});
+    expect(corrected.cards[0]!.ankiSource?.contentProvenance).toMatchObject({answer:'mapping',answerFields:['Italian']});
   });
 
   it('previews source updates, local conflicts, legacy reconversion and recoverable removals', async () => {

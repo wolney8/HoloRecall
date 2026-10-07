@@ -4,7 +4,7 @@ import { inspectZip, makePreview, type ImportPreview } from './exchange';
 export type AnkiVariant = 'legacy-anki2' | 'legacy-anki21' | 'modern-anki21b';
 export type AnkiIssueSeverity = 'error' | 'warning' | 'info';
 export interface AnkiIssue { severity: AnkiIssueSeverity; kind: 'unsupported' | 'missing-media' | 'simplification' | 'remote-dependency'; message: string; count: number; occurrences: number; examples: string[]; cardIds: string[] }
-export interface AnkiModelSchema { signature: string; name: string; fields: string[]; templates: string[]; cloze: boolean }
+export interface AnkiModelSchema { signature: string; name: string; fields: string[]; templates: string[]; cloze: boolean; questionFields: string[]; answerFields: string[] }
 export interface AnkiAnalysis {
   variant: AnkiVariant; sourceNotes: number; generatedCards: number; decks: Deck[]; cards: CardContent[]; assets: LocalAsset[];
   issues: AnkiIssue[]; conversion: { normal: number; simplified: number; excluded: number; unsafe: number }; proposedRarities: Record<Rarity, number>; packageName: string; modelSchemas: AnkiModelSchema[];
@@ -100,11 +100,50 @@ function mappedValues(mapping: AnkiMappingPreset | undefined, target: AnkiFieldT
     .map(([name]) => plainAnkiText(fields[name] ?? ''))
     .filter(Boolean);
 }
-function inferStructuredMapping(model:{name:string;fields:string[];signature?:string}):AnkiMappingPreset|undefined{
+function mappedFieldNames(mapping: AnkiMappingPreset | undefined, target: AnkiFieldTarget): string[] {
+  return Object.entries(mapping?.fields ?? {}).filter(([, value]) => value === target).map(([name]) => name);
+}
+function templateFieldNames(template: string): Set<string> {
+  const names = new Set<string>();
+  for (const match of template.matchAll(/{{(?:[#^/]|(?:tts(?:\s+[^}:]+)*|hint|furigana|kana|kanji|type|cloze|text):)?([^}:]+)}}/gi)) {
+    const name = match[1]?.trim();
+    if (name && name !== 'FrontSide') names.add(name);
+  }
+  return names;
+}
+function mappingProblem(mapping: AnkiMappingPreset | undefined, template: { q: string; a: string }, fields: Record<string, string>): string | undefined {
+  if (!mapping) return undefined;
+  const frontNames = mappedFieldNames(mapping, 'front'), answerNames = mappedFieldNames(mapping, 'answer');
+  const questionFields = templateFieldNames(template.q), answerFields = templateFieldNames(template.a.replace(/{{FrontSide}}/g, ''));
+  if (frontNames.length && !frontNames.some(name => questionFields.has(name))) return `Front mapping does not match a field used by the question template (${frontNames.join(', ')}).`;
+  if (answerNames.length && !answerNames.some(name => answerFields.has(name))) return `Answer mapping does not match a field used by the answer template (${answerNames.join(', ')}).`;
+  const suspicious = answerNames.find(name => /^(?:lang(?:uage)?|locale|language[ _-]?code)$/i.test(name.trim()) && /^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})?$/i.test(plainAnkiText(fields[name] ?? '')));
+  return suspicious ? `Answer mapping points to metadata-like field ${suspicious}; choose the learning-answer field.` : undefined;
+}
+export function suggestedAnkiFieldTarget(field:string):AnkiFieldTarget{
+  const value=field.toLocaleLowerCase('en').trim();
+  if(/pron|reading|phonetic/.test(value))return'pronunciation';
+  if(/breakdown|usage|use|example|context|note|extra|remark/.test(value))return'notes';
+  if(/meaning|translation|definition/.test(value))return'meaning';
+  if(/audio|sound/.test(value))return /question|front/.test(value)?'front-media':'back-media';
+  if(/front|question|prompt|term|word|phrase/.test(value))return'front';
+  if(/back|answer|response/.test(value))return'answer';
+  return'ignore';
+}
+export function suggestedAnkiMapping(model:{name:string;fields:string[];signature:string;questionFields?:string[];answerFields?:string[]}):AnkiMappingPreset{
+  const fields=Object.fromEntries(model.fields.map(name=>[name,suggestedAnkiFieldTarget(name)])) as Record<string,AnkiFieldTarget>;
+  const questionRefs=new Set(model.questionFields??[]),answerRefs=new Set(model.answerFields??[]);
+  const metadataLike=(name:string)=>/^(?:lang(?:uage)?|locale|language[ _-]?code)$/i.test(name.trim());
+  if(!Object.values(fields).includes('front')){const candidates=model.fields.filter(name=>questionRefs.has(name)&&fields[name]==='ignore'&&!metadataLike(name));if(candidates.length===1)fields[candidates[0]!] = 'front';}
+  if(!Object.values(fields).includes('answer')){const candidates=model.fields.filter(name=>answerRefs.has(name)&&fields[name]==='ignore'&&!questionRefs.has(name)&&!metadataLike(name));if(candidates.length===1)fields[candidates[0]!] = 'answer';}
+  return{id:`mapping-${model.signature.slice(14)}`,version:1,name:`${model.name} mapping`,sourceSignature:model.signature,modelName:model.name,fields};
+}
+function inferStructuredMapping(model:{name:string;fields:string[];templates?:{q:string;a:string}[];signature?:string}):AnkiMappingPreset|undefined{
   if(model.fields.length<3)return undefined;
-  const fields=Object.fromEntries(model.fields.map(name=>{const value=name.toLocaleLowerCase('en');const target:AnkiFieldTarget=/pron|reading|phonetic/.test(value)?'pronunciation':/breakdown|usage|use|example|context|note|extra|remark/.test(value)?'notes':/meaning|translation|definition/.test(value)?'meaning':/back|answer|response/.test(value)?'answer':/front|question|prompt|term|word|phrase/.test(value)?'front':'ignore';return[name,target];})) as Record<string,AnkiFieldTarget>;
+  const suggested=suggestedAnkiMapping({name:model.name,fields:model.fields,signature:model.signature!,questionFields:model.templates?.flatMap(template=>[...templateFieldNames(template.q)]),answerFields:model.templates?.flatMap(template=>[...templateFieldNames(template.a.replace(/{{FrontSide}}/g,''))])});
+  const fields=suggested.fields;
   if(!Object.values(fields).includes('front')||!Object.values(fields).includes('answer'))return undefined;
-  return{id:`inferred-${model.signature}`,version:1,name:`${model.name} structured fields`,sourceSignature:model.signature!,modelName:model.name,fields};
+  return{...suggested,id:`inferred-${model.signature}`,name:`${model.name} structured fields`};
 }
 function mappedValue(mapping: AnkiMappingPreset | undefined, target: AnkiFieldTarget, fields: Record<string, string>): string { return mappedValues(mapping, target, fields).join('\n\n'); }
 function importedCardShape(card: CardContent): unknown {
@@ -142,7 +181,7 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       for (const [key, value] of Object.entries(rawDecks) as [string, any][]) deckNames.set(Number(key), String(value.name ?? key));
     }
     for (const model of models.values()) model.signature = modelSignature(model);
-    const modelSchemas = [...models.values()].map(model => ({ signature: model.signature!, name: model.name, fields: [...model.fields], templates: model.templates.map(template => template.name), cloze: model.cloze }));
+    const modelSchemas = [...models.values()].map(model => ({ signature: model.signature!, name: model.name, fields: [...model.fields], templates: model.templates.map(template => template.name), cloze: model.cloze,questionFields:[...new Set(model.templates.flatMap(template=>[...templateFieldNames(template.q)]))],answerFields:[...new Set(model.templates.flatMap(template=>[...templateFieldNames(template.a.replace(/{{FrontSide}}/g,''))]))] }));
     const rows = db.exec('select n.id,n.guid,n.mid,n.tags,n.flds,c.id,c.did,c.ord from notes n join cards c on c.nid=n.id order by c.id limit 25001')[0]?.values ?? []; if (rows.length > MAX_CARDS) throw new Error(`Package exceeds the ${MAX_CARDS.toLocaleString()} generated-card limit.`);
     const decks = new Map<number, Deck>(), deckList = new Map<string,Deck>(), cards: CardContent[] = [], issues: AnkiIssue[] = []; const wantedMedia = new Set<string>(), simplifiedCards=new Set<string>(), excludedCards=new Set<string>(), unsafeCards=new Set<string>();
     const ensureDeck=(deckKey:number):Deck=>{const existing=decks.get(deckKey);if(existing)return existing;const fullName=deckNames.get(deckKey)??`Imported deck ${deckKey}`,segments=fullName.split('::').map(value=>value.trim()).filter(Boolean);let parentId:string|undefined,leaf:Deck|undefined;for(let index=0;index<segments.length;index++){const path=segments.slice(0,index+1).join('::'),source=[...deckNames.entries()].find(([,name])=>name===path)?.[0],id=source===undefined?stable(`deck-path-${path}`):stable(`deck-${source}`);if(!deckList.has(id)){const candidate:Deck={id,name:segments[index]!,description:index===segments.length-1?'Imported Anki deck. Scheduling and review history were not imported.':'Imported Anki deck group.',suspended:false,...(parentId?{parentId}:{})};candidate.ankiSource={kind:'anki',...(source===undefined?{}:{sourceDeckId:String(source)}),sourcePath:path,importedContentHash:ankiImportedDeckHash(candidate)};deckList.set(id,candidate);}leaf=deckList.get(id)!;parentId=id;}decks.set(deckKey,leaf!);return leaf!;};
@@ -152,6 +191,9 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       const values = String(rawFields).split('\x1f'); if (values.some(value => value.length > MAX_CELL)) { excludedCards.add(id);addIssue('error','unsupported', 'Field exceeds 100,000 characters', String(noteId),id); continue; }
       const fields = Object.fromEntries(model.fields.map((name, index) => [name, values[index] ?? ''])), exactMapping=mappings.find(item => item.sourceSignature === model.signature), mapping = exactMapping??(mappings.some(item=>item.modelName===model.name)?undefined:inferStructuredMapping(model));
       const template = model.cloze ? model.templates[0] : model.templates[Number(ordinal)]; if (!template) { excludedCards.add(id);addIssue('error','unsupported', 'Card references an unavailable template ordinal', `${model.name} / ${ordinal}`,id); continue; }
+      const mappingError = mappingProblem(mapping, template, fields);
+      if (mappingError) { excludedCards.add(id);addIssue('error','unsupported', 'Field mapping requires review before conversion', `${model.name} / ${template.name}: ${mappingError}`,id); continue; }
+      const frontFieldNames=mappedFieldNames(mapping,'front'),answerFieldNames=mappedFieldNames(mapping,'answer');
       const unsafe = /<script|on\w+\s*=/i.test(template.q + template.a), mappedFront = plainAnkiText(mappedValue(mapping, 'front', fields)), mappedAnswer = plainAnkiText(mappedValue(mapping, 'answer', fields));
       if (unsafe && !(mappedFront && mappedAnswer)) { unsafeCards.add(id);addIssue('error','unsupported', 'Script-dependent or answer-checking template requires explicit safe field mapping', model.name,id); continue; }
       const clozeIndex = model.cloze ? Number(ordinal) + 1 : undefined, frontMarkup = unsafe ? mappedFront : renderMarkup(template.q, fields, '', clozeIndex, false), backTemplate = template.a.replace(/{{FrontSide}}/g, ''), backMarkup = unsafe ? mappedAnswer : renderMarkup(backTemplate, fields, '', clozeIndex, true);
@@ -170,7 +212,8 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       const mappedNames = new Set(Object.entries(mapping?.fields ?? {}).filter(([, target]) => target !== 'ignore').map(([name]) => name));
       const rawMetadata = model.fields.filter(name => !mappedNames.has(name) && !front.includes(plainAnkiText(fields[name] ?? '')) && !answer.includes(plainAnkiText(fields[name] ?? ''))).map(name => `${name}: ${plainAnkiText(fields[name] ?? '')}`).filter(line => !line.endsWith(': '));
       const mappedNotes = mappedValues(mapping, 'notes', fields), image = frontImages[0], backImage = backImages[0] ?? image;
-      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: mappedValue(mapping, 'pronunciation', fields), meaning: mappedValue(mapping, 'meaning', fields), notes: [`Imported source · ${model.name} / ${template.name}`, ...mappedNotes, ...rawMetadata].join('\n\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`),ankiSource:{kind:'anki',noteGuid:String(guid),noteId:String(noteId),templateOrdinal:Number(ordinal),modelName:model.name,templateName:template.name,modelSignature:model.signature!,importedContentHash:'00000000'}, ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
+      const contentProvenance={front:model.cloze?'cloze' as const:mappedFront?'mapping' as const:'template' as const,answer:model.cloze?'cloze' as const:mappedAnswer?'mapping' as const:'template' as const,frontFields:mappedFront?frontFieldNames:[...templateFieldNames(template.q)],answerFields:mappedAnswer?answerFieldNames:[...templateFieldNames(backTemplate)]};
+      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: mappedValue(mapping, 'pronunciation', fields), meaning: mappedValue(mapping, 'meaning', fields), notes: [`Imported source · ${model.name} / ${template.name}`, ...mappedNotes, ...rawMetadata].join('\n\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`),ankiSource:{kind:'anki',noteGuid:String(guid),noteId:String(noteId),templateOrdinal:Number(ordinal),modelName:model.name,templateName:template.name,modelSignature:model.signature!,importedContentHash:'00000000',contentProvenance}, ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
       if (rowIndex % 100 === 0 || rowIndex === rows.length - 1) progress?.({ stage: 'content', label: 'Converting cards', completed: rowIndex + 1, total: rows.length });
     }
     abort(signal); const mediaEntry = zip.file('media'); let mediaMap: Record<string, string> = {}; if (mediaEntry) {
@@ -218,5 +261,7 @@ export function previewAnkiImport(analysis: AnkiAnalysis, state: State, preserve
   const referencedAssets=new Set(cards.flatMap(card=>[card.image,card.backImage,...card.frontAudio??[],...card.backAudio??[]]).filter((ref):ref is string=>!!ref&&ref.startsWith('asset:')).map(ref=>ref.slice(6)));
   const bundle: ContentImport = { decks, cards: cards, designs: [], assets: analysis.assets.filter(asset=>referencedAssets.has(asset.id)) };
   const rootMatches=!updateRootDeckId||analysis.decks.some(deck=>deck.id===updateRootDeckId);
-  const preview=makePreview(bundle, state,rootMatches?[]:['This Anki package does not contain the selected imported deck identity. Choose the revised package for this deck.']) as AnkiImportPreview;preview.update=summary;return preview;
+  const semanticInvalid=analysis.cards.filter(card=>{const source=card.ankiSource,provenance=source?.contentProvenance;return !card.answer.trim()||!provenance||(provenance.answer==='mapping'&&!provenance.answerFields.length);});
+  const errors=[...(rootMatches?[]:['This Anki package does not contain the selected imported deck identity. Choose the revised package for this deck.']),...(semanticInvalid.length?[`${semanticInvalid.length} converted card${semanticInvalid.length===1?' has':'s have'} unresolved answer provenance. Review the field mapping before applying.`]:[])];
+  const preview=makePreview(bundle, state,errors) as AnkiImportPreview;preview.update=summary;return preview;
 }
