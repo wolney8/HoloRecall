@@ -1,4 +1,4 @@
-import { expect, test, openApp, snapshot } from './helpers';
+import { expect, test, navigate, openApp, revealCard, snapshot } from './helpers';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
 import { readFile } from 'node:fs/promises';
@@ -14,17 +14,18 @@ async function warningApkg():Promise<Buffer>{
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
-async function languageMetadataApkg(answer='Mi chiamo'):Promise<Buffer>{
+async function languageMetadataApkg(answer='Mi chiamo',multiple=false):Promise<Buffer>{
   const SQL=await initSqlJs(),db=new SQL.Database();
   db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
-  const models={1:{name:'Language-labelled prompt',type:0,flds:[{name:'Prompt'},{name:'Language'},{name:'Pronunciation'},{name:'Italian'}],tmpls:[{name:'Italian answer',qfmt:'{{Prompt}}',afmt:'{{FrontSide}}<hr>{{Italian}}<div>{{Pronunciation}}</div>'}]}};
+  const models={1:{name:'Language-labelled prompt',type:0,flds:[{name:'Prompt'},{name:'Language'},{name:'Pronunciation'},{name:'Italian'},{name:'Meaning'},{name:'Examples'}],tmpls:[{name:'Italian answer',qfmt:'{{Prompt}}',afmt:'{{FrontSide}}<hr>{{Italian}}<div>{{Pronunciation}}</div><div>{{Meaning}}</div><div>{{Examples}}</div>'}]}};
   db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian Lesson::02 Introductions'}})]);
-  db.run('insert into notes values (?,?,?,?,?)',[100,'introductions-browser-guid',1,'introduction',`Introduce yourself\x1fit\x1fmee KYAH-moh\x1f${answer}`]);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  db.run('insert into notes values (?,?,?,?,?)',[100,'introductions-browser-guid',1,'introduction',`Introduce yourself\x1fit\x1fmee KYAH-moh\x1f${answer}\x1fMy name is\x1fMi chiamo Laura.`]);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  if(multiple){db.run('insert into notes values (?,?,?,?,?)',[101,'greetings-browser-guid',1,'greeting','Say good evening\x1fit\x1fbwoh-nah-SEH-rah\x1fBuonasera!\x1fGood evening\x1fBuonasera, Marco!']);db.run('insert into cards values (?,?,?,?)',[201,101,10,0]);}
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
 async function importOfficial(page:Parameters<typeof openApp>[0]):Promise<void>{
-  await page.getByRole('button',{name:'Import / export'}).click();
+  await navigate(page,'Import / export');
   await page.locator('#anki-import').setInputFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
   await expect(page.getByText('legacy-anki21')).toBeVisible();
   await page.getByRole('button',{name:'Import 7 supported cards'}).click();
@@ -33,7 +34,7 @@ async function importOfficial(page:Parameters<typeof openApp>[0]):Promise<void>{
 
 test('HR-BUG-ANKI-01 classifies TTS simplification separately from remote media and safe links',async({page},testInfo)=>{
   const requests:string[]=[];page.on('request',request=>requests.push(request.url()));
-  await openApp(page);await page.getByRole('button',{name:'Import / export'}).click();
+  await openApp(page);await navigate(page,'Import / export');
   await page.locator('#anki-import').setInputFiles({name:'warnings.apkg',mimeType:'application/zip',buffer:await warningApkg()});
   await expect(page.locator('.conversion-counts')).toContainText('0Import normally');
   await expect(page.locator('.conversion-counts')).toContainText('2With simplifications');
@@ -91,7 +92,7 @@ test('HR-BUG-STUDY-01 consecutive imported cards settle visible after every deal
 });
 
 test('HR-BUG-ANKI-05/06 contextual update repairs structured answers without touching learner state',async({page})=>{
-  await openApp(page);await page.getByRole('button',{name:'Import / export'}).click();
+  await openApp(page);await navigate(page,'Import / export');
   await page.locator('#anki-import').setInputFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:await languageMetadataApkg()});
   await expect(page.getByText('Mi chiamo',{exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'Import 1 supported cards'}).click();
@@ -113,15 +114,18 @@ test('HR-BUG-ANKI-05/06 contextual update repairs structured answers without tou
   expect(after.states[beforeCard.id]).toEqual(before.states[beforeCard.id]);expect(after.events).toEqual(before.events);expect(after.rewardEvents).toEqual(before.rewardEvents);
 });
 
-test('HR-ANKI-08/09 same-source repair upgrades legacy converted content',async({page},testInfo)=>{
-  const packageBytes=await languageMetadataApkg();await openApp(page);await page.getByRole('button',{name:'Import / export'}).click();
-  await page.locator('#anki-import').setInputFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:packageBytes});await page.getByRole('button',{name:'Import 1 supported cards'}).click();
-  await page.evaluate(()=>new Promise<void>((resolve,reject)=>{const request=indexedDB.open('holorecall-local-v1',2);request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,transaction=db.transaction('local-study','readwrite'),store=transaction.objectStore('local-study'),read=store.get('snapshot');read.onerror=()=>reject(read.error);read.onsuccess=()=>{const state=read.result,card=state.cards.find((item:{id:string})=>item.id.includes('introductions-browser-guid'));card.answer='it';card.meaning='MeaningGood evening';card.notes='Literalbuona = good; sera = evening.';const shape={deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId};let result=2166136261;for(const char of JSON.stringify(shape))result=Math.imul(result^char.charCodeAt(0),16777619);card.ankiSource.importedContentHash=(result>>>0).toString(16).padStart(8,'0');delete card.ankiSource.conversion;state.version++;store.put(state,'snapshot');};transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>reject(transaction.error);};}));
+test('HR-BUG-ANKI-12–19 repair replaces a stale automatic mapping and corrupt accepted baseline',async({page},testInfo)=>{
+  const packageBytes=await languageMetadataApkg('Mi chiamo',true);await openApp(page);await navigate(page,'Import / export');
+  await page.locator('#anki-import').setInputFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:packageBytes});await page.getByRole('button',{name:'Import 2 supported cards'}).click();
+  await page.evaluate(()=>new Promise<void>((resolve,reject)=>{const hash=(value:unknown)=>{let result=2166136261;for(const char of JSON.stringify(value)??'undefined')result=Math.imul(result^char.charCodeAt(0),16777619);return(result>>>0).toString(16).padStart(8,'0');},request=indexedDB.open('holorecall-local-v1',2);request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,transaction=db.transaction('local-study','readwrite'),store=transaction.objectStore('local-study'),read=store.get('snapshot');read.onerror=()=>reject(read.error);read.onsuccess=()=>{const state=read.result,cards=state.cards.filter((item:{id:string})=>item.id.includes('browser-guid'));for(const card of cards){card.answer='it';card.pronunciation='';card.meaning='';card.notes='Imported source · Language-labelled prompt / Italian answer';const shape={deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId};card.ankiSource.importedContentHash=hash(shape);card.ankiSource.conversion={...card.ankiSource.conversion,mappingVersion:2,mappingPolicyVersion:0,mappingOrigin:'auto-inferred',mappingSignature:'anki-mapping-v1-stale',fieldBaselines:Object.fromEntries(Object.entries(shape).map(([field,value])=>[field,hash(value)]))};}const card=cards[0];const schema=card.ankiSource.modelSignature;state.ankiMappings=[{id:'legacy-positional',version:2,name:'Legacy positional mapping',sourceSignature:schema,modelName:card.ankiSource.modelName,fields:{Prompt:'front',Language:'answer',Pronunciation:'pronunciation',Italian:'ignore',Meaning:'ignore',Examples:'notes'},policyVersion:0,origin:'auto-inferred'}];state.version++;store.put(state,'snapshot');};transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>reject(transaction.error);};}));
   await page.goto('/?repair-fixture=1#dashboard');await expect(page.getByRole('heading',{name:'Study dashboard',exact:true})).toBeVisible();await page.getByRole('button',{name:'Decks',exact:true}).click();
-  const source=page.getByRole('region',{name:'Imported deck source management'});const chooserPromise=page.waitForEvent('filechooser');await source.getByRole('button',{name:'Repair imported content'}).click();const chooser=await chooserPromise;await chooser.setFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:packageBytes});
-  await expect(page.getByRole('heading',{name:'Repair imported content'})).toBeVisible();await expect(page.locator('.update-summary')).toContainText('0Source changed');await expect(page.locator('.update-summary')).toContainText('1Conversion repairs');
-  const comparison=page.getByLabel('Representative before and after card preview');await expect(comparison).toContainText('it');await expect(comparison).toContainText('Mi chiamo');await page.screenshot({path:testInfo.outputPath('same-source-conversion-repair.png'),fullPage:true});
-  await page.getByRole('button',{name:'Apply repairs 1 supported cards'}).click();const repaired=await snapshot(page),card=repaired.cards.find(item=>item.id.includes('introductions-browser-guid'))!;expect(card).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});expect(card.answer).not.toBe('it');
+  const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:'Italian Lesson',exact:true})});await expect(parent.getByRole('button',{name:'Repair imported content'})).toBeVisible();await expect(parent.getByRole('button',{name:'Review field mapping'})).toBeVisible();const chooserPromise=page.waitForEvent('filechooser');await parent.getByRole('button',{name:'Repair imported content'}).click();const chooser=await chooserPromise;await chooser.setFiles({name:'introductions.apkg',mimeType:'application/zip',buffer:packageBytes});
+  await expect(page.getByRole('heading',{name:'Repair imported content'})).toBeVisible();await expect(page.locator('.update-summary')).toContainText('0Source changed');await expect(page.locator('.update-summary')).toContainText('2Conversion repairs');
+  const mapping=page.locator('.mapping-panel');await expect(mapping).toHaveAttribute('open','');await expect(mapping).toContainText('Language');await expect(mapping).toContainText('Sample: it');await expect(mapping).toContainText('Italian');await expect(mapping).toContainText('Sample: Mi chiamo');
+  const comparison=page.getByLabel('Representative before and after card preview');await expect(comparison).toContainText('it');await expect(comparison).toContainText('Mi chiamo');await expect(comparison).toContainText('mee KYAH-moh');await expect(comparison).toContainText('My name is');await page.screenshot({path:testInfo.outputPath('same-source-conversion-repair.png'),fullPage:true});
+  await page.getByRole('button',{name:'Use mapping and refresh preview'}).click();await expect(page.getByText(/reviewed mapping is reflected/i)).toBeVisible();await page.getByRole('button',{name:'Apply repairs 2 supported cards'}).click();const repaired=await snapshot(page),card=repaired.cards.find(item=>item.id.includes('introductions-browser-guid'))!;expect(card).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});expect(card.answer).not.toBe('it');expect(repaired.cards.filter(item=>item.id.includes('browser-guid')).every(item=>item.answer!=='it')).toBe(true);expect(repaired.ankiMappings.find(mapping=>mapping.sourceSignature===card.ankiSource?.modelSignature)).toMatchObject({origin:'user-confirmed',policyVersion:3,fields:{Language:'ignore',Italian:'answer'}});
+  const row=page.locator(`[data-card-id="${card.id}"]`);await expect(row).toContainText('Mi chiamo');await expect(row).not.toContainText(/^it$/);await row.getByRole('button',{name:/Edit Mi chiamo/}).click();await expect(page.getByLabel('Back text / answer')).toHaveValue('Mi chiamo');await expect(page.getByLabel('Approximate pronunciation')).toHaveValue('mee KYAH-moh');await expect(page.getByLabel('Meaning')).toHaveValue('My name is');await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  const search=page.getByRole('combobox',{name:'Search decks and cards'});await search.fill('My name is');await expect(page.getByRole('option').filter({hasText:'Mi chiamo'})).toBeVisible();await search.fill('');await navigate(page,'Collection');await expect(page.getByText('Mi chiamo',{exact:true}).first()).toBeVisible();await navigate(page,'Decks');await parent.getByRole('button',{name:'Study journey'}).click();await revealCard(page);await expect(page.getByRole('heading',{name:'Mi chiamo',exact:true})).toBeVisible();
 });
 
 test('HR-BUG-STUDY-01 background interruption settles the accepted imported review visibly once',async({page})=>{

@@ -57,7 +57,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
     if (source['kind'] !== 'anki' || !text(source['noteGuid'], 160) || !text(source['noteId'], 80) || !integer(source['templateOrdinal'], 0) || !text(source['modelName'], 240) || !text(source['templateName'], 240) || !text(source['modelSignature'], 120) || !/^anki-model-v1-/.test(String(source['modelSignature'])) || !/^[a-f0-9]{8}$/.test(String(source['importedContentHash']))) fail('invalid Anki card source metadata.');
     if(source['sourceContentFingerprint']!==undefined&&(!text(source['sourceContentFingerprint'],120)||!String(source['sourceContentFingerprint']).startsWith('anki-source-v1-')))fail('invalid Anki source fingerprint.');
     if(source['linkState']!==undefined&&!['linked','detached'].includes(String(source['linkState'])))fail('invalid Anki source link state.');
-    if(source['conversion']!==undefined){const conversion=object(source['conversion']);if(!integer(conversion['converterVersion'],1)||!integer(conversion['normalizerVersion'],1)||!integer(conversion['mappingVersion'],1)||!text(conversion['mappingSignature'],120)||!String(conversion['mappingSignature']).startsWith('anki-mapping-v1-'))fail('invalid Anki conversion provenance.');const baselines=object(conversion['fieldBaselines']);for(const value of Object.values(baselines))if(!/^[a-f0-9]{8}$/.test(String(value)))fail('invalid Anki field baseline.');}
+    if(source['conversion']!==undefined){const conversion=object(source['conversion']);if(!integer(conversion['converterVersion'],1)||!integer(conversion['normalizerVersion'],1)||!integer(conversion['mappingVersion'],1)||conversion['mappingPolicyVersion']!==undefined&&!integer(conversion['mappingPolicyVersion'],0)||conversion['mappingOrigin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(conversion['mappingOrigin']))||!text(conversion['mappingSignature'],120)||!String(conversion['mappingSignature']).startsWith('anki-mapping-v1-'))fail('invalid Anki conversion provenance.');const baselines=object(conversion['fieldBaselines']);for(const value of Object.values(baselines))if(!/^[a-f0-9]{8}$/.test(String(value)))fail('invalid Anki field baseline.');if(conversion['fieldOrigins']!==undefined){const origins=object(conversion['fieldOrigins']);if(Object.values(origins).some(value=>!['derived','local','ambiguous'].includes(String(value))))fail('invalid Anki field origin.');}}
   }
 }
 
@@ -72,7 +72,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 6 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 7 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -236,6 +236,7 @@ function validateExtensions(data: Record<string, unknown>): void {
   data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
   if (!Array.isArray(data['ankiMappings'])) fail('missing Anki mapping presets.');
   data['ankiMappings'].forEach(validateAnkiMapping);
+  if(new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>item.id)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length||new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>item.sourceSignature)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length)fail('duplicate Anki mapping presets.');
   if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents'])||!Array.isArray(data['practiceEvents'])||!Array.isArray(data['focusPresets']))fail('missing study configuration or management history.');
   try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);(data['focusPresets'] as FocusPreset[]).forEach(validateFocusPreset);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
   if(new Set((data['studyPresets'] as StudyPreset[]).map(item=>item.id)).size!==(data['studyPresets'] as StudyPreset[]).length)fail('duplicate study preset IDs.');
@@ -279,7 +280,7 @@ export function validateReferences(data: State): void {
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
   const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
-  if (!id(mapping['id']) || ![1,2].includes(Number(mapping['version'])) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
+  if (!id(mapping['id']) || ![1,2,3].includes(Number(mapping['version'])) || mapping['policyVersion']!==undefined&&!integer(mapping['policyVersion'],0) || mapping['origin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(mapping['origin'])) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
   const fields = object(mapping['fields']);
   if (Object.keys(fields).length > 100 || Object.values(fields).some(target => !targets.includes(String(target)))) fail('invalid Anki field mapping.');
 }

@@ -43,9 +43,8 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
   await expect(page.getByRole('heading', { name: 'HoloRecall Custom Audio' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await expectNoOverflow(page); await page.evaluate(() => document.documentElement.style.fontSize = '100%');
-  await page.getByRole('button', { name: 'Save presets and preview' }).click();
-  await expect(page.getByText('Mapping presets saved for these exact source schemas.')).toBeVisible();
-  await expect(page.getByText('Saved exact match').last()).toBeVisible();
+  await page.getByRole('button', { name: 'Use mapping and refresh preview' }).click();
+  await expect(page.getByText(/reviewed mapping is reflected/i)).toBeVisible();
   await page.getByRole('button', { name: 'Import 7 supported cards' }).click();
   await expect(page.getByText(/Imported 7 new and 0 changed Anki cards/)).toBeVisible();
 
@@ -97,7 +96,7 @@ test('HR-IMPORT-01 mapping reflows at enlarged text on phone profiles @ios-compa
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByText('Review field mapping').click();
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
-  await expect(page.getByRole('button', { name: 'Save presets and preview' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Use mapping and refresh preview' })).toBeVisible();
   await expectNoOverflow(page);
 });
 

@@ -29,12 +29,13 @@ import { LocalDataSettingsComponent } from './settings/local-data-settings';
 import { RewardSettingsComponent } from './settings/reward-settings';
 import { DeckSourceControlsComponent } from './authoring/deck-source-controls';
 import { CardListRowComponent } from './authoring/card-list-row';
+import { DeckAnkiActionsComponent } from './authoring/deck-anki-actions';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,DeckAnkiActionsComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -71,7 +72,7 @@ export class AppComponent {
   readonly focusLaunch=signal<FocusLaunch|undefined>(undefined);
   readonly settingsDeckId=signal('');
   readonly ankiUpdateFile=signal<File|null>(null);
-  readonly ankiSourceMode=signal<'update'|'repair'>('update');
+  readonly ankiSourceMode=signal<'update'|'repair'|'mapping'>('update');
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
   readonly Math=Math;
@@ -85,7 +86,7 @@ export class AppComponent {
     {id:'library',label:'Decks',icon:'▤'},{id:'study',label:'Study',icon:'◈'},
     {id:'collection',label:'Collection',icon:'✧'},{id:'more',label:'More',icon:'•••'},
   ];
-  readonly mobileSecondaryNavigation=this.navigation.filter(item=>['dashboard','focus','progress','studio','exchange','settings'].includes(item.id));
+  readonly mobileSecondaryNavigation=this.navigation.filter(item=>item.id!=='library'&&item.id!=='study'&&item.id!=='collection');
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
   selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
@@ -202,7 +203,7 @@ export class AppComponent {
     if(screen==='study'||screen==='results')return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:screen==='results'?'Session complete':this.session()?.mode==='practice'?'Practice':'Study',screen}];
     if(screen==='focus')return [{label:'Decks',screen:'library'},{label:'Focus',screen:'focus'}];
     if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
-    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
+    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='mapping'?'Review field mapping':this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
     const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[screen];
     return [{label:title,screen}];
   }
@@ -216,11 +217,11 @@ export class AppComponent {
   mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','progress','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
   toggleMobileMore():void{this.mobileMoreOpen.update(open=>!open);}
   openExchange(deckId=''):void{if(deckId&&this.data()?.decks.some(deck=>deck.id===deckId&&this.isAnkiDeck(deck))){this.openAnkiSource(deckId,'update');return;}this.selectedDeck='';this.ankiUpdateFile.set(null);this.go('exchange');}
-  openAnkiSource(deckId:string,mode:'update'|'repair'):void{this.selectedDeck=deckId;this.ankiSourceMode.set(mode);this.ankiUpdateFile.set(null);document.getElementById('contextual-anki-update')?.click();}
+  openAnkiSource(deckId:string,mode:'update'|'repair'|'mapping'):void{this.selectedDeck=deckId;this.ankiSourceMode.set(mode);this.ankiUpdateFile.set(null);document.getElementById('contextual-anki-update')?.click();}
   selectAnkiUpdatePackage(event:Event):void{const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(!file)return;this.ankiUpdateFile.set(file);this.go('exchange');}
   cancelAnkiUpdate():void{const deckId=this.selectedDeck;this.ankiUpdateFile.set(null);this.go('library');if(deckId){this.selectedDeck=deckId;this.expandedDecks.add(deckId);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}}
   finishAnkiUpdate(deckId:string):void{this.ankiUpdateFile.set(null);this.selectedDeck=deckId;this.go('library');this.selectedDeck=deckId;for(const deck of this.deckContext(deckId))this.expandedDecks.add(deck.id);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}
-  isAnkiDeck(deck:Deck):boolean{return deck.ankiSource?.kind==='anki'||deck.id.startsWith('anki-');}
+  isAnkiDeck(deck:Deck):boolean{return deck.ankiSource?.kind==='anki';}
   isExistingDeck(id:string):boolean{return this.data()?.decks.some(deck=>deck.id===id)??false;}
   openStudySettings(deckId?:string):void{if(this.screen()==='study')void this.pauseAutoAdvance(true);this.go('settings');this.settingsDeckId.set(deckId??'');}
   topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}

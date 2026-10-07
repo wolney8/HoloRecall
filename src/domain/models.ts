@@ -49,9 +49,12 @@ export interface AnkiCardSource {
     converterVersion: number;
     normalizerVersion: number;
     mappingVersion: number;
+    mappingPolicyVersion?: number;
+    mappingOrigin?: 'auto-inferred' | 'user-confirmed' | 'legacy-unclassified';
     mappingSignature: string;
     /** Hashes of the last accepted source-derived values, used for field-level local-edit protection. */
     fieldBaselines: Partial<Record<AnkiDerivedField, string>>;
+    fieldOrigins?: Partial<Record<AnkiDerivedField, 'derived' | 'local' | 'ambiguous'>>;
   };
   /** Detached cards retain provenance but are excluded from future Anki updates and repairs. */
   linkState?: 'linked' | 'detached';
@@ -209,7 +212,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 6;
+  schemaVersion: 7;
   version: number;
   userId: string;
   decks: Deck[];
@@ -269,11 +272,13 @@ export interface LocalAsset {
 export type AnkiFieldTarget = 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';
 export interface AnkiMappingPreset {
   id: string;
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   name: string;
   sourceSignature: string;
   modelName: string;
   fields: Record<string, AnkiFieldTarget>;
+  policyVersion?: number;
+  origin?: 'auto-inferred' | 'user-confirmed' | 'legacy-unclassified';
 }
 
 export interface StudySession {

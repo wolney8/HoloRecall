@@ -7,7 +7,7 @@ import { BALANCED_PRESET_ID, cloneBuiltInPresets } from './study-settings';
 export function migrateState(input: unknown, bundledCards: CardContent[] = []): State {
   if (!input || typeof input !== 'object') throw new Error('Invalid HoloRecall data: expected an object.');
   const raw = structuredClone(input) as Record<string, unknown>;
-  if (![1, 2, 3, 4, 5, 6].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
+  if (![1, 2, 3, 4, 5, 6, 7].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
   if (raw['schemaVersion'] === 1) {
     raw['schemaVersion'] = 2;
     raw['designs'] = [];
@@ -35,6 +35,15 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     raw['focusPresets'] = [];
     if (Array.isArray(raw['events'])) raw['events'] = (raw['events'] as Array<Record<string, unknown>>).map(event => event['kind'] === 'review' && event['mode'] === 'practice' ? { ...event, mode: 'scheduled' } : event);
     if (raw['session'] && typeof raw['session'] === 'object') raw['session'] = { ...(raw['session'] as Record<string, unknown>), mode: 'scheduled' };
+  }
+  if (raw['schemaVersion'] === 6) {
+    raw['schemaVersion'] = 7;
+    raw['ankiMappings'] = (raw['ankiMappings'] as Array<Record<string, unknown>> ?? []).map(mapping => ({ ...mapping, policyVersion: 0, origin: 'legacy-unclassified' }));
+    raw['cards'] = (raw['cards'] as Array<Record<string, unknown>> ?? []).map(card => {
+      const source = card['ankiSource']; if (!source || typeof source !== 'object') return card;
+      const conversion = (source as Record<string, unknown>)['conversion']; if (!conversion || typeof conversion !== 'object') return card;
+      return { ...card, ankiSource: { ...(source as Record<string, unknown>), conversion: { ...(conversion as Record<string, unknown>), mappingPolicyVersion: 0, mappingOrigin: 'legacy-unclassified' } } };
+    });
   }
   if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true, ...(raw['preferences'] as Record<string, unknown>) };
   validateState(raw);

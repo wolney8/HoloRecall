@@ -11,11 +11,7 @@ import { BALANCED_PRESET_ID, BUILT_IN_PRESETS, validateStudyPreset, validateToda
 import { recordPracticeRating } from '../../domain/practice';
 import { validateFocusPreset } from '../../domain/focus-validation';
 import type { AdministrativeAction } from '../../domain/administrative';
-
-export interface BulkCardPatch {
-  deckId?: string; addTags?: string[]; removeTags?: string[]; rarity?: Rarity;
-  designSetId?: string; finish?: CardContent['finish']; archived?: boolean;
-}
+import type { BulkCardPatch } from '../../domain/card-organisation';
 
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
@@ -74,6 +70,7 @@ export class LocalStudyStore {
   }
 
   async saveCards(cards: CardContent[]): Promise<void> {
+    const markAnkiLocalEdits=cards.some(card=>!!card.ankiSource)?(await import('../../domain/anki-provenance')).markAnkiLocalEdits:undefined;
     await this.change(data => {
       if (!cards.length) return data;
       if (new Set(cards.map(card => card.id)).size !== cards.length) throw new Error('Each card being saved needs a unique ID.');
@@ -82,7 +79,8 @@ export class LocalStudyStore {
         if (!data.decks.some(deck => deck.id === card.deckId)) throw new Error('Choose an existing deck.');
         const previous = data.cards.find(item => item.id === card.id);
         if (previous && previous.revision !== card.revision) throw new Error('This card was edited elsewhere. Reopen the editor before saving.');
-        const next = structuredClone({ ...card, tags: canonicalTags(card.tags), revision: previous ? previous.revision + 1 : 1, createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString() });
+        let next:CardContent = structuredClone({ ...card, tags: canonicalTags(card.tags), revision: previous ? previous.revision + 1 : 1, createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString() });
+        if(previous&&markAnkiLocalEdits)next=markAnkiLocalEdits(previous,next);
         validateCard(next);
         nextCards = previous ? nextCards.map(item => item.id === card.id ? next : item) : [...nextCards, next];
       }
@@ -95,20 +93,9 @@ export class LocalStudyStore {
   }
 
   async bulkOrganizeCards(ids: string[], patch: BulkCardPatch): Promise<void> {
+    const {organizeCards}=await import('../../domain/card-organisation');
     await this.change(data => {
-      const selected = new Set(ids);
-      if (!selected.size) throw new Error('Select at least one card.');
-      const cardIds = new Set(data.cards.map(card => card.id));
-      if ([...selected].some(id => !cardIds.has(id))) throw new Error('A selected card no longer exists. Refresh the library.');
-      if (patch.deckId && !data.decks.some(deck => deck.id === patch.deckId)) throw new Error('Choose an existing destination deck.');
-      const remove = new Set((patch.removeTags ?? []).map(tag => tag.trim().toLocaleLowerCase('en')));
-      const cards = data.cards.map(card => {
-        if (!selected.has(card.id)) return card;
-        const next = { ...card, ...(patch.deckId ? { deckId: patch.deckId } : {}), ...(patch.rarity ? { rarity: patch.rarity } : {}), ...(patch.finish ? { finish: patch.finish } : {}), ...(patch.archived !== undefined ? { archived: patch.archived } : {}), revision: card.revision + 1 };
-        next.tags = canonicalTags([...card.tags.filter(tag => !remove.has(tag.trim().toLocaleLowerCase('en'))), ...(patch.addTags ?? [])]);
-        if (patch.designSetId !== undefined) { if (patch.designSetId) next.designSetId = patch.designSetId; else delete next.designSetId; }
-        validateCard(next); return next;
-      });
+      const cards=organizeCards(data.cards,ids,patch,new Set(data.decks.map(deck=>deck.id)));
       return reconcileSession({ ...data, version: data.version + 1, cards }, data);
     });
   }
@@ -229,9 +216,9 @@ export class LocalStudyStore {
       return { ...data, version: data.version + 1, rewardConfig };
     });
   }
-  async applyContentImport(bundle: ContentImport, expectedVersion: number,studyPresetId=BALANCED_PRESET_ID,preserveLearnerFields=false): Promise<void> {
+  async applyContentImport(bundle: ContentImport, expectedVersion: number,studyPresetId=BALANCED_PRESET_ID,preserveLearnerFields=false,mappingUpdates:AnkiMappingPreset[]=[]): Promise<void> {
     const current=this.data();if(!current)throw new Error('Local study data is not ready.');
-    const prepared=await deduplicateContent(current,bundle);bundle=prepared.bundle;
+    const prepared=await deduplicateContent(current,bundle);bundle=prepared.bundle;mappingUpdates.forEach(validateAnkiMapping);
     await this.change(data => {
       if (data.version !== expectedVersion) throw new Error('Local content changed after this preview. Preview the import again.');
       const merge = <T extends { id: string }>(current: T[], incoming: T[]): T[] => {
@@ -249,11 +236,12 @@ export class LocalStudyStore {
         const previous = data.cards.find(item => item.id === card.id);
         return { ...card,suspended:preserveLearnerFields?(previous?.suspended??card.suspended):card.suspended,archived:preserveLearnerFields?(previous?.archived??card.archived):card.archived,rarity:preserveLearnerFields?(previous?.rarity??card.rarity):card.rarity,designSetId:preserveLearnerFields?(previous?.designSetId??card.designSetId):card.designSetId,finish:preserveLearnerFields?(previous?.finish??card.finish):card.finish, tags: canonicalTags(card.tags), createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString(), revision: previous ? previous.revision + (sameCardContent(previous, card) ? 0 : 1) : 1 };
       });
-      return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)) }, data);
+      const mappingSignatures=new Set(mappingUpdates.map(mapping=>mapping.sourceSignature)),ankiMappings=[...data.ankiMappings.filter(mapping=>!mappingSignatures.has(mapping.sourceSignature)),...mappingUpdates.map(mapping=>structuredClone(mapping))];
+      return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)),ankiMappings }, data);
     });
   }
 
-  async renameTag(from:string,to:string):Promise<number>{let changed=0;const source=from.trim().toLocaleLowerCase('en'),replacement=to.trim().replace(/\s+/g,' ');if(!source||!replacement)throw new Error('Choose an existing tag and a nonempty replacement.');await this.change(data=>{const cards=data.cards.map(card=>{if(!card.tags.some(tag=>tag.trim().toLocaleLowerCase('en')===source))return card;changed++;const next={...card,tags:canonicalTags(card.tags.map(tag=>tag.trim().toLocaleLowerCase('en')===source?replacement:tag)),revision:card.revision+1};validateCard(next);return next;});return changed?reconcileSession({...data,version:data.version+1,cards},data):data;});return changed;}
+  async renameTag(from:string,to:string):Promise<number>{let changed=0;const {renameCardsTag}=await import('../../domain/card-organisation');await this.change(data=>{const result=renameCardsTag(data.cards,from,to);changed=result.changed;return changed?reconcileSession({...data,version:data.version+1,cards:result.cards},data):data;});return changed;}
   unusedAssets():LocalAsset[]{const data=this.data();return data?removableAssets(data):[];}
   async removeUnusedAssets(ids:string[]):Promise<number>{let removed=0;await this.change(data=>{const permitted=new Set(removableAssets(data).map(asset=>asset.id)),wanted=new Set(ids);if([...wanted].some(id=>!permitted.has(id)))throw new Error('One or more media files are still referenced and were not removed.');const assets=data.assets.filter(asset=>{const remove=wanted.has(asset.id);if(remove)removed++;return!remove;});return removed?{...data,version:data.version+1,assets}:data;});return removed;}
   private async ensureAssetMetadata():Promise<void>{const data=this.data(),missing=data?.assets.filter(asset=>!asset.contentHash||!asset.byteLength)??[];if(!missing.length)return;const described=await Promise.all(missing.map(describeAsset)),updates=new Map(described.map(asset=>[asset.id,asset]));await this.change(current=>({...current,version:current.version+1,assets:current.assets.map(asset=>updates.get(asset.id)??asset)}));}

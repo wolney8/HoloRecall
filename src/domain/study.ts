@@ -24,7 +24,7 @@ export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'A
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     version: 0,
     userId: 'local-learner',
     decks: structuredClone(decks).map(deck=>({...deck,studyPresetId:deck.studyPresetId??BALANCED_PRESET_ID})),
