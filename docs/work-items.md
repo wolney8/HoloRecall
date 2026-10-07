@@ -187,13 +187,13 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
 - **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
-- **Status:** VERIFY
+- **Status:** FAILED — ARCHITECTURE UNDER REWORK
 - **Source:** Will, 3 October 2026 follow-up acceptance direction
 - **Dependencies:** Will's exact real-world `.apkg`; accepted HR-BUG-ANKI-01/02 and HR-BUG-STUDY-01 implementation
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **VERIFY — USER REAL-PACKAGE RETEST REQUIRED.** The failed real-package runs remain authoritative evidence of the old defect. Sanitised domain and Chromium/WebKit/phone fixtures now prove that an unchanged package with a policy-v0 automatic `Language → Answer` mapping and corrupt accepted baselines proposes and applies a structurally different repair (`Italian → Answer`, populated Pronunciation/Meaning/Notes) across list, editor, search, Collection and Study. Only Will can close this item with the exact package.
+- **Verification / evidence:** **FAILED — ARCHITECTURE UNDER REWORK.** The exact package proved that the latest Repair correctly refuses a meaningless conversion but then exposes thirteen arbitrary source fields as a required mapping task. That remains failed real-user acceptance. Do not request another user test until template-first fixtures prove automatic front/back rendering, concise import/update and legacy migration.
 - **Commits:** Earlier tracking `1539f81`; semantic repair tracking `e8c72ea`; implementation `d364c77`; exact-package evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
@@ -847,6 +847,21 @@ Source: Will's 7 October 2026 failed repeat update of the exact Anki package. Ro
 | HR-BUG-ANKI-17 | Repair corrupted accepted baselines safely | Import/data integrity | Real repair recovery | P0 | DONE | Provenance-aware field merge |
 | HR-BUG-ANKI-18 | Prevent metadata values across downstream surfaces | Import/content | Real repair recovery | P0 | DONE | Repaired structured content |
 | HR-BUG-ANKI-19 | Discoverable deck source management | Import UX | Real repair recovery | P0 | DONE | Imported Deck Details |
+| HR-ANKI-ARCH-01 | Retain normalized source-native Anki model | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Package parsers and stable source identities |
+| HR-ANKI-ARCH-02 | Safe Anki template compatibility engine | Import/security | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-01 |
+| HR-ANKI-ARCH-03 | Derive front and answer from card templates | Import/conversion | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-02 |
+| HR-ANKI-ARCH-04 | Make semantic enrichment secondary | Import/content | Anki architecture V2 | P0 | IN_PROGRESS | Template-rendered core card |
+| HR-ANKI-ARCH-05 | Automatic compatibility analysis and defaults | Import/compatibility | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-02–04 |
+| HR-ANKI-ARCH-06 | Concise automatic import workflow | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Compatibility analysis |
+| HR-ANKI-ARCH-07 | Concise automatic update workflow | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Stable source comparison |
+| HR-ANKI-ARCH-08 | Stable source update identity | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Source note/template/card identities |
+| HR-ANKI-ARCH-09 | Persist deduplicated normalized source snapshot | Import/portability | Anki architecture V2 | P0 | IN_PROGRESS | Schema migration and storage limits |
+| HR-ANKI-ARCH-10 | Advanced mapping only as fallback/enrichment | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Automatic template rendering |
+| HR-ANKI-ARCH-11 | Explicit compatibility tiers A–D | Import/compatibility | Anki architecture V2 | P0 | IN_PROGRESS | Supported/unsupported construct analysis |
+| HR-ANKI-ARCH-12 | Separate Anki content from HoloRecall presentation | Import/design | Anki architecture V2 | P0 | IN_PROGRESS | Safe rendered content |
+| HR-ANKI-ARCH-13 | Migrate legacy imports in place | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Source snapshot or one-time package recovery |
+| HR-ANKI-ARCH-14 | Maintain realistic Anki compatibility fixtures | Import/testing | Anki architecture V2 | P0 | IN_PROGRESS | Official template behavior and package variants |
+| HR-ANKI-ARCH-15 | Authoritative template-first importer ADR | Architecture | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-01–14 |
 
 Acceptance is the complete request text. Converter versioning must invalidate derived content independently from source changes; repair must preserve all learner/scheduler/reward state and protect field-level local edits. Editors retain stable IDs/source links unless explicitly detached. Destructive tests use isolated fixtures only. Web, iOS/iPadOS, Android and Apple-silicon Mac implications remain part of verification.
 

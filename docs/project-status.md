@@ -4,6 +4,14 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### Anki import architecture V2 recovery — 7 October 2026
+
+- **Recovered state:** clean `main` at `325edc5`; implementation `d364c77` and its schema-7 repair evidence are preserved. No reset, package deletion or learner-data mutation occurred.
+- **Acceptance failure:** the exact package proved that mapping-policy repair can correctly stop an unsafe Apply yet still leave the learner facing thirteen arbitrary Anki fields. That is a product and architecture failure, not a missing `Language` heuristic. HR-ACCEPT-ANKI-01 is **FAILED — ARCHITECTURE UNDER REWORK**.
+- **Authoritative correction:** Anki note fields remain arbitrary source data. The primary path is now normalized source note/model/template/card data → safe template rendering → native HoloRecall question/answer content, followed by optional semantic enrichment. The mapping-first pipeline is legacy and must not gate otherwise valid cards.
+- **Active scope:** HR-ANKI-ARCH-01–15 are `IN_PROGRESS`. The lead owns schema, source snapshot, migration and integration. Bounded delegates cover official compatibility, legacy/data-integrity and UX/security review without independently changing shared contracts.
+- **Exact restart point:** define the normalized source types and safe template-rendering contract against the installed legacy/v3 package parsers, migrate schema compatibly, and make a representative arbitrary-field deck import without manual mapping. Do not request another real-package test until the automatic/browser gates pass.
+
 ### Semantic Anki repair recovery — 7 October 2026
 
 - **Recovered state:** clean `main` at `e47f32e`; tracking checkpoint `e8c72ea`. No reset, source deletion or learner-data mutation occurred. HR-ANKI-08–11 and HR-BUG-ANKI-12–19 were reopened after Will proved that same-package Repair still reused the bad mapping.
