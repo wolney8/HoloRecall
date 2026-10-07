@@ -756,6 +756,25 @@ Source: Will's 4 October 2026 iOS-first and macOS-delivery-decision milestone. N
 - **Verification / evidence:** `docs/ios-readiness.md` now separates web implementation, Chromium, Playwright WebKit, iOS architecture, Simulator, physical device, macOS route and distribution evidence across every requested capability. Blocked and untested cells remain explicit.
 - **Relevant commit:** `f6e4ffd`.
 
+## iOS/iPadOS adaptive UX acceptance — active milestone
+
+Source: Will's 7 October 2026 Simulator review and adaptive-navigation/Study-redesign milestone. Shared Angular/Material UI remains authoritative; Android runtime work stays deferred.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-IOS-UX-01 | Fix text and spacing defects | UI/content | iOS UX acceptance | P0 | IN_PROGRESS | Native reproduction; shared spacing/text conversion |
+| HR-IOS-UX-02 | Adaptive application navigation | Navigation | iOS UX acceptance | P0 | IN_PROGRESS | Existing screen state and native Back adapter |
+| HR-IOS-UX-03 | Reduce mobile header chrome | Navigation/UI | iOS UX acceptance | P0 | IN_PROGRESS | HR-IOS-UX-02 |
+| HR-IOS-UX-04 | Tap Study card to reveal | Study/accessibility | iOS UX acceptance | P0 | IN_PROGRESS | Shared card renderer and reveal state |
+| HR-IOS-UX-05 | Mobile Study composition | Study/UI | iOS UX acceptance | P0 | IN_PROGRESS | Stable Study stage and rating semantics |
+| HR-IOS-UX-06 | Input-mode-aware shortcuts | Study/input | iOS UX acceptance | P1 | IN_PROGRESS | Keyboard contract and coarse-pointer styling |
+| HR-IOS-UX-07 | Native-quality touch interaction | Accessibility/UI | iOS UX acceptance | P0 | IN_PROGRESS | Material 3 and safe-area tokens |
+| HR-IOS-UX-08 | Responsive rules, not patches | Design system | iOS UX acceptance | P0 | IN_PROGRESS | Container/viewport rules and text reflow |
+| HR-IOS-UX-09 | Mobile Session Complete | Results/UI | iOS UX acceptance | P1 | IN_PROGRESS | Existing Results motion ownership |
+| HR-IOS-UX-10 | iOS information architecture review | Product/UI | iOS UX acceptance | P0 | IN_PROGRESS | Actual Simulator page inventory |
+
+Acceptance for this group is the request text plus actual iPhone/iPad Simulator evidence. Every item must preserve desktop sidebar/right-panel behavior, five-confidence FSRS semantics, Practice boundaries, owned Study motion and physical-device evidence gaps. Page-review findings remain classified as BUG, SPACING/ALIGNMENT, NAVIGATION, TOO MUCH CHROME, MOBILE INTERACTION, TEXT/CONTENT, ACCESSIBILITY or NATIVE VERIFICATION GAP.
+
 ## Preserved completed history
 
 The detailed acceptance evidence for these items remains in `docs/project-status.md`, `docs/architecture.md`, `docs/ios-readiness.md`, and `docs/anki-import.md`. They retain their original stable IDs and are not reopened by this milestone.

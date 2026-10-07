@@ -4,6 +4,13 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### iOS/iPadOS adaptive UX recovery — 7 October 2026
+
+- **Recovered state:** clean `main` at `ba83013`. The generated Capacitor project, shared XCUITest target, iPhone/iPad Simulator evidence, native export cleanup and isolated SQLite spike are preserved. No learner data, native project or accepted web feature was reset or regenerated.
+- **Prior native completion:** iPhone/iPad production-asset build/launch, four-test iPhone WKWebView gate, three-card iPad smoke, no-localhost relaunch, basic lifecycle recovery, native Share/picker cancellation, visual media rendering and isolated SQLite transaction/migration/relaunch are evidenced. Imported audio, Practice/Auto Advance native acceptance, VoiceOver/software keyboard, production native persistence, physical devices and signed Mac runtime remain open.
+- **Active work:** HR-IOS-UX-01–10 are recorded as `IN_PROGRESS`. First implementation batch will replace phone sidebar/topbar chrome with adaptive bottom navigation and a compact contextual header, then make the shared Study card the semantic touch reveal control and provide a safe-area rating dock without changing scheduler behavior.
+- **Exact next action:** inventory the actual screen/navigation state and existing native screenshots, implement the shared adaptive shell and Study interaction, then update this handoff before Simulator acceptance. Android execution remains deferred.
+
 ### Apple native Simulator acceptance — 7 October 2026
 
 - **Branch/worktree:** `main`; native smoke infrastructure checkpoint `ca23e20` and integrated Apple acceptance checkpoint `8782f2f`. The latter adds the isolated SQLite feasibility probe, interruption-safe native-export cache cleanup, expanded native UI tests and this evidence update. No production persistence provider, genuine learner data, signing or provisioning was changed.
