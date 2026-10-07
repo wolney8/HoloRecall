@@ -193,7 +193,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** Pending Will's manual report. This item does not block continued Study Settings implementation.
+- **Verification / evidence:** **MANUAL USER VERIFICATION — FAILED / DEFECT FOUND.** Will's 7 October 2026 review found concatenated structured fields and duplicated answer presentation in the exact imported deck. Automated fixtures remain supporting evidence only. After HR-ANKI-03/04, this item returns to `VERIFY — USER RETEST REQUIRED`; it cannot become DONE without Will's exact-package retest.
 - **Commits:** Tracker checkpoint in the final milestone documentation commit; manual evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
@@ -780,6 +780,24 @@ Acceptance for this group is the request text plus actual iPhone/iPad Simulator 
 - **Page review:** Decks and deck/subdeck use the primary tab plus contextual title/back; Focus, Design Studio, import/export and Settings use More; Collection/inspection and Progress/history retain their shared internal navigation; authoring and dialogs retain Material-owned transitions; Study and Practice share the adaptive player; Results retains its owned reveal/Skip/Replay choreography with one reachable safe-area action dock. No duplicate phone branding/page-title header remains. Intentional exceptions are Study/Results navigation suppression and Material dialogs/expansion panels, which are not given competing shell transitions.
 - **Evidence:** actual iPhone 17 Pro and iPad Pro 11-inch (M5), iOS 26.5, Xcode 26.6 XCUITest runs pass the adaptive navigation and three-card visibility journey. The final clean iPhone run passes 1/1 in 36.820 s and exports five named screenshots from `native-visual-final8.xcresult`: the contained rating dock, incoming cards 2 and 3, Session Complete and Settings. Result bundles, recordings and extracted screenshots are under `.runtime/evidence/hr-ios-ux-20261007/`. Controlled unit/domain tests pass 146/146. The broad browser run passes 161/163 with all WebKit cases green; the two corrected Chromium compact-navigation cases then pass 2/2, and the adaptive target matrix passes. Physical-device touch, haptics, VoiceOver and Dynamic Type remain pending and are not represented as Simulator proof.
 - **Relevant commits:** `5d25e22`, `02ce032` and the closing evidence checkpoint.
+
+## Data fidelity, update workflow, settings and navigation — active milestone
+
+Source: Will's 7 October 2026 manual Anki-content and product review. No native-store migration, external auth provider, advertising SDK or purchase integration is authorised.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-ANKI-03 | Real imported-content fidelity | Import/content | Data fidelity | P0 | IN_PROGRESS | Existing converter, mappings and renderer |
+| HR-ANKI-04 | User-facing Anki update workflow | Import/portability | Data fidelity | P0 | IN_PROGRESS | Stable source identities and atomic import |
+| HR-SETTINGS-01 | Functional settings actionability audit | Settings/scheduling | Settings audit | P0 | IN_PROGRESS | Study presets and runtime consumers |
+| HR-NAV-01 | Shared breadcrumb/context model | Navigation | Adaptive navigation | P0 | IN_PROGRESS | Existing screen state and deck hierarchy |
+| HR-IOS-UX-11 | Leaner aligned iPhone navigation | Navigation/accessibility | Adaptive navigation | P0 | IN_PROGRESS | HR-NAV-01 and safe-area shell |
+| HR-AUTH-01 | Account architecture and UX contract | Identity/platform | Architecture readiness | P1 | IN_PROGRESS | Existing platform seams; provider decision |
+| HR-COM-02 | Future ads and premium architecture | Commercial/platform | Architecture readiness | P1 | IN_PROGRESS | CapabilityPolicy and privacy review |
+| HR-COM-03 | Identity/entitlement/learning separation | Domain architecture | Architecture readiness | P0 | IN_PROGRESS | HR-AUTH-01 and HR-COM-02 |
+| HR-PERF-02 | Restore initial web bundle gate | Performance | Performance closure | P1 | IN_PROGRESS | Adaptive shell bundle graph |
+
+Acceptance is the complete request text. Import work must preserve scheduling, history, cosmetics, media and local edits; settings require observable runtime consumers; navigation uses one semantic hierarchy across compact/wide layouts; auth/commercial work remains provider-free and non-enforcing. Every implementation retains Web, iOS/iPadOS, Android and Apple-silicon Mac implications.
 
 ## Preserved completed history
 

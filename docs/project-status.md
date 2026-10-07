@@ -4,6 +4,13 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### Data fidelity/settings/navigation recovery — 7 October 2026
+
+- **Recovered state:** clean `main` at `3c7ae92`; the accepted adaptive iOS/iPadOS UI, preserved Capacitor projects, learner-data boundaries and prior browser/native evidence are intact. No user data, native project or generated platform state was reset.
+- **Active requirements:** HR-ANKI-03/04, HR-SETTINGS-01, HR-NAV-01, HR-IOS-UX-11, HR-AUTH-01, HR-COM-02/03 and HR-PERF-02 are recorded `IN_PROGRESS` before implementation. HR-ACCEPT-ANKI-01 now records **MANUAL USER VERIFICATION — FAILED / DEFECT FOUND** from Will's exact deck.
+- **Parallel ownership:** lead owns shared models, tracker, integration, navigation/performance and final evidence. Bounded delegates inspect import fidelity/update semantics, settings runtime actionability, and provider-free auth/commercial architecture without competing over importer/scheduler core.
+- **Exact next action:** reproduce stored-versus-rendered Anki field composition and duplicate presentation, agree the update/conflict contracts, then implement isolated batches. No production native-storage migration, external provider, ads or payment integration is in scope.
+
 ### iOS/iPadOS adaptive UX recovery — 7 October 2026
 
 - **Recovered state:** clean `main` at `ba83013`. The generated Capacitor project, shared XCUITest target, iPhone/iPad Simulator evidence, native export cleanup and isolated SQLite spike are preserved. No learner data, native project or accepted web feature was reset or regenerated.
