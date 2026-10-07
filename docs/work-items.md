@@ -187,14 +187,14 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
 - **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
-- **Status:** FAILED
+- **Status:** VERIFY
 - **Source:** Will, 3 October 2026 follow-up acceptance direction
 - **Dependencies:** Will's exact real-world `.apkg`; accepted HR-BUG-ANKI-01/02 and HR-BUG-STUDY-01 implementation
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **FAILED — REPAIR/RECONVERSION DOES NOT CORRECT REAL IMPORTED DATA.** The exact package still produces `Answer = it`, leaves Pronunciation/Meaning empty, and can show materially identical malformed Before/After values. This item cannot return to VERIFY until automated/browser evidence proves legacy bad-mapping replacement and a structurally corrected preview.
-- **Commits:** Tracking `1539f81`; implementation `6cc248e` and the closing stop-ship checkpoint; exact-package evidence pending.
+- **Verification / evidence:** **VERIFY — USER REAL-PACKAGE RETEST REQUIRED.** The failed real-package runs remain authoritative evidence of the old defect. Sanitised domain and Chromium/WebKit/phone fixtures now prove that an unchanged package with a policy-v0 automatic `Language → Answer` mapping and corrupt accepted baselines proposes and applies a structurally different repair (`Italian → Answer`, populated Pronunciation/Meaning/Notes) across list, editor, search, Collection and Study. Only Will can close this item with the exact package.
+- **Commits:** Earlier tracking `1539f81`; semantic repair tracking `e8c72ea`; implementation `d364c77`; exact-package evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -829,28 +829,28 @@ Source: Will's 7 October 2026 failed repeat update of the exact Anki package. Ro
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-ANKI-08 | Version source conversion and expose conversion upgrades | Import/data integrity | Content repair | P0 | IN_PROGRESS | Existing source identities/baselines and schema migration |
-| HR-ANKI-09 | Repair/reconvert an imported deck | Import/portability | Content repair | P0 | IN_PROGRESS | HR-ANKI-08 and contextual source management |
-| HR-ANKI-10 | Protect local field edits during reconversion | Import/data integrity | Content repair | P0 | IN_PROGRESS | Field provenance and atomic conflict handling |
-| HR-ANKI-11 | User-accessible source mapping editor | Import/authoring | Content repair | P0 | IN_PROGRESS | Signature-bound Anki mappings and preview |
+| HR-ANKI-08 | Version source conversion and expose conversion upgrades | Import/data integrity | Content repair | P0 | DONE | Existing source identities/baselines and schema migration |
+| HR-ANKI-09 | Repair/reconvert an imported deck | Import/portability | Content repair | P0 | DONE | HR-ANKI-08 and contextual source management |
+| HR-ANKI-10 | Protect local field edits during reconversion | Import/data integrity | Content repair | P0 | DONE | Field provenance and atomic conflict handling |
+| HR-ANKI-11 | User-accessible source mapping editor | Import/authoring | Content repair | P0 | DONE | Signature-bound Anki mappings and preview |
 | HR-AUTHOR-02 | Complete native/imported card editor | Authoring/media | Editing | P0 | DONE | Shared CardRenderer and media registry |
 | HR-AUTHOR-03 | Imported-card source controls | Authoring/import | Editing | P1 | DONE | HR-ANKI-09/10 and stable source identity |
 | HR-AUTHOR-04 | Complete deck/subdeck editor | Authoring/organisation | Editing | P0 | DONE | Stable deck hierarchy and presets |
 | HR-AUTHOR-05 | Safe archive and destructive deck deletion | Authoring/data safety | Editing | P0 | DONE | Reference-aware media cleanup and confirmation |
 | HR-BUG-CONTENT-01 | Bounded structured card-list presentation | Deck management/UI | Content repair | P0 | DONE | Structured card fields and list virtualization |
 | HR-BUG-CONTENT-02 | Semantic field label/value separation | Content/UI | Content repair | P0 | DONE | Structured renderer components |
-| HR-BUG-ANKI-12 | Trace persisted bad-mapping resolution order | Import/data integrity | Real repair recovery | P0 | IN_PROGRESS | HR-ANKI-08–11 and exact-package failure evidence |
-| HR-BUG-ANKI-13 | Semantic mapping-policy versioning | Import/data integrity | Real repair recovery | P0 | IN_PROGRESS | Mapping origin and policy migration |
-| HR-BUG-ANKI-14 | Force mapping re-evaluation in real Repair mode | Import/conversion | Real repair recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-12/13 |
-| HR-BUG-ANKI-15 | Show field mapping when repair needs it | Import UX | Real repair recovery | P0 | IN_PROGRESS | Source samples and ambiguity detection |
-| HR-BUG-ANKI-16 | Validate structurally meaningful Before/After repair | Import/data integrity | Real repair recovery | P0 | IN_PROGRESS | Structured destinations and apply gate |
-| HR-BUG-ANKI-17 | Repair corrupted accepted baselines safely | Import/data integrity | Real repair recovery | P0 | IN_PROGRESS | Provenance-aware field merge |
-| HR-BUG-ANKI-18 | Prevent metadata values across downstream surfaces | Import/content | Real repair recovery | P0 | IN_PROGRESS | Repaired structured content |
-| HR-BUG-ANKI-19 | Discoverable deck source management | Import UX | Real repair recovery | P0 | IN_PROGRESS | Imported Deck Details |
+| HR-BUG-ANKI-12 | Trace persisted bad-mapping resolution order | Import/data integrity | Real repair recovery | P0 | DONE | HR-ANKI-08–11 and exact-package failure evidence |
+| HR-BUG-ANKI-13 | Semantic mapping-policy versioning | Import/data integrity | Real repair recovery | P0 | DONE | Mapping origin and policy migration |
+| HR-BUG-ANKI-14 | Force mapping re-evaluation in real Repair mode | Import/conversion | Real repair recovery | P0 | DONE | HR-BUG-ANKI-12/13 |
+| HR-BUG-ANKI-15 | Show field mapping when repair needs it | Import UX | Real repair recovery | P0 | DONE | Source samples and ambiguity detection |
+| HR-BUG-ANKI-16 | Validate structurally meaningful Before/After repair | Import/data integrity | Real repair recovery | P0 | DONE | Structured destinations and apply gate |
+| HR-BUG-ANKI-17 | Repair corrupted accepted baselines safely | Import/data integrity | Real repair recovery | P0 | DONE | Provenance-aware field merge |
+| HR-BUG-ANKI-18 | Prevent metadata values across downstream surfaces | Import/content | Real repair recovery | P0 | DONE | Repaired structured content |
+| HR-BUG-ANKI-19 | Discoverable deck source management | Import UX | Real repair recovery | P0 | DONE | Imported Deck Details |
 
 Acceptance is the complete request text. Converter versioning must invalidate derived content independently from source changes; repair must preserve all learner/scheduler/reward state and protect field-level local edits. Editors retain stable IDs/source links unless explicitly detached. Destructive tests use isolated fixtures only. Web, iOS/iPadOS, Android and Apple-silicon Mac implications remain part of verification.
 
-**Completion evidence:** cards now retain independent source fingerprints plus converter, normaliser, mapping-signature and per-field accepted-baseline provenance. Update preview separates source changes from conversion repairs; same-source legacy corruption is repairable with the original package, with structured Before/After values and unresolved mapping blocks. Field-level three-way merge preserves local edits by default. Imported cards expose linked/detached source controls. Card/deck editors cover structured content, image/audio, finish, deck placement, cover, hierarchy, preset and archive state without touching scheduler/history/rewards. True deck deletion is an explicit atomic branch operation; shared assets remain reference-safe. The default list is a deferred bounded summary rather than a notes dump. Unit/domain, browser and production-build evidence is recorded in `docs/project-status.md`; implementation commit `fea38bd`; exact-package acceptance remains user-owned.
+**Completion evidence:** implementation `d364c77`. Schema 7 separates mapping-policy version from source signature, converter version and normaliser version. Mappings record `auto-inferred`, `user-confirmed` or migration-only `legacy-unclassified` authorship. Repair ignores obsolete automatic mappings, preserves explicit user mappings at their recorded policy version and blocks an unknown legacy mapping until review. Worker analysis returns the exact effective mappings that produced its cards; Apply commits only those mappings with the previewed content. A sanitised two-card fixture starts with `Language = it`, differing real Italian answers, blank structured fields and corrupt accepted baselines; Chromium, desktop WebKit and iPhone-size WebKit prove `0 Source changed / 2 Conversion repairs`, field samples, a visibly different structured preview and correct list/editor/search/Collection/Study output. Field origins protect editor, bulk deck/tag and tag-rename edits. State migration, atomic mapping uniqueness, scheduler/history/reward preservation and the 849.28 kB production gate pass. Evidence is recorded in `docs/project-status.md`; exact-package acceptance remains user-owned.
 
 ## Preserved completed history
 
