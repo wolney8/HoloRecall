@@ -193,7 +193,7 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **VERIFY — USER RETEST REQUIRED.** Will's 7 October 2026 review established the prior failure: concatenated structured fields and duplicated answer presentation. HR-ANKI-03/04 now provide reviewed conversion and a source-aware reconversion path, but Will's exact package was not available to automation. The user must run **Update from Anki package** and review the repaired deck before this item can become DONE.
+- **Verification / evidence:** **FAILED — REAL USER DATA DEFECT REPRODUCED.** Will's 7 October 2026 update of the exact package reproduced malformed formatting and introduced incorrect primary answers rendered as `it`. Automated fixtures remain supporting evidence only. After HR-BUG-ANKI-05–07 and the related navigation/Study fixes are verified, this returns to `VERIFY — USER REAL-PACKAGE RETEST REQUIRED`; only Will can close it.
 - **Commits:** Tracker checkpoint in the final milestone documentation commit; manual evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
@@ -803,6 +803,21 @@ Acceptance is the complete request text. The request supplied `HR-AUTH-01`, but 
 - **Acceptance evidence:** unit/domain **157/157**. The complete browser run passed **160/174** before 13 intentional test-contract updates (Settings-owned theme and phone More → Progress) and one transient WebKit phase-sampling assertion were corrected; the complete failed set then passed **15/15**, and the final theme rerun passed **2/2**. Targeted import/navigation recordings pass **4/4**. iPhone 17 Pro / iOS 26.5 packaged WKWebView smoke passes **1/1 in 42.381 s** with three settled cards, Results, Collection, More → Progress and Settings. Production/native-sync build is **840.94 kB raw / 199.55 kB transfer**, below 850 kB. Evidence: `.runtime/evidence/hr-data-fidelity-20261007/`.
 - **Actionability finding:** every exposed setting has persisted state and a runtime consumer. The real defect was same-card persistence refresh being mistaken for card advance, which ignored the learner's audio-stop preference; real advances remain mandatory cleanup. No production control was removed as dead or relabelled planned.
 - **Architecture scope:** `LocalAuthSession` and `NoAdvertisingPolicy` are default local/no-ad implementations. Auth0 is the ADR recommendation only. There is no external provider, credential, login UI, backend, ad SDK/placement, entitlement enforcement, payment product or restriction.
+
+## Stop-ship Anki update and layout recovery — active milestone
+
+Source: Will's 7 October 2026 manual test of the exact real Anki package. Normal roadmap work is stopped. No native database migration, authentication provider, advertising, payments or cloud work is authorised.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-BUG-ANKI-05 | Updated cards receive incorrect `it` answer | Import/data integrity | Stop-ship recovery | P0 | IN_PROGRESS | Existing mapping presets, source baselines and update preview |
+| HR-BUG-ANKI-06 | Contextual Anki update workflow | Import/UX | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-05 and lazy exchange route |
+| HR-BUG-ANKI-07 | Update visual hierarchy and spacing | Import/UX | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-06 and Material 3 tokens |
+| HR-BUG-NAV-02 | Breadcrumbs break page layout | Navigation/layout | Stop-ship recovery | P0 | IN_PROGRESS | Shared navigation context component |
+| HR-BUG-STUDY-02 | Excessive Study dead space | Study/layout | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-NAV-02 and responsive Study workspace |
+| HR-BUG-STUDY-03 | Protect imported-answer semantics | Import/scheduler boundary | Stop-ship recovery | P0 | IN_PROGRESS | HR-BUG-ANKI-05 and explicit mapping provenance |
+
+Acceptance is the complete stop-ship request. The lead owns mapping/source schema, persistence integration, shared navigation and tracker state. Work must preserve review events, FSRS state, due dates, presets, cosmetics, Focus history, hierarchy and media. All destructive verification uses sanitised fixtures; the user's collection is read-only.
 
 ## Preserved completed history
 

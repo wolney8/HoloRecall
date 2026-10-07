@@ -4,6 +4,12 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### Stop-ship Anki update/layout recovery — 7 October 2026
+
+- **Recovered state:** clean `main` at `3719b04`. The exact real package retest failed: updated cards can display `it` as the primary answer, and the shared breadcrumb presentation produces vertical dead space and duplicate headings. No learner data or native work has been reset.
+- **Tracker state:** HR-BUG-ANKI-05–07, HR-BUG-NAV-02 and HR-BUG-STUDY-02–03 are `IN_PROGRESS`. HR-ACCEPT-ANKI-01 is **FAILED — REAL USER DATA DEFECT REPRODUCED**.
+- **Exact next action:** trace raw Anki fields/model/template/mapping through the proposed update, stored card and renderer input using sanitised fixtures; independently isolate the shared breadcrumb CSS/DOM defect before changing page-specific layouts.
+
 ### Data fidelity/settings/navigation recovery — 7 October 2026
 
 - **Recovered state:** clean `main` at `3c7ae92`; implementation tracking checkpoint `b4b596b`. The accepted adaptive iOS/iPadOS UI, Capacitor projects, learner-data boundaries and prior browser/native evidence remain intact. No user data, native project or generated platform state was reset.
