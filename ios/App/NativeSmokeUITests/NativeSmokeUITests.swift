@@ -25,6 +25,7 @@ final class NativeSmokeUITests: XCTestCase {
             revealableCard().tap()
             let rating = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '3 Good'")).firstMatch
             XCTAssertTrue(rating.waitForExistence(timeout: 5))
+            if expectedCard == 1 { attachScreenshot("mobile-rating-dock") }
             rating.tap()
             if expectedCard < 3 {
                 XCTAssertTrue(revealableCard().waitForExistence(timeout: 8))
@@ -34,6 +35,8 @@ final class NativeSmokeUITests: XCTestCase {
         }
 
         tapButton("End session")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'SESSION' OR label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'" )).firstMatch.waitForExistence(timeout: 8))
+        attachScreenshot("mobile-session-complete")
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
         tapButton("Progress")
@@ -45,7 +48,7 @@ final class NativeSmokeUITests: XCTestCase {
 
     func testSystemAppearanceAndRelaunch() throws {
         openMore("Settings")
-        let dark = app.otherElements["Dark"]
+        let dark = app.descendants(matching: .any).matching(identifier: "Dark").firstMatch
         XCTAssertTrue(dark.waitForExistence(timeout: 8))
         dark.tap()
         XCTAssertEqual(dark.value as? String, "1")
@@ -53,8 +56,8 @@ final class NativeSmokeUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
         openMore("Settings")
-        XCTAssertEqual(app.otherElements["Dark"].value as? String, "1")
-        let system = app.otherElements["System"]
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "Dark").firstMatch.value as? String, "1")
+        let system = app.descendants(matching: .any).matching(identifier: "System").firstMatch
         XCTAssertTrue(system.waitForExistence(timeout: 8))
         system.tap()
     }
@@ -104,11 +107,16 @@ final class NativeSmokeUITests: XCTestCase {
 
     private func revealableCard() -> XCUIElement {
         app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label == 'Show card answer'"))
+            .matching(NSPredicate(format: "label CONTAINS[c] 'Show card answer' OR label CONTAINS[c] 'flashcard'"))
             .firstMatch
     }
 
     private func openMore(_ destination: String) {
+        let direct = app.buttons[destination]
+        if direct.waitForExistence(timeout: 1) {
+            direct.tap()
+            return
+        }
         tapButton("More")
         tapButton(destination)
     }

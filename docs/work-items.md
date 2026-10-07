@@ -286,13 +286,13 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-PERF-01 — Recover initial bundle warning headroom
 - **Product area / milestone / priority:** Performance / Study configuration / P2
-- **Status:** DONE
+- **Status:** BACKLOG
 - **Source:** Production build measurement, 3 October 2026
 - **Dependencies:** Angular route/chunk ownership review
 - **Requirement / acceptance:** Return the initial production bundle to or below the existing 850 kB warning ceiling without raising the budget, removing accepted behavior or moving unsafe code into eager paths.
 - **Platform implications:** Smaller startup payload benefits web and future packaged WebView startup; no native performance claim follows from bundle size alone.
 - **Implementation notes:** The measured eager graph included Angular Material at 259.41 kB, Angular framework/forms/platform at 191.29 kB, application shell code at 165.21 kB, CDK at 85.61 kB, domain code at 46.53 kB and `ts-fsrs` at 21.14 kB. The root Settings shell eagerly imported `MatSlideToggle` solely for Appearance controls. Those controls now live in a deferred standalone `AppearanceSettingsComponent`; Study remains eager because it is part of the primary workflow. Existing Focus, Exchange, ExcelJS, JSZip, SQLite/WASM and Anki parsing boundaries remain lazy.
-- **Verification / evidence:** Closure baseline: **847.67 kB raw / 198.69 kB transfer**. Native interaction initially measured **851.43 kB**; moving the settings-only reward editor into the existing deferred settings boundary produced **849.53 kB raw / 201.26 kB transfer**, below the unchanged ceiling. Capacitor/Haptics/Back and heavy exchange tooling remain lazy. No limit increase or accepted feature removal was used.
+- **Verification / evidence:** Closure baseline: **847.67 kB raw / 198.69 kB transfer**. Native interaction later measured **849.53 kB raw / 201.26 kB transfer**. The adaptive navigation/Study build currently measures about **860.40 kB raw / 203.03 kB transfer**, above the unchanged ceiling. Its shared shell CSS and accessible interaction behavior are required at startup and were not hidden behind a broken deferred load. Capacitor/Haptics/Back and heavy exchange tooling remain lazy. Recover the measured headroom without raising the limit or removing accepted behavior.
 - **Relevant commits:** `065a391`, `711cfc5`, `f80042e`, current acceptance commit.
 
 ### HR-TEST-01 — Strengthen queue-order and audio-action assertions
@@ -762,18 +762,24 @@ Source: Will's 7 October 2026 Simulator review and adaptive-navigation/Study-red
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-IOS-UX-01 | Fix text and spacing defects | UI/content | iOS UX acceptance | P0 | IN_PROGRESS | Native reproduction; shared spacing/text conversion |
-| HR-IOS-UX-02 | Adaptive application navigation | Navigation | iOS UX acceptance | P0 | IN_PROGRESS | Existing screen state and native Back adapter |
-| HR-IOS-UX-03 | Reduce mobile header chrome | Navigation/UI | iOS UX acceptance | P0 | IN_PROGRESS | HR-IOS-UX-02 |
-| HR-IOS-UX-04 | Tap Study card to reveal | Study/accessibility | iOS UX acceptance | P0 | IN_PROGRESS | Shared card renderer and reveal state |
-| HR-IOS-UX-05 | Mobile Study composition | Study/UI | iOS UX acceptance | P0 | IN_PROGRESS | Stable Study stage and rating semantics |
-| HR-IOS-UX-06 | Input-mode-aware shortcuts | Study/input | iOS UX acceptance | P1 | IN_PROGRESS | Keyboard contract and coarse-pointer styling |
-| HR-IOS-UX-07 | Native-quality touch interaction | Accessibility/UI | iOS UX acceptance | P0 | IN_PROGRESS | Material 3 and safe-area tokens |
-| HR-IOS-UX-08 | Responsive rules, not patches | Design system | iOS UX acceptance | P0 | IN_PROGRESS | Container/viewport rules and text reflow |
-| HR-IOS-UX-09 | Mobile Session Complete | Results/UI | iOS UX acceptance | P1 | IN_PROGRESS | Existing Results motion ownership |
-| HR-IOS-UX-10 | iOS information architecture review | Product/UI | iOS UX acceptance | P0 | IN_PROGRESS | Actual Simulator page inventory |
+| HR-IOS-UX-01 | Fix text and spacing defects | UI/content | iOS UX acceptance | P0 | DONE | Native reproduction; shared spacing/text conversion |
+| HR-IOS-UX-02 | Adaptive application navigation | Navigation | iOS UX acceptance | P0 | DONE | Existing screen state and native Back adapter |
+| HR-IOS-UX-03 | Reduce mobile header chrome | Navigation/UI | iOS UX acceptance | P0 | DONE | HR-IOS-UX-02 |
+| HR-IOS-UX-04 | Tap Study card to reveal | Study/accessibility | iOS UX acceptance | P0 | DONE | Shared card renderer and reveal state |
+| HR-IOS-UX-05 | Mobile Study composition | Study/UI | iOS UX acceptance | P0 | DONE | Stable Study stage and rating semantics |
+| HR-IOS-UX-06 | Input-mode-aware shortcuts | Study/input | iOS UX acceptance | P1 | DONE | Keyboard contract and coarse-pointer styling |
+| HR-IOS-UX-07 | Native-quality touch interaction | Accessibility/UI | iOS UX acceptance | P0 | DONE | Material 3 and safe-area tokens |
+| HR-IOS-UX-08 | Responsive rules, not patches | Design system | iOS UX acceptance | P0 | DONE | Container/viewport rules and text reflow |
+| HR-IOS-UX-09 | Mobile Session Complete | Results/UI | iOS UX acceptance | P1 | DONE | Existing Results motion ownership |
+| HR-IOS-UX-10 | iOS information architecture review | Product/UI | iOS UX acceptance | P0 | DONE | Actual Simulator page inventory |
 
 Acceptance for this group is the request text plus actual iPhone/iPad Simulator evidence. Every item must preserve desktop sidebar/right-panel behavior, five-confidence FSRS semantics, Practice boundaries, owned Study motion and physical-device evidence gaps. Page-review findings remain classified as BUG, SPACING/ALIGNMENT, NAVIGATION, TOO MUCH CHROME, MOBILE INTERACTION, TEXT/CONTENT, ACCESSIBILITY or NATIVE VERIFICATION GAP.
+
+- **Implementation:** compact widths use one contextual header, a five-destination bottom bar and disclosed secondary navigation. Study/Results suppress that bar and keep their owned exit/continue actions. Tablet/desktop widths retain the rail and right-hand Study panel. The shared card is a semantic single-tap reveal target on touch; nested controls and drag movement remain isolated. Keyboard reveal is Space/Enter and confidence is 1–5, with command help behind disclosure.
+- **Layout/text:** the Study stage measures identically across reveal at 393×852 (`x 43.23`, `y 161`, `306.53 × 459.80`, scroll position `0`). Five equal rating targets meet the 48 px touch target. Imported block HTML now preserves rendered separators instead of concatenating adjacent paragraphs/divisions; inline adjacency remains language-safe. The visual viewport coordinator recovers focused fields above a resized keyboard viewport.
+- **Page review:** Decks and deck/subdeck use the primary tab plus contextual title/back; Focus, Design Studio, import/export and Settings use More; Collection/inspection and Progress/history retain their shared internal navigation; authoring and dialogs retain Material-owned transitions; Study and Practice share the adaptive player; Results retains its owned reveal/Skip/Replay choreography with one reachable safe-area action dock. No duplicate phone branding/page-title header remains. Intentional exceptions are Study/Results navigation suppression and Material dialogs/expansion panels, which are not given competing shell transitions.
+- **Evidence:** actual iPhone 17 Pro and iPad Pro 11-inch (M5), iOS 26.5, Xcode 26.6 XCUITest runs pass the adaptive navigation and three-card visibility journey. Result bundles, recordings and extracted screenshots are under `.runtime/evidence/hr-ios-ux-20261007/`. Chromium/WebKit adaptive tests cover stable geometry, all five choices, touch targets, Results reachability, landscape and keyboard reveal. Physical-device touch, haptics, VoiceOver and Dynamic Type remain pending and are not represented as Simulator proof.
+- **Relevant commits:** `5d25e22`, `02ce032` and the closing evidence checkpoint.
 
 ## Preserved completed history
 

@@ -111,8 +111,6 @@ export class VisualViewportCoordinator {
       this.frame = requestAnimationFrame(() => {
         const target = document.activeElement as HTMLElement | null;
         if (!target?.matches('input, textarea, select, [contenteditable="true"]')) return;
-        // A substantial height reduction is the only reliable browser-side keyboard hint.
-        if (viewport.height >= window.innerHeight * .82) return;
         const bounds = target.getBoundingClientRect();
         const top = viewport.offsetTop + 12;
         const bottom = viewport.offsetTop + viewport.height - 12;

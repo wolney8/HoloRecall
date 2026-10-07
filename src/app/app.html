@@ -1,4 +1,4 @@
-<div class="app-shell" [class.effects-off]="!data()?.preferences?.effects" [class.study-mode]="screen()==='study'" [class.has-previous]="!!session()?.lastReviewCardId">
+<div class="app-shell" [class.effects-off]="!data()?.preferences?.effects" [class.study-mode]="screen()==='study'" [class.results-mode]="screen()==='results'" [class.has-previous]="!!session()?.lastReviewCardId">
   <a class="skip-link" href="#main-content">Skip to content</a>
   <aside class="sidebar">
     <a class="brand" href="#dashboard" (click)="$event.preventDefault();go('dashboard')" aria-label="HoloRecall dashboard"><img src="favicon.svg" alt=""><span>HoloRecall<span class="brand-dot">.</span></span></a>

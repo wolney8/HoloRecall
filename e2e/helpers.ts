@@ -21,13 +21,25 @@ export async function openApp(page: Page): Promise<void> {
 export async function navigate(page: Page, name: string): Promise<void> {
   const button = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name, exact: false });
   if (await button.isVisible()) { await button.click(); return; }
+  const primary = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name, exact: false });
+  if (await primary.isVisible()) { await primary.click(); return; }
+  const more = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'More', exact: true });
+  if (await more.isVisible()) {
+    await more.click();
+    const secondary = page.getByRole('navigation', { name: 'Secondary navigation' }).getByRole('button', { name, exact: false });
+    if (await secondary.isVisible()) { await secondary.click(); return; }
+  }
   // Focused Study intentionally hides navigation. End it explicitly so tests follow the real user path.
   if (name === 'Study' && await page.getByRole('heading', { name: 'Study', exact: true }).isVisible()) return;
   const end = page.getByRole('button', { name: 'End session', exact: true });
   if (await end.isVisible()) {
     await end.click();
     await expect(page.getByRole('heading', { name: /Study saved|Nice work/ })).toBeVisible();
-    await button.click();
+    if (await button.isVisible()) await button.click();
+    else {
+      await page.getByRole('button', { name: 'Done', exact: true }).click();
+      await navigate(page, name);
+    }
     return;
   }
   await button.click();

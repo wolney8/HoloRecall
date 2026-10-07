@@ -28,6 +28,13 @@ test('HR-IOS-UX phone navigation and tap-to-reveal keep Study stable @ios-large'
     expect((await choice.boundingBox())!.height).toBeGreaterThanOrEqual(48);
   }
   await expectNoOverflow(page);
+  await page.getByRole('button', { name: /3 Good Some hesitation/ }).click();
+  await expect(page.getByTestId('study-deck-stage').locator('[role="button"]')).toBeVisible();
+  await page.getByRole('button', { name: 'End session' }).click();
+  await expect(page.getByRole('heading', { name: /Study saved|Nice work/ })).toBeVisible();
+  await expect(primary).toBeHidden();
+  const done = (await page.getByRole('button', { name: 'Done', exact: true }).boundingBox())!;
+  expect(done.y + done.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 });
 
 test('HR-IOS-UX wide Study retains the right-hand controls and keyboard reveal', async ({ page }) => {

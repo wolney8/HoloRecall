@@ -1,6 +1,6 @@
 # Product brief
 
-HoloRecall is a visual flashcard app for web and iOS. Its core loop is: choose a deck, attempt recall, reveal the answer, rate the attempt, save the review and receive the next due card. Progress survives restart. Animation makes that loop enjoyable without delaying grading or obscuring content.
+HoloRecall is a visual flashcard app for web, iOS/iPadOS, Android and Apple-silicon Mac. Its core loop is: choose a deck, attempt recall, reveal the answer, rate the attempt, save the review and receive the next due card. Progress survives restart. Animation makes that loop enjoyable without delaying grading or obscuring content.
 
 ## Current local web milestone
 
@@ -46,7 +46,7 @@ Later XP must remain independent of self-awarded high confidence. Levels, streak
 
 ## Accessibility and interaction
 
-Begin with readable static cards; then add CSS flip/foil effects. Keep shimmer behind text with constrained blending and static fallbacks. Reveal has a visible button and keyboard control; double-tap is only an optional enhancement. Only the visible face is accessible. Prevent rapid taps from recording duplicate ratings.
+Begin with readable static cards; then add CSS flip/foil effects. Keep shimmer behind text with constrained blending and static fallbacks. On compact touch layouts, the active card is the semantic Reveal answer control and a single intentional tap flips it; nested media/help controls and tilt gestures do not reveal it. Pointer/wide layouts retain the compact visible action. Space or Enter reveals from the keyboard, and 1–5 select the five confidence choices after reveal. Only the visible face is accessible. Prevent rapid taps from recording duplicate ratings.
 
 Pointer shimmer is supported on web. Respect system reduced motion and a user effects switch. Native motion is later, opt-in and user-triggered, with graceful denial/absence handling and listener cleanup. Physical phone flipping is outside the MVP. Current motion uses CSS and the Web Animations API with finite entry effects and sparse decorative particles. Lottie, counters and packs require a suitable licensed asset/runtime and a measured performance budget on a named iPhone before introduction. WebGL requires a demonstrated benefit.
 

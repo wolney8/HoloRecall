@@ -37,7 +37,7 @@ test('HR-IOS loaded-page offline Study remains usable in WebKit and recovery kee
   await navigate(page, 'Dashboard');
   await page.getByRole('button', { name: /Start studying/ }).click();
   await context.setOffline(true);
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 100, y: 100 } });
   await page.getByRole('button', { name: /4 Good Confident/ }).click();
   expect((await snapshot(page)).events.filter(event => event.kind === 'review')).toHaveLength(1);
   await context.setOffline(false);
@@ -105,6 +105,7 @@ test('HR-IOS landscape keeps Collection and Design Studio usable without hover @
 test('HR-IOS reduced motion remains static in WebKit while theme choice survives reload @ios-compact', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
   await openApp(page);
+  await navigate(page, 'Settings');
   await page.getByRole('radio', { name: 'Dark' }).click();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
