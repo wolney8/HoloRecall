@@ -27,14 +27,16 @@ describe('native platform adapters', () => {
   it('writes bytes to a native cache file, shares that URI, and cleans it up', async () => {
     const writeFile = vi.fn(async () => ({ uri: 'file:///cache/export.zip' }));
     const deleteFile = vi.fn(async () => undefined);
+    const rmdir = vi.fn(async () => undefined);
     const share = vi.fn(async () => ({ activityType: 'saveToFiles' }));
     const modules = {
       core: { Capacitor: { isNativePlatform: () => true } },
-      filesystem: { Directory: { Cache: 'CACHE' }, Filesystem: { writeFile, deleteFile } },
+      filesystem: { Directory: { Cache: 'CACHE' }, Filesystem: { writeFile, deleteFile, rmdir } },
       share: { Share: { canShare: async () => ({ value: true }), share } },
     };
     await deliverNativeFile(new Blob(['HoloRecall'], { type: 'application/zip' }), '../lesson.zip', modules as unknown as Parameters<typeof deliverNativeFile>[2]);
     expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: expect.stringMatching(/^holorecall-exports\/.+-lesson\.zip$/), data: 'SG9sb1JlY2FsbA==', directory: 'CACHE', recursive: true }));
+    expect(rmdir).toHaveBeenCalledWith({ path: 'holorecall-exports', directory: 'CACHE', recursive: true });
     expect(share).toHaveBeenCalledWith(expect.objectContaining({ files: ['file:///cache/export.zip'] }));
     expect(deleteFile).toHaveBeenCalledOnce();
   });
@@ -43,7 +45,7 @@ describe('native platform adapters', () => {
     const deleteFile = vi.fn(async () => undefined);
     const modules = {
       core: { Capacitor: { isNativePlatform: () => true } },
-      filesystem: { Directory: { Cache: 'CACHE' }, Filesystem: { writeFile: async () => ({ uri: 'file:///cache/export.xlsx' }), deleteFile } },
+      filesystem: { Directory: { Cache: 'CACHE' }, Filesystem: { writeFile: async () => ({ uri: 'file:///cache/export.xlsx' }), deleteFile, rmdir: async () => undefined } },
       share: { Share: { canShare: async () => ({ value: true }), share: async () => { throw new Error('cancelled'); } } },
     };
     await expect(deliverNativeFile(new Blob(['x']), 'export.xlsx', modules as unknown as Parameters<typeof deliverNativeFile>[2])).rejects.toThrow('cancelled');

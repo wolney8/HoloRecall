@@ -61,6 +61,9 @@ export class PlatformFileDelivery implements FileDelivery {
 
 export async function deliverNativeFile(blob: Blob, suggestedName: string, modules: NativeFileModules): Promise<void> {
     const safeName = suggestedName.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '') || 'holorecall-export';
+    // A process can be killed while the native share surface is open. Clear only
+    // this adapter's cache directory before the next export; user data never lives here.
+    await modules.filesystem.Filesystem.rmdir({ path: 'holorecall-exports', directory: modules.filesystem.Directory.Cache, recursive: true }).catch(() => undefined);
     const path = `holorecall-exports/${crypto.randomUUID()}-${safeName}`;
     const data = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
     const written = await modules.filesystem.Filesystem.writeFile({ path, data, directory: modules.filesystem.Directory.Cache, recursive: true });

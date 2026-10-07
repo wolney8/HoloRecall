@@ -44,13 +44,17 @@ final class NativeSmokeUITests: XCTestCase {
     }
 
     func testSystemAppearanceAndRelaunch() throws {
-        tapButton("Dark")
-        XCTAssertTrue(app.buttons["Dark"].isSelected)
+        let dark = app.otherElements["Dark"]
+        XCTAssertTrue(dark.waitForExistence(timeout: 8))
+        dark.tap()
+        XCTAssertEqual(dark.value as? String, "1")
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
-        XCTAssertTrue(app.buttons["Dark"].isSelected)
-        tapButton("System")
+        XCTAssertEqual(app.otherElements["Dark"].value as? String, "1")
+        let system = app.otherElements["System"]
+        XCTAssertTrue(system.waitForExistence(timeout: 8))
+        system.tap()
     }
 
     func testNativeLifecycleRecoversActiveStudy() throws {
@@ -63,6 +67,31 @@ final class NativeSmokeUITests: XCTestCase {
         app.activate()
         XCTAssertTrue(app.buttons["Reveal answer ↻"].waitForExistence(timeout: 10))
         attachScreenshot("lifecycle-resumed-study")
+    }
+
+    func testNativeOrientationAndFileSurfaces() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 8))
+        attachScreenshot("iphone-landscape-dashboard")
+        XCUIDevice.shared.orientation = .portrait
+
+        tapButton("Import / export")
+        XCTAssertTrue(app.staticTexts["Import & export"].waitForExistence(timeout: 10))
+        tapButton("Export current XLSX")
+        let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 20), "Native share sheet did not appear\n\(app.debugDescription)")
+        XCTAssertTrue(app.cells["Save to Files"].exists)
+        attachScreenshot("native-export-share-sheet")
+        app.otherElements["dismiss popup"].tap()
+        XCTAssertTrue(app.staticTexts["Import & export"].waitForExistence(timeout: 8))
+
+        let pickerLabel = app.staticTexts["Workbook or portable archive"]
+        XCTAssertTrue(pickerLabel.waitForExistence(timeout: 8))
+        pickerLabel.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native document picker did not appear\n\(app.debugDescription)")
+        attachScreenshot("native-document-picker")
+        cancel.tap()
     }
 
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
