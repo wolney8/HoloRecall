@@ -4,6 +4,13 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### Import reconversion/content editing stop-ship — 7 October 2026
+
+- **Recovered state:** clean `main` at `b31ca12`; the prior semantic mapping fix, contextual updater, native projects and all learner-state boundaries are preserved. Will's exact unchanged `.apkg` still leaves previously malformed derived content because current comparison keys repair eligibility only to source/local content hashes.
+- **Tracker state:** HR-ANKI-08–11, HR-AUTHOR-02–05 and HR-BUG-CONTENT-01/02 are `IN_PROGRESS`. HR-ACCEPT-ANKI-01 is **FAILED — REAL USER PACKAGE STILL PRODUCES MALFORMED LOCAL CONTENT**.
+- **Active investigation:** define a versioned converter/normaliser provenance contract and field-level conflict rules; audit the existing card/deck/media editors and card-list composition; then implement repair/update separation and complete editors without changing learner state.
+- **Exact restart point:** inspect schema/source-baseline models and the update diff/apply path, then add backward-compatible conversion-version invalidation before changing UI. The user's real data remains read-only.
+
 ### Stop-ship Anki update/layout recovery — 7 October 2026
 
 - **Recovered state:** clean `main` at `3719b04`. The exact real package retest failed: updated cards can display `it` as the primary answer, and the shared breadcrumb presentation produces vertical dead space and duplicate headings. No learner data or native work has been reset.
