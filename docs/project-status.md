@@ -4,6 +4,13 @@ Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
 
+### Real-package repair failure recovery — 7 October 2026
+
+- **Recovered state:** clean `main` at `e47f32e`; no reset or learner-data mutation. Will's exact package proves the claimed repair remains ineffective: the reachable flow is unclear, Before/After can remain materially identical, structured destinations stay empty, and multiple cards retain `Answer = it`.
+- **Active tracker:** HR-ANKI-08–11 are reopened `IN_PROGRESS`; HR-BUG-ANKI-12–19 are recorded `IN_PROGRESS`; HR-ACCEPT-ANKI-01 is **FAILED — REPAIR/RECONVERSION DOES NOT CORRECT REAL IMPORTED DATA**.
+- **Investigation contract:** trace the persisted mapping selection before changing schema. Repair must distinguish mapping-policy upgrades, auto-inferred versus user-confirmed mappings, corrupted converter-derived baselines versus genuine edits, and must block Apply when no meaningful structured repair is produced.
+- **Exact next action:** establish which stored mapping/provenance layer overrides current semantic inference, then implement the smallest versioned migration and genuine repair path. Do not request another real-package retest until legacy bad-mapping and structured Before/After fixtures pass.
+
 ### Import reconversion/content editing stop-ship — 7 October 2026
 
 - **Recovered state:** clean `main` at `b31ca12`; the prior semantic mapping fix, contextual updater, native projects and all learner-state boundaries are preserved. Will's exact unchanged `.apkg` still leaves previously malformed derived content because current comparison keys repair eligibility only to source/local content hashes.
