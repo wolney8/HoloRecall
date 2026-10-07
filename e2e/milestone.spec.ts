@@ -12,10 +12,11 @@ async function localArtwork(page: Page): Promise<{ name: string; mimeType: strin
   });
   return { name: 'original-test-frame.png', mimeType: 'image/png', buffer: Buffer.from(base64, 'base64') };
 }
-const appearance = (page: Page) => page.getByRole('radiogroup', { name: 'Appearance', exact: true });
+const appearance = (page: Page) => page.getByRole('radiogroup', { name: 'Theme', exact: true });
 
 test('System follows device; explicit themes persist and dark startup paints before Angular loads', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' }); await openApp(page);
+  await navigate(page, 'Settings');
   await expect(appearance(page).getByRole('radio', { name: 'System', exact: true })).toBeChecked();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
   const darkBackground = await page.locator('body').evaluate(element => getComputedStyle(element).backgroundColor);
@@ -35,7 +36,7 @@ test('System follows device; explicit themes persist and dark startup paints bef
     expect(Math.max(...rgb.slice(0, 3)), 'Pre-app background stays dark').toBeLessThan(70);
     expect(await page.locator('app-root').textContent()).toBe('');
   } finally { release(); }
-  await expect(page.getByRole('heading', { name: 'Study dashboard', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   await expect(appearance(page).getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
   await appearance(page).getByRole('radio', { name: 'Light', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');

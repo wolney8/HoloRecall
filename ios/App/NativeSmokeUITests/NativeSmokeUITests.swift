@@ -40,7 +40,7 @@ final class NativeSmokeUITests: XCTestCase {
         tapButton("Done")
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
-        tapButton("Progress")
+        openMore("Progress")
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 8))
         openMore("Settings")
         XCTAssertTrue(app.staticTexts["Settings"].waitForExistence(timeout: 8))

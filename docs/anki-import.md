@@ -27,7 +27,15 @@ The preview reports mutually exclusive normal, simplified, excluded and unsafe c
 
 The preview reports source-note and generated-card counts separately. Reusable mapping presets use `anki-model-v1-…`, a deterministic hash over cloze type, ordered field names and ordered template names/content. A later package with the exact signature gets the saved suggestion; a changed source schema is marked for review. Changing a mapping previews stable existing card identities, so applying updates can preserve local edits according to the selected conflict policy without resetting history or rerolling authored rarity.
 
-Anki `::` paths are converted once into explicit stable parent/child deck relationships; the UI never reconstructs them from punctuation. Parent Study gathers eligible descendants, child Study remains branch-scoped and reimport reuses the same source identities. HoloRecall portable format v4 preserves deck parents and card sibling groups.
+Anki `::` paths are converted once into explicit stable parent/child deck relationships; the UI never reconstructs them from punctuation. Parent Study gathers eligible descendants, child Study remains branch-scoped and reimport reuses the same source identities. HoloRecall portable format v5 preserves deck parents, card sibling groups and inert Anki source identities/import baselines.
+
+## Source update and reconversion
+
+An imported deck exposes **Update from Anki package**. The replacement package is analysed by stable source deck, note GUID and template/card ordinal rather than filename. Preview distinguishes new, changed, media-changed, unchanged, locally conflicting, source-removed and simplified/unsupported content. Applying supported changes uses the existing atomic content-import transaction and preserves HoloRecall review events, FSRS state/due dates, Study preset, Focus history and earned cosmetics.
+
+Each imported card and deck stores an inert hash of the last accepted source projection. When source and local content both changed, **Keep local** is the default; **Use updated Anki source** explicitly accepts reconversion. Legacy imports without a baseline are always treated as review-required conflicts. A card absent from the new source is retained as an archive candidate rather than deleted. These rules provide the safe path for repairing older malformed imports without startup mutation.
+
+Structured conversion removes `FrontSide` from the native answer and maps reliably identified prompt, answer, pronunciation, meaning and note fields separately. Multiple note fields remain separate paragraphs. Collection inspection renders the card once and places extended source notes behind disclosure. The converter preserves block/list/table boundaries without inserting global spaces between intentionally adjacent inline text.
 
 The styling policy hashes the stable note GUID plus template/cloze ordinal, then proposes Common 55%, Uncommon 20%, Rare 12%, Holo Rare 7%, Ultra Rare 4%, Secret Rare 1%, Relic 1%. Actual counts appear before import. This is authored presentation only and never unlocks cosmetics.
 

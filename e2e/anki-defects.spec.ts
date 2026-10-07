@@ -19,7 +19,7 @@ async function importOfficial(page:Parameters<typeof openApp>[0]):Promise<void>{
   await page.locator('#anki-import').setInputFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
   await expect(page.getByText('legacy-anki21')).toBeVisible();
   await page.getByRole('button',{name:'Import 7 supported cards'}).click();
-  await expect(page.getByText('Imported 7 Anki cards.')).toBeVisible();
+  await expect(page.getByText(/Imported 7 new and 0 changed Anki cards/)).toBeVisible();
 }
 
 test('HR-BUG-ANKI-01 classifies TTS simplification separately from remote media and safe links',async({page},testInfo)=>{
@@ -56,7 +56,7 @@ test('HR-BUG-ANKI-02 imported parents are aggregate journeys with scoped subdeck
   expect(child.parentId).toBe(root.id);expect(data.cards.filter(card=>card.id.startsWith('anki-')).every(card=>card.deckId===child.id)).toBe(true);
   await page.screenshot({path:testInfo.outputPath('imported-deck-hierarchy.png'),fullPage:true});
   await parent.getByRole('button',{name:'Study journey'}).click();expect((await snapshot(page)).session?.queue).toHaveLength(7);
-  await page.getByRole('button',{name:'End session'}).click();await page.getByRole('button',{name:'Decks',exact:true}).click();
+  await page.getByRole('button',{name:'End session'}).click();await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Decks',exact:true}).click();
   await parent.getByRole('button',{name:'Study subdeck'}).click();expect((await snapshot(page)).session?.queue).toHaveLength(7);
 });
 
@@ -73,9 +73,11 @@ test('HR-BUG-STUDY-01 consecutive imported cards settle visible after every deal
     const state=await snapshot(page),nextQueue=state.session!.queue;expect(nextQueue.length).toBeLessThan(previousQueue.length);expect(nextQueue).not.toContain(previousQueue[0]);expect(nextQueue[0]).not.toBe(previousQueue[0]);expect(state.events).toHaveLength(review+1);previousQueue=nextQueue;
   }
   await page.screenshot({path:testInfo.outputPath('second-imported-card-settled.png'),fullPage:true});
-  const beforeReimport=await snapshot(page);await page.getByRole('button',{name:'End session'}).click();await page.getByRole('button',{name:'Import / export'}).click();
+  const beforeReimport=await snapshot(page);await page.getByRole('button',{name:'End session'}).click();await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Decks',exact:true}).click();
+  await parent.getByRole('button',{name:'Update from Anki package'}).click();
   await page.locator('#anki-import').setInputFiles({name:'anki-26.9.3-legacy.apkg',mimeType:'application/zip',buffer:await readFile('e2e/fixtures/anki-26.9.3-legacy.apkg')});
-  await page.getByRole('button',{name:'Import 0 supported cards'}).click();const afterReimport=await snapshot(page);
+  await expect(page.locator('.update-summary')).toContainText('7Unchanged');
+  await page.getByRole('button',{name:'Apply update 0 supported cards'}).click();const afterReimport=await snapshot(page);
   expect(afterReimport.decks.map(deck=>[deck.id,deck.parentId])).toEqual(beforeReimport.decks.map(deck=>[deck.id,deck.parentId]));expect(afterReimport.cards.map(card=>[card.id,card.rarity])).toEqual(beforeReimport.cards.map(card=>[card.id,card.rarity]));expect(afterReimport.states).toEqual(beforeReimport.states);expect(afterReimport.events).toEqual(beforeReimport.events);expect(afterReimport.rewardEvents).toEqual(beforeReimport.rewardEvents);
 });
 

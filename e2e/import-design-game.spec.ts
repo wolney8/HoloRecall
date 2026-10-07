@@ -25,12 +25,12 @@ test('HR-IMPORT-01 analyses, previews and atomically imports an Anki package', a
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByText('legacy-anki2')).toBeVisible(); await expect(page.getByText('1', { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/1 new · 0 updates/)).toBeVisible();await expect(page.getByText("Anki learning history isn't imported. These cards will use your HoloRecall study settings.")).toBeVisible();await page.getByLabel('Study using').click();await page.getByRole('option',{name:'Light workload'}).click(); await page.getByRole('button', { name: 'Import 1 supported cards' }).click();
-  await expect(page.getByText(/Imported 1 Anki cards/)).toBeVisible(); await page.getByRole('button', { name: 'Decks' }).click(); await expect(page.getByText('good morning', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Imported 1 new and 0 changed Anki cards/)).toBeVisible(); await page.getByRole('button', { name: 'Decks' }).click(); await expect(page.getByText('good morning', { exact: true })).toBeVisible();
   const imported=await snapshot(page),card=imported.cards.find(item=>item.answer==='good morning')!,deck=imported.decks.find(item=>item.id===card.deckId)!;expect(imported.states[card.id]).toBeUndefined();expect(deck.studyPresetId).toBe('light');await page.reload(); await expect(page.getByText('good morning', { exact: true })).toBeVisible();
 });
 
 test('HR-IMPORT-01 worker imports official custom fields and side-specific bundled audio', async ({ page }) => {
-  await openApp(page); await page.getByRole('button', { name: 'Import / export' }).click();
+  await openApp(page);await navigate(page,'Settings');await page.getByRole('radio', { name: 'Dark', exact: true }).click();await navigate(page,'Import / export');
   const before = await snapshot(page);
   await page.locator('#anki-import').setInputFiles({
     name: 'anki-26.9.3-legacy.apkg', mimeType: 'application/zip',
@@ -41,13 +41,13 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
   await expect(page.getByText('7', { exact: true }).first()).toBeVisible();
   await page.getByText('Custom field mapping').click();
   await expect(page.getByRole('heading', { name: 'HoloRecall Custom Audio' })).toBeVisible();
-  await page.getByRole('radio', { name: 'Dark', exact: true }).click(); await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await expectNoOverflow(page); await page.evaluate(() => document.documentElement.style.fontSize = '100%');
   await page.getByRole('button', { name: 'Save presets and preview' }).click();
   await expect(page.getByText('Mapping presets saved for these exact source schemas.')).toBeVisible();
   await expect(page.getByText('Saved exact match').last()).toBeVisible();
   await page.getByRole('button', { name: 'Import 7 supported cards' }).click();
-  await expect(page.getByText('Imported 7 Anki cards.')).toBeVisible();
+  await expect(page.getByText(/Imported 7 new and 0 changed Anki cards/)).toBeVisible();
 
   const imported = await snapshot(page);
   const audioCard = imported.cards.find(card => card.answer === 'buonasera');

@@ -10,6 +10,8 @@
 
 **Current handoff:** Recover the exact current state from `docs/project-status.md`; never reset to a checkpoint recorded in this charter. The confirmed targets are Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac and AnkiWeb Sync are not planned.
 
+**Identity and commercial direction:** local-first anonymous use remains supported. Future accounts provide identity, recovery, verified ownership and HoloRecall-owned cross-device continuity; they do not own or rewrite the learning domain. A future free experience may contain carefully governed advertising and a paid entitlement may remove ads and unlock an approved full feature set, but the exact free/paid split and subscription versus one-time purchase remain **PROPOSED / UNDECIDED**. No client flag, imported backup or development fixture proves purchase ownership.
+
 ## 1. Product definition — confirmed direction
 
 HoloRecall is a configurable spaced-repetition learning application for **Web, iPhone, iPad, Android phones/tablets and Apple-silicon Macs**, with the functional ambition of Anki and an original collectible-card presentation inspired by the tactile appeal of trading-card games. Intel/older Mac support is **not planned**.
@@ -83,6 +85,8 @@ Preserve independent concepts for:
 | Design and finish | Reusable frames, backgrounds, textures and application-controlled effects. |
 | Earned cosmetic state | The learner's actual eligible progress and unlocks. |
 | Product entitlement | Access to paid application capabilities. |
+| Identity | The local anonymous or future verified account session; signing out does not erase learning data. |
+| Advertising policy | Whether an approved placement may be shown for an account, surface and platform; active learning, reward and recovery flows remain ineligible. |
 
 Buying the full product is not the same as earning every cosmetic. An imported high-rarity card remains studyable before its premium presentation is earned. Paying never improves a scheduler grade or fabricates learning progress.
 

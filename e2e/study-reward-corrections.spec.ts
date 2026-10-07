@@ -86,14 +86,15 @@ test('HR-UX-15 real unlock waits for completed progress and Skip/Replay stay pre
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible();
   const stored = await snapshot(page), eventCount = stored.events.length, rewardCount = stored.rewardEvents.length;
   const progress = page.locator('[data-result-section="cosmetics"]');
+  await page.locator('.unlock-reveal').evaluate(node=>{const phases:string[]=[];(window as unknown as {__unlockPhases:string[]}).__unlockPhases=phases;const record=()=>phases.push((node as HTMLElement).dataset['unlockPhase']??'');record();new MutationObserver(record).observe(node,{attributes:true,attributeFilter:['data-unlock-phase']});});
   await progress.scrollIntoViewIfNeeded();
   await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'waiting');
   await expect.poll(() => page.locator('.result-bar i').first().evaluate(node => getComputedStyle(node).width), { timeout: 2_000 }).not.toBe('0px');
-  await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'complete', { timeout: 3_000 });
+  await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 3_000 });
+  expect(await page.evaluate(()=>(window as unknown as {__unlockPhases:string[]}).__unlockPhases)).toEqual(expect.arrayContaining(['waiting','complete','pack','revealed']));
   const bar = page.locator('.result-bar').first();
   const fill = page.locator('.result-bar i').first();
   expect(Math.abs((await fill.boundingBox())!.width - (await bar.boundingBox())!.width)).toBeLessThan(2);
-  await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 3_000 });
   await expect(page.locator('.unlock-feature')).toContainText('Unlocked');
   await page.getByRole('button', { name: 'Replay', exact: true }).click();
   await page.getByRole('button', { name: 'Skip animation', exact: true }).click();

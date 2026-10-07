@@ -101,8 +101,8 @@ test('HR-UX-12 stable filtering, focus, theme changes and backgrounding do not r
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(heading).toHaveAttribute('data-reveal-state', 'settled');
   await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
-  await page.getByRole('radio', { name: 'Dark' }).click();
-  await page.getByRole('radio', { name: 'System' }).click();
+  await page.locator('html').evaluate(element=>element.setAttribute('data-theme','dark'));
+  await page.locator('html').evaluate(element=>element.setAttribute('data-theme','system'));
   await expect(heading).toHaveAttribute('data-reveal-state', 'settled');
   expect(await heading.evaluate(element => element.getAnimations().length)).toBe(0);
 });

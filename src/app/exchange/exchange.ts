@@ -167,7 +167,7 @@ export class ExchangeComponent implements OnDestroy {
       if (portable) bundle = await makePortableBundle(bundle, rasterizeBundled);
       const bytes = portable ? await writePortableZip(bundle) : await writeWorkbook(bundle);
       const blob = new Blob([bytes.slice().buffer], { type: portable ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      await this.fileDelivery.deliver(blob, `holorecall-content-v4.${portable ? 'zip' : 'xlsx'}`);
+      await this.fileDelivery.deliver(blob, `holorecall-content-v5.${portable ? 'zip' : 'xlsx'}`);
       this.message.set(portable ? 'Portable ZIP download requested with media and design definitions. No learning history is included.' : 'Workbook download requested. Uploaded media references require the portable ZIP when shared with another browser.');
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }

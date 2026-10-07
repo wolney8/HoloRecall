@@ -1,10 +1,10 @@
-# HoloRecall deck-content format, version 4
+# HoloRecall deck-content format, version 5
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 4 preserves explicit deck parent relationships and card sibling groups. These identities keep imported learning journeys and reversed/cloze sibling behavior intact across HoloRecall portable exchange. Versions 1–3 remain readable; because they did not contain these columns, their missing hierarchy is never guessed from punctuation. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 5 preserves inert Anki source identities and imported-content baselines in addition to the explicit deck parent relationships and card sibling groups introduced in version 4. These values let a later source package update content without resetting HoloRecall learning state. Versions 1–4 remain readable; missing source metadata is treated conservatively and is never invented. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
-Download the [blank workbook](/downloads/holorecall-blank-v4.xlsx), [16-card Italian example](/downloads/holorecall-italian-v4.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v4.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 4 builds on version 3 audio support with explicit hierarchy and sibling identity.
+Download the [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. The `anki_source` columns contain validated inert JSON written by HoloRecall; ordinary authored decks leave them blank.
 
 ## Workbook contract
 
