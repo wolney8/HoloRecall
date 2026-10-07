@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
-import { analyseAnkiPackage, plainAnkiText, previewAnkiImport, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
+import { analyseAnkiPackage, ankiImportedContentHash, plainAnkiText, previewAnkiImport, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
 import { createInitialState } from './study';
 
 beforeAll(async () => {
@@ -118,8 +118,9 @@ describe('Anki content-only import', () => {
 
     const locallyEdited=structuredClone(state);locallyEdited.cards[0]!.notes+='\n\nMy local note.';locallyEdited.cards.push({...structuredClone(initial.cards[0]!),id:'anki-removed-source',ankiSource:{...initial.cards[0]!.ankiSource!,noteGuid:'removed-guid'}});
     const protectedPreview=previewAnkiImport(changed,locallyEdited,true,root);
-    expect(protectedPreview.update.conflicts).toEqual([initial.cards[0]!.id]);
-    expect(protectedPreview.updatedCards).toEqual([]);
+    expect(protectedPreview.update.conflicts).toEqual([]);
+    expect(protectedPreview.updatedCards).toEqual([initial.cards[0]!.id]);
+    expect(protectedPreview.bundle.cards[0]).toMatchObject({answer:'Good evening!',notes:expect.stringContaining('My local note.')});
     expect(protectedPreview.update.removedSourceCards).toEqual(['anki-removed-source']);
     expect(previewAnkiImport(changed,locallyEdited,false,root).updatedCards).toEqual([initial.cards[0]!.id]);
 
@@ -127,6 +128,18 @@ describe('Anki content-only import', () => {
     const legacyPreview=previewAnkiImport(changed,legacy,true,root);
     expect(legacyPreview.update.legacyReviewRequired).toEqual([initial.cards[0]!.id]);
     expect(legacyPreview.updatedCards).toEqual([]);
+  });
+  it('reconverts unchanged source when the stored conversion contract is older', async () => {
+    const analysis=await analyseAnkiPackage(await structuredItalianPackage(),'original.apkg');
+    const state=createInitialState(analysis.decks,analysis.cards),card=state.cards[0]!;
+    card.answer='it';card.meaning='MeaningGood evening';card.notes='Literalbuona = good; sera = evening.';
+    card.ankiSource!.importedContentHash=ankiImportedContentHash(card);
+    card.ankiSource!.conversion={...card.ankiSource!.conversion!,converterVersion:1,normalizerVersion:1,fieldBaselines:{}};
+    const root=analysis.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(analysis,state,true,root);
+    expect(preview.update.sourceChangedCards).toEqual([]);
+    expect(preview.update.conversionUpgradeCards).toEqual([card.id]);
+    expect(preview.update.unchangedCards).not.toContain(card.id);
+    expect(preview.bundle.cards[0]).toMatchObject({id:card.id,answer:'Good evening',meaning:'good evening'});
   });
   it('analyses a legacy schema package as notes and generated cards, including reversed and cloze cards', async () => {
     const analysis = await analyseAnkiPackage(await legacyPackage(), 'tiny.apkg');

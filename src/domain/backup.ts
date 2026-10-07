@@ -24,6 +24,7 @@ export function validatePreferences(value: unknown): asserts value is Preference
 
 export function validateDeck(value: unknown): asserts value is Deck {
   const deck = object(value);
+  if(deck['coverImage']!==undefined)validateMediaRef(deck['coverImage']);
   if (deck['designSetId'] !== undefined && !id(deck['designSetId'])) fail('invalid deck design reference.');
   if (deck['parentId'] !== undefined && !id(deck['parentId']) || deck['archived'] !== undefined && typeof deck['archived'] !== 'boolean') fail('invalid deck organisation.');
   if(deck['studyPresetId']!==undefined&&!id(deck['studyPresetId']))fail('invalid deck study preset.');
@@ -54,6 +55,9 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (card['ankiSource'] !== undefined) {
     const source = object(card['ankiSource']);
     if (source['kind'] !== 'anki' || !text(source['noteGuid'], 160) || !text(source['noteId'], 80) || !integer(source['templateOrdinal'], 0) || !text(source['modelName'], 240) || !text(source['templateName'], 240) || !text(source['modelSignature'], 120) || !/^anki-model-v1-/.test(String(source['modelSignature'])) || !/^[a-f0-9]{8}$/.test(String(source['importedContentHash']))) fail('invalid Anki card source metadata.');
+    if(source['sourceContentFingerprint']!==undefined&&(!text(source['sourceContentFingerprint'],120)||!String(source['sourceContentFingerprint']).startsWith('anki-source-v1-')))fail('invalid Anki source fingerprint.');
+    if(source['linkState']!==undefined&&!['linked','detached'].includes(String(source['linkState'])))fail('invalid Anki source link state.');
+    if(source['conversion']!==undefined){const conversion=object(source['conversion']);if(!integer(conversion['converterVersion'],1)||!integer(conversion['normalizerVersion'],1)||!integer(conversion['mappingVersion'],1)||!text(conversion['mappingSignature'],120)||!String(conversion['mappingSignature']).startsWith('anki-mapping-v1-'))fail('invalid Anki conversion provenance.');const baselines=object(conversion['fieldBaselines']);for(const value of Object.values(baselines))if(!/^[a-f0-9]{8}$/.test(String(value)))fail('invalid Anki field baseline.');}
   }
 }
 
@@ -275,7 +279,7 @@ export function validateReferences(data: State): void {
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
   const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
-  if (!id(mapping['id']) || mapping['version'] !== 1 || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
+  if (!id(mapping['id']) || ![1,2].includes(Number(mapping['version'])) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
   const fields = object(mapping['fields']);
   if (Object.keys(fields).length > 100 || Object.values(fields).some(target => !targets.includes(String(target)))) fail('invalid Anki field mapping.');
 }

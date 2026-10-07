@@ -32,7 +32,7 @@ export interface CardContent {
   ankiSource?: AnkiCardSource;
 }
 
-export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; ankiSource?: AnkiDeckSource }
+export interface Deck { id: string; name: string; description: string; suspended: boolean; coverImage?: string; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; ankiSource?: AnkiDeckSource }
 export interface AnkiCardSource {
   kind: 'anki';
   noteGuid: string;
@@ -42,6 +42,19 @@ export interface AnkiCardSource {
   templateName: string;
   modelSignature: string;
   importedContentHash: string;
+  /** Raw Anki note/template input fingerprint. Independent of converted HoloRecall content. */
+  sourceContentFingerprint?: string;
+  /** Versioned conversion contract. Missing values identify legacy imports needing package-backed repair. */
+  conversion?: {
+    converterVersion: number;
+    normalizerVersion: number;
+    mappingVersion: number;
+    mappingSignature: string;
+    /** Hashes of the last accepted source-derived values, used for field-level local-edit protection. */
+    fieldBaselines: Partial<Record<AnkiDerivedField, string>>;
+  };
+  /** Detached cards retain provenance but are excluded from future Anki updates and repairs. */
+  linkState?: 'linked' | 'detached';
   /** Auditable origin of the native prompt/answer produced by the converter. */
   contentProvenance?: {
     front: 'mapping' | 'template' | 'cloze';
@@ -50,6 +63,7 @@ export interface AnkiCardSource {
     answerFields: string[];
   };
 }
+export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId';
 export interface AnkiDeckSource {
   kind: 'anki';
   sourceDeckId?: string;
@@ -255,7 +269,7 @@ export interface LocalAsset {
 export type AnkiFieldTarget = 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';
 export interface AnkiMappingPreset {
   id: string;
-  version: 1;
+  version: 1 | 2;
   name: string;
   sourceSignature: string;
   modelName: string;

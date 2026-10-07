@@ -9,11 +9,11 @@ export interface ImportPreview {
   newDecks: string[]; updatedDecks: string[]; duplicateDecks: string[];
   newDesigns: string[]; updatedDesigns: string[]; duplicateDesigns: string[];
 }
-export const FORMAT_VERSION = '5';
+export const FORMAT_VERSION = '6';
 export const EXCHANGE_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic'];
 export const HEADERS = {
   Metadata: ['key', 'value'],
-  Decks: ['deck_id', 'title', 'description', 'design_set_id', 'suspended', 'parent_deck_id', 'anki_source'],
+  Decks: ['deck_id', 'title', 'description', 'design_set_id', 'suspended', 'parent_deck_id', 'anki_source', 'cover_media'],
   Cards: ['card_id', 'deck_id', 'card_type', 'front_text', 'back_text', 'pronunciation', 'meaning', 'notes', 'tags', 'rarity', 'design_set_id', 'front_media', 'back_media', 'image_description', 'suspended', 'finish', 'front_audio', 'back_audio', 'sibling_group_id', 'anki_source'],
   Designs: ['design_set_id', 'name', 'background', 'frame', 'common_frame', 'uncommon_frame', 'rare_frame', 'holo_rare_frame', 'ultra_rare_frame', 'secret_rare_frame', 'relic_frame', 'background_fit', 'background_position_x', 'background_position_y', 'frame_fit', 'credit', 'source', 'license', 'base_finish', 'rarity_finishes', 'layout', 'texture'],
   Assets: ['asset_id', 'file', 'name', 'mime', 'width', 'height', 'credit', 'source', 'license'],
@@ -26,6 +26,7 @@ const LEGACY_HEADERS = {
 const V2_HEADERS = { ...HEADERS, Cards: HEADERS.Cards.slice(0, 16) } as const;
 const V3_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 5), Cards: HEADERS.Cards.slice(0, 18) } as const;
 const V4_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 6), Cards: HEADERS.Cards.slice(0, 19) } as const;
+const V5_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 7) } as const;
 type SheetName = keyof typeof HEADERS;
 type Tables = Record<SheetName, string[][]>;
 export const MAX_FILE_BYTES = 30 * 1024 * 1024;
@@ -58,7 +59,7 @@ function extension(asset: LocalAsset): string { return asset.mime === 'image/jpe
 export function bundleTables(bundle: ContentBundle): Tables {
   return {
     Metadata: [['format_version', FORMAT_VERSION], ['content_only', 'true']],
-    Decks: bundle.decks.map(deck => [deck.id, deck.name, deck.description, deck.designSetId ?? '', String(deck.suspended), deck.parentId ?? '', deck.ankiSource ? JSON.stringify(deck.ankiSource) : '']),
+    Decks: bundle.decks.map(deck => [deck.id, deck.name, deck.description, deck.designSetId ?? '', String(deck.suspended), deck.parentId ?? '', deck.ankiSource ? JSON.stringify(deck.ankiSource) : '',deck.coverImage??'']),
     Cards: bundle.cards.map(card => [card.id, card.deckId, card.kind, card.front, card.answer, card.pronunciation, card.meaning, card.notes, JSON.stringify(card.tags), card.rarity ?? 'common', card.designSetId ?? '', card.image ?? '', card.backImage ?? '', card.imageDescription ?? '', String(card.suspended), card.finish ?? '', JSON.stringify(card.frontAudio ?? []), JSON.stringify(card.backAudio ?? []), card.siblingGroupId ?? '', card.ankiSource ? JSON.stringify(card.ankiSource) : '']),
     Designs: bundle.designs.map(design => [design.id, design.name, design.background ?? '', design.frame ?? '', ...EXCHANGE_RARITIES.map(rarity => design.frames?.[rarity] ?? ''), design.backgroundFit, String(design.backgroundPositionX), String(design.backgroundPositionY), design.frameFit, design.credit, design.source, design.license, design.finish ?? '', design.finishes ? JSON.stringify(design.finishes) : '', design.layout ?? '', design.texture ?? '']),
     Assets: bundle.assets.map(asset => [asset.id, `media/${asset.id}.${extension(asset)}`, asset.name, asset.mime, asset.width === undefined ? '' : String(asset.width), asset.height === undefined ? '' : String(asset.height), asset.credit ?? '', asset.source ?? '', asset.license ?? '']),
@@ -135,9 +136,9 @@ async function readTables(bytes: Uint8Array): Promise<Tables> {
       });
       if (number === 1) {
         const actual = values.slice(0, sheet.columnCount);
-        const current = [...HEADERS[name]], v4 = [...V4_HEADERS[name]], v3 = [...V3_HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
+        const current = [...HEADERS[name]], v5=[...V5_HEADERS[name]],v4 = [...V4_HEADERS[name]], v3 = [...V3_HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
         const matches = (expected: readonly string[]) => actual.slice(0, expected.length).every((value, index) => value === expected[index]) && actual.slice(expected.length).every(value => value === '');
-        if (!matches(current) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-5 template.`);
+        if (!matches(current) && !matches(v5) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-6 template.`);
       }
       else if (values.some(value => value !== '')) rows.push(values);
     });
@@ -155,9 +156,9 @@ function validRef(ref: string | undefined, assets: Set<string>, label: string): 
 function duplicates(items: { id: string }[], name: string): void { const ids = new Set<string>(); for (const item of items) { if (ids.has(item.id)) throw new Error(`${name}: duplicate ID ${item.id} inside this file.`); ids.add(item.id); } }
 
 export function parseTables(tables: Tables, state: State, incomingAssets: LocalAsset[] = []): ContentBundle {
-  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 5) and content_only=true only.');
+  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4','5', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 6) and content_only=true only.');
   const bundle = emptyBundle(); bundle.assets = incomingAssets;
-  bundle.decks = tables.Decks.map(([deckId, title, description, designSetId, suspended,parentId,ankiSourceRaw]) => {let ankiSource:Deck['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Deck ${deckId}: anki_source must be valid inert JSON.`);}}const deck:Deck={ id: id(deckId, 'Deck ID'), name: required(title, 'Deck title'), description, designSetId: optional(designSetId), suspended: bool(suspended, 'Deck suspended'),parentId:optional(parentId),...(ankiSource?{ankiSource}:{})};validateDeck(deck);return deck;});
+  bundle.decks = tables.Decks.map(([deckId, title, description, designSetId, suspended,parentId,ankiSourceRaw,coverImage]) => {let ankiSource:Deck['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Deck ${deckId}: anki_source must be valid inert JSON.`);}}const deck:Deck={ id: id(deckId, 'Deck ID'), name: required(title, 'Deck title'), description, designSetId: optional(designSetId), suspended: bool(suspended, 'Deck suspended'),parentId:optional(parentId),coverImage:optional(coverImage),...(ankiSource?{ankiSource}:{})};validateDeck(deck);return deck;});
   bundle.designs = tables.Designs.map(row => {
     const [designId, name, background, frame] = row;
     const backgroundFit = row[11] || 'cover'; const frameFit = row[14] || 'contain';
@@ -191,6 +192,7 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
   const designIds = new Set([...state.designs, ...bundle.designs].map(design => design.id));
   const deckIds = new Set([...state.decks, ...bundle.decks].map(deck => deck.id));
   for(const deck of bundle.decks){if(deck.parentId&&!deckIds.has(deck.parentId))throw new Error(`Deck ${deck.id}: missing parent deck ${deck.parentId}.`);const seen=new Set<string>([deck.id]);let parent=deck.parentId;while(parent){if(seen.has(parent))throw new Error(`Deck ${deck.id}: deck hierarchy contains a cycle.`);seen.add(parent);parent=[...bundle.decks,...state.decks].find(item=>item.id===parent)?.parentId;}}
+  for(const deck of bundle.decks)validRef(deck.coverImage,assetIds,`Deck ${deck.id} cover`);
   for (const row of tables.Assets) {
     id(row[0], 'Asset ID');
     if (!assetIds.has(row[0])) throw new Error(`Asset ${row[0]} is not available. Import the portable ZIP containing its media, or first upload that asset locally.`);

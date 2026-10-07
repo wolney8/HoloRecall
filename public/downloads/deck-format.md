@@ -1,10 +1,10 @@
-# HoloRecall deck-content format, version 4
+# HoloRecall deck-content format, version 6
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 4 preserves explicit deck parent relationships and card sibling groups. These identities keep imported learning journeys and reversed/cloze sibling behavior intact across HoloRecall portable exchange. Versions 1–3 remain readable; because they did not contain these columns, their missing hierarchy is never guessed from punctuation. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 6 adds deck-cover media and versioned inert Anki conversion provenance. Version 5 introduced Anki source identities/import baselines; version 4 introduced deck parents and sibling groups. Versions 1–5 remain readable; missing hierarchy or provenance is treated conservatively and never guessed. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
-Download the [blank workbook](/downloads/holorecall-blank-v4.xlsx), [16-card Italian example](/downloads/holorecall-italian-v4.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v4.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. Version 4 builds on version 3 audio support with explicit hierarchy and sibling identity.
+Download the compatible [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. HoloRecall writes version 6 and continues to read these version 5 examples.
 
 ## Workbook contract
 
@@ -18,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 4
+format_version | 6
 content_only | true
 ```
 
@@ -27,7 +27,7 @@ Exactly these two data rows are required, in either order. No other metadata ent
 ### Decks
 
 ```text
-deck_id | title | description | design_set_id | suspended | parent_deck_id
+deck_id | title | description | design_set_id | suspended | parent_deck_id | anki_source | cover_media
 ```
 
 | Field | Meaning and validation |
@@ -38,11 +38,13 @@ deck_id | title | description | design_set_id | suspended | parent_deck_id
 | `design_set_id` | Optional ID from Designs or an existing local design; blank uses the application default. |
 | `suspended` | Literal `true` or `false`; blank defaults to `false`. |
 | `parent_deck_id` | Optional ID of another row in Decks or an existing local deck. Self-reference, missing parents and cycles are rejected. Blank creates a top-level journey. |
+| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable source identity and conversion provenance; it is never executed. |
+| `cover_media` | Optional `asset:` reference for the deck cover. The asset must be included or already exist locally. |
 
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source
 ```
 
 | Field | Meaning and validation |
@@ -66,6 +68,7 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `front_audio` | JSON array of up to eight `asset:` references. These controls are available before reveal. Blank means `[]`. |
 | `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
 | `sibling_group_id` | Optional stable ID shared by cards generated from the same note, such as reversed or cloze siblings. It carries content relationships only, never review history. |
+| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable note/template identity, source fingerprint, versioned conversion contract and per-field accepted baselines. It is never rendered or executed. |
 
 ### Designs
 

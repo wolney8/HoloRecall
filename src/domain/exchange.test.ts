@@ -14,7 +14,7 @@ const asset: LocalAsset = { id: 'test-art', name: 'test.png', mime: 'image/png',
 const audioAsset: LocalAsset = { id: 'test-audio', name: 'test.mp3', mime: 'audio/mpeg', dataUrl: 'data:audio/mpeg;base64,SUQzBAAAAAA=', credit: 'Speaker', source: '', license: 'Original' };
 function sample(): ContentBundle {
   return {
-    decks: [{ id: 'exchange-course', name: 'Italiano',description:'Course',suspended:false},{ id: 'exchange-italian', name: 'Caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame',parentId:'exchange-course' }],
+    decks: [{ id: 'exchange-course', name: 'Italiano',description:'Course',suspended:false,coverImage:'asset:test-art'},{ id: 'exchange-italian', name: 'Caffè e città', description: 'Prima riga\nSeconda riga', suspended: false, designSetId: 'warm-frame',parentId:'exchange-course' }],
     cards: [{ ...SEED_CARDS[1], id: 'exchange-caffe', deckId: 'exchange-italian', front: 'Di’ “il caffè”\ncon l’articolo.', notes: '=1+1\nLiteral text stays literal.', rarity: 'secret-rare', finish: 'aurora', image: 'asset:test-art', backImage: 'asset:test-art', frontAudio: ['asset:test-audio'], backAudio: ['asset:test-audio'], designSetId: 'warm-frame', tags: ['caffè', 'Due parole'],siblingGroupId:'exchange-caffe-note' }],
     designs: [{ id: 'warm-frame', name: 'Warm frame', background: 'asset:test-art', texture: 'asset:test-art', frames: { 'secret-rare': 'asset:test-art' }, finish: 'metallic', finishes: { 'secret-rare': 'starfield' }, layout: 'ornate', backgroundFit: 'cover', backgroundPositionX: 25, backgroundPositionY: 60, frameFit: 'contain', credit: 'Artist', source: 'Local', license: 'Original' }],
     assets: [asset, audioAsset],
@@ -51,7 +51,7 @@ describe('versioned content exchange', () => {
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
     expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
   });
-  it('round trips inert Anki source identities and import baselines in format v5',async()=>{const original=sourceSample(),preview=await readContentFile(await writePortableZip(original),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.cards[0]!.ankiSource).toEqual(original.cards[0]!.ankiSource);});
+  it('round trips inert Anki source identities, deck covers and import baselines in format v6',async()=>{const original=sourceSample(),preview=await readContentFile(await writePortableZip(original),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.decks[0]!.coverImage).toBe('asset:test-art');expect(preview.bundle.cards[0]!.ankiSource).toEqual(original.cards[0]!.ankiSource);});
   it('preserves repeated tags already permitted by the card editor', async () => {
     const data = state(); const bundle = contentFromState(data); bundle.cards[0].tags = ['Verbs', 'Verbs'];
     const preview = await readContentFile(await writeWorkbook(bundle), 'deck.xlsx', data);
@@ -59,7 +59,7 @@ describe('versioned content exchange', () => {
   });
   it('rejects missing workbook media while allowing already-local references', async () => {
     const bytes = await writeWorkbook(sample());
-    expect((await readContentFile(bytes, 'deck.xlsx', state())).errors[0]).toContain('not available');
+    expect((await readContentFile(bytes, 'deck.xlsx', state())).errors[0]).toContain('missing');
     const local = state(); local.assets = [asset, audioAsset];
     expect((await readContentFile(bytes, 'deck.xlsx', local)).errors).toEqual([]);
   });

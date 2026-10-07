@@ -1,4 +1,4 @@
-import type { AnkiFieldTarget, AnkiMappingPreset, CardContent, ContentImport, Deck, LocalAsset, Rarity, State } from './models';
+import type { AnkiDerivedField, AnkiFieldTarget, AnkiMappingPreset, CardContent, ContentImport, Deck, LocalAsset, Rarity, State } from './models';
 import { inspectZip, makePreview, type ImportPreview } from './exchange';
 
 export type AnkiVariant = 'legacy-anki2' | 'legacy-anki21' | 'modern-anki21b';
@@ -13,9 +13,13 @@ export interface AnkiUpdateSummary {
   mode: 'import' | 'update';
   newCards: string[];
   changedCards: string[];
+  sourceChangedCards: string[];
+  conversionUpgradeCards: string[];
+  mappingChangedCards: string[];
   changedMediaCards: string[];
   unchangedCards: string[];
   conflicts: string[];
+  conflictFields: Record<string, AnkiDerivedField[]>;
   deckConflicts: string[];
   legacyReviewRequired: string[];
   removedSourceCards: string[];
@@ -27,11 +31,14 @@ export type AnkiStage = 'archive' | 'database' | 'content' | 'media';
 export interface AnkiProgress { stage: AnkiStage; label: string; completed?: number; total?: number }
 
 const MAX_NOTES = 10_000, MAX_CARDS = 25_000, MAX_MEDIA = 1_000, MAX_CELL = 100_000;
+export const ANKI_CONVERTER_VERSION = 2;
+export const ANKI_NORMALIZER_VERSION = 2;
+export const ANKI_MAPPING_VERSION = 2;
 const MAX_DATABASE_BYTES = 60 * 1024 * 1024, MAX_MEDIA_BYTES = 5 * 1024 * 1024;
 const RARITY_BUCKETS: [number, Rarity][] = [[55, 'common'], [75, 'uncommon'], [87, 'rare'], [94, 'holo-rare'], [98, 'ultra-rare'], [99, 'secret-rare'], [100, 'relic']];
 const abort = (signal?: AbortSignal) => { if (signal?.aborted) throw new DOMException('Anki import cancelled.', 'AbortError'); };
 function hash(value: string): number { let result = 2166136261; for (const char of value) result = Math.imul(result ^ char.charCodeAt(0), 16777619); return result >>> 0; }
-function contentHash(value: unknown): string { return hash(JSON.stringify(value)).toString(16).padStart(8, '0'); }
+function contentHash(value: unknown): string { return hash(JSON.stringify(value) ?? 'undefined').toString(16).padStart(8, '0'); }
 function hashBytes(value: Uint8Array): number { let result = 2166136261; for (const byte of value) result = Math.imul(result ^ byte, 16777619); return result >>> 0; }
 export function suggestedRarity(identity: string): Rarity { const value = hash(identity) % 100; return RARITY_BUCKETS.find(([limit]) => value < limit)![1]; }
 function stable(value: string): string { return `anki-${value.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 78)}`; }
@@ -141,7 +148,7 @@ export function suggestedAnkiMapping(model:{name:string;fields:string[];signatur
   const metadataLike=(name:string)=>/^(?:lang(?:uage)?|locale|language[ _-]?code)$/i.test(name.trim());
   if(!Object.values(fields).includes('front')){const candidates=model.fields.filter(name=>questionRefs.has(name)&&fields[name]==='ignore'&&!metadataLike(name));if(candidates.length===1)fields[candidates[0]!] = 'front';}
   if(!Object.values(fields).includes('answer')){const candidates=model.fields.filter(name=>answerRefs.has(name)&&fields[name]==='ignore'&&!questionRefs.has(name)&&!metadataLike(name));if(candidates.length===1)fields[candidates[0]!] = 'answer';}
-  return{id:`mapping-${model.signature.slice(14)}`,version:1,name:`${model.name} mapping`,sourceSignature:model.signature,modelName:model.name,fields};
+  return{id:`mapping-${model.signature.slice(14)}`,version:ANKI_MAPPING_VERSION,name:`${model.name} mapping`,sourceSignature:model.signature,modelName:model.name,fields};
 }
 function inferStructuredMapping(model:{name:string;fields:string[];templates?:{q:string;a:string}[];signature?:string}):AnkiMappingPreset|undefined{
   if(model.fields.length<3)return undefined;
@@ -155,6 +162,11 @@ function importedCardShape(card: CardContent): unknown {
   return { deckId: card.deckId, kind: card.kind, front: card.front, answer: card.answer, pronunciation: card.pronunciation, meaning: card.meaning, notes: card.notes, tags: card.tags, image: card.image, backImage: card.backImage, imageDescription: card.imageDescription, frontAudio: card.frontAudio, backAudio: card.backAudio, siblingGroupId: card.siblingGroupId };
 }
 export function ankiImportedContentHash(card: CardContent): string { return contentHash(importedCardShape(card)); }
+const ANKI_DERIVED_FIELDS: AnkiDerivedField[]=['deckId','kind','front','answer','pronunciation','meaning','notes','tags','image','backImage','imageDescription','frontAudio','backAudio','siblingGroupId'];
+function fieldValue(card:CardContent,field:AnkiDerivedField):unknown{return card[field];}
+function fieldHash(card:CardContent,field:AnkiDerivedField):string{return contentHash(fieldValue(card,field));}
+function fieldBaselines(card:CardContent):Partial<Record<AnkiDerivedField,string>>{return Object.fromEntries(ANKI_DERIVED_FIELDS.map(field=>[field,fieldHash(card,field)]));}
+function mappingFingerprint(mapping:AnkiMappingPreset|undefined,modelSignatureValue:string):string{return `anki-mapping-v1-${contentHash({modelSignature:modelSignatureValue,fields:Object.entries(mapping?.fields??{}).sort(([a],[b])=>a.localeCompare(b))})}`;}
 function importedDeckShape(deck: Deck): unknown { return { name: deck.name, description: deck.description, parentId: deck.parentId }; }
 export function ankiImportedDeckHash(deck: Deck): string { return contentHash(importedDeckShape(deck)); }
 
@@ -218,7 +230,8 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       const rawMetadata = model.fields.filter(name => !mappedNames.has(name) && !front.includes(plainAnkiText(fields[name] ?? '')) && !answer.includes(plainAnkiText(fields[name] ?? ''))).map(name => `${name}: ${plainAnkiText(fields[name] ?? '')}`).filter(line => !line.endsWith(': '));
       const mappedNotes = mappedValues(mapping, 'notes', fields), image = frontImages[0], backImage = backImages[0] ?? image;
       const contentProvenance={front:model.cloze?'cloze' as const:mappedFront?'mapping' as const:'template' as const,answer:model.cloze?'cloze' as const:mappedAnswer?'mapping' as const:'template' as const,frontFields:mappedFront?frontFieldNames:[...templateFieldNames(template.q)],answerFields:mappedAnswer?answerFieldNames:[...templateFieldNames(backTemplate)]};
-      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: mappedValue(mapping, 'pronunciation', fields), meaning: mappedValue(mapping, 'meaning', fields), notes: [`Imported source · ${model.name} / ${template.name}`, ...mappedNotes, ...rawMetadata].join('\n\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`),ankiSource:{kind:'anki',noteGuid:String(guid),noteId:String(noteId),templateOrdinal:Number(ordinal),modelName:model.name,templateName:template.name,modelSignature:model.signature!,importedContentHash:'00000000',contentProvenance}, ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
+      const sourceContentFingerprint=`anki-source-v1-${contentHash({noteGuid:String(guid),modelSignature:model.signature,templateOrdinal:Number(ordinal),template,fields:model.fields.map(name=>[name,fields[name]??'']),tags:String(rawTags),deckId:String(deckId),media:[...frontImages,...backImages,...frontAudioNames,...backAudioNames]})}`;
+      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: mappedValue(mapping, 'pronunciation', fields), meaning: mappedValue(mapping, 'meaning', fields), notes: [`Imported source · ${model.name} / ${template.name}`, ...mappedNotes, ...rawMetadata].join('\n\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`),ankiSource:{kind:'anki',noteGuid:String(guid),noteId:String(noteId),templateOrdinal:Number(ordinal),modelName:model.name,templateName:template.name,modelSignature:model.signature!,importedContentHash:'00000000',sourceContentFingerprint,linkState:'linked',conversion:{converterVersion:ANKI_CONVERTER_VERSION,normalizerVersion:ANKI_NORMALIZER_VERSION,mappingVersion:ANKI_MAPPING_VERSION,mappingSignature:mappingFingerprint(mapping,model.signature!),fieldBaselines:{}},contentProvenance}, ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
       if (rowIndex % 100 === 0 || rowIndex === rows.length - 1) progress?.({ stage: 'content', label: 'Converting cards', completed: rowIndex + 1, total: rows.length });
     }
     abort(signal); const mediaEntry = zip.file('media'); let mediaMap: Record<string, string> = {}; if (mediaEntry) {
@@ -236,7 +249,7 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       else { if (!audioSignature(data, mime)) { mediaIssue('Audio bytes do not match the MP3 or WAV file type',name); continue; } assets.push({ id: mediaId, name, mime, dataUrl: `data:${mime};base64,${b64(data)}`, source: packageName, credit: 'Imported Anki package media', license: 'Source deck terms apply' }); }
       resolved.set(name, ref); mediaIndex++; progress?.({ stage: 'media', label: 'Indexing bundled media', completed: mediaIndex, total: wantedMedia.size });
     }
-    for (let index=cards.length-1;index>=0;index--) { const card=cards[index]!,wasVisual=card.kind==='visual',pendingImage=card.image?.startsWith('pending:')?card.image.slice(8):undefined;const resolve = (value?: string) => value?.startsWith('pending:') ? resolved.get(value.slice(8)) : value; card.image = resolve(card.image); card.backImage = resolve(card.backImage); card.frontAudio = card.frontAudio?.map(item => resolve(item)).filter((item): item is string => !!item); card.backAudio = card.backAudio?.map(item => resolve(item)).filter((item): item is string => !!item); if (!card.image) { delete card.image; delete card.backImage; if(wasVisual){simplifiedCards.delete(card.id);excludedCards.add(card.id);addIssue('error','missing-media','Image-only prompt has no usable bundled image',pendingImage??card.id,card.id);cards.splice(index,1);continue;} } if (!card.frontAudio?.length) delete card.frontAudio; if (!card.backAudio?.length) delete card.backAudio; if(card.ankiSource)card.ankiSource.importedContentHash=ankiImportedContentHash(card); }
+    for (let index=cards.length-1;index>=0;index--) { const card=cards[index]!,wasVisual=card.kind==='visual',pendingImage=card.image?.startsWith('pending:')?card.image.slice(8):undefined;const resolve = (value?: string) => value?.startsWith('pending:') ? resolved.get(value.slice(8)) : value; card.image = resolve(card.image); card.backImage = resolve(card.backImage); card.frontAudio = card.frontAudio?.map(item => resolve(item)).filter((item): item is string => !!item); card.backAudio = card.backAudio?.map(item => resolve(item)).filter((item): item is string => !!item); if (!card.image) { delete card.image; delete card.backImage; if(wasVisual){simplifiedCards.delete(card.id);excludedCards.add(card.id);addIssue('error','missing-media','Image-only prompt has no usable bundled image',pendingImage??card.id,card.id);cards.splice(index,1);continue;} } if (!card.frontAudio?.length) delete card.frontAudio; if (!card.backAudio?.length) delete card.backAudio; if(card.ankiSource){card.ankiSource.importedContentHash=ankiImportedContentHash(card);if(card.ankiSource.conversion)card.ankiSource.conversion.fieldBaselines=fieldBaselines(card);} }
     const proposedRarities = Object.fromEntries((['common','uncommon','rare','holo-rare','ultra-rare','secret-rare','relic'] as Rarity[]).map(rarity => [rarity, cards.filter(card => card.rarity === rarity).length])) as Record<Rarity, number>;
     const simplified=[...simplifiedCards].filter(id=>cards.some(card=>card.id===id)).length;
     return { variant, sourceNotes: noteCount, generatedCards: cards.length, decks: [...deckList.values()], cards, assets, issues,conversion:{normal:Math.max(0,cards.length-simplified),simplified,excluded:excludedCards.size,unsafe:unsafeCards.size}, proposedRarities, packageName, modelSchemas };
@@ -247,19 +260,34 @@ export function previewAnkiImport(analysis: AnkiAnalysis, state: State, preserve
   const descendants = (root: string): Set<string> => { const ids=new Set([root]);let changed=true;while(changed){changed=false;for(const deck of state.decks)if(deck.parentId&&ids.has(deck.parentId)&&!ids.has(deck.id)){ids.add(deck.id);changed=true;}}return ids; };
   const scope = updateRootDeckId ? descendants(updateRootDeckId) : new Set<string>();
   const incomingIds = new Set(analysis.cards.map(card => card.id));
-  const summary:AnkiUpdateSummary={mode:updateRootDeckId?'update':'import',newCards:[],changedCards:[],changedMediaCards:[],unchangedCards:[],conflicts:[],deckConflicts:[],legacyReviewRequired:[],removedSourceCards:[],changedDecks:[],newDecks:[]};
+  const summary:AnkiUpdateSummary={mode:updateRootDeckId?'update':'import',newCards:[],changedCards:[],sourceChangedCards:[],conversionUpgradeCards:[],mappingChangedCards:[],changedMediaCards:[],unchangedCards:[],conflicts:[],conflictFields:{},deckConflicts:[],legacyReviewRequired:[],removedSourceCards:[],changedDecks:[],newDecks:[]};
   const cards:CardContent[]=[];
   for(const card of analysis.cards){
     const existing=state.cards.find(item=>item.id===card.id);
     if(!existing){summary.newCards.push(card.id);cards.push(card);continue;}
-    const baseline=existing.ankiSource?.importedContentHash;
-    const sourceChanged=!baseline||card.ankiSource?.importedContentHash!==baseline;
-    const localChanged=!baseline||ankiImportedContentHash(existing)!==baseline;
+    if(!existing.ankiSource){summary.changedCards.push(card.id);summary.conflicts.push(card.id);summary.legacyReviewRequired.push(card.id);summary.conflictFields[card.id]=[...ANKI_DERIVED_FIELDS];if(!preserveLocalEdits)cards.push(card);continue;}
+    if(existing.ankiSource?.linkState==='detached'){summary.unchangedCards.push(card.id);continue;}
+    const baseline=existing.ankiSource?.importedContentHash,prior=existing.ankiSource?.conversion,incoming=card.ankiSource?.conversion;
+    const sourceChanged=!!existing.ankiSource?.sourceContentFingerprint&&card.ankiSource?.sourceContentFingerprint!==existing.ankiSource.sourceContentFingerprint;
+    const conversionUpgrade=!prior||prior.converterVersion<ANKI_CONVERTER_VERSION||prior.normalizerVersion<ANKI_NORMALIZER_VERSION||prior.mappingVersion<ANKI_MAPPING_VERSION;
+    const mappingChanged=!!prior&&!!incoming&&prior.mappingSignature!==incoming.mappingSignature;
+    const derivedChanged=!baseline||card.ankiSource?.importedContentHash!==baseline;
     const mediaChanged=JSON.stringify([existing.image,existing.backImage,existing.frontAudio,existing.backAudio])!==JSON.stringify([card.image,card.backImage,card.frontAudio,card.backAudio]);
-    if(!sourceChanged){summary.unchangedCards.push(card.id);continue;}
-    summary.changedCards.push(card.id);if(mediaChanged)summary.changedMediaCards.push(card.id);
-    if(localChanged){summary.conflicts.push(card.id);if(!baseline)summary.legacyReviewRequired.push(card.id);if(preserveLocalEdits)continue;}
-    cards.push(card);
+    if(!sourceChanged&&!conversionUpgrade&&!mappingChanged&&!derivedChanged){summary.unchangedCards.push(card.id);continue;}
+    summary.changedCards.push(card.id);if(sourceChanged)summary.sourceChangedCards.push(card.id);if(conversionUpgrade)summary.conversionUpgradeCards.push(card.id);if(mappingChanged)summary.mappingChangedCards.push(card.id);if(mediaChanged)summary.changedMediaCards.push(card.id);
+    const trustedLegacy=!!baseline&&ankiImportedContentHash(existing)===baseline;
+    const conflicts=ANKI_DERIVED_FIELDS.filter(field=>{
+      const accepted=prior?.fieldBaselines[field];
+      if(!accepted)return !trustedLegacy&&fieldHash(existing,field)!==fieldHash(card,field);
+      const local=fieldHash(existing,field),next=fieldHash(card,field);
+      return local!==accepted&&next!==accepted&&local!==next;
+    });
+    if(conflicts.length){summary.conflicts.push(card.id);summary.conflictFields[card.id]=conflicts;if(!prior)summary.legacyReviewRequired.push(card.id);}
+    if(preserveLocalEdits){
+      const resolved=structuredClone(card);
+      for(const field of ANKI_DERIVED_FIELDS){const accepted=prior?.fieldBaselines[field],local=fieldHash(existing,field),next=fieldHash(card,field);if(accepted&&local!==accepted&&(next===accepted||conflicts.includes(field)))(resolved as unknown as Record<string,unknown>)[field]=structuredClone(fieldValue(existing,field));}
+      cards.push(resolved);
+    }else cards.push(card);
   }
   if(updateRootDeckId)summary.removedSourceCards=state.cards.filter(card=>scope.has(card.deckId)&&card.ankiSource?.kind==='anki'&&!incomingIds.has(card.id)).map(card=>card.id);
   const decks:Deck[]=[];for(const deck of analysis.decks){const existing=state.decks.find(item=>item.id===deck.id);if(!existing){summary.newDecks.push(deck.id);decks.push(deck);continue;}const baseline=existing.ankiSource?.importedContentHash,sourceChanged=!baseline||baseline!==deck.ankiSource?.importedContentHash,localChanged=!baseline||ankiImportedDeckHash(existing)!==baseline;if(!sourceChanged)continue;summary.changedDecks.push(deck.id);if(localChanged){summary.deckConflicts.push(deck.id);if(preserveLocalEdits)continue;}decks.push(deck);}

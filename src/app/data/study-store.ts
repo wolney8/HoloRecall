@@ -122,6 +122,9 @@ export class LocalStudyStore {
     });
   }
 
+  async detachAnkiCard(cardId:string):Promise<void>{await this.change(data=>{const card=data.cards.find(item=>item.id===cardId);if(!card?.ankiSource)return data;const cards=data.cards.map(item=>item.id===cardId?{...item,revision:item.revision+1,ankiSource:{...item.ankiSource!,linkState:'detached' as const}}:item);return reconcileSession({...data,version:data.version+1,cards},data);});}
+  async deleteDeckBranch(deckId:string):Promise<void>{const {deleteDeckBranch}=await import('../../domain/deck-management');await this.change(data=>deleteDeckBranch(data,deckId));}
+
   async saveStudyPreset(preset:StudyPreset):Promise<void>{validateStudyPreset(preset);await this.change(data=>{const duplicate=data.studyPresets.find(item=>item.name.trim().toLocaleLowerCase('en')===preset.name.trim().toLocaleLowerCase('en')&&item.id!==preset.id);if(duplicate)throw new Error('Choose a unique preset name.');return{...data,version:data.version+1,preferences:preset.id===BALANCED_PRESET_ID?{...data.preferences,newCardLimit:preset.newCardsPerDay,reviewLimit:preset.maxReviewsPerDay}:data.preferences,studyPresets:data.studyPresets.some(item=>item.id===preset.id)?data.studyPresets.map(item=>item.id===preset.id?structuredClone(preset):item):[...data.studyPresets,structuredClone(preset)]};});}
   async duplicateStudyPreset(id:string,name:string):Promise<string>{const copyId=`preset-${crypto.randomUUID()}`;await this.change(data=>{const source=data.studyPresets.find(item=>item.id===id);if(!source)throw new Error('The study preset no longer exists.');const preset={...structuredClone(source),id:copyId,name: name.trim()||`${source.name} copy`,builtIn:false};validateStudyPreset(preset);return{...data,version:data.version+1,studyPresets:[...data.studyPresets,preset]};});return copyId;}
   async deleteStudyPreset(id:string,replacementId?:string):Promise<void>{await this.change(data=>{if(id===BALANCED_PRESET_ID)throw new Error('The Balanced preset cannot be deleted.');if(!data.studyPresets.some(item=>item.id===id))return data;const referenced=data.decks.some(deck=>deck.studyPresetId===id);if(referenced&&(!replacementId||replacementId===id||!data.studyPresets.some(item=>item.id===replacementId)))throw new Error('Choose a replacement for decks using this preset.');return{...data,version:data.version+1,decks:data.decks.map(deck=>deck.studyPresetId===id?{...deck,studyPresetId:replacementId}:deck),studyPresets:data.studyPresets.filter(item=>item.id!==id)};});}
@@ -273,7 +276,7 @@ export class LocalStudyStore {
 
 
 function sameCardContent(a: CardContent, b: CardContent): boolean {
-  const normalized = (card: CardContent) => JSON.stringify(Object.entries({ ...card, revision: 0, rarity: card.rarity ?? 'common' }).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
+  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
   return normalized(a) === normalized(b);
 }
 
