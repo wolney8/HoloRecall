@@ -7,8 +7,8 @@ import type { ContentBundle } from '../src/domain/exchange.ts';
 process.env.PLAYWRIGHT_BROWSERS_PATH ??= '.runtime/playwright';
 await mkdir('public/downloads', { recursive: true });
 const example: ContentBundle = { cards: SEED_CARDS, decks: SEED_DECKS, designs: [], assets: [] };
-await writeFile('public/downloads/holorecall-blank-v4.xlsx', await writeWorkbook());
-await writeFile('public/downloads/holorecall-italian-v4.xlsx', await writeWorkbook(example));
+await writeFile('public/downloads/holorecall-blank-v5.xlsx', await writeWorkbook());
+await writeFile('public/downloads/holorecall-italian-v5.xlsx', await writeWorkbook(example));
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage();
@@ -22,7 +22,7 @@ try {
       context.drawImage(image, 0, 0, width, height); return { dataUrl: canvas.toDataURL('image/png'), width, height };
     }, svg);
   });
-  await writeFile('public/downloads/holorecall-italian-v4.zip', await writePortableZip(portable));
+  await writeFile('public/downloads/holorecall-italian-v5.zip', await writePortableZip(portable));
 } finally { await browser.close(); }
 await copyFile('docs/deck-format.md', 'public/downloads/deck-format.md');
 await copyFile('docs/deck-generation-prompt.md', 'public/downloads/deck-generation-prompt.md');

@@ -149,9 +149,15 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const sideChanged=!!changes['revealed']&&!changes['revealed'].firstChange;
     const cardChanged=!!changes['card']&&!changes['card'].firstChange&&changes['card'].previousValue?.id!==this.card.id;
     if (sideChanged || cardChanged) {
-      if(this.stopAudioOnAction||changes['card'])this.stopAudio();
+      // Persistence refreshes can replace the card object without advancing to a
+      // different card. Honour the learner's side-change preference in that case,
+      // while an actual card advance always owns and stops the previous audio.
+      if(this.stopAudioOnAction||cardChanged)this.stopAudio();
       queueMicrotask(() => { if (this.copy) this.copy.nativeElement.scrollTo({ top: 0, left: 0, behavior: 'instant' }); });
-      this.queueAutoplay();
+      // A flip owns the face change. Waiting until its midpoint prevents the
+      // outgoing side's autoplay reference from toggling itself off when the
+      // learner chose to let current audio continue through reveal.
+      if(cardChanged)this.queueAutoplay();
     }
     if (changes['card'] || changes['imageUrl'] || changes['backImageUrl'] || changes['revealed']) this.failedImage.set(false);
     if (changes['backgroundUrl'] || changes['design']) this.failedBackground.set(false);
@@ -175,7 +181,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
   private async animateFlip(target: boolean): Promise<void> {
     const sequence = ++this.flipSequence;
-    if (!this.animated() || !this.turn) { this.displayedRevealed.set(target); return; }
+    if (!this.animated() || !this.turn) { this.displayedRevealed.set(target); this.queueAutoplay(); return; }
     this.animations.forEach(animation => animation.cancel());
     const turn = this.turn.nativeElement;
     const direction = target ? -1 : 1;
@@ -187,6 +193,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     try { await away.finished; } catch { return; }
     if (sequence !== this.flipSequence) return;
     this.displayedRevealed.set(target);
+    this.queueAutoplay();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     if (sequence !== this.flipSequence || !this.turn) return;
     const home = turn.animate([

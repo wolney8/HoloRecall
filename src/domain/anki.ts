@@ -9,6 +9,20 @@ export interface AnkiAnalysis {
   variant: AnkiVariant; sourceNotes: number; generatedCards: number; decks: Deck[]; cards: CardContent[]; assets: LocalAsset[];
   issues: AnkiIssue[]; conversion: { normal: number; simplified: number; excluded: number; unsafe: number }; proposedRarities: Record<Rarity, number>; packageName: string; modelSchemas: AnkiModelSchema[];
 }
+export interface AnkiUpdateSummary {
+  mode: 'import' | 'update';
+  newCards: string[];
+  changedCards: string[];
+  changedMediaCards: string[];
+  unchangedCards: string[];
+  conflicts: string[];
+  deckConflicts: string[];
+  legacyReviewRequired: string[];
+  removedSourceCards: string[];
+  changedDecks: string[];
+  newDecks: string[];
+}
+export type AnkiImportPreview = ImportPreview & { update: AnkiUpdateSummary };
 export type AnkiStage = 'archive' | 'database' | 'content' | 'media';
 export interface AnkiProgress { stage: AnkiStage; label: string; completed?: number; total?: number }
 
@@ -17,6 +31,7 @@ const MAX_DATABASE_BYTES = 60 * 1024 * 1024, MAX_MEDIA_BYTES = 5 * 1024 * 1024;
 const RARITY_BUCKETS: [number, Rarity][] = [[55, 'common'], [75, 'uncommon'], [87, 'rare'], [94, 'holo-rare'], [98, 'ultra-rare'], [99, 'secret-rare'], [100, 'relic']];
 const abort = (signal?: AbortSignal) => { if (signal?.aborted) throw new DOMException('Anki import cancelled.', 'AbortError'); };
 function hash(value: string): number { let result = 2166136261; for (const char of value) result = Math.imul(result ^ char.charCodeAt(0), 16777619); return result >>> 0; }
+function contentHash(value: unknown): string { return hash(JSON.stringify(value)).toString(16).padStart(8, '0'); }
 function hashBytes(value: Uint8Array): number { let result = 2166136261; for (const byte of value) result = Math.imul(result ^ byte, 16777619); return result >>> 0; }
 export function suggestedRarity(identity: string): Rarity { const value = hash(identity) % 100; return RARITY_BUCKETS.find(([limit]) => value < limit)![1]; }
 function stable(value: string): string { return `anki-${value.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 78)}`; }
@@ -79,7 +94,25 @@ async function decompressBounded(input: Uint8Array, limit: number): Promise<Uint
   const output = new Uint8Array(total); let offset = 0; for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.length; } return output;
 }
 function modelSignature(model: { fields: string[]; templates: { name: string; q: string; a: string }[]; cloze: boolean }): string { return `anki-model-v1-${hash(JSON.stringify({ cloze: model.cloze, fields: model.fields, templates: model.templates })).toString(16)}`; }
-function mappedValue(mapping: AnkiMappingPreset | undefined, target: AnkiFieldTarget, fields: Record<string, string>): string { const name = Object.entries(mapping?.fields ?? {}).find(([, value]) => value === target)?.[0]; return name ? fields[name] ?? '' : ''; }
+function mappedValues(mapping: AnkiMappingPreset | undefined, target: AnkiFieldTarget, fields: Record<string, string>): string[] {
+  return Object.entries(mapping?.fields ?? {})
+    .filter(([, value]) => value === target)
+    .map(([name]) => plainAnkiText(fields[name] ?? ''))
+    .filter(Boolean);
+}
+function inferStructuredMapping(model:{name:string;fields:string[];signature?:string}):AnkiMappingPreset|undefined{
+  if(model.fields.length<3)return undefined;
+  const fields=Object.fromEntries(model.fields.map(name=>{const value=name.toLocaleLowerCase('en');const target:AnkiFieldTarget=/pron|reading|phonetic/.test(value)?'pronunciation':/breakdown|usage|use|example|context|note|extra|remark/.test(value)?'notes':/meaning|translation|definition/.test(value)?'meaning':/back|answer|response/.test(value)?'answer':/front|question|prompt|term|word|phrase/.test(value)?'front':'ignore';return[name,target];})) as Record<string,AnkiFieldTarget>;
+  if(!Object.values(fields).includes('front')||!Object.values(fields).includes('answer'))return undefined;
+  return{id:`inferred-${model.signature}`,version:1,name:`${model.name} structured fields`,sourceSignature:model.signature!,modelName:model.name,fields};
+}
+function mappedValue(mapping: AnkiMappingPreset | undefined, target: AnkiFieldTarget, fields: Record<string, string>): string { return mappedValues(mapping, target, fields).join('\n\n'); }
+function importedCardShape(card: CardContent): unknown {
+  return { deckId: card.deckId, kind: card.kind, front: card.front, answer: card.answer, pronunciation: card.pronunciation, meaning: card.meaning, notes: card.notes, tags: card.tags, image: card.image, backImage: card.backImage, imageDescription: card.imageDescription, frontAudio: card.frontAudio, backAudio: card.backAudio, siblingGroupId: card.siblingGroupId };
+}
+export function ankiImportedContentHash(card: CardContent): string { return contentHash(importedCardShape(card)); }
+function importedDeckShape(deck: Deck): unknown { return { name: deck.name, description: deck.description, parentId: deck.parentId }; }
+export function ankiImportedDeckHash(deck: Deck): string { return contentHash(importedDeckShape(deck)); }
 
 export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string, signal?: AbortSignal, progress?: (value: AnkiProgress) => void, mappings: AnkiMappingPreset[] = [], wasmUrl = '/runtime/sql-wasm-browser.wasm'): Promise<AnkiAnalysis> {
   if (/^(collection|backup)(?:-|\.|$)/i.test(packageName)) throw new Error('This looks like a collection backup. Export the intended deck from Anki as an .apkg, then import that deck. HoloRecall never replaces a collection.');
@@ -112,17 +145,17 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
     const modelSchemas = [...models.values()].map(model => ({ signature: model.signature!, name: model.name, fields: [...model.fields], templates: model.templates.map(template => template.name), cloze: model.cloze }));
     const rows = db.exec('select n.id,n.guid,n.mid,n.tags,n.flds,c.id,c.did,c.ord from notes n join cards c on c.nid=n.id order by c.id limit 25001')[0]?.values ?? []; if (rows.length > MAX_CARDS) throw new Error(`Package exceeds the ${MAX_CARDS.toLocaleString()} generated-card limit.`);
     const decks = new Map<number, Deck>(), deckList = new Map<string,Deck>(), cards: CardContent[] = [], issues: AnkiIssue[] = []; const wantedMedia = new Set<string>(), simplifiedCards=new Set<string>(), excludedCards=new Set<string>(), unsafeCards=new Set<string>();
-    const ensureDeck=(deckKey:number):Deck=>{const existing=decks.get(deckKey);if(existing)return existing;const fullName=deckNames.get(deckKey)??`Imported deck ${deckKey}`,segments=fullName.split('::').map(value=>value.trim()).filter(Boolean);let parentId:string|undefined,leaf:Deck|undefined;for(let index=0;index<segments.length;index++){const path=segments.slice(0,index+1).join('::'),source=[...deckNames.entries()].find(([,name])=>name===path)?.[0],id=source===undefined?stable(`deck-path-${path}`):stable(`deck-${source}`);leaf=deckList.get(id)??{id,name:segments[index]!,description:index===segments.length-1?`Imported from ${packageName}. Scheduling and review history were not imported.`:'Imported deck group.',suspended:false,...(parentId?{parentId}:{})};deckList.set(id,leaf);parentId=id;}decks.set(deckKey,leaf!);return leaf!;};
+    const ensureDeck=(deckKey:number):Deck=>{const existing=decks.get(deckKey);if(existing)return existing;const fullName=deckNames.get(deckKey)??`Imported deck ${deckKey}`,segments=fullName.split('::').map(value=>value.trim()).filter(Boolean);let parentId:string|undefined,leaf:Deck|undefined;for(let index=0;index<segments.length;index++){const path=segments.slice(0,index+1).join('::'),source=[...deckNames.entries()].find(([,name])=>name===path)?.[0],id=source===undefined?stable(`deck-path-${path}`):stable(`deck-${source}`);if(!deckList.has(id)){const candidate:Deck={id,name:segments[index]!,description:index===segments.length-1?'Imported Anki deck. Scheduling and review history were not imported.':'Imported Anki deck group.',suspended:false,...(parentId?{parentId}:{})};candidate.ankiSource={kind:'anki',...(source===undefined?{}:{sourceDeckId:String(source)}),sourcePath:path,importedContentHash:ankiImportedDeckHash(candidate)};deckList.set(id,candidate);}leaf=deckList.get(id)!;parentId=id;}decks.set(deckKey,leaf!);return leaf!;};
     const addIssue = (severity:AnkiIssueSeverity,kind: AnkiIssue['kind'], message: string, example: string, cardId?:string) => { let issue = issues.find(item => item.severity===severity&&item.kind === kind && item.message === message); if (!issue) issues.push(issue = { severity,kind, message, count: 0,occurrences:0, examples: [],cardIds:[] }); issue.occurrences++;if(cardId&&!issue.cardIds.includes(cardId))issue.cardIds.push(cardId);issue.count=issue.cardIds.length||issue.occurrences; if (issue.examples.length < 3&&!issue.examples.includes(example)) issue.examples.push(example); };
     progress?.({ stage: 'content', label: 'Converting cards', completed: 0, total: rows.length });
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) { abort(signal); const row = rows[rowIndex]!; const [noteId, guid, modelId, rawTags, rawFields, _cardId, deckId, ordinal] = row,id=stable(`${guid}-${ordinal}`); const model = models.get(Number(modelId)); if (!model) { excludedCards.add(id);addIssue('error','unsupported', 'Unknown note type', String(noteId),id); continue; }
       const values = String(rawFields).split('\x1f'); if (values.some(value => value.length > MAX_CELL)) { excludedCards.add(id);addIssue('error','unsupported', 'Field exceeds 100,000 characters', String(noteId),id); continue; }
-      const fields = Object.fromEntries(model.fields.map((name, index) => [name, values[index] ?? ''])), mapping = mappings.find(item => item.sourceSignature === model.signature);
+      const fields = Object.fromEntries(model.fields.map((name, index) => [name, values[index] ?? ''])), exactMapping=mappings.find(item => item.sourceSignature === model.signature), mapping = exactMapping??(mappings.some(item=>item.modelName===model.name)?undefined:inferStructuredMapping(model));
       const template = model.cloze ? model.templates[0] : model.templates[Number(ordinal)]; if (!template) { excludedCards.add(id);addIssue('error','unsupported', 'Card references an unavailable template ordinal', `${model.name} / ${ordinal}`,id); continue; }
       const unsafe = /<script|on\w+\s*=/i.test(template.q + template.a), mappedFront = plainAnkiText(mappedValue(mapping, 'front', fields)), mappedAnswer = plainAnkiText(mappedValue(mapping, 'answer', fields));
       if (unsafe && !(mappedFront && mappedAnswer)) { unsafeCards.add(id);addIssue('error','unsupported', 'Script-dependent or answer-checking template requires explicit safe field mapping', model.name,id); continue; }
       const clozeIndex = model.cloze ? Number(ordinal) + 1 : undefined, frontMarkup = unsafe ? mappedFront : renderMarkup(template.q, fields, '', clozeIndex, false), backTemplate = template.a.replace(/{{FrontSide}}/g, ''), backMarkup = unsafe ? mappedAnswer : renderMarkup(backTemplate, fields, '', clozeIndex, true);
-      let front = model.cloze ? render(template.q, fields, '', clozeIndex, false) : mappedFront || render(template.q, fields, '', undefined, false), answer = model.cloze ? render(template.a, fields, front, clozeIndex, true) : mappedAnswer || render(template.a, fields, front, undefined, true);
+      let front = model.cloze ? render(template.q, fields, '', clozeIndex, false) : mappedFront || render(template.q, fields, '', undefined, false), answer = model.cloze ? render(backTemplate, fields, '', clozeIndex, true) : mappedAnswer || render(backTemplate, fields, '', undefined, true);
       if (!model.cloze && mappedFront && mappedAnswer && plainAnkiText(frontMarkup).includes(mappedAnswer) && !plainAnkiText(frontMarkup).includes(mappedFront)) [front, answer] = [mappedAnswer, mappedFront];
       if (!answer) { excludedCards.add(id);addIssue('error','unsupported', 'Generated card has no answer after safe conversion', model.name,id); continue; }
       if (/{{(?:tts\b|(?:hint|furigana|kana|kanji|type):)|\[anki:tts/i.test(template.q + template.a)) {simplifiedCards.add(id);addIssue('info','simplification', 'Anki TTS, answer input or advanced field filters were reduced to learning text', `${model.name} / ${template.name}`,id);}
@@ -136,8 +169,8 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       const deckKey = Number(deckId), importedDeck=ensureDeck(deckKey);
       const mappedNames = new Set(Object.entries(mapping?.fields ?? {}).filter(([, target]) => target !== 'ignore').map(([name]) => name));
       const rawMetadata = model.fields.filter(name => !mappedNames.has(name) && !front.includes(plainAnkiText(fields[name] ?? '')) && !answer.includes(plainAnkiText(fields[name] ?? ''))).map(name => `${name}: ${plainAnkiText(fields[name] ?? '')}`).filter(line => !line.endsWith(': '));
-      const mappedNotes = plainAnkiText(mappedValue(mapping, 'notes', fields)), image = frontImages[0], backImage = backImages[0] ?? image;
-      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: plainAnkiText(mappedValue(mapping, 'pronunciation', fields)), meaning: plainAnkiText(mappedValue(mapping, 'meaning', fields)), notes: [`Source note ${noteId} · ${model.name} / ${template.name}`, ...(mappedNotes ? [mappedNotes] : []), ...rawMetadata].join('\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`), ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
+      const mappedNotes = mappedValues(mapping, 'notes', fields), image = frontImages[0], backImage = backImages[0] ?? image;
+      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: mappedValue(mapping, 'pronunciation', fields), meaning: mappedValue(mapping, 'meaning', fields), notes: [`Imported source · ${model.name} / ${template.name}`, ...mappedNotes, ...rawMetadata].join('\n\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`),ankiSource:{kind:'anki',noteGuid:String(guid),noteId:String(noteId),templateOrdinal:Number(ordinal),modelName:model.name,templateName:template.name,modelSignature:model.signature!,importedContentHash:'00000000'}, ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
       if (rowIndex % 100 === 0 || rowIndex === rows.length - 1) progress?.({ stage: 'content', label: 'Converting cards', completed: rowIndex + 1, total: rows.length });
     }
     abort(signal); const mediaEntry = zip.file('media'); let mediaMap: Record<string, string> = {}; if (mediaEntry) {
@@ -155,15 +188,35 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       else { if (!audioSignature(data, mime)) { mediaIssue('Audio bytes do not match the MP3 or WAV file type',name); continue; } assets.push({ id: mediaId, name, mime, dataUrl: `data:${mime};base64,${b64(data)}`, source: packageName, credit: 'Imported Anki package media', license: 'Source deck terms apply' }); }
       resolved.set(name, ref); mediaIndex++; progress?.({ stage: 'media', label: 'Indexing bundled media', completed: mediaIndex, total: wantedMedia.size });
     }
-    for (let index=cards.length-1;index>=0;index--) { const card=cards[index]!,wasVisual=card.kind==='visual',pendingImage=card.image?.startsWith('pending:')?card.image.slice(8):undefined;const resolve = (value?: string) => value?.startsWith('pending:') ? resolved.get(value.slice(8)) : value; card.image = resolve(card.image); card.backImage = resolve(card.backImage); card.frontAudio = card.frontAudio?.map(item => resolve(item)).filter((item): item is string => !!item); card.backAudio = card.backAudio?.map(item => resolve(item)).filter((item): item is string => !!item); if (!card.image) { delete card.image; delete card.backImage; if(wasVisual){simplifiedCards.delete(card.id);excludedCards.add(card.id);addIssue('error','missing-media','Image-only prompt has no usable bundled image',pendingImage??card.id,card.id);cards.splice(index,1);continue;} } if (!card.frontAudio?.length) delete card.frontAudio; if (!card.backAudio?.length) delete card.backAudio; }
+    for (let index=cards.length-1;index>=0;index--) { const card=cards[index]!,wasVisual=card.kind==='visual',pendingImage=card.image?.startsWith('pending:')?card.image.slice(8):undefined;const resolve = (value?: string) => value?.startsWith('pending:') ? resolved.get(value.slice(8)) : value; card.image = resolve(card.image); card.backImage = resolve(card.backImage); card.frontAudio = card.frontAudio?.map(item => resolve(item)).filter((item): item is string => !!item); card.backAudio = card.backAudio?.map(item => resolve(item)).filter((item): item is string => !!item); if (!card.image) { delete card.image; delete card.backImage; if(wasVisual){simplifiedCards.delete(card.id);excludedCards.add(card.id);addIssue('error','missing-media','Image-only prompt has no usable bundled image',pendingImage??card.id,card.id);cards.splice(index,1);continue;} } if (!card.frontAudio?.length) delete card.frontAudio; if (!card.backAudio?.length) delete card.backAudio; if(card.ankiSource)card.ankiSource.importedContentHash=ankiImportedContentHash(card); }
     const proposedRarities = Object.fromEntries((['common','uncommon','rare','holo-rare','ultra-rare','secret-rare','relic'] as Rarity[]).map(rarity => [rarity, cards.filter(card => card.rarity === rarity).length])) as Record<Rarity, number>;
     const simplified=[...simplifiedCards].filter(id=>cards.some(card=>card.id===id)).length;
     return { variant, sourceNotes: noteCount, generatedCards: cards.length, decks: [...deckList.values()], cards, assets, issues,conversion:{normal:Math.max(0,cards.length-simplified),simplified,excluded:excludedCards.size,unsafe:unsafeCards.size}, proposedRarities, packageName, modelSchemas };
   } finally { db.close(); }
 }
 
-export function previewAnkiImport(analysis: AnkiAnalysis, state: State, preserveLocalEdits = true): ImportPreview {
-  const cards = preserveLocalEdits ? analysis.cards.filter(card => !state.cards.some(existing => existing.id === card.id)) : analysis.cards;
-  const bundle: ContentImport = { decks: analysis.decks, cards, designs: [], assets: analysis.assets };
-  return makePreview(bundle, state);
+export function previewAnkiImport(analysis: AnkiAnalysis, state: State, preserveLocalEdits = true, updateRootDeckId?: string): AnkiImportPreview {
+  const descendants = (root: string): Set<string> => { const ids=new Set([root]);let changed=true;while(changed){changed=false;for(const deck of state.decks)if(deck.parentId&&ids.has(deck.parentId)&&!ids.has(deck.id)){ids.add(deck.id);changed=true;}}return ids; };
+  const scope = updateRootDeckId ? descendants(updateRootDeckId) : new Set<string>();
+  const incomingIds = new Set(analysis.cards.map(card => card.id));
+  const summary:AnkiUpdateSummary={mode:updateRootDeckId?'update':'import',newCards:[],changedCards:[],changedMediaCards:[],unchangedCards:[],conflicts:[],deckConflicts:[],legacyReviewRequired:[],removedSourceCards:[],changedDecks:[],newDecks:[]};
+  const cards:CardContent[]=[];
+  for(const card of analysis.cards){
+    const existing=state.cards.find(item=>item.id===card.id);
+    if(!existing){summary.newCards.push(card.id);cards.push(card);continue;}
+    const baseline=existing.ankiSource?.importedContentHash;
+    const sourceChanged=!baseline||card.ankiSource?.importedContentHash!==baseline;
+    const localChanged=!baseline||ankiImportedContentHash(existing)!==baseline;
+    const mediaChanged=JSON.stringify([existing.image,existing.backImage,existing.frontAudio,existing.backAudio])!==JSON.stringify([card.image,card.backImage,card.frontAudio,card.backAudio]);
+    if(!sourceChanged){summary.unchangedCards.push(card.id);continue;}
+    summary.changedCards.push(card.id);if(mediaChanged)summary.changedMediaCards.push(card.id);
+    if(localChanged){summary.conflicts.push(card.id);if(!baseline)summary.legacyReviewRequired.push(card.id);if(preserveLocalEdits)continue;}
+    cards.push(card);
+  }
+  if(updateRootDeckId)summary.removedSourceCards=state.cards.filter(card=>scope.has(card.deckId)&&card.ankiSource?.kind==='anki'&&!incomingIds.has(card.id)).map(card=>card.id);
+  const decks:Deck[]=[];for(const deck of analysis.decks){const existing=state.decks.find(item=>item.id===deck.id);if(!existing){summary.newDecks.push(deck.id);decks.push(deck);continue;}const baseline=existing.ankiSource?.importedContentHash,sourceChanged=!baseline||baseline!==deck.ankiSource?.importedContentHash,localChanged=!baseline||ankiImportedDeckHash(existing)!==baseline;if(!sourceChanged)continue;summary.changedDecks.push(deck.id);if(localChanged){summary.deckConflicts.push(deck.id);if(preserveLocalEdits)continue;}decks.push(deck);}
+  const referencedAssets=new Set(cards.flatMap(card=>[card.image,card.backImage,...card.frontAudio??[],...card.backAudio??[]]).filter((ref):ref is string=>!!ref&&ref.startsWith('asset:')).map(ref=>ref.slice(6)));
+  const bundle: ContentImport = { decks, cards: cards, designs: [], assets: analysis.assets.filter(asset=>referencedAssets.has(asset.id)) };
+  const rootMatches=!updateRootDeckId||analysis.decks.some(deck=>deck.id===updateRootDeckId);
+  const preview=makePreview(bundle, state,rootMatches?[]:['This Anki package does not contain the selected imported deck identity. Choose the revised package for this deck.']) as AnkiImportPreview;preview.update=summary;return preview;
 }

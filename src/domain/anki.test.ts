@@ -40,17 +40,69 @@ async function warningPackage(): Promise<Uint8Array> {
   const zip = new JSZip(); zip.file('collection.anki2', db.export()); zip.file('media', '{}'); db.close(); return zip.generateAsync({ type: 'uint8array' });
 }
 
+async function structuredItalianPackage(answer = 'Good evening'): Promise<Uint8Array> {
+  const SQL = await initSqlJs(); const db = new SQL.Database();
+  db.run('create table col (models text, decks text)'); db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)'); db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models = { 1: { name: 'Laura recap', type: 0, flds: [{name:'Prompt'},{name:'Response'},{name:'Pronunciation'},{name:'NaturalMeaning'},{name:'WordBreakdown'},{name:'EverydayUse'}], tmpls: [{name:'Recap',qfmt:'{{Prompt}}',afmt:'{{FrontSide}}<hr>{{Response}}<div>{{Pronunciation}}</div><h3>Meaning & notes</h3><b>Meaning in Laura\'s recap</b>{{NaturalMeaning}}<b>Added word breakdown</b>{{WordBreakdown}}<b>Everyday use</b>{{EverydayUse}}'}] } };
+  db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian Lesson::01 Greetings'}})]);
+  db.run('insert into notes values (?,?,?,?,?)',[100,'buonasera-guid',1,'greeting',`Buonasera!\x1f${answer}\x1fbwoh-nah-SEH-rah\x1fgood evening\x1fbuona = good; sera = evening.\x1fUsed from late afternoon.`]);
+  db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
+}
+
 describe('Anki content-only import', () => {
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
     expect(plainAnkiText('<span>Hello</span> <strong>world</strong>')).toBe('Hello world');
     expect(plainAnkiText('<span>日</span><span>本</span>')).toBe('日本');
   });
+
+  it('keeps mapped Laura-style fields structured and removes FrontSide from the native answer', async () => {
+    const first=await analyseAnkiPackage(await structuredItalianPackage(),'laura.apkg');
+    expect(first.cards[0]).toMatchObject({front:'Buonasera!',answer:'Good evening',pronunciation:'bwoh-nah-SEH-rah',meaning:'good evening'});
+    expect(first.cards[0]!.notes).toContain('buona = good; sera = evening.\n\nUsed from late afternoon.');
+    const schema=first.modelSchemas[0]!;
+    const mapping={id:'laura-map',version:1 as const,name:'Laura recap',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Response:'answer',Pronunciation:'pronunciation',NaturalMeaning:'meaning',WordBreakdown:'notes',EverydayUse:'notes'} as const};
+    const analysis=await analyseAnkiPackage(await structuredItalianPackage(),'laura.apkg',undefined,undefined,[mapping]);
+    const card=analysis.cards[0]!;
+    expect(card.front).toBe('Buonasera!');
+    expect(card.answer).toBe('Good evening');
+    expect(card.pronunciation).toBe('bwoh-nah-SEH-rah');
+    expect(card.meaning).toBe('good evening');
+    expect(card.notes).toContain('buona = good; sera = evening.\n\nUsed from late afternoon.');
+    expect(card.answer).not.toContain('Meaning & notes');
+    expect(card.ankiSource).toMatchObject({kind:'anki',noteGuid:'buonasera-guid',templateOrdinal:0,modelSignature:schema.signature});
+    expect(card.ankiSource?.importedContentHash).toMatch(/^[a-f0-9]{8}$/);
+  });
+
+  it('previews source updates, local conflicts, legacy reconversion and recoverable removals', async () => {
+    const original=await analyseAnkiPackage(await structuredItalianPackage(),'original.apkg');
+    const schema=original.modelSchemas[0]!,mapping={id:'laura-map',version:1 as const,name:'Laura recap',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Response:'answer',Pronunciation:'pronunciation',NaturalMeaning:'meaning',WordBreakdown:'notes',EverydayUse:'notes'} as const};
+    const initial=await analyseAnkiPackage(await structuredItalianPackage(),'original.apkg',undefined,undefined,[mapping]);
+    const state=createInitialState(initial.decks,initial.cards),root=initial.decks.find(deck=>!deck.parentId)!.id;
+    const changed=await analyseAnkiPackage(await structuredItalianPackage('Good evening!'),'renamed.apkg',undefined,undefined,[mapping]);
+    const normal=previewAnkiImport(changed,state,true,root);
+    expect(normal.update.changedCards).toEqual([initial.cards[0]!.id]);
+    expect(normal.update.conflicts).toEqual([]);
+    expect(normal.updatedCards).toEqual([initial.cards[0]!.id]);
+
+    const locallyEdited=structuredClone(state);locallyEdited.cards[0]!.notes+='\n\nMy local note.';locallyEdited.cards.push({...structuredClone(initial.cards[0]!),id:'anki-removed-source',ankiSource:{...initial.cards[0]!.ankiSource!,noteGuid:'removed-guid'}});
+    const protectedPreview=previewAnkiImport(changed,locallyEdited,true,root);
+    expect(protectedPreview.update.conflicts).toEqual([initial.cards[0]!.id]);
+    expect(protectedPreview.updatedCards).toEqual([]);
+    expect(protectedPreview.update.removedSourceCards).toEqual(['anki-removed-source']);
+    expect(previewAnkiImport(changed,locallyEdited,false,root).updatedCards).toEqual([initial.cards[0]!.id]);
+
+    const legacy=structuredClone(state);delete legacy.cards[0]!.ankiSource;
+    const legacyPreview=previewAnkiImport(changed,legacy,true,root);
+    expect(legacyPreview.update.legacyReviewRequired).toEqual([initial.cards[0]!.id]);
+    expect(legacyPreview.updatedCards).toEqual([]);
+  });
   it('analyses a legacy schema package as notes and generated cards, including reversed and cloze cards', async () => {
     const analysis = await analyseAnkiPackage(await legacyPackage(), 'tiny.apkg');
     expect(analysis.variant).toBe('legacy-anki2'); expect(analysis.sourceNotes).toBe(2); expect(analysis.generatedCards).toBe(3);
     expect(analysis.cards.map(card => [card.front, card.answer])).toEqual(expect.arrayContaining([['ciao', expect.stringContaining('hello')], ['hello', 'ciao'], ['[…] pronto', 'sono pronto']]));
-    expect(analysis.cards.every(card => card.notes.includes('Source note'))).toBe(true);
+    expect(analysis.cards.every(card => card.notes.includes('Imported source'))).toBe(true);
   });
   it('uses stable identities and deterministic authored rarity without importing learning state', async () => {
     const first = await analyseAnkiPackage(await legacyPackage(), 'first-name.apkg'), second = await analyseAnkiPackage(await legacyPackage(), 'renamed.apkg');

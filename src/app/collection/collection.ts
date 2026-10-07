@@ -31,10 +31,11 @@ import { ReviewHistoryComponent } from '../history/review-history';
         </div>
         <div class="inspection-details">
           <span class="status-chip">{{ sampleTier() ? 'Design sample · not earned' : progress(card).earned ? 'Cosmetic earned' : 'Cosmetic locked · study available' }}</span>
-          <h2 id="inspection-title">{{ sampleTier() ? tierName(sampleTier()!) + ' preview' : card.answer }}</h2>
+          <h2 id="inspection-title">{{ sampleTier() ? tierName(sampleTier()!) + ' preview' : inspectionTitle(card) }}</h2>
           <p class="deck-name">{{ deckName(card.deckId) }}</p>
           @if (!sampleTier() && !progress(card).earned && (card.rarity || 'common') !== 'common') { <div class="inspection-actions"><button mat-stroked-button (click)="previewLocked.set(!previewLocked())">{{ previewLocked() ? 'Show current appearance' : 'Preview authored cosmetic' }}</button></div> }
           <dl class="card-details"><div><dt>Authored rarity</dt><dd>{{ tierName(card.rarity || 'common') }}</dd></div><div><dt>Current view</dt><dd>{{ tierName(displayRarity()) }}{{ isPreview() ? ' · preview' : '' }}</dd></div><div><dt>Design</dt><dd>{{ store.designFor(card)?.name || 'HoloRecall original' }}</dd></div><div><dt>Design credit</dt><dd>{{ store.designFor(card) ? (store.designFor(card)?.credit || 'No credit provided') : 'Original HoloRecall artwork and frame' }}</dd></div>@if (store.designFor(card)?.source) {<div><dt>Source</dt><dd>{{ store.designFor(card)?.source }}</dd></div>}@if (store.designFor(card)?.license) {<div><dt>Licence</dt><dd>{{ store.designFor(card)?.license }}</dd></div>}</dl>
+          @if(card.notes){<details class="source-notes"><summary>Source notes</summary><p>{{card.notes}}</p></details>}
           @if(!sampleTier()){<div class="inspection-actions"><button mat-flat-button (click)="practiceCards.emit([card.id])">Practice this card</button></div>}
           @if (sampleTier()) {
             <div class="unlock-panel"><h3>Sample presentation</h3><p>This view demonstrates a treatment. It creates no reviews, reward events or earned progress.</p><p>{{ required(sampleTier()!) }} qualifying study {{ required(sampleTier()!) === 1 ? 'day' : 'days' }} currently required to earn this tier.</p></div>
@@ -85,6 +86,7 @@ export class CollectionComponent {
   tierName(rarity: Rarity): string { return this.tiers.find(tier => tier.id === rarity)?.label ?? 'Common'; }
   tierSymbol(rarity: Rarity): string { return this.tiers.find(tier => tier.id === rarity)?.symbol ?? '●'; }
   deckName(id: string): string { return this.store.decks().find(deck => deck.id === id)?.name ?? 'Deck unavailable'; }
+  inspectionTitle(card:CardContent):string{return card.kind==='visual'&&!card.front.trim()?'Card details':card.front.trim()||'Card details';}
   inspect(card: CardContent): void { this.selectedId.set(card.id); this.sampleTier.set(null); this.previewLocked.set(false); this.revealed.set(true); this.scrollToInspection(); }
   inspectSample(rarity: Rarity): void { this.sampleTier.set(rarity); this.revealed.set(true); this.scrollToInspection(); }
   showAll():void{this.library.setQuery('');this.library.clear();}

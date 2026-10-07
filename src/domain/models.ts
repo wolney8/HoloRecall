@@ -28,9 +28,27 @@ export interface CardContent {
   createdAt?: string;
   /** Stable relationship shared by reversed/template/cloze siblings. */
   siblingGroupId?: string;
+  /** Inert source identity and last-import baseline. Never contains scheduling state. */
+  ankiSource?: AnkiCardSource;
 }
 
-export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides }
+export interface Deck { id: string; name: string; description: string; suspended: boolean; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; ankiSource?: AnkiDeckSource }
+export interface AnkiCardSource {
+  kind: 'anki';
+  noteGuid: string;
+  noteId: string;
+  templateOrdinal: number;
+  modelName: string;
+  templateName: string;
+  modelSignature: string;
+  importedContentHash: string;
+}
+export interface AnkiDeckSource {
+  kind: 'anki';
+  sourceDeckId?: string;
+  sourcePath: string;
+  importedContentHash: string;
+}
 export type ConfidenceRating = 1 | 2 | 3 | 4 | 5;
 export interface Preferences {
   effects: boolean;

@@ -1,7 +1,6 @@
 import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, QueryList, signal, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -9,7 +8,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { LocalStudyStore } from './data/study-store';
-import { ThemeService, ThemeChoice } from './theme.service';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../domain/rewards';
@@ -31,15 +29,15 @@ import { LocalDataSettingsComponent } from './settings/local-data-settings';
 import { RewardSettingsComponent } from './settings/reward-settings';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
+interface NavigationContext { label: string; screen: Screen; deckId?: string }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatButtonToggleModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
   @ViewChildren('ratingTip') private ratingTips!: QueryList<MatTooltip>;
   readonly store=inject(LocalStudyStore);
-  readonly theme=inject(ThemeService);
   readonly lifecycle=inject(AppLifecycle);
   readonly library=inject(LibraryViewService);
   private readonly viewportCoordinator=inject(VisualViewportCoordinator);
@@ -81,10 +79,9 @@ export class AppComponent {
   ];
   readonly mobilePrimaryNavigation:{id:Screen|'more';label:string;icon:string}[]=[
     {id:'library',label:'Decks',icon:'▤'},{id:'study',label:'Study',icon:'◈'},
-    {id:'collection',label:'Collection',icon:'✧'},{id:'progress',label:'Progress',icon:'▥'},
-    {id:'more',label:'More',icon:'•••'},
+    {id:'collection',label:'Collection',icon:'✧'},{id:'more',label:'More',icon:'•••'},
   ];
-  readonly mobileSecondaryNavigation=this.navigation.filter(item=>['dashboard','focus','studio','exchange','settings'].includes(item.id));
+  readonly mobileSecondaryNavigation=this.navigation.filter(item=>['dashboard','focus','progress','studio','exchange','settings'].includes(item.id));
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
   selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
@@ -193,12 +190,28 @@ export class AppComponent {
   toggleAutoAdvance():void{void (this.autoAdvancePaused()?this.resumeAutoAdvance():this.pauseAutoAdvance());}
   onCardAudioPlaying(playing:boolean):void{this.cardAudioPlaying.set(playing);}
   private async waitForAnswerDwell(run:number):Promise<void>{const seconds=this.currentPreset()?.autoAdvanceEnabled?this.currentPreset()?.autoAnswerSeconds??0:0;if(!seconds||!this.answerRevealedAt)return;const remaining=Math.max(0,seconds*1000-(performance.now()-this.answerRevealedAt));if(!remaining)return;this.settleAnswerDwell();await new Promise<void>(resolve=>{this.answerDwellResolve=resolve;this.answerDwellTimer=window.setTimeout(()=>this.settleAnswerDwell(),Math.min(120000,remaining));});if(run!==this.studyPresentationRun)return;}
-  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');this.mobileMoreOpen.set(false);this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
-  mobileTitle():string{return this.editor?'Card editor':this.deckEditor?'Deck editor':({dashboard:'HoloRecall',library:'Decks',focus:'Focus',study:this.session()?.mode==='practice'?'Practice':'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[this.screen()];}
-  mobileHasBack():boolean{return !!this.editor||!!this.deckEditor||['focus','study','results','studio','exchange','settings'].includes(this.screen());}
-  mobileBack():void{if(this.editor){this.cancelCardEditor();return;}if(this.deckEditor){this.deckEditor=null;return;}if(this.screen()==='study'||this.screen()==='focus')this.go('library');else if(this.screen()==='results')this.go('dashboard');else this.go('dashboard');}
-  mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
+  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');if(screen==='exchange'&&this.screen()!=='library')this.selectedDeck='';this.mobileMoreOpen.set(false);this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  navigationContext():NavigationContext[]{
+    const screen=this.screen(),deckId=this.editor?.deckId||this.deckEditor?.id||this.settingsDeckId()||(screen==='study'||screen==='results'?this.current()?.deckId||this.session()?.scopeDeckId:'')||(screen==='exchange'?this.selectedDeck:'');
+    const decks=deckId?this.deckContext(deckId):[];
+    if(screen==='library')return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),...(this.editor?[{label:this.editor.revision?'Edit card':'New card',screen:'library' as const}]:this.deckEditor?[{label:this.deckEditor.name||'New deck',screen:'library' as const}]:[])];
+    if(screen==='study'||screen==='results')return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:screen==='results'?'Session complete':this.session()?.mode==='practice'?'Practice':'Study',screen}];
+    if(screen==='focus')return [{label:'Decks',screen:'library'},{label:'Focus',screen:'focus'}];
+    if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
+    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Import & export',screen:'exchange'}];
+    const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[screen];
+    return [{label:title,screen}];
+  }
+  private deckContext(deckId:string):Deck[]{const state=this.data();if(!state)return[];const byId=new Map(state.decks.map(deck=>[deck.id,deck])),path:Deck[]=[];let current=byId.get(deckId),guard=0;while(current&&guard++<state.decks.length){path.unshift(current);current=current.parentId?byId.get(current.parentId):undefined;}return path;}
+  mobileTitle():string{return this.navigationContext().at(-1)?.label??'HoloRecall';}
+  mobileParentTitle():string{return this.navigationContext().at(-2)?.label??'';}
+  mobileHasBack():boolean{return this.navigationContext().length>1||!!this.editor||!!this.deckEditor;}
+  mobileBack():void{if(this.editor){this.cancelCardEditor();return;}if(this.deckEditor){this.deckEditor=null;return;}const trail=this.navigationContext(),parent=trail.at(-2);if(parent)this.navigateContext(parent);else this.go('dashboard');}
+  navigateContext(item:NavigationContext):void{if(item.deckId){this.selectedDeck=item.deckId;for(const deck of this.deckContext(item.deckId))this.expandedDecks.add(deck.id);this.go('library');setTimeout(()=>document.getElementById(`deck-${item.deckId}`)?.scrollIntoView({block:'start'}));return;}this.go(item.screen);}
+  mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','progress','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
   toggleMobileMore():void{this.mobileMoreOpen.update(open=>!open);}
+  openExchange(deckId=''):void{const updateDeckId=deckId&&this.data()?.decks.some(deck=>deck.id===deckId&&this.isAnkiDeck(deck))?deckId:'';this.selectedDeck=updateDeckId;this.go('exchange');this.selectedDeck=updateDeckId;}
+  isAnkiDeck(deck:Deck):boolean{return deck.ankiSource?.kind==='anki'||deck.id.startsWith('anki-');}
   openStudySettings(deckId?:string):void{if(this.screen()==='study')void this.pauseAutoAdvance(true);this.go('settings');this.settingsDeckId.set(deckId??'');}
   topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}
   deckChildren(id:string):Deck[]{return this.data()?.decks.filter(deck=>deck.parentId===id)??[];}
@@ -219,7 +232,6 @@ export class AppComponent {
   frameFor(card:CardContent):string{const design=this.designFor(card);return this.store.mediaUrl(design?.frames?.[this.shownRarity(card)]||design?.frame);}
   rarityLabel(rarity?:Rarity):string{return this.tiers.find(t=>t.id===(rarity??'common'))?.label??'Common';}
   unlock(card:CardContent){return rewardProgress(this.data()!,card.id);}
-  async setTheme(choice:ThemeChoice):Promise<void>{try{await this.theme.select(choice);}catch(e){this.message.set(String(e));}}
   async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId);this.prepareAutoAdvanceSession();this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   openFocus(launch:FocusLaunch={}):void{this.focusLaunch.set(launch);this.go('focus');}
   async startFocus(request:FocusSessionRequest):Promise<void>{this.busy.set(true);try{await this.store.startFocusSession(request);this.prepareAutoAdvanceSession();this.elapsedMs=0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}

@@ -21,16 +21,18 @@ function sample(): ContentBundle {
   };
 }
 
+function sourceSample():ContentBundle{const bundle=sample();bundle.decks[0]!.ankiSource={kind:'anki',sourceDeckId:'10',sourcePath:'Italiano',importedContentHash:'1234abcd'};bundle.cards[0]!.ankiSource={kind:'anki',noteGuid:'guid',noteId:'100',templateOrdinal:0,modelName:'Basic',templateName:'Card 1',modelSignature:'anki-model-v1-abcd',importedContentHash:'89abcdef'};return bundle;}
+
 describe('versioned content exchange', () => {
   it('ships valid downloadable workbooks and a self-contained sixteen-illustration example', async () => {
-    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v4.xlsx')), 'blank.xlsx', state());
+    const blank = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-blank-v5.xlsx')), 'blank.xlsx', state());
     expect(blank.errors).toEqual([]); expect(blank.bundle.cards).toHaveLength(0);
-    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v4.xlsx')), 'example.xlsx', state());
+    const example = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v5.xlsx')), 'example.xlsx', state());
     expect(example.errors).toEqual([]); expect(example.bundle.cards).toHaveLength(16); expect(example.bundle.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
-    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v4.zip')), 'portable.zip', state());
+    const portable = await readContentFile(new Uint8Array(await readFile('public/downloads/holorecall-italian-v5.zip')), 'portable.zip', state());
     expect(portable.errors).toEqual([]); expect(portable.bundle.assets).toHaveLength(16); expect(portable.bundle.cards.every(card => card.image?.startsWith('asset:'))).toBe(true);
   });
-  it.each(['v1', 'v2','v3'])('keeps published %s content packages readable', async version => {
+  it.each(['v1', 'v2','v3','v4'])('keeps published %s content packages readable', async version => {
     const workbook = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.xlsx`)), `${version}.xlsx`, state());
     const portable = await readContentFile(new Uint8Array(await readFile(`public/downloads/holorecall-italian-${version}.zip`)), `${version}.zip`, state());
     expect(workbook.errors).toEqual([]); expect(workbook.bundle.cards).toHaveLength(16);
@@ -49,6 +51,7 @@ describe('versioned content exchange', () => {
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
     expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
   });
+  it('round trips inert Anki source identities and import baselines in format v5',async()=>{const original=sourceSample(),preview=await readContentFile(await writePortableZip(original),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.cards[0]!.ankiSource).toEqual(original.cards[0]!.ankiSource);});
   it('preserves repeated tags already permitted by the card editor', async () => {
     const data = state(); const bundle = contentFromState(data); bundle.cards[0].tags = ['Verbs', 'Verbs'];
     const preview = await readContentFile(await writeWorkbook(bundle), 'deck.xlsx', data);

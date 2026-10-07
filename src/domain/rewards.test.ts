@@ -28,6 +28,20 @@ describe('auditable cosmetic earning', () => {
     expect(rewardProgress(four, 'card', 'common').earned).toBe(true);
     validateState(four);
   });
+  it('uses the saved threshold policy for future unlocks without rewriting prior contributions', () => {
+    let state = initial();
+    state.rewardConfig = { ...state.rewardConfig, rare: 4, 'holo-rare': 6, 'ultra-rare': 9, 'secret-rare': 13, relic: 21 };
+    state = rate(state, 'first');
+    state = rate(state, 'second', 5, nextTime(state));
+    state = rate(state, 'third', 5, nextTime(state));
+    expect(rewardProgress(state, 'card')).toEqual({ earned: false, days: 3, required: 4 });
+    const prior = structuredClone(state.rewardEvents);
+    state = { ...state, rewardConfig: { ...state.rewardConfig, rare: 3 } };
+    expect(state.rewardEvents).toEqual(prior);
+    expect(rewardProgress(state, 'card')).toEqual({ earned: false, days: 3, required: 3 });
+    state = rate(state, 'fourth', 5, nextTime(state));
+    expect(rewardProgress(state, 'card')).toEqual({ earned: true, days: 4, required: 3 });
+  });
   it('requires separate study days and 20 hours even after a time-zone change', () => {
     const once = rate(initial(), 'first');
     const minuteLater = rate(once, 'same-day', 4, new Date(once.states['card']!.due));

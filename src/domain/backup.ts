@@ -29,6 +29,10 @@ export function validateDeck(value: unknown): asserts value is Deck {
   if(deck['studyPresetId']!==undefined&&!id(deck['studyPresetId']))fail('invalid deck study preset.');
   try{validateDeckOverrides(deck['studyOverrides'] as Deck['studyOverrides']);}catch(error){fail(error instanceof Error?error.message:'invalid deck study override.');}
   if (!id(deck['id']) || !text(deck['name'], 160) || !deck['name'].trim() || !text(deck['description'], 2000) || typeof deck['suspended'] !== 'boolean') fail('invalid deck.');
+  if (deck['ankiSource'] !== undefined) {
+    const source = object(deck['ankiSource']);
+    if (source['kind'] !== 'anki' || (source['sourceDeckId'] !== undefined && !text(source['sourceDeckId'], 80)) || !text(source['sourcePath'], 1000) || !source['sourcePath'] || !/^[a-f0-9]{8}$/.test(String(source['importedContentHash']))) fail('invalid Anki deck source metadata.');
+  }
 }
 
 export function validateCard(value: unknown): asserts value is CardContent {
@@ -47,6 +51,10 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if (card['createdAt'] !== undefined && !instant(card['createdAt'])) fail('invalid card creation time.');
   if(card['siblingGroupId']!==undefined&&!id(card['siblingGroupId']))fail('invalid sibling group.');
   if (card['kind'] === 'visual' && (!card['image'] || !card['imageDescription'])) fail('visual cards need an image and an answer-safe description.');
+  if (card['ankiSource'] !== undefined) {
+    const source = object(card['ankiSource']);
+    if (source['kind'] !== 'anki' || !text(source['noteGuid'], 160) || !text(source['noteId'], 80) || !integer(source['templateOrdinal'], 0) || !text(source['modelName'], 240) || !text(source['templateName'], 240) || !text(source['modelSignature'], 120) || !/^anki-model-v1-/.test(String(source['modelSignature'])) || !/^[a-f0-9]{8}$/.test(String(source['importedContentHash']))) fail('invalid Anki card source metadata.');
+  }
 }
 
 function validateCardState(value: unknown): asserts value is CardState {

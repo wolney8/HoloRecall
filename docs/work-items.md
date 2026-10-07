@@ -787,17 +787,17 @@ Source: Will's 7 October 2026 manual Anki-content and product review. No native-
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-ANKI-03 | Real imported-content fidelity | Import/content | Data fidelity | P0 | IN_PROGRESS | Existing converter, mappings and renderer |
-| HR-ANKI-04 | User-facing Anki update workflow | Import/portability | Data fidelity | P0 | IN_PROGRESS | Stable source identities and atomic import |
-| HR-SETTINGS-01 | Functional settings actionability audit | Settings/scheduling | Settings audit | P0 | IN_PROGRESS | Study presets and runtime consumers |
-| HR-NAV-01 | Shared breadcrumb/context model | Navigation | Adaptive navigation | P0 | IN_PROGRESS | Existing screen state and deck hierarchy |
-| HR-IOS-UX-11 | Leaner aligned iPhone navigation | Navigation/accessibility | Adaptive navigation | P0 | IN_PROGRESS | HR-NAV-01 and safe-area shell |
-| HR-AUTH-01 | Account architecture and UX contract | Identity/platform | Architecture readiness | P1 | IN_PROGRESS | Existing platform seams; provider decision |
+| HR-ANKI-03 | Real imported-content fidelity | Import/content | Data fidelity | P0 | VERIFY | Existing converter, mappings and renderer |
+| HR-ANKI-04 | User-facing Anki update workflow | Import/portability | Data fidelity | P0 | VERIFY | Stable source identities and atomic import |
+| HR-SETTINGS-01 | Functional settings actionability audit | Settings/scheduling | Settings audit | P0 | VERIFY | Study presets and runtime consumers |
+| HR-NAV-01 | Shared breadcrumb/context model | Navigation | Adaptive navigation | P0 | VERIFY | Existing screen state and deck hierarchy |
+| HR-IOS-UX-11 | Leaner aligned iPhone navigation | Navigation/accessibility | Adaptive navigation | P0 | VERIFY | HR-NAV-01 and safe-area shell |
+| HR-IDENT-01 | Account architecture and UX contract | Identity/platform | Architecture readiness | P1 | IN_PROGRESS | Existing platform seams; provider decision |
 | HR-COM-02 | Future ads and premium architecture | Commercial/platform | Architecture readiness | P1 | IN_PROGRESS | CapabilityPolicy and privacy review |
 | HR-COM-03 | Identity/entitlement/learning separation | Domain architecture | Architecture readiness | P0 | IN_PROGRESS | HR-AUTH-01 and HR-COM-02 |
-| HR-PERF-02 | Restore initial web bundle gate | Performance | Performance closure | P1 | IN_PROGRESS | Adaptive shell bundle graph |
+| HR-PERF-02 | Restore initial web bundle gate | Performance | Performance closure | P1 | VERIFY | Adaptive shell bundle graph |
 
-Acceptance is the complete request text. Import work must preserve scheduling, history, cosmetics, media and local edits; settings require observable runtime consumers; navigation uses one semantic hierarchy across compact/wide layouts; auth/commercial work remains provider-free and non-enforcing. Every implementation retains Web, iOS/iPadOS, Android and Apple-silicon Mac implications.
+Acceptance is the complete request text. The request supplied `HR-AUTH-01`, but that stable ID already belongs to the accepted Faster Deck/Card Creation requirement, so the new account item is `HR-IDENT-01` rather than overwriting history. Import work must preserve scheduling, history, cosmetics, media and local edits; settings require observable runtime consumers; navigation uses one semantic hierarchy across compact/wide layouts; auth/commercial work remains provider-free and non-enforcing. Every implementation retains Web, iOS/iPadOS, Android and Apple-silicon Mac implications.
 
 ## Preserved completed history
 
