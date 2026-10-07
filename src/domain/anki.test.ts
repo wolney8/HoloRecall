@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
-import { analyseAnkiPackage, previewAnkiImport, suggestedRarity } from './anki';
+import { analyseAnkiPackage, plainAnkiText, previewAnkiImport, suggestedRarity } from './anki';
 import { createInitialState } from './study';
 
 beforeAll(async () => {
@@ -41,6 +41,11 @@ async function warningPackage(): Promise<Uint8Array> {
 }
 
 describe('Anki content-only import', () => {
+  it('preserves block boundaries without inventing spacing between intentional inline text', () => {
+    expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
+    expect(plainAnkiText('<span>Hello</span> <strong>world</strong>')).toBe('Hello world');
+    expect(plainAnkiText('<span>日</span><span>本</span>')).toBe('日本');
+  });
   it('analyses a legacy schema package as notes and generated cards, including reversed and cloze cards', async () => {
     const analysis = await analyseAnkiPackage(await legacyPackage(), 'tiny.apkg');
     expect(analysis.variant).toBe('legacy-anki2'); expect(analysis.sourceNotes).toBe(2); expect(analysis.generatedCards).toBe(3);

@@ -15,19 +15,19 @@ final class NativeSmokeUITests: XCTestCase {
         let start = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'study' AND label CONTAINS '→'")).firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         start.tap()
-        XCTAssertTrue(app.buttons["Reveal answer ↻"].waitForExistence(timeout: 10))
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
 
         for expectedCard in 1...3 {
             let card = app.descendants(matching: .any)
                 .matching(NSPredicate(format: "label CONTAINS[c] 'flashcard'"))
                 .firstMatch
             XCTAssertTrue(card.waitForExistence(timeout: 5))
-            tapButton("Reveal answer ↻")
+            revealableCard().tap()
             let rating = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '3 Good'")).firstMatch
             XCTAssertTrue(rating.waitForExistence(timeout: 5))
             rating.tap()
             if expectedCard < 3 {
-                XCTAssertTrue(app.buttons["Reveal answer ↻"].waitForExistence(timeout: 8))
+                XCTAssertTrue(revealableCard().waitForExistence(timeout: 8))
                 XCTAssertTrue(card.exists)
                 attachScreenshot("incoming-card-\(expectedCard + 1)")
             }
@@ -38,12 +38,13 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
         tapButton("Progress")
         XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 8))
-        tapButton("Settings")
+        openMore("Settings")
         XCTAssertTrue(app.staticTexts["Settings"].waitForExistence(timeout: 8))
         attachScreenshot("native-settings")
     }
 
     func testSystemAppearanceAndRelaunch() throws {
+        openMore("Settings")
         let dark = app.otherElements["Dark"]
         XCTAssertTrue(dark.waitForExistence(timeout: 8))
         dark.tap()
@@ -51,6 +52,7 @@ final class NativeSmokeUITests: XCTestCase {
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
+        openMore("Settings")
         XCTAssertEqual(app.otherElements["Dark"].value as? String, "1")
         let system = app.otherElements["System"]
         XCTAssertTrue(system.waitForExistence(timeout: 8))
@@ -61,11 +63,11 @@ final class NativeSmokeUITests: XCTestCase {
         let start = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'study' AND label CONTAINS '→'")).firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         start.tap()
-        XCTAssertTrue(app.buttons["Reveal answer ↻"].waitForExistence(timeout: 10))
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
         XCUIDevice.shared.press(.home)
         sleep(3)
         app.activate()
-        XCTAssertTrue(app.buttons["Reveal answer ↻"].waitForExistence(timeout: 10))
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
         attachScreenshot("lifecycle-resumed-study")
     }
 
@@ -75,7 +77,7 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("iphone-landscape-dashboard")
         XCUIDevice.shared.orientation = .portrait
 
-        tapButton("Import / export")
+        openMore("Import / export")
         XCTAssertTrue(app.staticTexts["Import & export"].waitForExistence(timeout: 10))
         tapButton("Export current XLSX")
         let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
@@ -98,6 +100,17 @@ final class NativeSmokeUITests: XCTestCase {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")
         button.tap()
+    }
+
+    private func revealableCard() -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == 'Show card answer'"))
+            .firstMatch
+    }
+
+    private func openMore(_ destination: String) {
+        tapButton("More")
+        tapButton(destination)
     }
 
     private func attachScreenshot(_ name: String) {

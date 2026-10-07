@@ -49,7 +49,7 @@ test('HR-IOS compact portrait preserves safe-area layout, stable reveal and touc
   await openApp(page);
   await page.getByRole('button', { name: /Start studying/ }).click();
   const stage = page.getByTestId('study-deck-stage');
-  const reveal = page.getByRole('button', { name: /Reveal answer/ });
+  const reveal = stage.locator('[role="button"]');
   await reveal.scrollIntoViewIfNeeded();
   const before = await stage.boundingBox();
   const scrollBefore = await page.evaluate(() => scrollY);

@@ -13,7 +13,7 @@ for (const size of [{ name: 'desktop', width: 1280, height: 820 }, { name: 'mobi
     await openApp(page);
     await page.getByRole('button', { name: /Start studying/ }).click();
     const stage = page.getByTestId('study-deck-stage');
-    const reveal = page.getByRole('button', { name: /Reveal answer/ });
+    const reveal = size.name === 'mobile' ? stage.locator('[role="button"]') : page.getByRole('button', { name: /Reveal answer/ });
     await reveal.scrollIntoViewIfNeeded();
     const before = await stage.boundingBox();
     const scrollBefore = await page.evaluate(() => ({ x: scrollX, y: scrollY }));

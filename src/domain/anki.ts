@@ -25,7 +25,20 @@ function varint(bytes: Uint8Array, start = 0): [number, number] { let value = 0,
 function proto(bytes: Uint8Array): Map<number, (number | Uint8Array)[]> { const fields = new Map<number, (number | Uint8Array)[]>(); for (let i = 0; i < bytes.length;) { const [tag, next] = varint(bytes, i); i = next; const field = Math.floor(tag / 8), wire = tag & 7; let value: number | Uint8Array | undefined; if (wire === 0) [value, i] = varint(bytes, i); else if (wire === 2) { const [length, after] = varint(bytes, i); i = after; if (i + length > bytes.length) throw new Error('Malformed protobuf metadata.'); value = bytes.subarray(i, i + length); i += length; } else if (wire === 1) i += 8; else if (wire === 5) i += 4; else throw new Error('Unsupported protobuf wire type.'); if (i > bytes.length) throw new Error('Malformed protobuf metadata.'); if (value !== undefined) fields.set(field, [...fields.get(field) ?? [], value]); } return fields; }
 function protoString(bytes: Uint8Array, field: number): string { const value = proto(bytes).get(field)?.[0]; return value instanceof Uint8Array ? bytesText(value) : ''; }
 function packageVersion(meta?: Uint8Array): number { if (!meta?.length) return 0; const value = proto(meta).get(1)?.[0]; return typeof value === 'number' ? value : 0; }
-function plain(input: string): string { return input.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/gi, ' ').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&amp;/gi, '&').trim(); }
+export function plainAnkiText(input: string): string {
+  return input
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?(?:address|article|aside|blockquote|div|dl|dt|dd|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|thead|tfoot|tr|ul)\b[^>]*>/gi, '\n')
+    .replace(/<\/?(?:td|th)\b[^>]*>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&')
+    .split('\n').map(line => line.replace(/[\t ]+/g, ' ').trim()).filter(Boolean).join('\n');
+}
 function conditionals(template: string, fields: Record<string, string>): string { return template.replace(/{{#([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, name, body) => fields[name]?.trim() ? body : '').replace(/{{\^([^}]+)}}([\s\S]*?){{\/\1}}/g, (_, name, body) => fields[name]?.trim() ? '' : body); }
 function cloze(text: string, index: number, answer: boolean): string { return text.replace(/{{c(\d+)::(.*?)(?:::(.*?))?}}/g, (_, number, value, hint) => Number(number) === index ? answer ? value : `[${hint || '…'}]` : value); }
 function renderMarkup(template: string, fields: Record<string, string>, front: string, clozeIndex?: number, answer = false): string {
@@ -38,7 +51,7 @@ function renderMarkup(template: string, fields: Record<string, string>, front: s
   output = output.replace(/{{cloze:([^}]+)}}/g, (_, name) => cloze(fields[name] ?? '', clozeIndex ?? 1, answer));
   return output.replace(/{{(?:text:|type:)?([^}:]+)}}/g, (_, name) => fields[name] ?? '');
 }
-function render(template: string, fields: Record<string, string>, front: string, clozeIndex?: number, answer = false): string { return plain(renderMarkup(template, fields, front, clozeIndex, answer).replace(/\[sound:[^\]]+]/g, '')); }
+function render(template: string, fields: Record<string, string>, front: string, clozeIndex?: number, answer = false): string { return plainAnkiText(renderMarkup(template, fields, front, clozeIndex, answer).replace(/\[sound:[^\]]+]/g, '')); }
 function mediaNames(markup: string, type: 'image' | 'audio'): string[] {
   const found = type === 'audio' ? [...markup.matchAll(/\[sound:([^\]]+)]/gi)].map(match => match[1]!) : [...markup.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)].map(match => match[1]!);
   return [...new Set(found.filter(name => !/^https?:/i.test(name)).map(name => { try { return decodeURIComponent(name); } catch { return name; } }))];
@@ -106,11 +119,11 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       const values = String(rawFields).split('\x1f'); if (values.some(value => value.length > MAX_CELL)) { excludedCards.add(id);addIssue('error','unsupported', 'Field exceeds 100,000 characters', String(noteId),id); continue; }
       const fields = Object.fromEntries(model.fields.map((name, index) => [name, values[index] ?? ''])), mapping = mappings.find(item => item.sourceSignature === model.signature);
       const template = model.cloze ? model.templates[0] : model.templates[Number(ordinal)]; if (!template) { excludedCards.add(id);addIssue('error','unsupported', 'Card references an unavailable template ordinal', `${model.name} / ${ordinal}`,id); continue; }
-      const unsafe = /<script|on\w+\s*=/i.test(template.q + template.a), mappedFront = plain(mappedValue(mapping, 'front', fields)), mappedAnswer = plain(mappedValue(mapping, 'answer', fields));
+      const unsafe = /<script|on\w+\s*=/i.test(template.q + template.a), mappedFront = plainAnkiText(mappedValue(mapping, 'front', fields)), mappedAnswer = plainAnkiText(mappedValue(mapping, 'answer', fields));
       if (unsafe && !(mappedFront && mappedAnswer)) { unsafeCards.add(id);addIssue('error','unsupported', 'Script-dependent or answer-checking template requires explicit safe field mapping', model.name,id); continue; }
       const clozeIndex = model.cloze ? Number(ordinal) + 1 : undefined, frontMarkup = unsafe ? mappedFront : renderMarkup(template.q, fields, '', clozeIndex, false), backTemplate = template.a.replace(/{{FrontSide}}/g, ''), backMarkup = unsafe ? mappedAnswer : renderMarkup(backTemplate, fields, '', clozeIndex, true);
       let front = model.cloze ? render(template.q, fields, '', clozeIndex, false) : mappedFront || render(template.q, fields, '', undefined, false), answer = model.cloze ? render(template.a, fields, front, clozeIndex, true) : mappedAnswer || render(template.a, fields, front, undefined, true);
-      if (!model.cloze && mappedFront && mappedAnswer && plain(frontMarkup).includes(mappedAnswer) && !plain(frontMarkup).includes(mappedFront)) [front, answer] = [mappedAnswer, mappedFront];
+      if (!model.cloze && mappedFront && mappedAnswer && plainAnkiText(frontMarkup).includes(mappedAnswer) && !plainAnkiText(frontMarkup).includes(mappedFront)) [front, answer] = [mappedAnswer, mappedFront];
       if (!answer) { excludedCards.add(id);addIssue('error','unsupported', 'Generated card has no answer after safe conversion', model.name,id); continue; }
       if (/{{(?:tts\b|(?:hint|furigana|kana|kanji|type):)|\[anki:tts/i.test(template.q + template.a)) {simplifiedCards.add(id);addIssue('info','simplification', 'Anki TTS, answer input or advanced field filters were reduced to learning text', `${model.name} / ${template.name}`,id);}
       const remoteMarkup=`${template.q}\n${template.a}\n${values.join('\n')}`;
@@ -122,9 +135,9 @@ export async function analyseAnkiPackage(bytes: Uint8Array, packageName: string,
       [...frontImages, ...backImages, ...frontAudioNames, ...backAudioNames].forEach(name => wantedMedia.add(name));
       const deckKey = Number(deckId), importedDeck=ensureDeck(deckKey);
       const mappedNames = new Set(Object.entries(mapping?.fields ?? {}).filter(([, target]) => target !== 'ignore').map(([name]) => name));
-      const rawMetadata = model.fields.filter(name => !mappedNames.has(name) && !front.includes(plain(fields[name] ?? '')) && !answer.includes(plain(fields[name] ?? ''))).map(name => `${name}: ${plain(fields[name] ?? '')}`).filter(line => !line.endsWith(': '));
-      const mappedNotes = plain(mappedValue(mapping, 'notes', fields)), image = frontImages[0], backImage = backImages[0] ?? image;
-      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: plain(mappedValue(mapping, 'pronunciation', fields)), meaning: plain(mappedValue(mapping, 'meaning', fields)), notes: [`Source note ${noteId} · ${model.name} / ${template.name}`, ...(mappedNotes ? [mappedNotes] : []), ...rawMetadata].join('\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`), ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
+      const rawMetadata = model.fields.filter(name => !mappedNames.has(name) && !front.includes(plainAnkiText(fields[name] ?? '')) && !answer.includes(plainAnkiText(fields[name] ?? ''))).map(name => `${name}: ${plainAnkiText(fields[name] ?? '')}`).filter(line => !line.endsWith(': '));
+      const mappedNotes = plainAnkiText(mappedValue(mapping, 'notes', fields)), image = frontImages[0], backImage = backImages[0] ?? image;
+      cards.push({ id, deckId: importedDeck.id,siblingGroupId:stable(`note-${guid}`), kind: image && !front ? 'visual' : 'text', front: front || 'Recall from the illustration', answer, pronunciation: plainAnkiText(mappedValue(mapping, 'pronunciation', fields)), meaning: plainAnkiText(mappedValue(mapping, 'meaning', fields)), notes: [`Source note ${noteId} · ${model.name} / ${template.name}`, ...(mappedNotes ? [mappedNotes] : []), ...rawMetadata].join('\n'), tags: String(rawTags).trim().split(/\s+/).filter(Boolean).slice(0, 30), revision: 1, suspended: false, rarity: suggestedRarity(`${guid}-${ordinal}`), ...(image ? { image: `pending:${image}`, backImage: `pending:${backImage}`, imageDescription: 'Imported illustration. Reveal for the answer.' } : {}), ...(frontAudioNames.length ? { frontAudio: frontAudioNames.map(name => `pending:${name}`) } : {}), ...(backAudioNames.length ? { backAudio: backAudioNames.map(name => `pending:${name}`) } : {}) });
       if (rowIndex % 100 === 0 || rowIndex === rows.length - 1) progress?.({ stage: 'content', label: 'Converting cards', completed: rowIndex + 1, total: rows.length });
     }
     abort(signal); const mediaEntry = zip.file('media'); let mediaMap: Record<string, string> = {}; if (mediaEntry) {

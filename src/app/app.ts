@@ -66,6 +66,7 @@ export class AppComponent {
   readonly cardAudioPlaying=signal(false);
   readonly feedbackPosition=signal({x:0,y:0});
   readonly openRatingHelp=signal<number|null>(null);
+  readonly mobileMoreOpen=signal(false);
   readonly searchResultIndex=signal(0);
   readonly focusLaunch=signal<FocusLaunch|undefined>(undefined);
   readonly settingsDeckId=signal('');
@@ -78,6 +79,12 @@ export class AppComponent {
     {id:'studio',label:'Design Studio',icon:'✎'},{id:'progress',label:'Progress',icon:'▥'},
     {id:'exchange',label:'Import / export',icon:'⇄'},{id:'settings',label:'Settings',icon:'⚙'},
   ];
+  readonly mobilePrimaryNavigation:{id:Screen|'more';label:string;icon:string}[]=[
+    {id:'library',label:'Decks',icon:'▤'},{id:'study',label:'Study',icon:'◈'},
+    {id:'collection',label:'Collection',icon:'✧'},{id:'progress',label:'Progress',icon:'▥'},
+    {id:'more',label:'More',icon:'•••'},
+  ];
+  readonly mobileSecondaryNavigation=this.navigation.filter(item=>['dashboard','focus','studio','exchange','settings'].includes(item.id));
   search='';selectedDeck='';editor:CardContent|null=null;deckEditor:Deck|null=null;tagInput='';
   authorPreset:'basic'|'image-first'|'reversible'='basic';authorPreviewRevealed=false;
   selectedCardIds=new Set<string>();bulkRarity:Rarity|''='';bulkDesignSetId='__keep__';bulkFinish:FinishPreset|''='';
@@ -186,7 +193,12 @@ export class AppComponent {
   toggleAutoAdvance():void{void (this.autoAdvancePaused()?this.resumeAutoAdvance():this.pauseAutoAdvance());}
   onCardAudioPlaying(playing:boolean):void{this.cardAudioPlaying.set(playing);}
   private async waitForAnswerDwell(run:number):Promise<void>{const seconds=this.currentPreset()?.autoAdvanceEnabled?this.currentPreset()?.autoAnswerSeconds??0:0;if(!seconds||!this.answerRevealedAt)return;const remaining=Math.max(0,seconds*1000-(performance.now()-this.answerRevealedAt));if(!remaining)return;this.settleAnswerDwell();await new Promise<void>(resolve=>{this.answerDwellResolve=resolve;this.answerDwellTimer=window.setTimeout(()=>this.settleAnswerDwell(),Math.min(120000,remaining));});if(run!==this.studyPresentationRun)return;}
-  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');this.mobileMoreOpen.set(false);this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  mobileTitle():string{return this.editor?'Card editor':this.deckEditor?'Deck editor':({dashboard:'HoloRecall',library:'Decks',focus:'Focus',study:this.session()?.mode==='practice'?'Practice':'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[this.screen()];}
+  mobileHasBack():boolean{return !!this.editor||!!this.deckEditor||['focus','study','results','studio','exchange','settings'].includes(this.screen());}
+  mobileBack():void{if(this.editor){this.cancelCardEditor();return;}if(this.deckEditor){this.deckEditor=null;return;}if(this.screen()==='study'||this.screen()==='focus')this.go('library');else if(this.screen()==='results')this.go('dashboard');else this.go('dashboard');}
+  mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
+  toggleMobileMore():void{this.mobileMoreOpen.update(open=>!open);}
   openStudySettings(deckId?:string):void{if(this.screen()==='study')void this.pauseAutoAdvance(true);this.go('settings');this.settingsDeckId.set(deckId??'');}
   topDecks():Deck[]{const state=this.data();if(!state)return[];const ids=new Set(state.decks.map(deck=>deck.id));return state.decks.filter(deck=>!deck.parentId||!ids.has(deck.parentId));}
   deckChildren(id:string):Deck[]{return this.data()?.decks.filter(deck=>deck.parentId===id)??[];}
@@ -312,7 +324,7 @@ export class AppComponent {
   private feedback(cue:'cardReveal'|'ratingAccepted'|'cardDeal'|'sessionComplete'|'cosmeticUnlock'|'error',rating?:1|2|3|4|5):void{this.feedbackService??=import('./platform/interaction-feedback').then(module=>this.injector.get(module.InteractionFeedback));void this.feedbackService.then(service=>cue==='ratingAccepted'?service.ratingAccepted(rating!):service[cue]()).catch(()=>undefined);}
   private handleNativeBack():boolean{if(this.editor){this.cancelCardEditor();return true;}if(this.deckEditor){this.deckEditor=null;return true;}if(this.screen()==='dashboard')return false;if(this.screen()==='study'){this.go('library');return true;}this.go('dashboard');return true;}
   @HostListener('document:pointerdown',['$event']) dismissRatingHelp(event:PointerEvent):void{if(!(event.target as HTMLElement).closest('.rating-info')){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));}}
-  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));return;}const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if(event.code==='Space'&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
+  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.mobileMoreOpen.set(false);this.ratingTips?.forEach(tip=>tip.hide(0));return;}const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if((event.code==='Space'||event.key==='Enter')&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
   edit(card?:CardContent,deckId?:string):void{this.go('library');if(this.screen()!=='library')return;this.tagInput=card?.tags.join(', ')??'';this.authorPreset=card?.kind==='visual'?'image-first':'basic';this.authorPreviewRevealed=false;this.editor=card?structuredClone(card):this.blankCard(deckId);this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}
   duplicateCard(card:CardContent):void{this.edit({...structuredClone(card),id:crypto.randomUUID(),revision:0},card.deckId);this.message.set('Duplicate draft created. Review it before saving.');}
   setAuthorPreset(preset:'basic'|'image-first'|'reversible'):void{if(!this.editor)return;this.authorPreset=preset;this.editor.kind=preset==='image-first'?'visual':'text';this.editor={...this.editor};}
