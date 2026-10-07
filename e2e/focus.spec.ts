@@ -1,10 +1,10 @@
-import { expect, openApp, snapshot, test } from './helpers';
+import { expect, navigate, openApp, revealCard, snapshot, test } from './helpers';
 
 test('HR-FOCUS practice from Collection never mutates FSRS, limits or rewards and recovers on reload',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);const before=await snapshot(page);
   await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('button',{name:'Practice this card'}).click();
-  await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Practice · Collection cards');
-  await page.getByRole('button',{name:/Reveal answer/}).click();await page.getByRole('button',{name:/1 Again Forgot/}).click();
+  await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Collection cards');
+  await revealCard(page);await page.getByRole('button',{name:/1 Again Forgot/}).click();
   await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();const after=await snapshot(page);
   expect(after.practiceEvents).toHaveLength(1);expect(after.events).toEqual(before.events);expect(after.states).toEqual(before.states);expect(after.rewardEvents).toEqual(before.rewardEvents);expect(after.cardControls).toEqual(before.cardControls);expect(after.todayOverrides).toEqual(before.todayOverrides);
   await expect(page.getByText(/1 card is still at Confidence 1 or 2/)).toBeVisible();await expect(page.getByRole('heading',{name:'Cosmetic progress'})).toHaveCount(0);
@@ -34,7 +34,7 @@ test('HR-FOCUS consecutive Practice ratings retain visible cards and never creat
 });
 
 test('HR-FOCUS @ios-compact @ios-large @ios-landscape reflows quick actions and Practice player',async({page})=>{
-  await openApp(page);await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Focus',exact:true}).click();await page.addStyleTag({content:'html{font-size:200%}'});
+  await openApp(page);await navigate(page,'Focus');await page.addStyleTag({content:'html{font-size:200%}'});
   await expect(page.getByRole('heading',{name:'Focus',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
-  await page.getByRole('button',{name:/Preview new cards/}).click();await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.getByRole('button',{name:/Preview new cards/}).click();await expect(page.getByRole('region',{name:'Current flashcard'})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
 });

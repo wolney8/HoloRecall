@@ -115,11 +115,11 @@ input,textarea,select,[contenteditable=true]{scroll-margin-block:18vh}
   .reveal-action,.keyboard-help{display:none}
   .ratings{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%;margin:5px 0 0}
   .rating-row{display:block;min-width:0}
-  .rating-row .rating-choice{width:100%;min-width:0;min-height:72px;padding:6px 2px!important;border-radius:14px}
+  .rating-row .rating-choice{width:100%;min-width:0;min-height:84px!important;padding:6px 2px!important;border-radius:14px}
   .rating-content{display:flex;flex-direction:column;justify-content:center;gap:3px;width:100%;max-width:none;text-align:center}
   .rating-number{width:28px;height:28px;font-size:14px}
   .rating-grade{margin:0;font-size:9px;line-height:1.1}
-  .rating-label{font-size:10px!important;line-height:1.15;overflow-wrap:normal;hyphens:auto}
+  .rating-label{font-size:10px!important;line-height:1.15;overflow-wrap:normal;word-break:normal;hyphens:none}
   .rating-label small{font-size:9px;line-height:1.1}
   .rating-info{display:none!important}
   .mobile-rating-help{display:block;margin:7px auto 0;padding-top:0;border-top:0;text-align:start}
@@ -138,7 +138,7 @@ input,textarea,select,[contenteditable=true]{scroll-margin-block:18vh}
 @media(orientation:landscape) and (min-width:620px) and (max-height:600px){
   .study-mode main{padding-top:4px}
   .session-bar{margin-bottom:4px}
-  .study-layout{display:grid;grid-template-columns:minmax(190px,270px) minmax(330px,1fr);gap:24px;align-items:center;justify-content:center}
+  .study-layout{display:grid;grid-template-columns:minmax(190px,270px) minmax(330px,1fr);gap:24px;align-items:start;justify-content:center}
   .study-card-area{width:min(30vw,54vh,270px)}
   .study-controls{width:100%;text-align:start}
   .study-interaction h2{text-align:start}

@@ -1,4 +1,4 @@
-import { test, expect, openApp, snapshot, confidentReview, navigate, selectMaterial, expectNoOverflow } from './helpers';
+import { test, expect, openApp, snapshot, confidentReview, navigate, revealCard, selectMaterial, expectNoOverflow } from './helpers';
 import { readFile } from 'node:fs/promises';
 import type { State } from '../src/domain/models';
 
@@ -107,7 +107,7 @@ test('mobile layout and reduced motion suppress shimmer, reveal and pointer anim
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' });
   await openApp(page); await expectNoOverflow(page);
   await page.getByRole('button', { name: /Start studying/ }).click(); await expectNoOverflow(page);
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await revealCard(page);
   await expect(page.locator('.card-motion')).not.toHaveClass(/motion-enabled/);
   expect(await page.locator('.card-turn').evaluate(element => element.getAnimations().length)).toBe(0);
   await expectNoOverflow(page); await navigate(page, 'Collection');

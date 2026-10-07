@@ -1,4 +1,4 @@
-import { expect, test, expectNoOverflow, openApp, snapshot } from './helpers';
+import { expect, test, expectNoOverflow, navigate, openApp, snapshot } from './helpers';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
 import { readFile } from 'node:fs/promises';
@@ -21,7 +21,7 @@ async function largeApkg(): Promise<Buffer> {
 }
 
 test('HR-IMPORT-01 analyses, previews and atomically imports an Anki package', async ({ page }) => {
-  await openApp(page); await page.getByRole('button', { name: 'Import / export' }).click();
+  await openApp(page); await navigate(page, 'Import / export');
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByText('legacy-anki2')).toBeVisible(); await expect(page.getByText('1', { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/1 new · 0 updates/)).toBeVisible();await expect(page.getByText("Anki learning history isn't imported. These cards will use your HoloRecall study settings.")).toBeVisible();await page.getByLabel('Study using').click();await page.getByRole('option',{name:'Light workload'}).click(); await page.getByRole('button', { name: 'Import 1 supported cards' }).click();
@@ -93,7 +93,7 @@ test('HR-IMPORT-01 keeps the interface responsive and cancels background analysi
 });
 
 test('HR-IMPORT-01 mapping reflows at enlarged text on phone profiles @ios-compact @ios-large @ios-landscape', async ({ page }) => {
-  await openApp(page); await page.getByRole('button', { name: 'Import / export' }).click();
+  await openApp(page); await navigate(page, 'Import / export');
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByText('Custom field mapping').click();
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');

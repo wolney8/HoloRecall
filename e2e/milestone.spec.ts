@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import type { State } from '../src/domain/models';
-import { test, expect, openApp, snapshot, confidentReview, navigate, selectMaterial, expectNoOverflow } from './helpers';
+import { test, expect, openApp, snapshot, confidentReview, navigate, revealCard, selectMaterial, expectNoOverflow } from './helpers';
 
 async function localArtwork(page: Page): Promise<{ name: string; mimeType: string; buffer: Buffer }> {
   const base64 = await page.evaluate(() => {
@@ -166,9 +166,11 @@ test('all 16 Italian subjects display distinct intended illustrations on both fa
 
 for (const theme of ['Light', 'Dark']) test(`mobile ${theme.toLowerCase()} layout fits Study, Collection, Design Studio and Progress`, async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' }); await openApp(page);
-  await appearance(page).getByRole('radio', { name: theme, exact: true }).click(); await expectNoOverflow(page);
-  await page.getByRole('button', { name: /Start studying/ }).click(); await page.getByRole('button', { name: /Reveal answer/ }).click();
-  for (const screen of ['Study', 'Collection', 'Design Studio', 'Progress']) {
+  await navigate(page, 'Settings'); await page.getByRole('radio', { name: theme, exact: true }).click(); await navigate(page, 'Dashboard'); await expectNoOverflow(page);
+  await page.getByRole('button', { name: /Start studying/ }).click(); await revealCard(page);
+  await expect(page.getByRole('banner').getByText('Study', { exact: true })).toBeVisible(); await expectNoOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath(`study-${theme.toLowerCase()}.png`), fullPage: true });
+  for (const screen of ['Collection', 'Design Studio', 'Progress']) {
     await navigate(page, screen); await expect(page.getByRole('heading', { name: screen, exact: true })).toBeVisible();
     await expectNoOverflow(page);
     if (screen === 'Design Studio') await page.getByRole('radiogroup', { name: 'Preview theme' }).getByRole('radio', { name: theme, exact: true }).click();

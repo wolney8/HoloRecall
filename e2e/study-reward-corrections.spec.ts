@@ -1,4 +1,4 @@
-import { test, expect, openApp, snapshot } from './helpers';
+import { test, expect, openApp, revealCard, snapshot } from './helpers';
 
 test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with accessible help', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -10,7 +10,7 @@ test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with acces
   const reserved = await controls.boundingBox();
   expect(before).toBeTruthy(); expect(reserved).toBeTruthy();
   expect(reserved!.x).toBeGreaterThan(before!.x + before!.width);
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await revealCard(page);
   const after = await stage.boundingBox();
   expect(after).toEqual(before);
   const rows = page.locator('.rating-row');
@@ -118,7 +118,7 @@ test('HR-UX-13 @ios-compact stacks readable controls below the stable card at 20
   await page.addStyleTag({ content: 'html{font-size:200%}' });
   await page.getByRole('button', { name: /Start studying/ }).click();
   const stageBottom = await page.getByTestId('study-deck-stage').evaluate(node => node.getBoundingClientRect().bottom + scrollY);
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await revealCard(page);
   const controlsTop = await page.locator('.study-controls').evaluate(node => node.getBoundingClientRect().top + scrollY);
   expect(controlsTop).toBeGreaterThan(stageBottom - 2);
   await expect(page.locator('.rating-row')).toHaveCount(5);

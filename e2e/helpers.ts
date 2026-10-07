@@ -24,10 +24,13 @@ export async function navigate(page: Page, name: string): Promise<void> {
   const primary = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name, exact: false });
   if (await primary.isVisible()) { await primary.click(); return; }
   const more = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'More', exact: true });
-  if (await more.isVisible()) {
+  const secondaryDestination = ['Dashboard', 'Focus', 'Design Studio', 'Import / export', 'Settings'].some(item => name.startsWith(item));
+  if (secondaryDestination && await more.isVisible()) {
     await more.click();
     const secondary = page.getByRole('navigation', { name: 'Secondary navigation' }).getByRole('button', { name, exact: false });
-    if (await secondary.isVisible()) { await secondary.click(); return; }
+    await secondary.waitFor({ state: 'visible' });
+    await secondary.click();
+    return;
   }
   // Focused Study intentionally hides navigation. End it explicitly so tests follow the real user path.
   if (name === 'Study' && await page.getByRole('heading', { name: 'Study', exact: true }).isVisible()) return;
@@ -38,6 +41,7 @@ export async function navigate(page: Page, name: string): Promise<void> {
     if (await button.isVisible()) await button.click();
     else {
       await page.getByRole('button', { name: 'Done', exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Study dashboard', exact: true })).toBeVisible();
       await navigate(page, name);
     }
     return;
@@ -59,10 +63,15 @@ export async function snapshot(page: Page): Promise<State> {
   }));
 }
 export async function confidentReview(page: Page): Promise<void> {
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await revealCard(page);
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.locator('.session-bar')).toContainText('1 / 10');
+}
+export async function revealCard(page: Page): Promise<void> {
+  const visibleAction = page.getByRole('button', { name: /Reveal answer/ });
+  if (await visibleAction.isVisible()) await visibleAction.click();
+  else await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 80, y: 80 } });
 }
 export async function expectNoOverflow(page: Page): Promise<void> {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);

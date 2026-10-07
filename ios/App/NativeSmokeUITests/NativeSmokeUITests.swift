@@ -37,6 +37,7 @@ final class NativeSmokeUITests: XCTestCase {
         tapButton("End session")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'SESSION' OR label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'" )).firstMatch.waitForExistence(timeout: 8))
         attachScreenshot("mobile-session-complete")
+        tapButton("Done")
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
         tapButton("Progress")
