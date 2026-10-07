@@ -115,8 +115,13 @@ function mappingProblem(mapping: AnkiMappingPreset | undefined, template: { q: s
   if (!mapping) return undefined;
   const frontNames = mappedFieldNames(mapping, 'front'), answerNames = mappedFieldNames(mapping, 'answer');
   const questionFields = templateFieldNames(template.q), answerFields = templateFieldNames(template.a.replace(/{{FrontSide}}/g, ''));
-  if (frontNames.length && !frontNames.some(name => questionFields.has(name))) return `Front mapping does not match a field used by the question template (${frontNames.join(', ')}).`;
-  if (answerNames.length && !answerNames.some(name => answerFields.has(name))) return `Answer mapping does not match a field used by the answer template (${answerNames.join(', ')}).`;
+  const frontInQuestion = frontNames.some(name => questionFields.has(name));
+  const frontInAnswer = frontNames.some(name => answerFields.has(name));
+  const answerInQuestion = answerNames.some(name => questionFields.has(name));
+  const answerInAnswer = answerNames.some(name => answerFields.has(name));
+  if (frontNames.length && !frontInQuestion && !frontInAnswer) return `Front mapping does not match a field used by this card template (${frontNames.join(', ')}).`;
+  if (answerNames.length && !answerInQuestion && !answerInAnswer) return `Answer mapping does not match a field used by this card template (${answerNames.join(', ')}).`;
+  if (frontNames.length && answerNames.length && !((frontInQuestion && answerInAnswer) || (frontInAnswer && answerInQuestion))) return 'Front and answer mappings do not form a supported normal or reversed card pair.';
   const suspicious = answerNames.find(name => /^(?:lang(?:uage)?|locale|language[ _-]?code)$/i.test(name.trim()) && /^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})?$/i.test(plainAnkiText(fields[name] ?? '')));
   return suspicious ? `Answer mapping points to metadata-like field ${suspicious}; choose the learning-answer field.` : undefined;
 }

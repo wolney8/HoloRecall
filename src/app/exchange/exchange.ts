@@ -55,7 +55,7 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
       </section>
     }
     <section class="exchange-panel anki-import" [class.contextual-update]="!!updateDeckId" aria-label="Anki package import" hrReveal>
-      <p class="eyebrow">LOCAL PACKAGE CONVERSION</p><h2>{{updateDeckId?'Choose the revised package':'Import an Anki deck'}}</h2><p>{{updateDeckId?'The selected package must contain this deck’s stable Anki source identity.':'Choose an .apkg file. HoloRecall converts safe learning content locally without importing Anki scheduling history.'}}</p>
+      <p class="eyebrow">LOCAL PACKAGE CONVERSION</p><h2>{{updateDeckId?'Choose the revised package':'Import an Anki deck'}}</h2><p>{{updateDeckId?'The selected package must contain this deck’s stable Anki source identity.':'Choose an .apkg file. HoloRecall converts safe learning content locally and never imports scheduling history or earned cosmetics.'}}</p>
       <label class="file-label" for="anki-import">Anki package</label><input id="anki-import" type="file" accept=".apkg,application/zip" (change)="selectAnki($event)" [disabled]="!!busy() || !ankiAllowed" />
       @if(!ankiAllowed){<p class="failure" role="alert">{{ankiUnavailable}}</p>}
       @if(ankiRunning()){<button mat-stroked-button type="button" (click)="cancelAnki()">Cancel analysis</button>}

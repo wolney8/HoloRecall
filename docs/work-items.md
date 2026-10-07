@@ -193,8 +193,8 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **FAILED — REAL USER DATA DEFECT REPRODUCED.** Will's 7 October 2026 update of the exact package reproduced malformed formatting and introduced incorrect primary answers rendered as `it`. Automated fixtures remain supporting evidence only. After HR-BUG-ANKI-05–07 and the related navigation/Study fixes are verified, this returns to `VERIFY — USER REAL-PACKAGE RETEST REQUIRED`; only Will can close it.
-- **Commits:** Tracker checkpoint in the final milestone documentation commit; manual evidence pending.
+- **Verification / evidence:** **VERIFY — USER REAL-PACKAGE RETEST REQUIRED.** Will's 7 October 2026 update reproduced malformed formatting and incorrect primary answers rendered as `it`. The diagnosed field-selection class is fixed and covered by sanitised domain/browser fixtures, but the exact package has not been reprocessed. Only Will's manual update/review can close this item.
+- **Commits:** Tracking `1539f81`; implementation `6cc248e` and the closing stop-ship checkpoint; exact-package evidence pending.
 
 ### HR-STUDY-03 — Supported FSRS settings
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -810,18 +810,18 @@ Source: Will's 7 October 2026 manual test of the exact real Anki package. Normal
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-BUG-ANKI-05 | Updated cards receive incorrect `it` answer | Import/data integrity | Stop-ship recovery | P0 | VERIFY | Existing mapping presets, source baselines and update preview |
-| HR-BUG-ANKI-06 | Contextual Anki update workflow | Import/UX | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-05 and lazy exchange route |
-| HR-BUG-ANKI-07 | Update visual hierarchy and spacing | Import/UX | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-06 and Material 3 tokens |
-| HR-BUG-NAV-02 | Breadcrumbs break page layout | Navigation/layout | Stop-ship recovery | P0 | VERIFY | Shared navigation context component |
-| HR-BUG-STUDY-02 | Excessive Study dead space | Study/layout | Stop-ship recovery | P0 | VERIFY | HR-BUG-NAV-02 and responsive Study workspace |
-| HR-BUG-STUDY-03 | Protect imported-answer semantics | Import/scheduler boundary | Stop-ship recovery | P0 | VERIFY | HR-BUG-ANKI-05 and explicit mapping provenance |
+| HR-BUG-ANKI-05 | Updated cards receive incorrect `it` answer | Import/data integrity | Stop-ship recovery | P0 | DONE | Existing mapping presets, source baselines and update preview |
+| HR-BUG-ANKI-06 | Contextual Anki update workflow | Import/UX | Stop-ship recovery | P0 | DONE | HR-BUG-ANKI-05 and lazy exchange route |
+| HR-BUG-ANKI-07 | Update visual hierarchy and spacing | Import/UX | Stop-ship recovery | P0 | DONE | HR-BUG-ANKI-06 and Material 3 tokens |
+| HR-BUG-NAV-02 | Breadcrumbs break page layout | Navigation/layout | Stop-ship recovery | P0 | DONE | Shared navigation context component |
+| HR-BUG-STUDY-02 | Excessive Study dead space | Study/layout | Stop-ship recovery | P0 | DONE | HR-BUG-NAV-02 and responsive Study workspace |
+| HR-BUG-STUDY-03 | Protect imported-answer semantics | Import/scheduler boundary | Stop-ship recovery | P0 | DONE | HR-BUG-ANKI-05 and explicit mapping provenance |
 
 Acceptance is the complete stop-ship request. The lead owns mapping/source schema, persistence integration, shared navigation and tracker state. Work must preserve review events, FSRS state, due dates, presets, cosmetics, Focus history, hierarchy and media. All destructive verification uses sanitised fixtures; the user's collection is read-only.
 
 - **Root cause / implementation batch:** the UI mapping suggester treated any unrecognised ordinal-1 field as Answer. A sanitised `Prompt / Language / Pronunciation / Italian` model therefore mapped `Language = it` over the correct `{{Italian}}` template result; persistence and CardRenderer then correctly retained/displayed that corrupted converted value. Positional inference is removed. A shared conservative suggester uses semantic names plus unambiguous template-side references, mappings are checked against the canonical template, one preset is retained per signature, and each converted card records prompt/answer provenance. Unresolved semantics block Apply.
 - **Context/layout batch:** the deck action now opens the platform file chooser directly and passes the chosen package into a focused lazy update screen. Generic exports/downloads are absent, conflicts require an explicit choice, representative structured Before/After values are visible, and success returns to the originating deck. The breadcrumb defect was an unscoped legacy `nav` column/full-width-button rule; shared breadcrumbs now explicitly own a compact wrapping row, omit the duplicate current-page crumb, and the Study toolbar/workspace margins are compacted without negative offsets.
-- **Verification so far:** focused importer/store tests **29/29** and production build pass. Targeted Chromium/WebKit journeys passed **12/14**; the two failures were a new assertion comparing element top edges despite intentionally different crumb/separator heights. A corrected centre-line assertion then passed **2/2**. Full regression, Simulator evidence and visual captures remain before DONE.
+- **Final verification:** controlled unit/domain **158/158** and the complete Playwright matrix **176/176** pass across Chromium, desktop WebKit and compact/large/landscape WebKit profiles. Targeted animation-enabled update/breadcrumb/Study evidence passes **6/6** in Chromium/WebKit. The production build is **842.63 kB raw / 199.84 kB transfer**, below the unchanged 850 kB ceiling; Exchange remains a 54.60 kB lazy chunk. Packaged iPhone 17 Pro / iOS 26.5 XCUITest passes the three-card visibility, Results and navigation smoke **1/1 in 40.646 s**. Evidence is under `.runtime/evidence/hr-stopship-20261007/`. The earlier **172/176** broad run exposed two reversed-template guard failures and two changed-copy expectations; the implementation/copy were corrected, the affected set passed **18/18**, then the clean full run passed. No timeout or assertion strength was weakened.
 
 ## Preserved completed history
 
