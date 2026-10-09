@@ -56,7 +56,12 @@ test('HR-UX-09 all five accepted ratings show distinct save-gated feedback once'
     await page.getByRole('button', { name: new RegExp(`^${rating} `) }).click();
     const feedback = page.locator(`.confidence-feedback[data-rating="${rating}"]`);
     await expect(feedback).toBeVisible();
-    const signature = await feedback.evaluate(node => [...node.querySelectorAll<HTMLElement>('span')].flatMap(item => item.getAnimations().map(animation => (animation.effect as KeyframeEffect).getTiming().duration)).join(','));
+    const signature = await page.waitForFunction(value => {
+      const node = document.querySelector(`.confidence-feedback[data-rating="${value}"]`);
+      if (!node) return false;
+      const durations = [...node.querySelectorAll<HTMLElement>('span')].flatMap(item => item.getAnimations().map(animation => (animation.effect as KeyframeEffect).getTiming().duration)).join(',');
+      return durations || false;
+    }, rating).then(handle => handle.jsonValue() as Promise<string>);
     expect(signature).not.toBe('');
     signatures.add(signature);
     await page.waitForTimeout(780);

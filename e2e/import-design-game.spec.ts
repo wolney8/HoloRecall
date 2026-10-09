@@ -39,12 +39,10 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
   await expect(page.getByText('legacy-anki21')).toBeVisible();
   await expect(page.getByText('5', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('7', { exact: true }).first()).toBeVisible();
-  await page.getByText('Review field mapping').click();
-  await expect(page.getByRole('heading', { name: 'HoloRecall Custom Audio' })).toBeVisible();
+  await expect(page.getByText('Advanced field enrichment')).toBeVisible();
+  await expect(page.locator('.mapping-panel')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.evaluate(() => document.documentElement.style.fontSize = '200%'); await expectNoOverflow(page); await page.evaluate(() => document.documentElement.style.fontSize = '100%');
-  await page.getByRole('button', { name: 'Use mapping and refresh preview' }).click();
-  await expect(page.getByText(/reviewed mapping is reflected/i)).toBeVisible();
   await page.getByRole('button', { name: 'Import 7 supported cards' }).click();
   await expect(page.getByText(/Imported 7 new and 0 changed Anki cards/)).toBeVisible();
 
@@ -91,12 +89,12 @@ test('HR-IMPORT-01 keeps the interface responsive and cancels background analysi
   expect(await snapshot(page)).toEqual(before);
 });
 
-test('HR-IMPORT-01 mapping reflows at enlarged text on phone profiles @ios-compact @ios-large @ios-landscape', async ({ page }) => {
+test('HR-IMPORT-01 advanced enrichment reflows at enlarged text on phone profiles @ios-compact @ios-large @ios-landscape', async ({ page }) => {
   await openApp(page); await navigate(page, 'Import / export');
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
-  await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByText('Review field mapping').click();
+  await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByRole('button',{name:'Advanced field enrichment'}).click();
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
-  await expect(page.getByRole('button', { name: 'Use mapping and refresh preview' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh compatibility preview' })).toBeVisible();
   await expectNoOverflow(page);
 });
 

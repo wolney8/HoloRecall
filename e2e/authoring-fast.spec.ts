@@ -3,7 +3,7 @@ import { test, expect, navigate, openApp, selectMaterial, snapshot } from './hel
 test('HR-AUTH-01 creates cards quickly, retains safe defaults and protects drafts', async ({ page }) => {
   await openApp(page);
   await navigate(page, 'Decks');
-  await page.getByRole('button', { name: 'Add card', exact: true }).first().click();
+  const journey=page.locator('.deck-journey').first();await journey.getByRole('button',{name:'More deck actions'}).click();await journey.getByRole('menuitem',{name:'Add card',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Create card' })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Deck', exact: true })).toContainText('Italian essentials');
   await page.getByLabel('Front text / library prompt').fill('la sera');

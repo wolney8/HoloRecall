@@ -12,10 +12,8 @@ import { LocalStudyStore } from '../data/study-store';
   template:`
     @if(deck){
       <section class="panel editor-controls"><div><mat-form-field appearance="outline"><mat-label>Study preset</mat-label><mat-select name="deck-study-preset" [(ngModel)]="deck.studyPresetId"><mat-option value="">Inherit Balanced</mat-option>@for(preset of presets;track preset.id){<mat-option [value]="preset.id">{{preset.name}}</mat-option>}</mat-select></mat-form-field><label class="upload-field">Deck cover · PNG / WebP / JPEG<input type="file" accept="image/png,image/webp,image/jpeg" (change)="coverUpload.emit($event)" [disabled]="busy"></label>@if(deck.coverImage){<div class="image-reference"><img [src]="store.mediaUrl(deck.coverImage)" alt="Deck cover preview"><button mat-button type="button" (click)="deck.coverImage=undefined">Remove cover</button></div>}</div>
-      @if(isAnki(deck)){<div><span class="status-chip">Anki source</span><p class="hint">{{deck.ankiSource?.sourcePath}}</p><div class="actions"><button mat-stroked-button type="button" (click)="manage.emit({id:deck.id,mode:'update'})">Update from Anki package</button><button mat-button type="button" (click)="manage.emit({id:deck.id,mode:'repair'})">Repair imported content</button><button mat-button type="button" (click)="manage.emit({id:deck.id,mode:'mapping'})">Review field mapping</button></div></div>}</section>
+      @if(isAnki(deck)){<div><span class="status-chip">Imported from Anki</span><p class="hint">Linked source: {{deck.ankiSource?.sourcePath}}</p><button mat-button type="button" (click)="manage.emit(deck.id)">Manage Anki source</button></div>}</section>
       @if(existing){<div class="actions destructive"><button mat-button class="danger-action" type="button" (click)="deleteDeck.emit()">Permanently delete deck…</button></div>}
-    }@else if(imported.length){
-      <section class="panel source-list" aria-label="Imported deck source management">@for(item of imported;track item.id){<div><span><strong>{{item.name}}</strong><small>Anki source · {{item.ankiSource?.sourcePath}}</small></span><div class="actions"><button mat-stroked-button (click)="manage.emit({id:item.id,mode:'update'})">Update from Anki package</button><button mat-button (click)="manage.emit({id:item.id,mode:'repair'})">Repair imported content</button><button mat-button (click)="manage.emit({id:item.id,mode:'mapping'})">Review field mapping</button></div></div>}</section>
     }
   `,
   styles:[`.editor-controls{display:grid;grid-template-columns:minmax(14rem,22rem) minmax(0,1fr);gap:1rem;align-items:start}.source-list>div{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.5rem 0}.source-list small{display:block;color:var(--mat-sys-on-surface-variant);margin-top:.25rem}.destructive{margin-block:.5rem 1rem}@media(max-width:760px){.editor-controls{grid-template-columns:1fr}.source-list>div{align-items:flex-start;flex-direction:column}}`]
@@ -28,7 +26,7 @@ export class DeckSourceControlsComponent{
   @Input() busy=false;
   @Input() existing=false;
   @Output() readonly coverUpload=new EventEmitter<Event>();
-  @Output() readonly manage=new EventEmitter<{id:string;mode:'update'|'repair'|'mapping'}>();
+  @Output() readonly manage=new EventEmitter<string>();
   @Output() readonly deleteDeck=new EventEmitter<void>();
   isAnki(deck:Deck):boolean{return deck.ankiSource?.kind==='anki';}
   get imported():Deck[]{const ids=new Set(this.decks.map(deck=>deck.id));return this.decks.filter(deck=>(!deck.parentId||!ids.has(deck.parentId))&&this.isAnki(deck));}

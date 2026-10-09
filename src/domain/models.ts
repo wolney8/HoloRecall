@@ -41,6 +41,8 @@ export interface AnkiCardSource {
   modelName: string;
   templateName: string;
   modelSignature: string;
+  sourceSnapshotId?: string;
+  sourceTemplateId?: string;
   importedContentHash: string;
   /** Raw Anki note/template input fingerprint. Independent of converted HoloRecall content. */
   sourceContentFingerprint?: string;
@@ -65,6 +67,23 @@ export interface AnkiCardSource {
     frontFields: string[];
     answerFields: string[];
   };
+}
+export interface AnkiSourceField { id: string; name: string; ordinal: number }
+export interface AnkiSourceTemplate { id: string; name: string; ordinal: number; question: string; answer: string }
+export interface AnkiSourceNoteType { id: string; name: string; cloze: boolean; fields: AnkiSourceField[]; templates: AnkiSourceTemplate[]; signature: string }
+export interface AnkiSourceNote { id: string; guid: string; noteTypeId: string; fields: Record<string,string>; tags: string[]; modified?: number }
+export interface AnkiSourceCard { id: string; noteId: string; templateId: string; templateOrdinal: number; sourceDeckId: string }
+/** Compact, inert Anki source. It contains no scheduling/review state and no executable package bytes. */
+export interface AnkiSourceSnapshot {
+  id: string;
+  version: 1;
+  packageVariant: 'legacy-anki2' | 'legacy-anki21' | 'modern-anki21b';
+  sourceDecks: Array<{ id: string; path: string; parentId?: string }>;
+  noteTypes: AnkiSourceNoteType[];
+  notes: AnkiSourceNote[];
+  cards: AnkiSourceCard[];
+  media: Array<{ name: string; assetId: string }>;
+  contentHash: string;
 }
 export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId';
 export interface AnkiDeckSource {
@@ -212,7 +231,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 7;
+  schemaVersion: 8;
   version: number;
   userId: string;
   decks: Deck[];
@@ -227,6 +246,7 @@ export interface State {
   preferences: Preferences;
   scheduler: { version: string; configVersion: string; parameters: FSRSParameters };
   ankiMappings: AnkiMappingPreset[];
+  ankiSources: AnkiSourceSnapshot[];
   studyPresets:StudyPreset[];
   todayOverrides:TodayStudyOverride[];
   cardControls:Record<string,CardControl>;
@@ -319,5 +339,5 @@ export interface RewardReversal {
 }
 export type RewardEvent = RewardContribution | RewardUnlock | RewardReversal;
 export interface ContentImport {
-  decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[];
+  decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[];
 }

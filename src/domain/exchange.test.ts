@@ -21,7 +21,7 @@ function sample(): ContentBundle {
   };
 }
 
-function sourceSample():ContentBundle{const bundle=sample();bundle.decks[0]!.ankiSource={kind:'anki',sourceDeckId:'10',sourcePath:'Italiano',importedContentHash:'1234abcd'};bundle.cards[0]!.ankiSource={kind:'anki',noteGuid:'guid',noteId:'100',templateOrdinal:0,modelName:'Basic',templateName:'Card 1',modelSignature:'anki-model-v1-abcd',importedContentHash:'89abcdef'};return bundle;}
+function sourceSample():ContentBundle{const bundle=sample(),sourceId='anki-source-test';bundle.decks[0]!.ankiSource={kind:'anki',sourceDeckId:'10',sourcePath:'Italiano',importedContentHash:'1234abcd'};bundle.cards[0]!.ankiSource={kind:'anki',noteGuid:'guid',noteId:'100',templateOrdinal:0,modelName:'Basic',templateName:'Card 1',modelSignature:'anki-model-v1-abcd',sourceSnapshotId:sourceId,sourceTemplateId:'template-0',importedContentHash:'89abcdef'};bundle.ankiSources=[{id:sourceId,version:1,packageVariant:'legacy-anki2',sourceDecks:[{id:'10',path:'Italiano'}],noteTypes:[{id:'model-1',name:'Basic',cloze:false,fields:[{id:'field-front',name:'Front',ordinal:0},{id:'field-back',name:'Back',ordinal:1}],templates:[{id:'template-0',name:'Card 1',ordinal:0,question:'{{Front}}',answer:'{{FrontSide}}<hr id=answer>{{Back}}'}],signature:'anki-model-v1-abcd'}],notes:[{id:'100',guid:'guid',noteTypeId:'model-1',fields:{Front:'Question',Back:'Answer'},tags:[]}],cards:[{id:bundle.cards[0]!.id,noteId:'100',templateId:'template-0',templateOrdinal:0,sourceDeckId:'10'}],media:[],contentHash:'anki-source-snapshot-v1-1234abcd'}];return bundle;}
 
 describe('versioned content exchange', () => {
   it('ships valid downloadable workbooks and a self-contained sixteen-illustration example', async () => {
@@ -51,7 +51,7 @@ describe('versioned content exchange', () => {
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
     expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
   });
-  it('round trips inert Anki source identities, deck covers and import baselines in format v6',async()=>{const original=sourceSample(),preview=await readContentFile(await writePortableZip(original),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.decks[0]!.coverImage).toBe('asset:test-art');expect(preview.bundle.cards[0]!.ankiSource).toEqual(original.cards[0]!.ankiSource);});
+  it('round trips inert Anki source identities, retained snapshots, deck covers and import baselines in format v6',async()=>{const original=sourceSample(),preview=await readContentFile(await writePortableZip(original),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.decks[0]!.coverImage).toBe('asset:test-art');expect(preview.bundle.cards[0]!.ankiSource).toEqual(original.cards[0]!.ankiSource);expect(preview.bundle.ankiSources).toEqual(original.ankiSources);});
   it('preserves repeated tags already permitted by the card editor', async () => {
     const data = state(); const bundle = contentFromState(data); bundle.cards[0].tags = ['Verbs', 'Verbs'];
     const preview = await readContentFile(await writeWorkbook(bundle), 'deck.xlsx', data);

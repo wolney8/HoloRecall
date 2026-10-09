@@ -1,0 +1,31 @@
+import { describe, expect, it } from 'vitest';
+import { answerOnlyMarkup, renderAnkiTemplate } from './anki-template';
+
+describe('safe Anki template rendering',()=>{
+  it('renders arbitrary fields, static text and nested conditionals without executing markup',()=>{
+    const rendered=renderAnkiTemplate('<p>Prompt: {{Prompt}}</p>{{#Italian}}<div>{{#Usage}}{{Usage}} — {{/Usage}}{{Italian}}</div>{{/Italian}}{{^Missing}}ready{{/Missing}}',{fields:{Prompt:'Say hello',Italian:'Ciao!',Usage:'Informal'},answerSide:false});
+    expect(rendered.markup).toContain('Prompt: Say hello');
+    expect(rendered.markup).toContain('Informal — Ciao!');
+    expect(rendered.markup).toContain('ready');
+    expect(rendered.referencedFields).toEqual(['Prompt','Italian','Usage','Missing']);
+    expect(rendered.unsupported).toEqual([]);
+  });
+  it('uses FrontSide and the answer boundary without duplicating the question',()=>{
+    const template='{{FrontSide}}<hr id="answer"><b>Answer:</b> {{Italian}}<div>{{English}}</div>';
+    const answerTemplate=answerOnlyMarkup(template);
+    expect(answerTemplate).not.toContain('FrontSide');
+    const rendered=renderAnkiTemplate(answerTemplate,{fields:{Italian:'Buonasera!',English:'Good evening'},frontSide:'Question',answerSide:true});
+    expect(rendered.markup).toContain('Buonasera!');expect(rendered.markup).not.toContain('Question');
+  });
+  it('supports text and cloze filters and simplifies typed answers and TTS',()=>{
+    expect(renderAnkiTemplate('{{text:Rich}}',{fields:{Rich:'<b>Hello</b>'},answerSide:false}).markup).toBe('Hello');
+    expect(renderAnkiTemplate('{{cloze:Text}}',{fields:{Text:'{{c1::Ciao::greeting}}'},clozeOrdinal:1,answerSide:false}).markup).toBe('[greeting]');
+    expect(renderAnkiTemplate('{{cloze:Text}}',{fields:{Text:'{{c1::Ciao::greeting}}'},clozeOrdinal:1,answerSide:true}).markup).toBe('Ciao');
+    expect(renderAnkiTemplate('{{tts en_US:Italian}} {{type:Italian}}',{fields:{Italian:'Ciao'},answerSide:true}).simplifications).toEqual(['tts','typed-answer']);
+  });
+  it('never executes active template behavior and reports unknown filters',()=>{
+    const rendered=renderAnkiTemplate('<script>globalThis.pwned=1</script>{{addon:Italian}}',{fields:{Italian:'Ciao'},answerSide:true});
+    expect(rendered.unsupported).toEqual(['executable-template','filter:addon']);
+    expect(rendered.markup).not.toContain('Ciao');
+  });
+});

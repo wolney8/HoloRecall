@@ -29,13 +29,17 @@ import { LocalDataSettingsComponent } from './settings/local-data-settings';
 import { RewardSettingsComponent } from './settings/reward-settings';
 import { DeckSourceControlsComponent } from './authoring/deck-source-controls';
 import { CardListRowComponent } from './authoring/card-list-row';
+import { CardSourceControlsComponent } from './authoring/card-source-controls';
 import { DeckAnkiActionsComponent } from './authoring/deck-anki-actions';
+import { DeckJourneyActionsComponent, type DeckManagementAction } from './authoring/deck-journey-actions';
+import { SubdeckRowComponent } from './authoring/subdeck-row';
+import { SubdeckDisclosureComponent } from './authoring/subdeck-disclosure';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,DeckAnkiActionsComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -72,7 +76,7 @@ export class AppComponent {
   readonly focusLaunch=signal<FocusLaunch|undefined>(undefined);
   readonly settingsDeckId=signal('');
   readonly ankiUpdateFile=signal<File|null>(null);
-  readonly ankiSourceMode=signal<'update'|'repair'|'mapping'>('update');
+  readonly ankiSourceMode=signal<'manage'|'update'|'repair'|'mapping'>('update');
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
   readonly Math=Math;
@@ -142,6 +146,7 @@ export class AppComponent {
   private answerRevealedAt=0;
   private answerDwellTimer=0;
   private answerDwellResolve:(()=>void)|null=null;
+  private ankiSourceDeckId='';
   readonly expandedDecks=new Set<string>();
   constructor(){
     void this.store.init();
@@ -203,7 +208,7 @@ export class AppComponent {
     if(screen==='study'||screen==='results')return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:screen==='results'?'Session complete':this.session()?.mode==='practice'?'Practice':'Study',screen}];
     if(screen==='focus')return [{label:'Decks',screen:'library'},{label:'Focus',screen:'focus'}];
     if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
-    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='mapping'?'Review field mapping':this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
+    if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='manage'?'Manage Anki source':this.ankiSourceMode()==='mapping'?'Advanced field enrichment':this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
     const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[screen];
     return [{label:title,screen}];
   }
@@ -217,8 +222,8 @@ export class AppComponent {
   mobileNavActive(id:Screen|'more'):boolean{return id==='more'?this.mobileMoreOpen()||['dashboard','focus','progress','studio','exchange','settings','results'].includes(this.screen()):this.screen()===id;}
   toggleMobileMore():void{this.mobileMoreOpen.update(open=>!open);}
   openExchange(deckId=''):void{if(deckId&&this.data()?.decks.some(deck=>deck.id===deckId&&this.isAnkiDeck(deck))){this.openAnkiSource(deckId,'update');return;}this.selectedDeck='';this.ankiUpdateFile.set(null);this.go('exchange');}
-  openAnkiSource(deckId:string,mode:'update'|'repair'|'mapping'):void{this.selectedDeck=deckId;this.ankiSourceMode.set(mode);this.ankiUpdateFile.set(null);document.getElementById('contextual-anki-update')?.click();}
-  selectAnkiUpdatePackage(event:Event):void{const input=event.target as HTMLInputElement,file=input.files?.[0];input.value='';if(!file)return;this.ankiUpdateFile.set(file);this.go('exchange');}
+  openAnkiSource(deckId:string,mode:'manage'|'update'|'repair'|'mapping'):void{this.ankiSourceDeckId=deckId;this.selectedDeck=deckId;this.ankiSourceMode.set(mode);this.ankiUpdateFile.set(null);if(mode==='update'){document.getElementById('contextual-anki-update')?.click();return;}if(this.screen()!=='exchange')this.go('exchange');this.selectedDeck=deckId;}
+  selectAnkiUpdatePackage(event:Event):void{const input=event.target as HTMLInputElement,file=input.files?.[0],deckId=this.ankiSourceDeckId||this.selectedDeck;input.value='';if(!file)return;this.ankiUpdateFile.set(file);if(this.screen()!=='exchange')this.go('exchange');this.selectedDeck=deckId;}
   cancelAnkiUpdate():void{const deckId=this.selectedDeck;this.ankiUpdateFile.set(null);this.go('library');if(deckId){this.selectedDeck=deckId;this.expandedDecks.add(deckId);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}}
   finishAnkiUpdate(deckId:string):void{this.ankiUpdateFile.set(null);this.selectedDeck=deckId;this.go('library');this.selectedDeck=deckId;for(const deck of this.deckContext(deckId))this.expandedDecks.add(deck.id);setTimeout(()=>document.getElementById(`deck-${deckId}`)?.scrollIntoView({block:'start'}));}
   isAnkiDeck(deck:Deck):boolean{return deck.ankiSource?.kind==='anki';}
@@ -376,6 +381,8 @@ export class AppComponent {
   newDeck(deck?:Deck,parentId?:string):void{this.go('library');this.deckEditor=deck?{...deck}:{id:crypto.randomUUID(),name:'',description:'',suspended:false,...(parentId?{parentId}:{})};}
   cancelDeckEditor():void{this.deckEditor=null;}
   async saveDeck():Promise<void>{if(!this.deckEditor?.name.trim())return;this.busy.set(true);try{const deck={...this.deckEditor,name:this.deckEditor.name.trim()};if(!deck.designSetId)delete deck.designSetId;if(!deck.parentId)delete deck.parentId;if(!deck.studyPresetId)delete deck.studyPresetId;await this.store.saveDeck(deck);this.deckEditor=null;this.message.set('Deck saved.');}catch(e){this.message.set(String(e));}finally{this.busy.set(false);}}
+  async manageDeck(action:DeckManagementAction,deck:Deck):Promise<void>{if(action==='add-card'){this.edit(undefined,deck.id);return;}if(action==='add-subdeck'){this.newDeck(undefined,deck.id);return;}if(action==='import'){this.openExchange(deck.id);return;}if(action==='study-settings'){this.openStudySettings(deck.id);return;}if(action==='edit'){this.newDeck(deck);return;}this.busy.set(true);try{await this.store.saveDeck({...deck,archived:!deck.archived});this.message.set(deck.archived?'Deck restored.':'Deck archived. Learning history was retained.');}catch(error){this.fail(error);}finally{this.busy.set(false);}}
   async detachAnkiCard():Promise<void>{if(!this.editor?.ankiSource||!confirm('Detach this card from its Anki source? Future package updates and repairs will leave it unchanged.'))return;await this.store.detachAnkiCard(this.editor.id);this.editor={...this.editor,ankiSource:{...this.editor.ankiSource,linkState:'detached'}};this.editorBaseline=this.editorSnapshot();this.message.set('Card detached from its Anki source. Learning history and media were preserved.');}
+  async detachAnkiDeckSource():Promise<void>{const deckId=this.selectedDeck,deck=this.data()?.decks.find(item=>item.id===deckId);if(!deck||!confirm(`Detach “${deck.name}” and its subdecks from their Anki source? Content, learning history, media and cosmetics stay in HoloRecall, but future package updates will no longer match this branch.`))return;this.busy.set(true);try{await this.store.detachAnkiDeck(deckId);this.message.set('Deck source detached. Learning data and content were preserved.');this.cancelAnkiUpdate();}catch(error){this.fail(error);}finally{this.busy.set(false);}}
   async deleteEditedDeck():Promise<void>{if(!this.deckEditor)return;const deck={...this.deckEditor},data=this.data();if(!data)return;const {deckDeletionImpact}=await import('../domain/deck-management'),impact=deckDeletionImpact(data,deck.id);if(!confirm(`Permanently delete “${deck.name}”, ${impact.decks-1} subdecks, ${impact.cards} cards, ${impact.reviews} review records and ${impact.rewards} cosmetic progress records? Shared media remains safe. Archive the deck instead for ordinary removal.`))return;this.busy.set(true);try{await this.store.deleteDeckBranch(deck.id);this.deckEditor=null;this.message.set('Deck branch and its learning records were permanently deleted. Shared media was retained.');}catch(error){this.fail(error);}finally{this.busy.set(false);}}
 }

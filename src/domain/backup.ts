@@ -1,4 +1,4 @@
-import type { AnkiMappingPreset, CardContent, CardState, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
+import type { AnkiMappingPreset, AnkiSourceSnapshot, CardContent, CardState, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
 import { migrateState } from './migrations';
 import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
@@ -56,6 +56,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
     const source = object(card['ankiSource']);
     if (source['kind'] !== 'anki' || !text(source['noteGuid'], 160) || !text(source['noteId'], 80) || !integer(source['templateOrdinal'], 0) || !text(source['modelName'], 240) || !text(source['templateName'], 240) || !text(source['modelSignature'], 120) || !/^anki-model-v1-/.test(String(source['modelSignature'])) || !/^[a-f0-9]{8}$/.test(String(source['importedContentHash']))) fail('invalid Anki card source metadata.');
     if(source['sourceContentFingerprint']!==undefined&&(!text(source['sourceContentFingerprint'],120)||!String(source['sourceContentFingerprint']).startsWith('anki-source-v1-')))fail('invalid Anki source fingerprint.');
+    if(source['sourceSnapshotId']!==undefined&&!id(source['sourceSnapshotId'])||source['sourceTemplateId']!==undefined&&!text(source['sourceTemplateId'],100))fail('invalid Anki source snapshot reference.');
     if(source['linkState']!==undefined&&!['linked','detached'].includes(String(source['linkState'])))fail('invalid Anki source link state.');
     if(source['conversion']!==undefined){const conversion=object(source['conversion']);if(!integer(conversion['converterVersion'],1)||!integer(conversion['normalizerVersion'],1)||!integer(conversion['mappingVersion'],1)||conversion['mappingPolicyVersion']!==undefined&&!integer(conversion['mappingPolicyVersion'],0)||conversion['mappingOrigin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(conversion['mappingOrigin']))||!text(conversion['mappingSignature'],120)||!String(conversion['mappingSignature']).startsWith('anki-mapping-v1-'))fail('invalid Anki conversion provenance.');const baselines=object(conversion['fieldBaselines']);for(const value of Object.values(baselines))if(!/^[a-f0-9]{8}$/.test(String(value)))fail('invalid Anki field baseline.');if(conversion['fieldOrigins']!==undefined){const origins=object(conversion['fieldOrigins']);if(Object.values(origins).some(value=>!['derived','local','ambiguous'].includes(String(value))))fail('invalid Anki field origin.');}}
   }
@@ -72,7 +73,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 7 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 8 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -84,6 +85,9 @@ export function validateState(value: unknown): asserts value is State {
   cards.forEach(validateCard);
   const typedDecks = decks as Deck[];
   const typedCards = cards as CardContent[];
+  if (!Array.isArray(data['ankiSources'])) fail('missing Anki source snapshots.');
+  (data['ankiSources'] as unknown[]).forEach(validateAnkiSourceSnapshot);
+  if(new Set((data['ankiSources'] as AnkiSourceSnapshot[]).map(item=>item.id)).size!==(data['ankiSources'] as AnkiSourceSnapshot[]).length)fail('duplicate Anki source snapshots.');
   const deckIds = new Set(typedDecks.map(deck => deck.id));
   const deckById = new Map(typedDecks.map(deck => [deck.id, deck]));
   const cardIds = new Set(typedCards.map(card => card.id));
@@ -267,7 +271,7 @@ function validateExtensions(data: Record<string, unknown>): void {
 }
 export function validateReferences(data: State): void {
   const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id)),presets=new Set(data.studyPresets.map(preset=>preset.id)),cards=new Set(data.cards.map(card=>card.id)),decks=new Set(data.decks.map(deck=>deck.id));
-  const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])];
+  const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})]),...data.ankiSources.flatMap(source=>source.media.map(media=>`asset:${media.assetId}`))];
   // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
   if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');
@@ -277,12 +281,21 @@ export function validateReferences(data: State): void {
   const invalidFocus=(focus:FocusSessionRequest|FocusPreset)=>focus.criteria.deckId&&!decks.has(focus.criteria.deckId)||focus.criteria.explicitCardIds?.some(cardId=>!cards.has(cardId));
   if(data.focusPresets.some(invalidFocus)||data.session?.focus&&invalidFocus(data.session.focus)||data.session?.focus?.presetId&&!data.focusPresets.some(preset=>preset.id===data.session!.focus!.presetId))fail('Focus selection references missing content.');
   if(data.session?.lastPracticeEventId&&!data.practiceEvents.some(event=>event.id===data.session!.lastPracticeEventId&&event.sessionId===data.session!.id))fail('session practice event reference does not resolve.');
+  const sourceIds=new Set(data.ankiSources.map(source=>source.id));if(data.cards.some(card=>card.ankiSource?.sourceSnapshotId&&!sourceIds.has(card.ankiSource.sourceSnapshotId)))fail('card references a missing Anki source snapshot.');
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
   const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
   if (!id(mapping['id']) || ![1,2,3].includes(Number(mapping['version'])) || mapping['policyVersion']!==undefined&&!integer(mapping['policyVersion'],0) || mapping['origin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(mapping['origin'])) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
   const fields = object(mapping['fields']);
   if (Object.keys(fields).length > 100 || Object.values(fields).some(target => !targets.includes(String(target)))) fail('invalid Anki field mapping.');
+}
+export function validateAnkiSourceSnapshot(value: unknown): asserts value is AnkiSourceSnapshot {
+  const snapshot=object(value);
+  if(!id(snapshot['id'])||snapshot['version']!==1||!['legacy-anki2','legacy-anki21','modern-anki21b'].includes(String(snapshot['packageVariant']))||!Array.isArray(snapshot['sourceDecks'])||!Array.isArray(snapshot['noteTypes'])||!Array.isArray(snapshot['notes'])||!Array.isArray(snapshot['cards'])||!Array.isArray(snapshot['media'])||!/^anki-source-snapshot-v1-[a-f0-9]{8}$/.test(String(snapshot['contentHash'])))fail('invalid Anki source snapshot.');
+  if(snapshot['noteTypes'].length>100||snapshot['notes'].length>10000||snapshot['cards'].length>25000)fail('Anki source snapshot exceeds limits.');
+  for(const raw of snapshot['noteTypes'] as unknown[]){const model=object(raw);if(!text(model['id'],80)||!text(model['name'],240)||typeof model['cloze']!=='boolean'||!Array.isArray(model['fields'])||!Array.isArray(model['templates'])||!text(model['signature'],120))fail('invalid Anki note type snapshot.');}
+  for(const raw of snapshot['notes'] as unknown[]){const note=object(raw);if(!text(note['id'],80)||!text(note['guid'],160)||!text(note['noteTypeId'],80)||!Array.isArray(note['tags'])||typeof note['fields']!=='object'||note['fields']===null)fail('invalid Anki note snapshot.');}
+  for(const raw of snapshot['cards'] as unknown[]){const card=object(raw);if(!text(card['id'],100)||!text(card['noteId'],80)||!text(card['templateId'],100)||!integer(card['templateOrdinal'],0)||!text(card['sourceDeckId'],80))fail('invalid Anki card snapshot.');}
 }
 function validateRewards(data: State): void {
   const seen = new Map<string, State['rewardEvents'][number]>(), reversed = new Set<string>();

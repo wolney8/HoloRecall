@@ -7,7 +7,7 @@ import { BALANCED_PRESET_ID, cloneBuiltInPresets } from './study-settings';
 export function migrateState(input: unknown, bundledCards: CardContent[] = []): State {
   if (!input || typeof input !== 'object') throw new Error('Invalid HoloRecall data: expected an object.');
   const raw = structuredClone(input) as Record<string, unknown>;
-  if (![1, 2, 3, 4, 5, 6, 7].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
   if (raw['schemaVersion'] === 1) {
     raw['schemaVersion'] = 2;
     raw['designs'] = [];
@@ -45,6 +45,7 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
       return { ...card, ankiSource: { ...(source as Record<string, unknown>), conversion: { ...(conversion as Record<string, unknown>), mappingPolicyVersion: 0, mappingOrigin: 'legacy-unclassified' } } };
     });
   }
+  if (raw['schemaVersion'] === 7) { raw['schemaVersion'] = 8; raw['ankiSources'] = []; }
   if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true, ...(raw['preferences'] as Record<string, unknown>) };
   validateState(raw);
   return raw;

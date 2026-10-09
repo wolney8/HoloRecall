@@ -32,6 +32,10 @@ This retains the project's iOS-readiness history and is the canonical evidence m
 | Accessibility / layouts | BROWSER VERIFIED for keyboard/touch/reflow/reduced motion | Adaptive phone navigation, iPhone/iPad safe areas, portrait/landscape, System/Dark, semantic tap reveal and consecutive-card Study are SIMULATOR VERIFIED; final clean iPhone XCUITest (`native-visual-final8.xcresult`, 1/1 in 36.820 s) captured the contained five-choice dock, cards 2/3 after settlement and Session Complete; VoiceOver/Dynamic Type and physical-device acceptance pending | Verification deferred | Runtime pending |
 | Distribution | Web deployment outside this milestone | NOT IMPLEMENTED; no signing/store resources | NOT IMPLEMENTED; no signing/store resources | NOT IMPLEMENTED; compatible iOS/iPad app route only |
 
+## Latest dogfood Phase 0 native evidence
+
+The 9 October 2026 production bundle was synced into the existing Capacitor 8.5.2 shell and the isolated iPhone 17 Pro / iOS 26.5 Simulator profile ran the packaged Study/navigation smoke successfully (**1/1 in 47.473 s**). Three consecutive rated cards remained visible, then Results, Collection, Progress and Settings were reached. This is WKWebView Simulator evidence for the shared Phase 0 UI; it does not prove Will's exact Anki package, physical-device haptics/audio, VoiceOver or durable production native storage. Result bundle and log: `.runtime/evidence/hr-dogfood-phase0-20261009/`.
+
 ## Readiness matrix
 
 | Area | Web implementation | Chromium evidence | WebKit evidence | Native implementation needed | Simulator | Physical device |

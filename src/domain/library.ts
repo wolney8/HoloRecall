@@ -1,5 +1,5 @@
 import type { CardContent, FinishPreset, Rarity, State } from './models';
-import { rewardProgress } from './rewards';
+import { activeRewardEvents } from './rewards';
 import { activeReviews } from './study';
 import { dayKey } from './time';
 
@@ -24,7 +24,7 @@ export interface LibraryIndex { version: number; builtAt: number; cards: Library
 export interface LibraryPage { items: LibraryItem[]; total: number; nextOffset?: number; results: SearchResult[] }
 
 export function normalizeSearch(value: string): string {
-  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 }
 export function normalizeTag(value: string): string { return normalizeSearch(value); }
 export function canonicalTags(tags: string[]): string[] {
@@ -52,21 +52,35 @@ export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex 
   const paths = new Map(state.decks.map(deck => [deck.id, deckPath(state, deck.id)]));
   const lastByCard = new Map<string,string>(), history = new Map<string,number[]>();
   for (const event of activeReviews(state)) { lastByCard.set(event.cardId, event.timestamp);history.set(event.cardId,[...(history.get(event.cardId)??[]),event.rating].slice(-5)); }
-  const tagLabels = new Map<string,string>();
-  for (const card of state.cards) for (const tag of canonicalTags(card.tags)) if (!tagLabels.has(normalizeTag(tag))) tagLabels.set(normalizeTag(tag), tag);
+  const tagLabels = new Map<string,string>(), tagCounts = new Map<string,number>();
   const deckById = new Map(state.decks.map(deck => [deck.id, deck]));
+  const rewardByCard = new Map<string, { contributions: number; unlocks: Set<Rarity> }>();
+  for (const event of activeRewardEvents(state)) {
+    const progress = rewardByCard.get(event.cardId) ?? { contributions: 0, unlocks: new Set<Rarity>() };
+    if (event.kind === 'contribution') progress.contributions += 1;
+    else progress.unlocks.add(event.rarity);
+    rewardByCard.set(event.cardId, progress);
+  }
   const deckLineage=(id:string):string[]=>{const result:string[]=[];let current=deckById.get(id);while(current&&!result.includes(current.id)){result.push(current.id);current=current.parentId?deckById.get(current.parentId):undefined;}return result;};
   const cards: LibraryItem[] = state.cards.map(card => {
-    const progress = rewardProgress(state, card.id), schedule = state.states[card.id], reps = schedule?.reps ?? 0;
+    const reward = rewardByCard.get(card.id), rarity = card.rarity ?? 'common';
+    const progress = { earned: reward?.unlocks.has(rarity) ?? false, days: reward?.contributions ?? 0, required: state.rewardConfig[rarity] };
+    const schedule = state.states[card.id], reps = schedule?.reps ?? 0;
     const stateName: LibraryItem['state'] = reps === 0 ? 'new' : schedule?.state === 2 ? 'review' : 'learning';
     const media: LibraryItem['media'] = [...(card.image || card.backImage ? ['image' as const] : []), ...((card.frontAudio?.length || card.backAudio?.length) ? ['audio' as const] : [])];
     const lineage=deckLineage(card.deckId),deckArchived=lineage.some(id=>{const deck=deckById.get(id);return !!(deck?.archived||deck?.suspended);}),recent=history.get(card.id)??[];
-    const control=state.cardControls[card.id];return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:lineage, deckArchived, tags: canonicalTags(card.tags), earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: recent.filter(rating=>rating===1).length>=2,suspended:card.suspended,buried:!!(control?.manualBuried||control?.buriedOnDay===dayKey(now,state.preferences.timeZone)),leech:!!control?.leech, media };
+    const tags = canonicalTags(card.tags);
+    for (const tag of tags) {
+      const key = normalizeTag(tag);
+      if (!tagLabels.has(key)) tagLabels.set(key, tag);
+      tagCounts.set(key, (tagCounts.get(key) ?? 0) + 1);
+    }
+    const control=state.cardControls[card.id];return { card, deckName: deckById.get(card.deckId)?.name ?? 'Unavailable deck', deckPath: paths.get(card.deckId) ?? '', deckIds:lineage, deckArchived, tags, earned: progress.earned, unlockDays: progress.days, unlockRequired: progress.required, lastStudied: lastByCard.get(card.id), due: schedule?.due, state: stateName, attention: recent.filter(rating=>rating===1).length>=2,suspended:card.suspended,buried:!!(control?.manualBuried||control?.buriedOnDay===dayKey(now,state.preferences.timeZone)),leech:!!control?.leech, media };
   });
   const results: SearchResult[] = [];
   for (const deck of state.decks) { const context=deck.description || paths.get(deck.id) || 'Deck'; results.push({ kind:'deck', id:deck.id, deckId:deck.id, label:deck.name, context, normalized:normalizeSearch(`${deck.name} ${context}`), score:80 }); }
   for (const item of cards) { const context=[item.card.front,item.card.meaning,item.card.pronunciation,item.card.notes,item.tags.join(' '),item.deckPath].filter(Boolean).join(' · '); results.push({ kind:'card', id:item.card.id, cardId:item.card.id, deckId:item.card.deckId, label:item.card.answer, context, normalized:normalizeSearch(`${item.card.answer} ${context}`), score:100 }); }
-  for (const [id,label] of tagLabels) { const context=`${cards.filter(item => item.tags.some(tag => normalizeTag(tag) === id)).length} cards`; results.push({ kind:'tag', id, label, context, normalized:normalizeSearch(`${label} ${context}`), score:60 }); }
+  for (const [id,label] of tagLabels) { const context=`${tagCounts.get(id) ?? 0} cards`; results.push({ kind:'tag', id, label, context, normalized:normalizeSearch(`${label} ${context}`), score:60 }); }
   return { version: state.version, builtAt: typeof performance === 'undefined' ? Date.now() : performance.now(), cards, results, tagLabels };
 }
 

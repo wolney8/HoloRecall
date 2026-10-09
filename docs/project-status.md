@@ -1,8 +1,20 @@
 # Project status and durable handoff
 
-Updated: 7 October 2026. Branch: `main`. Nothing has been pushed or deployed.
+Updated: 9 October 2026. Branch: `main`. Nothing has been pushed or deployed.
 
 ## Current durable handoff
+
+### HoloRecall dogfood gate — Phase 0 complete; Phase 1 blocked on exact package path — 9 October 2026
+
+- **Repository state:** `main` started this batch at `d30461e`; the interrupted template-first/schema-8 working tree was preserved and integrated. No reset, cleanup, genuine learner-data migration or source-package import was performed.
+- **Phase 0 result:** HR-ANKI-LEGACY-01/02, HR-CONTENT-LIST-01 and HR-DECK-UX-01 are `DONE`. A true pre-snapshot legacy fixture captures the original package once, retains a normalized source snapshot, repairs obsolete auto-derived `Language → Answer` content in place and preserves card IDs, reviews, FSRS state, due dates, presets and rewards. Portable content now carries referenced normalized Anki snapshots instead of retaining dangling snapshot IDs.
+- **Management IA:** each journey exposes Study, Focus and More. Subdeck disclosure is attached to the nested list. Imported journeys show one `Imported from Anki` status and one `Manage Anki source` action. Its dedicated route contains Update, retained-source rebuild/legacy repair, compatibility/provenance, explicit advanced enrichment and detach. The More menu closes after selection and Escape and remains keyboard/touch accessible.
+- **Content surfaces:** management rows use the answer as the bounded primary label and concise distinct meaning/front plus pronunciation as secondary content; notes no longer flood list rows. The same repaired identity is exercised in list, editor, search, Collection, Study and portable export. The source snapshot is versioned user data in portable ZIP; its search index remains reconstructable.
+- **Performance/bundle:** a repeatable 10k-domain failure exposed quadratic per-card reward lookup and repeated tag counting. The index now precomputes both once. Isolated measurements: 10k index 2,665.7 ms, query 15.4 ms; import-to-index 2,036.3 ms; atomic bulk mutation 98.7 ms. Browser measurements: Chromium 2,080/137 ms and WebKit 1,357/219 ms for index-render/query-render with one DOM row. Production is **849.98 kB raw / 202.59 kB transfer**, inside the unchanged 850 kB ceiling; Exchange/import remains lazy.
+- **Verification:** controlled unit/domain **173/173**; targeted Anki/authoring desktop **20/20**; compact/large/landscape WebKit 200% card-list/deck-action **3/3**. The full matrix reached **184/185**; the sole WebKit failure was a pre-existing finite-animation test race between a successful visibility assertion and a later locator evaluation after the 900 ms feedback element was removed. The assertion was made atomic without changing timeout or strength and passed **6/6** repeated Chromium/WebKit runs. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passed **1/1 in 47.473 s**, including three visible consecutive cards, Results, Collection, Progress and Settings. Evidence is `.runtime/evidence/hr-dogfood-phase0-20261009/`.
+- **Delegation:** two bounded read-only reviews were used: one for legacy repair/derived-surface integrity and one for deck/card management UX. The lead implemented and integrated all shared schema, persistence, UI, tests and documentation.
+- **Exact package gate:** `Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg` was not found in the initially searched Downloads/Desktop/Documents/Scripts paths. Phase 1 must verify SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a` and inspect the package bytes before making claims about its manifest. HR-ACCEPT-ANKI-01 remains **FAILED — ARCHITECTURE UNDER REWORK** until automatic exact-package gates pass and Will retests it.
+- **Exact restart point:** obtain the package's exact local path, copy a test-safe version into ignored runtime evidence, verify hash/manifest, then start HR-ANKI-V2-01 through the exact-package Phase 1 acceptance. Do not start Study Modes or export parity before Phase 1 passes.
 
 ### Anki import architecture V2 recovery — 7 October 2026
 

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
-import { ANKI_DERIVED_FIELDS, ANKI_MAPPING_POLICY_VERSION, analyseAnkiPackage, ankiFieldHash, ankiImportedContentHash, eligibleAnkiMappings, markAnkiLocalEdits, plainAnkiText, previewAnkiImport, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
+import { ANKI_DERIVED_FIELDS, ANKI_MAPPING_POLICY_VERSION, analyseAnkiPackage, ankiFieldHash, ankiImportedContentHash, eligibleAnkiMappings, markAnkiLocalEdits, plainAnkiText, previewAnkiImport, renderAnkiSnapshotCard, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
 import { createInitialState } from './study';
 
 beforeAll(async () => {
@@ -86,24 +86,27 @@ describe('Anki content-only import', () => {
     expect(card.ankiSource?.importedContentHash).toMatch(/^[a-f0-9]{8}$/);
   });
 
-  it('never guesses a positional answer and blocks a metadata field mapped against the answer template', async () => {
+  it('uses template semantics even when an optional mapping points Language at Answer', async () => {
     expect(suggestedAnkiFieldTarget('Language')).toBe('ignore');
     expect(suggestedAnkiFieldTarget('Italian')).toBe('ignore');
     const bytes=await languageMetadataPackage();
     const safe=await analyseAnkiPackage(bytes,'introductions.apkg');
     expect(safe.cards[0]).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});
-    expect(safe.cards[0]!.ankiSource?.contentProvenance).toMatchObject({front:'mapping',answer:'mapping',frontFields:['Prompt'],answerFields:['Italian']});
+    expect(safe.cards[0]!.ankiSource?.contentProvenance).toMatchObject({front:'template',answer:'template',frontFields:['Prompt'],answerFields:['Italian','Pronunciation','Meaning','Examples']});
+    expect(safe.sourceSnapshot).toMatchObject({version:1,notes:[{guid:'introductions-guid',fields:{Language:'it',Italian:'Mi chiamo'}}]});
+    expect(safe.sourceSnapshot.noteTypes[0]?.templates[0]).toMatchObject({question:'{{Prompt}}',answer:expect.stringContaining('{{Italian}}')});
+    expect(safe.compatibility).toEqual({tierA:1,tierB:0,tierC:0,tierD:0});
+    expect(renderAnkiSnapshotCard(safe.sourceSnapshot,'200')).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',answerFields:['Italian','Pronunciation','Meaning','Examples']});
     const schema=safe.modelSchemas[0]!;
     const invalid={id:'language-map',version:1 as const,name:'Bad positional mapping',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Language:'answer',Pronunciation:'pronunciation',Italian:'ignore'} as const};
     const blocked=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,[invalid]);
-    expect(blocked.cards).toHaveLength(0);
-    expect(blocked.conversion.excluded).toBe(1);
-    expect(blocked.issues.find(issue=>issue.message==='Field mapping requires review before conversion')?.examples[0]).toContain('Answer mapping does not match');
+    expect(blocked.cards[0]).toMatchObject({answer:'Mi chiamo'});
+    expect(blocked.compatibility.tierC).toBe(0);
 
     const repaired={...invalid,name:'Reviewed mapping',fields:{Prompt:'front',Language:'ignore',Pronunciation:'pronunciation',Italian:'answer'} as const};
     const corrected=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,[repaired]);
     expect(corrected.cards[0]).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});
-    expect(corrected.cards[0]!.ankiSource?.contentProvenance).toMatchObject({answer:'mapping',answerFields:['Italian']});
+    expect(corrected.cards[0]!.ankiSource?.contentProvenance).toMatchObject({answer:'template',answerFields:['Italian','Pronunciation','Meaning','Examples']});
   });
   it('replaces a stale auto-inferred Language answer and corrupt accepted baseline during explicit repair',async()=>{
     const bytes=await languageMetadataPackage('Mi chiamo',true),current=await analyseAnkiPackage(bytes,'introductions.apkg'),schema=current.modelSchemas[0]!;
@@ -111,13 +114,13 @@ describe('Anki content-only import', () => {
     const stale={id:'legacy-positional',version:2 as const,name:'Legacy automatic mapping',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Language:'answer',Pronunciation:'pronunciation',Italian:'ignore',Meaning:'ignore',Examples:'notes'} as const,policyVersion:0,origin:'auto-inferred' as const};
     expect(eligibleAnkiMappings([stale],'repair')).toEqual([]);
     const reviewed={...stale,origin:'user-confirmed' as const};expect(eligibleAnkiMappings([reviewed],'repair')[0]).toMatchObject({origin:'user-confirmed',policyVersion:0});
-    const custom={...reviewed,version:3 as const,policyVersion:ANKI_MAPPING_POLICY_VERSION,fields:{Prompt:'front',Language:'ignore',Pronunciation:'pronunciation',Italian:'meaning',Meaning:'answer',Examples:'notes'} as const},customAnalysis=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,eligibleAnkiMappings([custom],'repair'));expect(customAnalysis.cards[0]).toMatchObject({answer:'My name is',meaning:'Mi chiamo'});
+    const custom={...reviewed,version:3 as const,policyVersion:ANKI_MAPPING_POLICY_VERSION,fields:{Prompt:'front',Language:'ignore',Pronunciation:'pronunciation',Italian:'meaning',Meaning:'answer',Examples:'notes'} as const},customAnalysis=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,eligibleAnkiMappings([custom],'repair'));expect(customAnalysis.cards[0]).toMatchObject({answer:'Mi chiamo',meaning:'Mi chiamo'});
     const state=createInitialState(current.decks,current.cards),before=structuredClone(state.cards[0]!);before.answer='it';before.pronunciation='';before.meaning='';before.notes='Imported source · Language-labelled prompt / Italian answer';before.ankiSource!.importedContentHash=ankiImportedContentHash(before);before.ankiSource!.conversion={...before.ankiSource!.conversion!,mappingVersion:2,mappingPolicyVersion:0,mappingOrigin:'auto-inferred',fieldBaselines:{},fieldOrigins:undefined};
     before.ankiSource!.conversion.fieldBaselines=Object.fromEntries(ANKI_DERIVED_FIELDS.map(field=>[field,ankiFieldHash(before,field)]));state.cards[0]=before;
     const root=current.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(current,state,true,root,'repair'),repaired=preview.bundle.cards.find(card=>card.id===before.id)!;
     expect(preview.update.sourceChangedCards).toEqual([]);expect(preview.update.conversionUpgradeCards).toContain(before.id);expect(preview.update.conflicts).toEqual([]);
     expect(repaired).toMatchObject({id:before.id,answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});expect(repaired.answer).not.toBe('it');
-    const unknown={...state,ankiMappings:[{...stale,origin:'legacy-unclassified' as const}]},blocked=previewAnkiImport(current,unknown,true,root,'repair');expect(blocked.update.mappingReviewCards).toContain(before.id);expect(blocked.errors).toContain('A legacy field mapping has unknown authorship. Review the field mapping before applying this repair.');
+    const unknown={...state,ankiMappings:[{...stale,origin:'legacy-unclassified' as const}]},blocked=previewAnkiImport(current,unknown,true,root,'repair');expect(blocked.update.mappingReviewCards).toEqual([]);expect(blocked.errors).not.toContain('A legacy field mapping has unknown authorship. Review the field mapping before applying this repair.');
   });
   it('keeps an explicitly locally edited answer during repair while repairing derived fields',async()=>{
     const analysis=await analyseAnkiPackage(await languageMetadataPackage(),'introductions.apkg'),state=createInitialState(analysis.decks,analysis.cards),original=state.cards[0]!,edited=structuredClone(original);edited.answer='My own Italian answer';state.cards[0]=markAnkiLocalEdits(original,edited);state.cards[0]!.pronunciation='corrupt derived pronunciation';state.cards[0]!.ankiSource!.conversion!.fieldOrigins!.pronunciation='derived';

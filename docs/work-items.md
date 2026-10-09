@@ -823,7 +823,41 @@ Acceptance is the complete stop-ship request. The lead owns mapping/source schem
 - **Context/layout batch:** the deck action now opens the platform file chooser directly and passes the chosen package into a focused lazy update screen. Generic exports/downloads are absent, conflicts require an explicit choice, representative structured Before/After values are visible, and success returns to the originating deck. The breadcrumb defect was an unscoped legacy `nav` column/full-width-button rule; shared breadcrumbs now explicitly own a compact wrapping row, omit the duplicate current-page crumb, and the Study toolbar/workspace margins are compacted without negative offsets.
 - **Final verification:** controlled unit/domain **158/158** and the complete Playwright matrix **176/176** pass across Chromium, desktop WebKit and compact/large/landscape WebKit profiles. Targeted animation-enabled update/breadcrumb/Study evidence passes **6/6** in Chromium/WebKit. The production build is **842.63 kB raw / 199.84 kB transfer**, below the unchanged 850 kB ceiling; Exchange remains a 54.60 kB lazy chunk. Packaged iPhone 17 Pro / iOS 26.5 XCUITest passes the three-card visibility, Results and navigation smoke **1/1 in 40.646 s**. Evidence is under `.runtime/evidence/hr-stopship-20261007/`. The earlier **172/176** broad run exposed two reversed-template guard failures and two changed-copy expectations; the implementation/copy were corrected, the affected set passed **18/18**, then the clean full run passed. No timeout or assertion strength was weakened.
 
-## Import reconversion, content repair and first-class editing — active milestone
+## HoloRecall dogfood gate — active milestone
+
+Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the four phases below in order. A later phase may not start until the preceding acceptance gate passes. Existing template-first implementation in the working tree is preserved, but Phase 1 acceptance work is paused while Phase 0 is active. AnkiWeb Sync remains `NOT PLANNED`.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-ANKI-LEGACY-01 | Repair legacy auto-mapped `Language → Answer` imports | Import/data integrity | Dogfood Phase 0 | P0 | DONE | Obsolete mapping provenance, source snapshot/template semantics, repair-aware merge |
+| HR-ANKI-LEGACY-02 | Rebuild every derived surface after legacy repair | Import/search/portability | Dogfood Phase 0 | P0 | DONE | HR-ANKI-LEGACY-01 and indexed/export projections |
+| HR-CONTENT-LIST-01 | Concise structured card-management rows | Deck management/UI | Dogfood Phase 0 | P0 | DONE | Structured card content and bounded list rendering |
+| HR-DECK-UX-01 | Replace deck/source action dump with one management hierarchy | Deck management/UX | Dogfood Phase 0 | P0 | DONE | Shared deck actions and contextual Anki-source management |
+| HR-ANKI-V2-01 | Retain source-native Anki deck/note-type/note/card/media model | Import/data integrity | Dogfood Phase 1 | P0 | PLANNED | Phase 0 acceptance; HR-ANKI-ARCH-01/08/09 |
+| HR-ANKI-V2-02 | Safe template engine for supported Anki constructs | Import/security | Dogfood Phase 1 | P0 | PLANNED | HR-ANKI-V2-01; HR-ANKI-ARCH-02/03 |
+| HR-ANKI-V2-03 | Safe internal imported-content model | Import/content | Dogfood Phase 1 | P0 | PLANNED | HR-ANKI-V2-02 and sanitisation boundary |
+| HR-ANKI-V2-04 | Exact Italian package content mapping | Import/conversion | Dogfood Phase 1 | P0 | PLANNED | Exact package and template-first renderer |
+| HR-ANKI-V2-05 | Convert Picture panels and Options into inert native content | Import/security/UI | Dogfood Phase 1 | P0 | PLANNED | Safe content model; no source JavaScript/CSS execution |
+| HR-ANKI-V2-06 | Deterministic collectible art without binary source images | Collection/design | Dogfood Phase 1 | P1 | PLANNED | Stable card-art source model |
+| HR-ANKI-V2-07 | Keep semantic enrichment optional | Import/content | Dogfood Phase 1 | P0 | PLANNED | Valid template-rendered front/back |
+| HR-ANKI-V2-08 | Concise automatic import workflow | Import UX | Dogfood Phase 1 | P0 | PLANNED | Exact-package compatibility analysis |
+| HR-ANKI-V2-09 | Concise source-identity update workflow | Import UX/data | Dogfood Phase 1 | P0 | PLANNED | Stable identities and local-edit protection |
+| HR-ANKI-V2-10 | Retained source snapshot and independent converter versions | Import/portability | Dogfood Phase 1 | P0 | PLANNED | Normalized source persistence |
+| HR-ANKI-V2-11 | Compact opt-in advanced enrichment table | Import UX | Dogfood Phase 1 | P1 | PLANNED | HR-ANKI-V2-07; never required for supported front/back |
+| HR-MODE-01 | Separate Study Mode from Study Preset | Study/domain | Dogfood Phase 2 | P0 | PLANNED | Phase 1 acceptance and shared Study player |
+| HR-MODE-02 | Scheduled learning/relearning repetition | Study/scheduler | Dogfood Phase 2 | P0 | PLANNED | Intraday queues, learn-ahead, exact intervals and fake-clock tests |
+| HR-MODE-03 | Mastery mode with scheduler-safe extra attempts | Study/practice | Dogfood Phase 2 | P1 | PLANNED | HR-MODE-01/02 and separate practice events |
+| HR-MODE-04 | Free Revision mode | Study/practice | Dogfood Phase 2 | P1 | PLANNED | Existing Practice/Focus boundary |
+| HR-MODE-05 | Concise mode chooser | Study UX | Dogfood Phase 2 | P1 | PLANNED | HR-MODE-01–04 |
+| HR-MODE-06 | Mode-specific settings actionability | Study/settings | Dogfood Phase 2 | P0 | PLANNED | Existing setting consumers and HR-MODE-01–04 |
+| HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | PLANNED | Phase 2 acceptance and source/art portability |
+| HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | PLANNED | Safe static templates/media and Anki-compatible validation |
+
+Phase 0 acceptance requires an in-place legacy repair that preserves learner state, consistent repaired content across list/editor/Study/Collection/search/export, concise card rows, one clear deck-action hierarchy, one non-duplicated Anki-source management surface and advanced enrichment absent from normal deck actions. HR-ACCEPT-ANKI-01 remains failed until the exact-package Phase 1 gate is proven automatically and then retested by Will.
+
+- **Phase 0 acceptance evidence (9 October 2026):** a pre-snapshot legacy fixture supplies its source package once, creates and retains the normalized source snapshot, replaces obsolete auto-derived `Language → Answer` content in place and preserves card identity plus learner state. Repaired identity is exercised through bounded card row, editor, search, Collection, consecutive-card Study and portable source snapshot round-trip. Deck journeys expose Study, Focus and a closable More menu; subdeck disclosure is subordinate; imported decks expose one Manage Anki source entry leading to Update, rebuild/repair, compatibility, opt-in enrichment and detach. Unit/domain 173/173, targeted desktop 20/20, phone 200% 3/3, iPhone Simulator packaged Study/navigation 1/1, and production build 849.98 kB pass. The full browser matrix reached 184/185; one WebKit feedback-signature sample raced the finite 900 ms element after visibility. The assertion was made atomic without changing its timeout/strength and then passed 6/6 repeated Chromium/WebKit runs. Phase 1 remains gated on the exact package.
+
+## Import reconversion, content repair and first-class editing — preserved history
 
 Source: Will's 7 October 2026 failed repeat update of the exact Anki package. Roadmap progression remains stopped; no native-store migration, auth provider, advertising, payments or cloud work is authorised.
 

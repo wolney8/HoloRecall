@@ -1,8 +1,8 @@
-import type { CardContent, Deck, DesignSet, LocalAsset, Rarity, State } from './models';
-import { validateAsset, validateCard, validateDeck, validateDesign } from './backup';
+import type { AnkiSourceSnapshot, CardContent, Deck, DesignSet, LocalAsset, Rarity, State } from './models';
+import { validateAnkiSourceSnapshot, validateAsset, validateCard, validateDeck, validateDesign } from './backup';
 
 /** Content exchange deliberately has no learner, event, schedule, reward, or session fields. */
-export interface ContentBundle { decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[] }
+export interface ContentBundle { decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[] }
 export interface ImportPreview {
   bundle: ContentBundle; expectedVersion: number; errors: string[];
   newCards: string[]; updatedCards: string[]; duplicateCards: string[];
@@ -37,7 +37,7 @@ const BUNDLED_ART = new Set(['limone', 'caffe', 'casa', 'libro', 'tavolo', 'mela
 const emptyBundle = (): ContentBundle => ({ decks: [], cards: [], designs: [], assets: [] });
 const normalize = (value: unknown): unknown => Array.isArray(value) ? value.map(normalize) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined && item !== '').sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, normalize(item)])) : value;
 export const sameContent = (first: unknown, second: unknown): boolean => JSON.stringify(normalize(first)) === JSON.stringify(normalize(second));
-export function contentFromState(state: State): ContentBundle { return structuredClone({ decks: state.decks, cards: state.cards, designs: state.designs, assets: state.assets }); }
+export function contentFromState(state: State): ContentBundle { const ids=new Set(state.cards.flatMap(card=>card.ankiSource?.sourceSnapshotId?[card.ankiSource.sourceSnapshotId]:[])),ankiSources=state.ankiSources.filter(source=>ids.has(source.id));return structuredClone({ decks: state.decks, cards: state.cards, designs: state.designs, assets: state.assets,...(ankiSources.length?{ankiSources}:{}) }); }
 export function makePreview(bundle: ContentBundle, state: State, errors: string[] = []): ImportPreview {
   const result: ImportPreview = { bundle, expectedVersion: state.version, errors: [...errors], newCards: [], updatedCards: [], duplicateCards: [], newDecks: [], updatedDecks: [], duplicateDecks: [], newDesigns: [], updatedDesigns: [], duplicateDesigns: [] };
   for (const card of bundle.cards) {
@@ -216,7 +216,7 @@ export function validateMediaSignature(bytes: Uint8Array, mime: string): void {
 
 export async function readContentFile(bytes: Uint8Array, filename: string, state: State): Promise<ImportPreview> {
   try {
-    let tables: Tables; const incomingAssets: LocalAsset[] = []; let jsonDesigns: unknown;
+    let tables: Tables; const incomingAssets: LocalAsset[] = []; let jsonDesigns: unknown;let ankiSources:AnkiSourceSnapshot[]=[];
     if (/\.xlsx$/i.test(filename)) tables = await readTables(bytes);
     else if (/\.zip$/i.test(filename)) {
       inspectZip(bytes); const { default: JSZip } = await import('jszip'); const zip = await JSZip.loadAsync(bytes);
@@ -225,8 +225,9 @@ export async function readContentFile(bytes: Uint8Array, filename: string, state
       const definitions = zip.file('designs.json'); if (!definitions) throw new Error('Portable ZIP requires designs.json at its root.');
       const definitionsText = await definitions.async('string'); if (definitionsText.length > 1000000) throw new Error('Design definitions are too large.');
       jsonDesigns = JSON.parse(definitionsText);
-      const permitted = new Set(['deck.xlsx', 'designs.json', ...tables.Assets.map(row => row[1])]);
-      for (const entry of Object.values(zip.files)) if (!entry.dir && !permitted.has(entry.name)) throw new Error(`Unexpected ZIP file ${entry.name}. Only declared media, deck.xlsx and designs.json are allowed.`);
+      const sourceDefinitions=zip.file('anki-source.json');if(sourceDefinitions){const sourceText=await sourceDefinitions.async('string');if(sourceText.length>10_000_000)throw new Error('Anki source definitions are too large.');const parsed:unknown=JSON.parse(sourceText);if(!Array.isArray(parsed))throw new Error('anki-source.json must contain source snapshots.');parsed.forEach(validateAnkiSourceSnapshot);ankiSources=parsed as AnkiSourceSnapshot[];}
+      const permitted = new Set(['deck.xlsx', 'designs.json', ...(sourceDefinitions?['anki-source.json']:[]), ...tables.Assets.map(row => row[1])]);
+      for (const entry of Object.values(zip.files)) if (!entry.dir && !permitted.has(entry.name)) throw new Error(`Unexpected ZIP file ${entry.name}. Only declared media, deck.xlsx, designs.json and Anki source definitions are allowed.`);
       for (const [assetId, path, name, mime, width, height, credit, source, license] of tables.Assets) {
         id(assetId, 'Asset ID'); if (!/^media\/[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|webp|mp3|wav)$/i.test(path)) throw new Error(`Unsafe media path ${path}.`);
         const entry = zip.file(path); if (!entry) throw new Error(`Missing ZIP media file ${path}.`);
@@ -234,7 +235,8 @@ export async function readContentFile(bytes: Uint8Array, filename: string, state
         incomingAssets.push({ id: assetId, name: required(name, 'Asset name'), mime: mime as LocalAsset['mime'], dataUrl: `data:${mime};base64,${bytesBase64(data)}`, ...(image ? { width: boundedNumber(width, 0, 'Image width', 1, 8192), height: boundedNumber(height, 0, 'Image height', 1, 8192) } : {}), credit, source, license });
       }
     } else throw new Error('Choose a supported version-1 through version-5 .xlsx workbook or portable .zip archive.');
-    const bundle = parseTables(tables, state, incomingAssets);
+    const bundle = parseTables(tables, state, incomingAssets);if(ankiSources.length)bundle.ankiSources=ankiSources;
+    const sourceIds=new Set(ankiSources.map(source=>source.id));bundle.cards=bundle.cards.map(card=>card.ankiSource?.sourceSnapshotId&&!sourceIds.has(card.ankiSource.sourceSnapshotId)?{...card,ankiSource:{...card.ankiSource,sourceSnapshotId:undefined}}:card);
     if (jsonDesigns !== undefined && !sameContent(jsonDesigns, bundle.designs)) throw new Error('designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.');
     return makePreview(bundle, state);
   } catch (error) { return makePreview(emptyBundle(), state, [error instanceof Error ? error.message : 'Unable to read this file.']); }
@@ -258,7 +260,7 @@ export async function makePortableBundle(source: ContentBundle, rasterize: Raste
 }
 export async function writePortableZip(bundle: ContentBundle): Promise<Uint8Array> {
   const { default: JSZip } = await import('jszip'); const zip = new JSZip();
-  zip.file('deck.xlsx', await writeWorkbook(bundle)); zip.file('designs.json', JSON.stringify(bundle.designs, null, 2));
+  zip.file('deck.xlsx', await writeWorkbook(bundle)); zip.file('designs.json', JSON.stringify(bundle.designs, null, 2));if(bundle.ankiSources?.length)zip.file('anki-source.json',JSON.stringify(bundle.ankiSources));
   for (const asset of bundle.assets) { const bytes = assetBytes(asset); validateMediaSignature(bytes, asset.mime); zip.file(`media/${asset.id}.${extension(asset)}`, bytes); }
   const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   // Never offer an archive that exceeds this prototype's own import boundary.
