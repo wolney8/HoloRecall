@@ -844,12 +844,16 @@ Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the
 | HR-ANKI-V2-09 | Concise source-identity update workflow | Import UX/data | Dogfood Phase 1 | P0 | DONE | Stable identities and local-edit protection |
 | HR-ANKI-V2-10 | Retained source snapshot and independent converter versions | Import/portability | Dogfood Phase 1 | P0 | DONE | Normalized source persistence |
 | HR-ANKI-V2-11 | Compact opt-in advanced enrichment table | Import UX | Dogfood Phase 1 | P1 | DONE | HR-ANKI-V2-07; never required for supported front/back |
-| HR-MODE-01 | Separate Study Mode from Study Preset | Study/domain | Dogfood Phase 2 | P0 | PLANNED | Phase 1 acceptance and shared Study player |
-| HR-MODE-02 | Scheduled learning/relearning repetition | Study/scheduler | Dogfood Phase 2 | P0 | PLANNED | Intraday queues, learn-ahead, exact intervals and fake-clock tests |
-| HR-MODE-03 | Mastery mode with scheduler-safe extra attempts | Study/practice | Dogfood Phase 2 | P1 | PLANNED | HR-MODE-01/02 and separate practice events |
-| HR-MODE-04 | Free Revision mode | Study/practice | Dogfood Phase 2 | P1 | PLANNED | Existing Practice/Focus boundary |
-| HR-MODE-05 | Concise mode chooser | Study UX | Dogfood Phase 2 | P1 | PLANNED | HR-MODE-01–04 |
-| HR-MODE-06 | Mode-specific settings actionability | Study/settings | Dogfood Phase 2 | P0 | PLANNED | Existing setting consumers and HR-MODE-01–04 |
+| HR-MODE-01 | Separate Study Mode from Study Preset | Study/domain | Dogfood Phase 2 | P0 | IN_PROGRESS | Phase 1 acceptance and shared Study player |
+| HR-MODE-02 | Scheduled learning/relearning repetition | Study/scheduler | Dogfood Phase 2 | P0 | IN_PROGRESS | Intraday queues, learn-ahead, exact intervals and fake-clock tests |
+| HR-MODE-03 | Mastery mode with scheduler-safe extra attempts | Study/practice | Dogfood Phase 2 | P1 | IN_PROGRESS | HR-MODE-01/02 and separate practice events |
+| HR-MODE-04 | Free Revision mode | Study/practice | Dogfood Phase 2 | P1 | IN_PROGRESS | Existing Practice/Focus boundary |
+| HR-MODE-05 | Concise mode chooser | Study UX | Dogfood Phase 2 | P1 | IN_PROGRESS | HR-MODE-01–04 |
+| HR-MODE-06 | Mode-specific settings actionability | Study/settings | Dogfood Phase 2 | P0 | IN_PROGRESS | Existing setting consumers and HR-MODE-01–04 |
+| HR-ANKI-V2-12 | Real-package import/update/repair parity hardening | Import/data integrity/UX | Anki replacement usability | P0 | IN_PROGRESS | HR-ANKI-V2-01–11 and exact supplied package |
+| HR-ANKI-V2-13 | Deterministic native fallback art for media-free imported cards | Import/collection/design | Anki replacement usability | P0 | IN_PROGRESS | Declarative source panels and content-v7 card art |
+| HR-CARD-DELIGHT-01 | Accessible finish/frame/motion treatment foundation | Collection/design/platform | Anki replacement usability | P1 | IN_PROGRESS | Existing rarity/finish renderer and feedback adapters |
+| HR-DECK-UX-02 | Group imported-deck study, deck, and source management | Deck management/UX | Anki replacement usability | P1 | IN_PROGRESS | Existing deck actions and contextual source manager |
 | HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | PLANNED | Phase 2 acceptance and source/art portability |
 | HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | PLANNED | Safe static templates/media and Anki-compatible validation |
 

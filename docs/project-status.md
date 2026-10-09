@@ -1,5 +1,11 @@
 # Current restart point
 
+## 9 October 2026 — Anki replacement usability milestone active
+
+- **Authorized boundary:** HR-ANKI-V2-12/13, HR-MODE-01–06, HR-CARD-DELIGHT-01 and HR-DECK-UX-02 are IN_PROGRESS. The milestone covers exact-package parity, explicit Study Mode separate from Study Preset, scheduled within-session learning/relearning, Free Revision, deterministic media-free collectible art, treatment foundations and grouped imported-deck management. Anki export, native persistence, authentication, advertising, payments and cloud work remain outside scope.
+- **Package recovery:** `/mnt/data/Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg` is not mounted in this Mac environment. The same named package exists in `/Users/will_work/Downloads/`; verify its hash and copy it only to ignored runtime evidence before analysis. Never mutate the source package or Will's genuine learner store.
+- **Exact restart point:** inspect session/scheduler contracts and the exact package manifest, then implement the smallest portable Study Mode model before UI. Preserve Study Presets as scheduling policy, retain one authoritative player, and keep Practice isolated from FSRS/rewards.
+
 ## 9 October 2026 — Phase 1 structured Update/Repair integration complete
 
 - **Root cause and correction:** three layers diverged. Template-first conversion existed, but its structured projection omitted Usage, SoundNote and Sources and did not accept `English` as a Meaning field; repair merge could classify an obsolete baseline as local; the UI rendered the merged local bundle as After while change labels described the raw proposal. Direct import and retained-snapshot repair now call the same versioned renderer, preview/Apply share one version-bound transaction plan, and accepted-baseline equality identifies legacy-derived values even when an old origin flag says `local`.
