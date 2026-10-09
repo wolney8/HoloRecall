@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
-import { ANKI_DERIVED_FIELDS, ANKI_MAPPING_POLICY_VERSION, analyseAnkiPackage, ankiFieldHash, ankiImportedContentHash, eligibleAnkiMappings, markAnkiLocalEdits, plainAnkiText, previewAnkiImport, renderAnkiSnapshotCard, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
+import { ANKI_DERIVED_FIELDS, ANKI_MAPPING_POLICY_VERSION, analyseAnkiPackage, analyseAnkiSourceSnapshot, ankiFieldHash, ankiImportedContentHash, eligibleAnkiMappings, markAnkiLocalEdits, plainAnkiText, previewAnkiImport, renderAnkiSnapshotCard, suggestedAnkiFieldTarget, suggestedRarity } from './anki';
 import { createInitialState } from './study';
 
 beforeAll(async () => {
@@ -70,6 +70,22 @@ async function templateFirstVisualPackage():Promise<Uint8Array>{
   db.run('insert into notes values (?,?,?,?,?)',[100,'visual-guid',1,'greeting',values.join('\x1f')]);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
 }
 
+async function reconstructedSourcePackage():Promise<Uint8Array>{
+  const SQL=await initSqlJs(),db=new SQL.Database();db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const fields=['Italian','Image','Pronunciation','Meaning','Literal','Usage','SoundNote','Sources','StableKey','Prompt'];
+  const q='<div class="wrap"><div class="image">{{Image}}</div><div class="prompt">{{Prompt}}</div></div>',a='<div class="wrap">{{FrontSide}}<hr id="answer"><div class="answer" lang="it">{{Italian}}</div><div class="pronunciation">{{Pronunciation}}</div>{{#Meaning}}<div class="section"><div class="label">Meaning</div>{{Meaning}}</div>{{/Meaning}}{{#Literal}}<div class="section"><div class="label">Literal</div>{{Literal}}</div>{{/Literal}}{{#Usage}}<div class="section"><div class="label">Use / examples</div>{{Usage}}</div>{{/Usage}}{{#SoundNote}}<div class="section"><div class="label">Pattern / sound</div>{{SoundNote}}</div>{{/SoundNote}}{{#Sources}}<div class="meta">{{Sources}}</div>{{/Sources}}</div>';
+  const models={1:{name:'Italian Visual - Image First v1',type:0,flds:fields.map(name=>({name})),tmpls:[{name:'Image to Italian',qfmt:q,afmt:a}]}};db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian Lesson 1::01 Greetings'}})]);
+  const examples=[
+    ['jY03zlP8xdb2','Ciao!','CHOW','Hi / Hello / Bye — informal','No useful word-for-word translation; ciao functions as a greeting or farewell.','Informal: Ciao, Marco!<br>Formal: use Buongiorno/Buonasera unless invited to use tu.','Pattern: CI + A begins with the soft C sound, like English ch in chair.','Session 1 handout · p. 1','italian-l1-greetings-ciao','Recall from the illustration'],
+    ['xBZt1kaf4sHY','Buongiorno!','bwon-JOR-noh','Good morning / Good day','buon = good; giorno = day.','Informal: Buongiorno, Marco!','GI before O gives the soft G sound.','Session 1 handout · p. 1','italian-l1-greetings-buongiorno','Recall from the illustration'],
+    ['a2gS66j05H64','Buonasera!','bwoh-nah-SEH-rah','Good evening','buona = good; sera = evening.','Formal: Buonasera, signore.','buona + sera.','Session 1 handout · p. 1','italian-l1-greetings-buonasera','Recall from the illustration'],
+    ['625214c5cf9e626a','Come stai?','KOH-meh STY','How are you? — informal','Come = how; stai is the tu form of stare.','Ciao, Marco. Come stai?','tu → stai; formal Lei → sta.','Session 1 handout','italian-l1-come-stai','How are you?'],
+  ];
+  for(let index=4;index<42;index++)examples.push([`fixture-guid-${index}`,`Italian ${index}`,`pron ${index}`,`Meaning ${index}`,`Literal ${index}`,`Usage ${index}`,`Pattern ${index}`,`Source ${index}`,`stable-${index}`,`Prompt ${index}`]);
+  examples.forEach((values,index)=>{db.run('insert into notes values (?,?,?,?,?)',[100+index,values[0],1,'lesson-1',[values[1],'<img src="fixture.png">',...values.slice(2)].join('\x1f')]);db.run('insert into cards values (?,?,?,?)',[200+index,100+index,10,0]);});
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media',JSON.stringify({0:'fixture.png'}));zip.file('0',await readFile('public/downloads/frame-guide-transparent.png'));db.close();return zip.generateAsync({type:'uint8array'});
+}
+
 describe('Anki content-only import', () => {
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
@@ -100,7 +116,7 @@ describe('Anki content-only import', () => {
     expect(suggestedAnkiFieldTarget('Italian')).toBe('ignore');
     const bytes=await languageMetadataPackage();
     const safe=await analyseAnkiPackage(bytes,'introductions.apkg');
-    expect(safe.cards[0]).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});
+    expect(safe.cards[0]).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',details:[{label:'Use / examples',content:'Mi chiamo Laura.'}]});
     expect(safe.cards[0]!.ankiSource?.contentProvenance).toMatchObject({front:'template',answer:'template',frontFields:['Prompt'],answerFields:['Italian','Pronunciation','Meaning','Examples']});
     expect(safe.sourceSnapshot).toMatchObject({version:2,notes:[{guid:'introductions-guid',fields:{Language:'it',Italian:'Mi chiamo'}}]});
     expect(safe.sourceSnapshot.noteTypes[0]?.templates[0]).toMatchObject({question:'{{Prompt}}',answer:expect.stringContaining('{{Italian}}')});
@@ -120,7 +136,24 @@ describe('Anki content-only import', () => {
   it('turns visual panels and scripted source options into inert native content',async()=>{
     const analysis=await analyseAnkiPackage(await templateFirstVisualPackage(),'visual.apkg'),card=analysis.cards[0]!;
     expect(card).toMatchObject({front:'Say this\nGood evening',answer:'Buonasera!',answerLabel:'Greeting',pronunciation:'bwoh-nah-SEH-rah',meaning:'Good evening',art:{kind:'source-visual-panel',badge:'HELLO',title:'Greetings',subtitle:'Choose and say it'},choices:['Ciao','Salve']});
-    expect(card.details).toEqual(expect.arrayContaining([{label:'Literal',content:'buona + sera'},{label:'Rule / pattern',content:'Use after lunch'}]));expect(JSON.stringify(card)).not.toMatch(/onclick|globalThis|javascript:|evil\.test/);expect(analysis.compatibility.tierC).toBe(0);
+    expect(card.details).toEqual(expect.arrayContaining([{label:'Literal',content:'buona + sera'},{label:'Pattern / sound',content:'Use after lunch'}]));expect(JSON.stringify(card)).not.toMatch(/onclick|globalThis|javascript:|evil\.test/);expect(analysis.compatibility.tierC).toBe(0);
+  });
+  it('uses one structured proposal for fresh import, update, repair and legacy migration',async()=>{
+    const analysis=await analyseAnkiPackage(await reconstructedSourcePackage(),'reconstructed.apkg'),byGuid=(guid:string)=>analysis.cards.find(card=>card.ankiSource?.noteGuid===guid)!;
+    expect(analysis.cards).toHaveLength(42);
+    expect(byGuid('jY03zlP8xdb2')).toMatchObject({front:'Recall from the illustration',answer:'Ciao!',pronunciation:'CHOW',meaning:'Hi / Hello / Bye — informal',details:[
+      {label:'Literal',content:'No useful word-for-word translation; ciao functions as a greeting or farewell.'},
+      {label:'Use / examples',content:'Informal: Ciao, Marco!\nFormal: use Buongiorno/Buonasera unless invited to use tu.'},
+      {label:'Pattern / sound',content:'Pattern: CI + A begins with the soft C sound, like English ch in chair.'},
+      {label:'Reference',content:'Session 1 handout · p. 1'},
+    ],art:{kind:'imported-media'}});
+    expect(byGuid('xBZt1kaf4sHY').answer).toBe('Buongiorno!');expect(byGuid('a2gS66j05H64').answer).toBe('Buonasera!');expect(byGuid('625214c5cf9e626a').answer).toBe('Come stai?');
+    expect(JSON.stringify(analysis.cards)).not.toContain('English-friendly pronunciation · CAPS = stressed syllable');
+    const state=createInitialState(analysis.decks,analysis.cards),root=analysis.decks.find(deck=>!deck.parentId)!.id;
+    state.cards=state.cards.map(card=>{const old=structuredClone(card);old.answer=`${card.answer}\nEnglish-friendly pronunciation · CAPS = stressed syllable\nDetails\nMeaning${card.meaning}`;old.pronunciation='';old.meaning='';delete old.details;old.ankiSource!.conversion={...old.ankiSource!.conversion!,converterVersion:4,enrichmentVersion:1,fieldBaselines:{},fieldOrigins:{}};old.ankiSource!.conversion!.fieldBaselines=Object.fromEntries(ANKI_DERIVED_FIELDS.map(field=>[field,ankiFieldHash(old,field)]));old.ankiSource!.conversion!.fieldOrigins=Object.fromEntries(ANKI_DERIVED_FIELDS.map(field=>[field,'local'])) as any;return old;});
+    const update=previewAnkiImport(analysis,state,true,root,'update'),repair=previewAnkiImport(analysis,state,true,root,'repair'),snapshot=analyseAnkiSourceSnapshot(analysis.sourceSnapshot),legacy=previewAnkiImport(snapshot,state,true,root,'repair');
+    for(const preview of [update,repair,legacy]){expect(preview.update.conflicts).toEqual([]);expect(preview.update.conversionUpgradeCards).toHaveLength(42);const plan=preview.transaction.cards.find(item=>item.proposed.ankiSource?.noteGuid==='jY03zlP8xdb2')!;expect(plan.proposed).toMatchObject({answer:'Ciao!',pronunciation:'CHOW',meaning:'Hi / Hello / Bye — informal',details:expect.arrayContaining([{label:'Reference',content:'Session 1 handout · p. 1'}])});expect(plan.selected).toEqual(plan.proposed);expect(plan.proposed).toEqual(byGuid('jY03zlP8xdb2'));}
+    const local=structuredClone(state),current=local.cards.find(card=>card.ankiSource?.noteGuid==='jY03zlP8xdb2')!,edited=structuredClone(current);edited.answer='My deliberate local answer';local.cards[local.cards.indexOf(current)]=markAnkiLocalEdits(current,edited);const protectedPlan=previewAnkiImport(analysis,local,true,root,'repair'),conflict=protectedPlan.transaction.cards.find(item=>item.cardId===edited.id)!;expect(protectedPlan.update.conflictFields[edited.id]).toEqual(['answer']);expect(conflict.proposed.answer).toBe('Ciao!');expect(conflict.selected.answer).toBe('My deliberate local answer');
   });
   it('replaces a stale auto-inferred Language answer and corrupt accepted baseline during explicit repair',async()=>{
     const bytes=await languageMetadataPackage('Mi chiamo',true),current=await analyseAnkiPackage(bytes,'introductions.apkg'),schema=current.modelSchemas[0]!;
@@ -133,7 +166,7 @@ describe('Anki content-only import', () => {
     before.ankiSource!.conversion.fieldBaselines=Object.fromEntries(ANKI_DERIVED_FIELDS.map(field=>[field,ankiFieldHash(before,field)]));state.cards[0]=before;
     const root=current.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(current,state,true,root,'repair'),repaired=preview.bundle.cards.find(card=>card.id===before.id)!;
     expect(preview.update.sourceChangedCards).toEqual([]);expect(preview.update.conversionUpgradeCards).toContain(before.id);expect(preview.update.conflicts).toEqual([]);
-    expect(repaired).toMatchObject({id:before.id,answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});expect(repaired.answer).not.toBe('it');
+    expect(repaired).toMatchObject({id:before.id,answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',details:[{label:'Use / examples',content:'Mi chiamo Laura.'}]});expect(repaired.answer).not.toBe('it');
     const unknown={...state,ankiMappings:[{...stale,origin:'legacy-unclassified' as const}]},blocked=previewAnkiImport(current,unknown,true,root,'repair');expect(blocked.update.mappingReviewCards).toEqual([]);expect(blocked.errors).not.toContain('A legacy field mapping has unknown authorship. Review the field mapping before applying this repair.');
   });
   it('keeps an explicitly locally edited answer during repair while repairing derived fields',async()=>{
