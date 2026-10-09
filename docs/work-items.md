@@ -187,14 +187,14 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
 - **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
-- **Status:** FAILED — UPDATE/REPAIR PREVIEW DOES NOT USE STRUCTURED SOURCE PROJECTION
+- **Status:** VERIFY — USER RETEST REQUIRED
 - **Source:** Will, 3 October 2026 follow-up acceptance direction; exact package supplied 9 October 2026
 - **Dependencies:** Will's exact real-world `.apkg`; accepted HR-BUG-ANKI-01/02 and HR-BUG-STUDY-01 implementation
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **FAILED.** Will's reconstructed source-compatible package proves that the source contains separate Italian, pronunciation, meaning and labelled supporting fields, while the real Repair preview still shows the old flattened answer on both sides and reports 42 false local conflicts. Phase 1 is reopened. Do not request another user test until HR-BUG-ANKI-20–25 pass against that exact package.
-- **Commits:** Earlier tracking `1539f81`; semantic repair `d364c77`; template-first implementation `34b22f4`; Phase 1 evidence documentation follows.
+- **Verification / evidence:** The supplied 42-card reconstructed package now passes isolated domain plus Chromium/WebKit Update/Repair acceptance: all 42 legacy converter-derived cards are structured upgrades, zero are classified as local conflicts, and the rendered After panel is the same transaction payload Apply persists. GUID `jY03zlP8xdb2` becomes Answer `Ciao!`, Pronunciation `CHOW`, Meaning `Hi / Hello / Bye — informal`, with Literal, Use/examples, Pattern/sound and Reference details; the legacy helper phrase is absent. Card ID, scheduler state, review/reward collections and imported media remain unchanged. Automated evidence permits a real local-profile retest, but only Will can mark this manual item DONE.
+- **Commits:** Earlier tracking `1539f81`; semantic repair `d364c77`; template-first implementation `34b22f4`; repair integration `2ad3846`; closing evidence documentation follows.
 
 ### HR-STUDY-03 — Supported FSRS settings
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -900,16 +900,18 @@ Source: Will's 7 October 2026 failed repeat update of the exact Anki package. Ro
 | HR-ANKI-ARCH-13 | Migrate legacy imports in place | Import/data integrity | Anki architecture V2 | P0 | DONE | Source snapshot or one-time package recovery |
 | HR-ANKI-ARCH-14 | Maintain realistic Anki compatibility fixtures | Import/testing | Anki architecture V2 | P0 | DONE | Official template behavior and package variants |
 | HR-ANKI-ARCH-15 | Authoritative template-first importer ADR | Architecture | Anki architecture V2 | P0 | DONE | HR-ANKI-ARCH-01–14 |
-| HR-BUG-ANKI-20 | Use one authoritative structured conversion pipeline for import/update/repair/migration | Import/data integrity | Phase 1 repair integration | P0 | IN_PROGRESS | Template-first source snapshot and converter |
-| HR-BUG-ANKI-21 | Project template content into structured native fields | Import/content | Phase 1 repair integration | P0 | IN_PROGRESS | HR-BUG-ANKI-20 and content-v7 details |
-| HR-BUG-ANKI-22 | Bind preview and Apply to one immutable transaction plan | Import/data integrity/UX | Phase 1 repair integration | P0 | IN_PROGRESS | HR-BUG-ANKI-20/21 |
-| HR-BUG-ANKI-23 | Remove false local-edit conflicts using provenance/baselines | Import/data integrity | Phase 1 repair integration | P0 | IN_PROGRESS | Field provenance and legacy accepted baselines |
-| HR-BUG-ANKI-24 | Present labelled supporting sections consistently | Study/authoring/content | Phase 1 repair integration | P0 | IN_PROGRESS | Structured details model |
-| HR-BUG-ANKI-25 | Exact reconstructed-package update/repair acceptance | Import/testing | Phase 1 repair integration | P0 | IN_PROGRESS | HR-BUG-ANKI-20–24 and supplied fixture |
+| HR-BUG-ANKI-20 | Use one authoritative structured conversion pipeline for import/update/repair/migration | Import/data integrity | Phase 1 repair integration | P0 | DONE | Template-first source snapshot and converter |
+| HR-BUG-ANKI-21 | Project template content into structured native fields | Import/content | Phase 1 repair integration | P0 | DONE | HR-BUG-ANKI-20 and content-v7 details |
+| HR-BUG-ANKI-22 | Bind preview and Apply to one immutable transaction plan | Import/data integrity/UX | Phase 1 repair integration | P0 | DONE | HR-BUG-ANKI-20/21 |
+| HR-BUG-ANKI-23 | Remove false local-edit conflicts using provenance/baselines | Import/data integrity | Phase 1 repair integration | P0 | DONE | Field provenance and legacy accepted baselines |
+| HR-BUG-ANKI-24 | Present labelled supporting sections consistently | Study/authoring/content | Phase 1 repair integration | P0 | DONE | Structured details model |
+| HR-BUG-ANKI-25 | Exact reconstructed-package update/repair acceptance | Import/testing | Phase 1 repair integration | P0 | DONE | HR-BUG-ANKI-20–24 and supplied fixture |
 
 Acceptance is the complete request text. Converter versioning must invalidate derived content independently from source changes; repair must preserve all learner/scheduler/reward state and protect field-level local edits. Editors retain stable IDs/source links unless explicitly detached. Destructive tests use isolated fixtures only. Web, iOS/iPadOS, Android and Apple-silicon Mac implications remain part of verification.
 
 **Completion evidence:** implementation `d364c77`. Schema 7 separates mapping-policy version from source signature, converter version and normaliser version. Mappings record `auto-inferred`, `user-confirmed` or migration-only `legacy-unclassified` authorship. Repair ignores obsolete automatic mappings, preserves explicit user mappings at their recorded policy version and blocks an unknown legacy mapping until review. Worker analysis returns the exact effective mappings that produced its cards; Apply commits only those mappings with the previewed content. A sanitised two-card fixture starts with `Language = it`, differing real Italian answers, blank structured fields and corrupt accepted baselines; Chromium, desktop WebKit and iPhone-size WebKit prove `0 Source changed / 2 Conversion repairs`, field samples, a visibly different structured preview and correct list/editor/search/Collection/Study output. Field origins protect editor, bulk deck/tag and tag-rename edits. State migration, atomic mapping uniqueness, scheduler/history/reward preservation and the 849.28 kB production gate pass. Evidence is recorded in `docs/project-status.md`; exact-package acceptance remains user-owned.
+
+**Repair-integration evidence:** implementation `2ad3846` makes direct package analysis and retained-snapshot rendering call the same structured renderer and raises converter/enrichment versions independently of source identity. The projection recognizes the template's dedicated pronunciation and Meaning/English fields and retains Literal, Usage, SoundNote and Sources as labelled content-v7 details. Preview and Apply share a version-bound card transaction plan containing current, proposed, selected and field-conflict values. Accepted-baseline equality takes precedence over stale legacy origin flags, so obsolete converter output is replaceable while editor-origin changes remain protected. The ignored 899,678-byte package with SHA-256 `dbf16bf885fe59850b3410d8459911490efcd5212fe1679aafaf112c5f4a45d2` proves 42 upgrades/zero conflicts and exact Ciao/Buongiorno/Buonasera/Come-stai projections in domain, Chromium and WebKit. Unit/domain 177/177 pass serially; full browser coverage is 184/185 plus the unchanged WebKit page-reveal race passing immediately on focused retry; iPhone 17 Pro Simulator native smoke passes 1/1. Build is 819.96 kB raw / 195.22 kB transfer. Evidence: `.runtime/evidence/hr-anki-structured-repair-20261009/`.
 
 ## Preserved completed history
 

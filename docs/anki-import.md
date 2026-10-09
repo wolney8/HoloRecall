@@ -79,9 +79,13 @@ Ordinary import is **choose package → analyse → concise compatibility summar
 
 An imported deck exposes **Update from Anki package**. This opens the file picker for that known source, compares stable identities, shows new/source-changed/conversion-repair/media/unchanged/conflict/source-removed counts, and applies through the atomic content transaction. Missing source cards are retained as recoverable archive candidates; updates never delete learning history.
 
-**Repair imported content** is distinct from source update. For schema-8 imports it renders the retained snapshot with the current template engine, so an unchanged package is not needed. Legacy imports without a snapshot ask for the matching package once, create the snapshot, then preview an in-place repair. Converter and normalizer versions are independent from the source fingerprint. Existing corrupted converter-derived values can be replaced; fields proven locally edited stay local by default.
+**Repair imported content** is distinct from source update. For schema-8 imports it renders the retained snapshot with the same structured conversion service used by fresh import and package update, so an unchanged package is not needed. Legacy imports without a snapshot ask for the matching package once, create the snapshot, then preview an in-place repair. Converter, enrichment and normalizer versions are independent from the source fingerprint. Existing corrupted converter-derived values can be replaced; fields proven locally edited stay local by default.
 
-Apply commits cards, decks, durable assets, exact enrichment mappings, and the normalized source snapshot in one optimistic transaction. A concurrent local version change fails visibly. It never writes scheduler/history/reward state.
+Analysis creates one version-bound transaction plan for every affected card: current value, template-derived proposal, field provenance/conflicts and final selected value. The Before/After UI renders that plan, and Apply commits its selected payload rather than recomputing or rebinding from the current card. A concurrent local version/source change invalidates the plan and requires reanalysis. Accepted importer-baseline equality identifies legacy converter-derived content even when an obsolete origin flag is misleading; actual editor-origin changes remain local by default. Content repair never treats presentation-only art/rarity/finish differences as content conflicts.
+
+The structured projection keeps the principal template answer in `answer`, dedicated pronunciation and Meaning/English fields in their native properties, and labelled Literal, Usage/examples, SoundNote/pattern and Sources/reference values in content-v7 `details`. Local `notes` remain separate. Study shows the concise answer fields with extended details disclosed; inspection/editor expose all details; management rows remain bounded.
+
+Apply commits cards, decks, durable assets, exact enrichment mappings, and the normalized source snapshot in one optimistic transaction. It never writes scheduler/history/reward state.
 
 ## Package and media subset
 
@@ -103,4 +107,4 @@ The importer has bounded archive, database, note/card, cell, media count, byte, 
 
 Fixtures cover Basic, reversed, optional reversed, cloze, image-first, audio, arbitrary/custom field names, metadata fields, nested conditionals, `FrontSide`, `text:` filters, HTML block boundaries, multiple generated cards, hierarchy, source update, and schema evolution. The regression schema includes `Language = it` and distinct `Italian` answers; templates, never field position or metadata, produce the answer. Snapshot repair proves the same source can replace two legacy corrupted answers across list, editor, search, Collection, Study, and export-facing native data without changing learning state.
 
-`HR-ACCEPT-ANKI-01` is **VERIFY — USER REAL-PACKAGE RETEST REQUIRED** after automated exact-package analysis/import and representative browser inspection. Only Will can close the final real-data acceptance item.
+`HR-ACCEPT-ANKI-01` is **VERIFY — USER RETEST REQUIRED**. Automated analysis plus Chromium/WebKit Update/Repair now prove the supplied 42-card reconstructed package produces 42 structured upgrades, zero false conflicts and an exact persisted Ciao payload. Only Will can close the final real local-deck acceptance item.

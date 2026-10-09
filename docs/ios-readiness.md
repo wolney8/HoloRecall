@@ -4,6 +4,8 @@ This retains the project's iOS-readiness history and is the canonical evidence m
 
 ## Current toolchain constraints
 
+- Latest shared-runtime regression: after the structured Anki Repair integration, `npm run native:sync:ios` packaged the 819.96 kB production build and the iPhone 17 Pro / iOS 26.5 XCUITest Study/navigation smoke passed 1/1. This verifies the changed shared build and Study surfaces in WKWebView; the exact `.apkg` Repair workflow itself remains browser evidence, not Simulator document-import evidence.
+
 - Web application: Angular 21.2.24, Angular Material/CDK 21.2.14, TypeScript 5.9.3, Node 24.3.0 and npm 11.4.2.
 - Browser gate: Playwright 1.63.0 with repository-local Chromium and WebKit 26.6 build 2359 on macOS arm64.
 - Native baseline: pinned Capacitor core/CLI/iOS/Android 8.5.2, App 8.1.2, Filesystem 8.1.4, Haptics 8.0.2 and Share 8.0.3. Capacitor 8 requires Node 22+, Xcode 26+ and iOS 15+. The generated Android baseline is minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3 and Java 21. Both native projects sync `dist/holorecall/browser`; Capacitor 9 prerelease is not selected.
