@@ -1,5 +1,12 @@
 # Current restart point
 
+## 9 October 2026 — Phase 1 reopened: structured repair integration
+
+- **Manual failure:** `HR-ACCEPT-ANKI-01` is **FAILED — UPDATE/REPAIR PREVIEW DOES NOT USE STRUCTURED SOURCE PROJECTION**. The real Repair preview shows identical flattened Before/After content and classifies all 42 cards as local conflicts even though the supplied package contains separate Italian, pronunciation, meaning and supporting fields.
+- **Active scope:** HR-BUG-ANKI-20–25 are `IN_PROGRESS`. Trace GUID `jY03zlP8xdb2` through package fields, template projection, repair proposal, preview, conflict merge and persistence. Phase 2 remains stopped.
+- **Safety:** preserve the accepted Phase 0/earlier Phase 1 implementation and genuine learner state. Use an ignored copy of `/Users/will_work/Downloads/Italian_Lesson_1_Laura_Reconstructed_Source_Compatible.apkg`; do not apply it to Will's real store.
+- **Exact restart point:** establish whether conversion, preview binding and merge provenance diverge, then make fresh import/update/repair/migration share one structured proposal and transaction plan before any user retest.
+
 ## 9 October 2026 — Dogfood Phase 1 template-first exact-package gate
 
 - **Repository state:** Phase 0 remains accepted. Phase 1 implementation is complete in the current local checkpoint; no reset, push, deployment, real learner-store migration or mutation of Will's genuine deck was performed. The supplied `.apkg` was copied unchanged only into ignored `.runtime/evidence/hr-dogfood-phase1-20261009/fixtures/`.
