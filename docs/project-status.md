@@ -1,3 +1,14 @@
+# Current restart point
+
+## 9 October 2026 — Dogfood Phase 1 template-first exact-package gate
+
+- **Repository state:** Phase 0 remains accepted. Phase 1 implementation is complete in the current local checkpoint; no reset, push, deployment, real learner-store migration or mutation of Will's genuine deck was performed. The supplied `.apkg` was copied unchanged only into ignored `.runtime/evidence/hr-dogfood-phase1-20261009/fixtures/`.
+- **Exact package:** SHA-256 matches `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`. Manifest: 254 notes/cards, zero reviews, three lesson roots, 21 subdecks, one 21-field note type/template, zero binary media, 254 Picture panels and 134 Options fields containing 593 scripted buttons.
+- **Delivered:** template structure, not field position or mappings, supplies front/back. All 254 answers equal source `Italian`; optional `Answer` is a separate label. Prompt/Question/Context, pronunciation, meaning and labelled details remain structured. Picture becomes stable source-panel art and Options becomes inert native chips. Raw HTML/CSS/handlers never render or execute. State snapshot v2 and independent converter/template/normalizer/enrichment versions support package-free future re-rendering. Format v7 preserves native declarative content through XLSX/ZIP.
+- **Verification:** exact domain gate passes in about 0.7 seconds; targeted import/template/portable tests 47/47; full unit/domain 176/176; exact-package Chromium and desktop WebKit 20-card journeys pass; scheduled imported-card visibility passes independently; production build 818.58 kB raw / 195.02 kB transfer. The first full browser run exposed two identical bulk-test sampling races; after waiting for the existing success signal, the affected Chromium/WebKit test passed 2/2 and the clean post-fix matrix passed 185/185, including all phone profiles. Packaged iPhone 17 Pro / iOS 26.5 shared Study/navigation smoke passes 1/1; it does not claim exact-package document import in Simulator. Evidence is under `.runtime/evidence/hr-dogfood-phase1-20261009/`.
+- **Manual acceptance:** `HR-ACCEPT-ANKI-01` is `VERIFY — USER REAL-PACKAGE RETEST REQUIRED`. Automated evidence now supports requesting Will's real existing-deck update/repair test, but only Will can close it.
+- **Exact restart point:** Phase 1 is closed automatically. Do not start Phase 2 automatically. The next unfinished canonical phase is HR-MODE-01–06, beginning with HR-MODE-01 (separate Study Mode from Study Preset), subject to Will's authorization/acceptance.
+
 # Project status and durable handoff
 
 Updated: 9 October 2026. Branch: `main`. Nothing has been pushed or deployed.

@@ -33,7 +33,13 @@ The engine never executes JavaScript, event handlers, `javascript:` URLs, arbitr
 
 Anki templates determine learning content. HoloRecall continues to determine card presentation, including its renderer, design sets, finishes, rarity, motion, and accessibility behavior. Arbitrary downloaded CSS is not copied into the product shell.
 
-For an ordinary back containing several fields, the first back-template learning field supplies the concise native Answer while the other referenced values remain available to optional enrichment and source provenance. A one-field back keeps the complete safely rendered static text around that field. Cloze and static-only backs use the complete safely rendered answer. `FrontSide` is removed from the native answer so the prompt is not duplicated.
+For ordinary cards, the engine derives the primary answer from the answer-side template structure: an explicit answer region such as the source `.italian` block or content after `<hr id="answer">` is authoritative. It never selects the first referenced field as a general rule. A one-field back can keep safely rendered static text around that field; cloze and static-only backs use the complete safe result. `FrontSide` is removed from native answer content so the prompt is not duplicated.
+
+## Verified Italian Lessons 1–3 package
+
+The 9 October 2026 Phase 1 fixture is retained only in the ignored runtime evidence area; the user package is not committed. Its SHA-256 is `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`. Direct inspection found 254 notes/cards, no review log, three used lesson roots, 21 subdecks, one 21-field note type, one template, no binary media, 254 HTML Picture panels, and 134 Options fields containing 593 scripted buttons.
+
+The template-first converter uses `Italian` as the primary answer for all 254 cards because the back template places it in the semantic answer region. Optional `Answer` values remain separate answer labels. `Prompt`, `Question`, and `Context` form concise front content; pronunciation and meaning remain dedicated fields; `Literal`, `Rule`, `Roles`, `Memory`, and `Extra` remain labelled details. Picture markup becomes declarative `SOURCE_VISUAL_PANEL` art. Visible Options labels become native choice chips while all handlers are discarded. The 111 source tables and 86 outbound hyperlinks are currently reduced to readable inert text and classified as safe presentation simplifications; no source CSS or JavaScript enters the renderer.
 
 ## Source-native snapshot
 
@@ -97,4 +103,4 @@ The importer has bounded archive, database, note/card, cell, media count, byte, 
 
 Fixtures cover Basic, reversed, optional reversed, cloze, image-first, audio, arbitrary/custom field names, metadata fields, nested conditionals, `FrontSide`, `text:` filters, HTML block boundaries, multiple generated cards, hierarchy, source update, and schema evolution. The regression schema includes `Language = it` and distinct `Italian` answers; templates, never field position or metadata, produce the answer. Snapshot repair proves the same source can replace two legacy corrupted answers across list, editor, search, Collection, Study, and export-facing native data without changing learning state.
 
-`HR-ACCEPT-ANKI-01` is **VERIFY — USER REAL-PACKAGE RETEST REQUIRED**. Automated and browser/native fixture evidence is sufficient to request the next exact-package test, but only Will can close that acceptance item.
+`HR-ACCEPT-ANKI-01` is **VERIFY — USER REAL-PACKAGE RETEST REQUIRED** after automated exact-package analysis/import and representative browser inspection. Only Will can close the final real-data acceptance item.

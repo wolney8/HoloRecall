@@ -187,14 +187,14 @@ All items below originate from Will's 1 October 2026 milestone. The lead owns sc
 
 ### HR-ACCEPT-ANKI-01 — Exact real-package manual acceptance
 - **Product area / milestone / priority:** Anki import and Study / Study configuration / P1
-- **Status:** FAILED — ARCHITECTURE UNDER REWORK
-- **Source:** Will, 3 October 2026 follow-up acceptance direction
+- **Status:** VERIFY — USER REAL-PACKAGE RETEST REQUIRED
+- **Source:** Will, 3 October 2026 follow-up acceptance direction; exact package supplied 9 October 2026
 - **Dependencies:** Will's exact real-world `.apkg`; accepted HR-BUG-ANKI-01/02 and HR-BUG-STUDY-01 implementation
 - **Requirement / acceptance:** Manually verify that the exact package presents proportionate simplification/warning classifications, retains its parent/subdeck journey, and keeps several consecutive imported Study cards visibly settled.
 - **Platform implications:** This is real-content acceptance on Will's local browser profile, not native iOS/macOS verification. It must not clear or rewrite existing learner history.
 - **Implementation notes:** Automated genuine/synthetic fixtures remain supporting evidence. They do not substitute for this exact package or permit this item to be marked DONE.
-- **Verification / evidence:** **FAILED — ARCHITECTURE UNDER REWORK.** The exact package proved that the latest Repair correctly refuses a meaningless conversion but then exposes thirteen arbitrary source fields as a required mapping task. That remains failed real-user acceptance. Do not request another user test until template-first fixtures prove automatic front/back rendering, concise import/update and legacy migration.
-- **Commits:** Earlier tracking `1539f81`; semantic repair tracking `e8c72ea`; implementation `d364c77`; exact-package evidence pending.
+- **Verification / evidence:** Automated exact-package acceptance now verifies the supplied SHA-256, 254 template-derived cards, 3 lesson roots, 21 subdecks, 254 native visual panels, 134 choice cards/593 inert options, zero manual mapping, Italian answers on every card, and identical retained-snapshot re-rendering. Chromium and desktop WebKit each pass a 20-card cross-lesson/kind shared-player inspection; synthetic legacy `Language = it` repair and learner-state preservation remain green. Will must still retest the update/repair against the genuine existing local deck before this manual item can become DONE.
+- **Commits:** Earlier tracking `1539f81`; semantic repair `d364c77`; template-first implementation `34b22f4`; Phase 1 evidence documentation follows.
 
 ### HR-STUDY-03 — Supported FSRS settings
 - **Product area / milestone / priority:** Scheduling / Study configuration / P0
@@ -825,7 +825,7 @@ Acceptance is the complete stop-ship request. The lead owns mapping/source schem
 
 ## HoloRecall dogfood gate — active milestone
 
-Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the four phases below in order. A later phase may not start until the preceding acceptance gate passes. Existing template-first implementation in the working tree is preserved, but Phase 1 acceptance work is paused while Phase 0 is active. AnkiWeb Sync remains `NOT PLANNED`.
+Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the four phases below in order. A later phase may not start until the preceding acceptance gate passes. Phase 0 is accepted and the automatic Phase 1 gate is complete; Phase 2 has not started. AnkiWeb Sync remains `NOT PLANNED`.
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -833,17 +833,17 @@ Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the
 | HR-ANKI-LEGACY-02 | Rebuild every derived surface after legacy repair | Import/search/portability | Dogfood Phase 0 | P0 | DONE | HR-ANKI-LEGACY-01 and indexed/export projections |
 | HR-CONTENT-LIST-01 | Concise structured card-management rows | Deck management/UI | Dogfood Phase 0 | P0 | DONE | Structured card content and bounded list rendering |
 | HR-DECK-UX-01 | Replace deck/source action dump with one management hierarchy | Deck management/UX | Dogfood Phase 0 | P0 | DONE | Shared deck actions and contextual Anki-source management |
-| HR-ANKI-V2-01 | Retain source-native Anki deck/note-type/note/card/media model | Import/data integrity | Dogfood Phase 1 | P0 | PLANNED | Phase 0 acceptance; HR-ANKI-ARCH-01/08/09 |
-| HR-ANKI-V2-02 | Safe template engine for supported Anki constructs | Import/security | Dogfood Phase 1 | P0 | PLANNED | HR-ANKI-V2-01; HR-ANKI-ARCH-02/03 |
-| HR-ANKI-V2-03 | Safe internal imported-content model | Import/content | Dogfood Phase 1 | P0 | PLANNED | HR-ANKI-V2-02 and sanitisation boundary |
-| HR-ANKI-V2-04 | Exact Italian package content mapping | Import/conversion | Dogfood Phase 1 | P0 | PLANNED | Exact package and template-first renderer |
-| HR-ANKI-V2-05 | Convert Picture panels and Options into inert native content | Import/security/UI | Dogfood Phase 1 | P0 | PLANNED | Safe content model; no source JavaScript/CSS execution |
-| HR-ANKI-V2-06 | Deterministic collectible art without binary source images | Collection/design | Dogfood Phase 1 | P1 | PLANNED | Stable card-art source model |
-| HR-ANKI-V2-07 | Keep semantic enrichment optional | Import/content | Dogfood Phase 1 | P0 | PLANNED | Valid template-rendered front/back |
-| HR-ANKI-V2-08 | Concise automatic import workflow | Import UX | Dogfood Phase 1 | P0 | PLANNED | Exact-package compatibility analysis |
-| HR-ANKI-V2-09 | Concise source-identity update workflow | Import UX/data | Dogfood Phase 1 | P0 | PLANNED | Stable identities and local-edit protection |
-| HR-ANKI-V2-10 | Retained source snapshot and independent converter versions | Import/portability | Dogfood Phase 1 | P0 | PLANNED | Normalized source persistence |
-| HR-ANKI-V2-11 | Compact opt-in advanced enrichment table | Import UX | Dogfood Phase 1 | P1 | PLANNED | HR-ANKI-V2-07; never required for supported front/back |
+| HR-ANKI-V2-01 | Retain source-native Anki deck/note-type/note/card/media model | Import/data integrity | Dogfood Phase 1 | P0 | DONE | Phase 0 acceptance; HR-ANKI-ARCH-01/08/09 |
+| HR-ANKI-V2-02 | Safe template engine for supported Anki constructs | Import/security | Dogfood Phase 1 | P0 | DONE | HR-ANKI-V2-01; HR-ANKI-ARCH-02/03 |
+| HR-ANKI-V2-03 | Safe internal imported-content model | Import/content | Dogfood Phase 1 | P0 | DONE | HR-ANKI-V2-02 and sanitisation boundary |
+| HR-ANKI-V2-04 | Exact Italian package content mapping | Import/conversion | Dogfood Phase 1 | P0 | DONE | Exact package and template-first renderer |
+| HR-ANKI-V2-05 | Convert Picture panels and Options into inert native content | Import/security/UI | Dogfood Phase 1 | P0 | DONE | Safe content model; no source JavaScript/CSS execution |
+| HR-ANKI-V2-06 | Deterministic collectible art without binary source images | Collection/design | Dogfood Phase 1 | P1 | DONE | Stable card-art source model |
+| HR-ANKI-V2-07 | Keep semantic enrichment optional | Import/content | Dogfood Phase 1 | P0 | DONE | Valid template-rendered front/back |
+| HR-ANKI-V2-08 | Concise automatic import workflow | Import UX | Dogfood Phase 1 | P0 | DONE | Exact-package compatibility analysis |
+| HR-ANKI-V2-09 | Concise source-identity update workflow | Import UX/data | Dogfood Phase 1 | P0 | DONE | Stable identities and local-edit protection |
+| HR-ANKI-V2-10 | Retained source snapshot and independent converter versions | Import/portability | Dogfood Phase 1 | P0 | DONE | Normalized source persistence |
+| HR-ANKI-V2-11 | Compact opt-in advanced enrichment table | Import UX | Dogfood Phase 1 | P1 | DONE | HR-ANKI-V2-07; never required for supported front/back |
 | HR-MODE-01 | Separate Study Mode from Study Preset | Study/domain | Dogfood Phase 2 | P0 | PLANNED | Phase 1 acceptance and shared Study player |
 | HR-MODE-02 | Scheduled learning/relearning repetition | Study/scheduler | Dogfood Phase 2 | P0 | PLANNED | Intraday queues, learn-ahead, exact intervals and fake-clock tests |
 | HR-MODE-03 | Mastery mode with scheduler-safe extra attempts | Study/practice | Dogfood Phase 2 | P1 | PLANNED | HR-MODE-01/02 and separate practice events |
@@ -853,7 +853,11 @@ Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the
 | HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | PLANNED | Phase 2 acceptance and source/art portability |
 | HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | PLANNED | Safe static templates/media and Anki-compatible validation |
 
-Phase 0 acceptance requires an in-place legacy repair that preserves learner state, consistent repaired content across list/editor/Study/Collection/search/export, concise card rows, one clear deck-action hierarchy, one non-duplicated Anki-source management surface and advanced enrichment absent from normal deck actions. HR-ACCEPT-ANKI-01 remains failed until the exact-package Phase 1 gate is proven automatically and then retested by Will.
+Phase 1 acceptance requires the exact supplied package to pass automatic template-first conversion, safe declarative presentation, concise import/update, legacy repair, portability and browser evidence without manual mapping. The automatic gate now passes; HR-ACCEPT-ANKI-01 remains VERIFY until Will retests the genuine existing local deck.
+
+- **Phase 1 acceptance evidence (9 October 2026):** SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a` matches. The ignored runtime fixture contains 254 notes/cards, no reviews, 3 lesson roots, 21 subdecks, one 21-field note type/template, no binary media, 254 Picture panels and 134 Options blocks/593 choices. Template semantics select `Italian` on all 254 cards; 64 optional `Answer` values remain labels. Picture/Options become declarative panel/choice data and source scripts/styles never reach the renderer. Twenty representative cards pass Chromium and WebKit visual/reveal/transition inspection. Unit/domain 176/176, the final browser matrix 185/185 and production build 818.58 kB raw / 195.02 kB transfer pass. An earlier full browser run exposed the same asynchronous bulk-action sampling race in Chromium and WebKit; waiting for the existing success signal fixed it without changing product assertions, the focused rerun passed 2/2, and the clean post-fix matrix passed 185/185. The packaged iPhone 17 Pro / iOS 26.5 shared Study/navigation smoke also passed 1/1; exact-package document import was not represented as Simulator evidence. Runtime evidence: `.runtime/evidence/hr-dogfood-phase1-20261009/`.
+- **Implementation notes:** state snapshot v2 retains used source decks, ordered note fields, templates, notes, generated-card identities and media aliases. Converter v4, template engine v1, normalizer v4 and enrichment v1 invalidate independently. Portable content format v7 carries validated declarative art, choices, answer labels and labelled details while v1–v6 remain readable. Safe hyperlinks and 111 source tables are readable inert-text simplifications in this release.
+- **Relevant commit:** Template-first implementation `34b22f4`; evidence/documentation checkpoint follows this handoff.
 
 - **Phase 0 acceptance evidence (9 October 2026):** a pre-snapshot legacy fixture supplies its source package once, creates and retains the normalized source snapshot, replaces obsolete auto-derived `Language → Answer` content in place and preserves card identity plus learner state. Repaired identity is exercised through bounded card row, editor, search, Collection, consecutive-card Study and portable source snapshot round-trip. Deck journeys expose Study, Focus and a closable More menu; subdeck disclosure is subordinate; imported decks expose one Manage Anki source entry leading to Update, rebuild/repair, compatibility, opt-in enrichment and detach. Unit/domain 173/173, targeted desktop 20/20, phone 200% 3/3, iPhone Simulator packaged Study/navigation 1/1, and production build 849.98 kB pass. The full browser matrix reached 184/185; one WebKit feedback-signature sample raced the finite 900 ms element after visibility. The assertion was made atomic without changing its timeout/strength and then passed 6/6 repeated Chromium/WebKit runs. Phase 1 remains gated on the exact package.
 
@@ -881,21 +885,21 @@ Source: Will's 7 October 2026 failed repeat update of the exact Anki package. Ro
 | HR-BUG-ANKI-17 | Repair corrupted accepted baselines safely | Import/data integrity | Real repair recovery | P0 | DONE | Provenance-aware field merge |
 | HR-BUG-ANKI-18 | Prevent metadata values across downstream surfaces | Import/content | Real repair recovery | P0 | DONE | Repaired structured content |
 | HR-BUG-ANKI-19 | Discoverable deck source management | Import UX | Real repair recovery | P0 | DONE | Imported Deck Details |
-| HR-ANKI-ARCH-01 | Retain normalized source-native Anki model | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Package parsers and stable source identities |
-| HR-ANKI-ARCH-02 | Safe Anki template compatibility engine | Import/security | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-01 |
-| HR-ANKI-ARCH-03 | Derive front and answer from card templates | Import/conversion | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-02 |
-| HR-ANKI-ARCH-04 | Make semantic enrichment secondary | Import/content | Anki architecture V2 | P0 | IN_PROGRESS | Template-rendered core card |
-| HR-ANKI-ARCH-05 | Automatic compatibility analysis and defaults | Import/compatibility | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-02–04 |
-| HR-ANKI-ARCH-06 | Concise automatic import workflow | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Compatibility analysis |
-| HR-ANKI-ARCH-07 | Concise automatic update workflow | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Stable source comparison |
-| HR-ANKI-ARCH-08 | Stable source update identity | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Source note/template/card identities |
-| HR-ANKI-ARCH-09 | Persist deduplicated normalized source snapshot | Import/portability | Anki architecture V2 | P0 | IN_PROGRESS | Schema migration and storage limits |
-| HR-ANKI-ARCH-10 | Advanced mapping only as fallback/enrichment | Import UX | Anki architecture V2 | P0 | IN_PROGRESS | Automatic template rendering |
-| HR-ANKI-ARCH-11 | Explicit compatibility tiers A–D | Import/compatibility | Anki architecture V2 | P0 | IN_PROGRESS | Supported/unsupported construct analysis |
-| HR-ANKI-ARCH-12 | Separate Anki content from HoloRecall presentation | Import/design | Anki architecture V2 | P0 | IN_PROGRESS | Safe rendered content |
-| HR-ANKI-ARCH-13 | Migrate legacy imports in place | Import/data integrity | Anki architecture V2 | P0 | IN_PROGRESS | Source snapshot or one-time package recovery |
-| HR-ANKI-ARCH-14 | Maintain realistic Anki compatibility fixtures | Import/testing | Anki architecture V2 | P0 | IN_PROGRESS | Official template behavior and package variants |
-| HR-ANKI-ARCH-15 | Authoritative template-first importer ADR | Architecture | Anki architecture V2 | P0 | IN_PROGRESS | HR-ANKI-ARCH-01–14 |
+| HR-ANKI-ARCH-01 | Retain normalized source-native Anki model | Import/data integrity | Anki architecture V2 | P0 | DONE | Package parsers and stable source identities |
+| HR-ANKI-ARCH-02 | Safe Anki template compatibility engine | Import/security | Anki architecture V2 | P0 | DONE | HR-ANKI-ARCH-01 |
+| HR-ANKI-ARCH-03 | Derive front and answer from card templates | Import/conversion | Anki architecture V2 | P0 | DONE | HR-ANKI-ARCH-02 |
+| HR-ANKI-ARCH-04 | Make semantic enrichment secondary | Import/content | Anki architecture V2 | P0 | DONE | Template-rendered core card |
+| HR-ANKI-ARCH-05 | Automatic compatibility analysis and defaults | Import/compatibility | Anki architecture V2 | P0 | DONE | HR-ANKI-ARCH-02–04 |
+| HR-ANKI-ARCH-06 | Concise automatic import workflow | Import UX | Anki architecture V2 | P0 | DONE | Compatibility analysis |
+| HR-ANKI-ARCH-07 | Concise automatic update workflow | Import UX | Anki architecture V2 | P0 | DONE | Stable source comparison |
+| HR-ANKI-ARCH-08 | Stable source update identity | Import/data integrity | Anki architecture V2 | P0 | DONE | Source note/template/card identities |
+| HR-ANKI-ARCH-09 | Persist deduplicated normalized source snapshot | Import/portability | Anki architecture V2 | P0 | DONE | Schema migration and storage limits |
+| HR-ANKI-ARCH-10 | Advanced mapping only as fallback/enrichment | Import UX | Anki architecture V2 | P0 | DONE | Automatic template rendering |
+| HR-ANKI-ARCH-11 | Explicit compatibility tiers A–D | Import/compatibility | Anki architecture V2 | P0 | DONE | Supported/unsupported construct analysis |
+| HR-ANKI-ARCH-12 | Separate Anki content from HoloRecall presentation | Import/design | Anki architecture V2 | P0 | DONE | Safe rendered content |
+| HR-ANKI-ARCH-13 | Migrate legacy imports in place | Import/data integrity | Anki architecture V2 | P0 | DONE | Source snapshot or one-time package recovery |
+| HR-ANKI-ARCH-14 | Maintain realistic Anki compatibility fixtures | Import/testing | Anki architecture V2 | P0 | DONE | Official template behavior and package variants |
+| HR-ANKI-ARCH-15 | Authoritative template-first importer ADR | Architecture | Anki architecture V2 | P0 | DONE | HR-ANKI-ARCH-01–14 |
 
 Acceptance is the complete request text. Converter versioning must invalidate derived content independently from source changes; repair must preserve all learner/scheduler/reward state and protect field-level local edits. Editors retain stable IDs/source links unless explicitly detached. Destructive tests use isolated fixtures only. Web, iOS/iPadOS, Android and Apple-silicon Mac implications remain part of verification.
 

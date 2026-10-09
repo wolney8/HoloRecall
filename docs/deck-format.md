@@ -1,8 +1,8 @@
-# HoloRecall deck-content format, version 6
+# HoloRecall deck-content format, version 7
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 6 adds deck-cover media and preserves per-card inert Anki identity/conversion provenance. State schema 8 separately retains normalized Anki source snapshots (note types, templates, notes, generated-card identities, deck tree and media aliases) for template-first package-free repair. Those snapshots are included in the full JSON learning backup, not this content-only XLSX/ZIP format. A portable deck still contains usable native cards and per-card provenance; transferring its package-free reconversion source currently requires a full backup or supplying the package once. Version 5 introduced inert Anki source identities/import baselines; version 4 introduced explicit deck parents and card sibling groups. Versions 1–5 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 7 adds portable declarative card art, native choice labels, an optional answer label and labelled supporting-detail blocks. Version 6 added deck-cover media and preserved per-card inert Anki identity/conversion provenance. State schema 8 separately retains normalized Anki source snapshots (note types, templates, notes, generated-card identities, deck tree and media aliases) for template-first package-free repair. Those snapshots are included in the full JSON learning backup, not this content-only XLSX/ZIP format. A portable deck still contains usable native cards and per-card provenance; transferring its package-free reconversion source currently requires a full backup or supplying the package once. Version 5 introduced inert Anki source identities/import baselines; version 4 introduced explicit deck parents and card sibling groups. Versions 1–6 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
 Download the [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. The `anki_source` columns contain validated inert JSON written by HoloRecall; ordinary authored decks leave them blank.
 
@@ -18,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 6
+format_version | 7
 content_only | true
 ```
 
@@ -44,7 +44,7 @@ deck_id | title | description | design_set_id | suspended | parent_deck_id | ank
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details
 ```
 
 | Field | Meaning and validation |
@@ -69,6 +69,10 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
 | `sibling_group_id` | Optional stable ID shared by cards generated from the same note, such as reversed or cloze siblings. It carries content relationships only, never review history. |
 | `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable note/template/snapshot identity, source fingerprint, template-derived content provenance, versioned conversion contract and per-field accepted baselines. It is never rendered or executed. The referenced normalized snapshot is a full-backup concern. |
+| `art` | Optional validated declarative JSON. Supported kinds are `imported-media`, `source-visual-panel`, and `generated-text-art`; no HTML, CSS, script, event handler, URL fetch, or device path is accepted. |
+| `choices` | JSON array of visible inert choice labels. Selecting one never submits a Study rating. |
+| `answer_label` | Optional short source category/label displayed separately from the primary answer. |
+| `details` | JSON array of `{label, content}` supporting blocks. Labels and values remain separate; the default card list does not concatenate this content. |
 
 ### Designs
 
