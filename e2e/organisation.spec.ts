@@ -23,7 +23,7 @@ test('HR-ORG-02 combined filters are visible, clearable and retained through Col
 test('HR-ORG-03 and 04 bulk tag and move preserve learning state',async({page})=>{
   await openApp(page);await navigate(page,'Decks');await waitForIndex(page);const before=await snapshot(page);
   await page.getByRole('button',{name:'New deck',exact:true}).click();await page.getByLabel('Deck title').fill('Archive practice');await page.getByRole('button',{name:'Save deck'}).click();
-  const first=page.locator('.card-list-row').first();await first.getByRole('checkbox').check();await page.getByLabel('Move to deck').click();await page.getByRole('option',{name:'Archive practice'}).click();await page.getByLabel('Add tags').fill(' Travel , travel, Review ');await page.getByRole('button',{name:'Apply changes'}).click();
+  const first=page.locator('.card-list-row').first();await first.getByRole('checkbox').check();await page.getByLabel('Move to deck').click();await page.getByRole('option',{name:'Archive practice'}).click();await page.getByLabel('Add tags').fill(' Travel , travel, Review ');await page.getByRole('button',{name:'Apply changes'}).click();await expect(page.getByText('1 cards updated. Review history and earned cosmetics were preserved.')).toBeVisible();
   const after=await snapshot(page),moved=after.cards.find(card=>card.tags.includes('Review'))!;expect(moved).toBeTruthy();expect(after.decks.find(deck=>deck.id===moved.deckId)?.name).toBe('Archive practice');expect(moved.tags.filter(tag=>tag.toLowerCase()==='travel')).toHaveLength(1);expect(after.events).toEqual(before.events);expect(after.rewardEvents).toEqual(before.rewardEvents);expect(after.states).toEqual(before.states);
 });
 

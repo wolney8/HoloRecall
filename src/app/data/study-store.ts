@@ -265,7 +265,7 @@ export class LocalStudyStore {
 
 
 function sameCardContent(a: CardContent, b: CardContent): boolean {
-  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
+  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId,art:card.art,choices:card.choices,answerLabel:card.answerLabel,details:card.details}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
   return normalized(a) === normalized(b);
 }
 

@@ -24,6 +24,14 @@ export interface CardContent {
   imageDescription?: string;
   frontAudio?: string[];
   backAudio?: string[];
+  /** Safe, HoloRecall-owned art derived from source content. Never contains source HTML. */
+  art?: CardArtSource;
+  /** Inert answer choices. Selecting one is practice interaction, never a scheduler rating. */
+  choices?: string[];
+  /** Optional source category shown separately from the primary learning answer. */
+  answerLabel?: string;
+  /** Structured supporting content kept out of the primary answer. */
+  details?: CardDetail[];
   archived?: boolean;
   createdAt?: string;
   /** Stable relationship shared by reversed/template/cloze siblings. */
@@ -31,6 +39,12 @@ export interface CardContent {
   /** Inert source identity and last-import baseline. Never contains scheduling state. */
   ankiSource?: AnkiCardSource;
 }
+
+export interface CardDetail { label: string; content: string }
+export type CardArtSource =
+  | { kind: 'source-visual-panel'; badge?: string; title: string; subtitle?: string; lesson?: string; topic?: string; sourceKind?: string }
+  | { kind: 'generated-text-art'; title: string; subtitle?: string; seed: string }
+  | { kind: 'imported-media' };
 
 export interface Deck { id: string; name: string; description: string; suspended: boolean; coverImage?: string; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; ankiSource?: AnkiDeckSource }
 export interface AnkiCardSource {
@@ -49,7 +63,9 @@ export interface AnkiCardSource {
   /** Versioned conversion contract. Missing values identify legacy imports needing package-backed repair. */
   conversion?: {
     converterVersion: number;
+    templateEngineVersion?: number;
     normalizerVersion: number;
+    enrichmentVersion?: number;
     mappingVersion: number;
     mappingPolicyVersion?: number;
     mappingOrigin?: 'auto-inferred' | 'user-confirmed' | 'legacy-unclassified';
@@ -76,7 +92,7 @@ export interface AnkiSourceCard { id: string; noteId: string; templateId: string
 /** Compact, inert Anki source. It contains no scheduling/review state and no executable package bytes. */
 export interface AnkiSourceSnapshot {
   id: string;
-  version: 1;
+  version: 1 | 2;
   packageVariant: 'legacy-anki2' | 'legacy-anki21' | 'modern-anki21b';
   sourceDecks: Array<{ id: string; path: string; parentId?: string }>;
   noteTypes: AnkiSourceNoteType[];
@@ -85,7 +101,7 @@ export interface AnkiSourceSnapshot {
   media: Array<{ name: string; assetId: string }>;
   contentHash: string;
 }
-export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId';
+export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details';
 export interface AnkiDeckSource {
   kind: 'anki';
   sourceDeckId?: string;

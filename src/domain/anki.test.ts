@@ -61,6 +61,15 @@ async function languageMetadataPackage(answer = 'Mi chiamo',multiple=false): Pro
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
 }
 
+async function templateFirstVisualPackage():Promise<Uint8Array>{
+  const SQL=await initSqlJs(),db=new SQL.Database();db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const fields=['Prompt','Language','Question','Picture','Options','Answer','Italian','Pronunciation','Meaning','Literal','Rule','Roles','Memory','Extra'];
+  const q='<div>{{Picture}}{{#Options}}<div>{{Options}}</div>{{/Options}}</div><p>{{Prompt}}</p><div>{{Question}}</div>',a='<div class="answer-body"><div class="answer-tag">{{Answer}}</div><div class="italian">{{Italian}}</div><div>{{Pronunciation}}</div><div>{{Meaning}}</div><div>{{Literal}}</div><div>{{Rule}}</div></div>';
+  const models={1:{name:'Arbitrary Italian',type:0,flds:fields.map(name=>({name})),tmpls:[{name:'Visual',qfmt:q,afmt:a}]}};db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Italian::Lesson 1::Greetings'}})]);
+  const picture='<div class="panel-head"><span class="panel-badge">HELLO</span><div class="panel-title">Greetings</div><div class="panel-subtitle">Choose and say it</div></div>',options='<button onclick="globalThis.pwned=1">Ciao</button><button onclick="location=\'https://evil.test\'">Salve</button>',values=['Say this','it','Good evening',picture,options,'Greeting','Buonasera!','bwoh-nah-SEH-rah','Good evening','buona + sera','Use after lunch','','Remember the evening','Informal or formal'];
+  db.run('insert into notes values (?,?,?,?,?)',[100,'visual-guid',1,'greeting',values.join('\x1f')]);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return zip.generateAsync({type:'uint8array'});
+}
+
 describe('Anki content-only import', () => {
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
@@ -93,7 +102,7 @@ describe('Anki content-only import', () => {
     const safe=await analyseAnkiPackage(bytes,'introductions.apkg');
     expect(safe.cards[0]).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',pronunciation:'mee KYAH-moh',meaning:'My name is',notes:expect.stringContaining('Mi chiamo Laura.')});
     expect(safe.cards[0]!.ankiSource?.contentProvenance).toMatchObject({front:'template',answer:'template',frontFields:['Prompt'],answerFields:['Italian','Pronunciation','Meaning','Examples']});
-    expect(safe.sourceSnapshot).toMatchObject({version:1,notes:[{guid:'introductions-guid',fields:{Language:'it',Italian:'Mi chiamo'}}]});
+    expect(safe.sourceSnapshot).toMatchObject({version:2,notes:[{guid:'introductions-guid',fields:{Language:'it',Italian:'Mi chiamo'}}]});
     expect(safe.sourceSnapshot.noteTypes[0]?.templates[0]).toMatchObject({question:'{{Prompt}}',answer:expect.stringContaining('{{Italian}}')});
     expect(safe.compatibility).toEqual({tierA:1,tierB:0,tierC:0,tierD:0});
     expect(renderAnkiSnapshotCard(safe.sourceSnapshot,'200')).toMatchObject({front:'Introduce yourself',answer:'Mi chiamo',answerFields:['Italian','Pronunciation','Meaning','Examples']});
@@ -107,6 +116,11 @@ describe('Anki content-only import', () => {
     const corrected=await analyseAnkiPackage(bytes,'introductions.apkg',undefined,undefined,[repaired]);
     expect(corrected.cards[0]).toMatchObject({answer:'Mi chiamo',pronunciation:'mee KYAH-moh'});
     expect(corrected.cards[0]!.ankiSource?.contentProvenance).toMatchObject({answer:'template',answerFields:['Italian','Pronunciation','Meaning','Examples']});
+  });
+  it('turns visual panels and scripted source options into inert native content',async()=>{
+    const analysis=await analyseAnkiPackage(await templateFirstVisualPackage(),'visual.apkg'),card=analysis.cards[0]!;
+    expect(card).toMatchObject({front:'Say this\nGood evening',answer:'Buonasera!',answerLabel:'Greeting',pronunciation:'bwoh-nah-SEH-rah',meaning:'Good evening',art:{kind:'source-visual-panel',badge:'HELLO',title:'Greetings',subtitle:'Choose and say it'},choices:['Ciao','Salve']});
+    expect(card.details).toEqual(expect.arrayContaining([{label:'Literal',content:'buona + sera'},{label:'Rule / pattern',content:'Use after lunch'}]));expect(JSON.stringify(card)).not.toMatch(/onclick|globalThis|javascript:|evil\.test/);expect(analysis.compatibility.tierC).toBe(0);
   });
   it('replaces a stale auto-inferred Language answer and corrupt accepted baseline during explicit repair',async()=>{
     const bytes=await languageMetadataPackage('Mi chiamo',true),current=await analyseAnkiPackage(bytes,'introductions.apkg'),schema=current.modelSchemas[0]!;
@@ -163,6 +177,11 @@ describe('Anki content-only import', () => {
     expect(preview.update.conversionUpgradeCards).toEqual([card.id]);
     expect(preview.update.unchangedCards).not.toContain(card.id);
     expect(preview.bundle.cards[0]).toMatchObject({id:card.id,answer:'Good evening',meaning:'good evening'});
+  });
+  it.each(['templateEngineVersion','enrichmentVersion'] as const)('invalidates unchanged derived content when %s advances',async version=>{
+    const analysis=await analyseAnkiPackage(await languageMetadataPackage(),'source.apkg'),state=createInitialState(analysis.decks,analysis.cards),card=state.cards[0]!;
+    card.ankiSource!.conversion![version]=0;const root=analysis.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(analysis,state,true,root);
+    expect(preview.update.sourceChangedCards).toEqual([]);expect(preview.update.conversionUpgradeCards).toEqual([card.id]);
   });
   it('analyses a legacy schema package as notes and generated cards, including reversed and cloze cards', async () => {
     const analysis = await analyseAnkiPackage(await legacyPackage(), 'tiny.apkg');

@@ -3,6 +3,7 @@ import type { CardContent, DesignSet, FinishPreset, Rarity } from '../domain/mod
 import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
 import { LocalStudyStore } from './data/study-store';
+import {ImportedCardContentComponent} from './imported-card-content';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -10,6 +11,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
 @Component({
   selector: 'hr-card',
   standalone: true,
+  imports:[ImportedCardContentComponent],
   template: `
     <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable"
       [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? 0 : null" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
@@ -30,12 +32,15 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
             } @else if (illustrationMissing) {
               <span class="missing-image"><span aria-hidden="true">▧</span> Illustration unavailable</span>
             }
+            @if(!illustration && !illustrationMissing && (card.art || (!displayedRevealed() && card.choices?.length))){@defer(when card.art || card.choices?.length){<hr-imported-card-content [card]="card" mode="art" [showChoices]="!displayedRevealed()"/>}}
           </div>
           <div #copy class="card-copy protected" [class.answer]="displayedRevealed()" [class.prompt]="!displayedRevealed()" [attr.tabindex]="scrollable() ? 0 : null" [attr.role]="scrollable() ? 'region' : null" [attr.aria-label]="scrollable() ? 'Card content. Scroll to read all text.' : null">
             @if (displayedRevealed()) {
+              @if(card.answerLabel){<span class="answer-label">{{card.answerLabel}}</span>}
               <h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>
               @if (card.pronunciation) { <p class="pronunciation">{{ card.pronunciation }}</p><span class="approx">Approximate pronunciation</span> }
               @if (card.meaning && !compact) { <p class="meaning">{{ card.meaning }}</p> }
+              @if(card.details?.length && !compact){@defer(when displayedRevealed()){<hr-imported-card-content [card]="card" mode="details"/>}}
             } @else if (card.kind === 'text') { <h3>{{ card.front }}</h3> }
             @else { <span class="visual-prompt">Reveal for the answer</span> }
           </div>
@@ -60,6 +65,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
     .audio-button{min-width:44px;min-height:44px;border:1px solid color-mix(in srgb,var(--mat-sys-outline) 55%,transparent);border-radius:999px;background:var(--mat-sys-surface-container-high);color:var(--mat-sys-on-surface);display:inline-flex;align-items:center;justify-content:center;gap:4px;font:600 12px/1 Roboto,Arial,sans-serif;box-shadow:0 3px 10px color-mix(in srgb,var(--mat-sys-shadow) 15%,transparent)}
     .audio-button:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:2px}
     .audio-error{position:absolute;z-index:6;left:20px;right:20px;bottom:84px;margin:0;padding:6px 8px;border-radius:8px;background:var(--mat-sys-error-container);color:var(--mat-sys-on-error-container);font-size:12px;text-align:start}
+    .answer-label{align-self:center;padding:.15rem .5rem;border-radius:999px;background:var(--mat-sys-secondary-container);color:var(--mat-sys-on-secondary-container);font-size:.68rem}
   `],
 })
 export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
@@ -123,8 +129,11 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const back = this.backImageUrl !== undefined ? this.backImageUrl : this.card?.backImage;
     return this.displayedRevealed() ? back || front : front;
   }
-  get hasIllustrationReference(): boolean { return !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl))); }
-  get illustrationMissing(): boolean { return (this.hasIllustrationReference || this.card?.kind === 'visual') && (!this.illustration || this.failedImage()); }
+  get hasIllustrationReference(): boolean { return !!(this.card?.image || this.imageUrl || this.card?.art || this.card?.choices?.length || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl))); }
+  get illustrationMissing(): boolean {
+    const expectsBinaryImage = !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl)) || this.card?.kind === 'visual');
+    return expectsBinaryImage && (!this.illustration || this.failedImage());
+  }
   get missingDesignAsset(): boolean { return this.failedBackground() || this.failedFrame() || !!(this.design?.background && !this.backgroundUrl) || !!((this.design?.frames?.[this.shownRarity] || this.design?.frame) && !this.frameUrl); }
   get audioRefs(): string[] { return this.displayedRevealed() ? this.card?.backAudio ?? [] : this.card?.frontAudio ?? []; }
 
