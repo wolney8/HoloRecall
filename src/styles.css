@@ -155,3 +155,4 @@ input,textarea,select,[contenteditable=true]{scroll-margin-block:18vh}
 @media(prefers-reduced-motion:reduce){
   .mobile-more-sheet{animation:none!important}
 }
+.study-mode-control{width:min(100%,22rem);margin:.75rem 0}.study-mode-control.compact{width:10.5rem;margin:0}.study-mode-control.compact .mat-mdc-form-field-subscript-wrapper{display:none}@media(max-width:580px){.study-mode-control,.study-mode-control.compact{width:100%;margin:.4rem 0}.page-heading .actions .study-mode-control{flex-basis:100%}}

@@ -1,7 +1,7 @@
 import type { Card as FsrsCard, FSRSParameters, Grade } from 'ts-fsrs';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'holo-rare' | 'ultra-rare' | 'secret-rare' | 'relic';
-export type FinishPreset = 'matte' | 'metallic' | 'holographic' | 'prismatic' | 'etched' | 'starfield' | 'crystal' | 'gilded' | 'aurora';
+export type FinishPreset = 'matte' | 'gloss' | 'metallic' | 'holographic' | 'reverse-holo' | 'prismatic' | 'etched' | 'textured-foil' | 'starfield' | 'shattered-glass' | 'crystal' | 'gilded' | 'neon-ink' | 'obsidian' | 'aurora';
 export type ThemePreference = 'light' | 'dark' | 'system';
 
 export interface CardContent {
@@ -117,6 +117,8 @@ export interface Preferences {
   timeZone: string;
   newCardLimit: number;
   reviewLimit: number;
+  /** Default reviewer experience. Scheduling policy remains owned by the assigned Study preset. */
+  studyMode?: StudyExperienceMode;
 }
 export type NewGatherOrder='deck'|'position'|'random';
 export type NewSortOrder='gathered'|'random';
@@ -187,6 +189,8 @@ export interface ReversalEvent {
 export type StudyEvent = ReviewEvent | ReversalEvent;
 
 export type StudyMode = 'scheduled' | 'practice';
+/** Learner-facing session behaviour, independent from the scheduled/practice safety boundary. */
+export type StudyExperienceMode = 'anki' | 'mastery' | 'free-revision';
 export type FocusOrder = 'deck' | 'due' | 'overdue' | 'retrievability' | 'lapses' | 'oldest-reviewed' | 'recently-added' | 'random';
 export type FocusStudyState = 'new' | 'learning' | 'review' | 'due' | 'overdue' | 'attention' | 'leech' | 'suspended' | 'buried' | 'recently-reviewed';
 export interface FocusCriteria {
@@ -333,9 +337,13 @@ export interface StudySession {
   lastReviewCardId?: string;
   scopeDeckId?:string;
   mode: StudyMode;
+  /** Explicit reviewer behaviour. Older sessions infer this from `mode`. */
+  experienceMode?: StudyExperienceMode;
   label?: string;
   focus?: FocusSessionRequest;
   lastPracticeEventId?: string;
+  /** Scheduled cards intentionally queued again by Anki-style learning/relearning steps. */
+  repetitionDue?: Record<string,string>;
   /** Interruption-safe presentation state. A recovered paused timer resumes only by learner action. */
   autoAdvancePaused?: boolean;
   autoAdvanceRemainingMs?: number;

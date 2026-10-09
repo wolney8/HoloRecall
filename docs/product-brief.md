@@ -148,3 +148,11 @@ The exact next unfinished phase in the canonical ledger is **Dogfood Phase 2: St
 5. Rewards/release: audited unlocks, analytics, packs, real-device performance and reviewable release configuration.
 
 Use focused tests for rating mapping, scheduler persistence, repeated submission, undo and day boundaries. Add reward deduplication when rewards exist, and API ownership/stale-version tests with the API. Browser checks cover create/open/reveal/rate/reload and offline recovery. Native authentication, motion and lifecycle need real devices. Report only evidence actually obtained.
+
+## Anki replacement usability checkpoint — 9 October 2026
+
+Supported Anki packages now use one simple template-first import/update/repair path and never require semantic mapping merely to obtain a valid prompt and answer. The verified 254-card Italian package converts HTML Picture panels into deterministic native collectible art and scripted Options into inert native choices; all executable source behavior is discarded. Imported deck actions are grouped by Study, deck management and source management.
+
+Study Mode is now distinct from Study Preset. Anki Mode retains genuine scheduled FSRS reviews and within-session Learning/Relearning repeats. Mastery Mode is the scheduled five-confidence experience with honest earned-cosmetic progress. Free Revision is practice-only and cannot affect scheduling, limits or rewards. The same player, accessibility controls, audio, animation ownership and persistence boundaries serve all three modes.
+
+The next unfinished canonical phase is Dogfood Phase 3: full-fidelity HoloRecall portability followed by safe content-compatible Anki export. The real existing-profile Anki acceptance remains user-owned VERIFY, and physical-device effect/haptic tuning remains pending.

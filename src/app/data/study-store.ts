@@ -1,5 +1,5 @@
 import { Inject, Injectable, computed, signal } from '@angular/core';
-import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from '../../domain/models';
+import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyExperienceMode, StudyPreset, TodayStudyOverride } from '../../domain/models';
 import { applyScheduledReview, createInitialState, dayKey, dueCards, undoLatestReview } from '../../domain/study';
 import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
@@ -149,16 +149,21 @@ export class LocalStudyStore {
   }
 
 
-  async startSession(deckId?: string): Promise<void> {
+  async startSession(deckId?: string, experienceMode?:StudyExperienceMode): Promise<void> {
+    const selected=experienceMode??this.data()?.preferences.studyMode??'mastery';
+    const focusPreview=selected==='free-revision'?(await import('../../domain/focus')).focusPreview:undefined;
     await this.change(data => {
       const now = new Date();
       const reconciled = reconcileSession(data, data, now);
-      if (reconciled.session?.mode==='scheduled' && !reconciled.session.focus && reconciled.session.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
-      const queue = dueCards(data, now, deckId).map(card => card.id);
-      return { ...data, version: data.version + 1, session: { id: crypto.randomUUID(), mode:'scheduled', label:'Study', queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),autoAdvancePaused:false,...(deckId?{scopeDeckId:deckId}:{}) } };
+      const recoveredMode=reconciled.session?.experienceMode??(reconciled.session?.mode==='practice'?'free-revision':'mastery');
+      if (recoveredMode===selected && !reconciled.session?.focus && reconciled.session?.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
+      const mode=selected==='free-revision'?'practice' as const:'scheduled' as const;
+      const queue=selected==='free-revision'?focusPreview!(data,{mode:'practice',label:'Free revision',criteria:{version:1,...(deckId?{deckId}:{})},order:'deck',limit:10_000,seed:`revision-${crypto.randomUUID()}`},now).cards.map(card=>card.id):dueCards(data,now,deckId).map(card=>card.id);
+      const label=selected==='anki'?'Anki mode':selected==='mastery'?'Mastery mode':'Free revision';
+      return { ...data, version: data.version + 1,preferences:{...data.preferences,studyMode:selected}, session: { id: crypto.randomUUID(), mode,experienceMode:selected,label, queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),autoAdvancePaused:false,...(deckId?{scopeDeckId:deckId}:{}) } };
     });
   }
-  async startFocusSession(request:FocusSessionRequest):Promise<void>{const {focusPreview}=await import('../../domain/focus');await this.change(data=>{const now=new Date(),effective={...request,seed:request.seed??`run-${crypto.randomUUID()}`},preview=focusPreview(data,effective,now),queue=preview.cards.map(card=>card.id);return{...data,version:data.version+1,session:{id:crypto.randomUUID(),mode:effective.mode,label:effective.label,focus:structuredClone(effective),queue,total:queue.length,plannedTotal:queue.length,completed:0,revealed:false,activeMs:0,cardStartedAt:now.toISOString(),startedAt:now.toISOString(),autoAdvancePaused:false,...(effective.criteria.deckId?{scopeDeckId:effective.criteria.deckId}:{})}};});}
+  async startFocusSession(request:FocusSessionRequest):Promise<void>{const {focusPreview}=await import('../../domain/focus');await this.change(data=>{const now=new Date(),effective={...request,seed:request.seed??`run-${crypto.randomUUID()}`},preview=focusPreview(data,effective,now),queue=preview.cards.map(card=>card.id);return{...data,version:data.version+1,session:{id:crypto.randomUUID(),mode:effective.mode,experienceMode:effective.mode==='practice'?'free-revision':'anki',label:effective.label,focus:structuredClone(effective),queue,total:queue.length,plannedTotal:queue.length,completed:0,revealed:false,activeMs:0,cardStartedAt:now.toISOString(),startedAt:now.toISOString(),autoAdvancePaused:false,...(effective.criteria.deckId?{scopeDeckId:effective.criteria.deckId}:{})}};});}
   async saveFocusPreset(preset:FocusPreset):Promise<void>{validateFocusPreset(preset);await this.change(data=>{if(data.focusPresets.some(item=>item.name.trim().toLocaleLowerCase('en')===preset.name.trim().toLocaleLowerCase('en')&&item.id!==preset.id))throw new Error('Choose a unique Focus preset name.');const copy=structuredClone(preset);return{...data,version:data.version+1,focusPresets:data.focusPresets.some(item=>item.id===preset.id)?data.focusPresets.map(item=>item.id===preset.id?copy:item):[...data.focusPresets,copy]};});}
   async deleteFocusPreset(id:string):Promise<void>{await this.change(data=>{const focusPresets=data.focusPresets.filter(item=>item.id!==id);return focusPresets.length===data.focusPresets.length?data:{...data,version:data.version+1,focusPresets};});}
   async revealSession(recallMs?: number): Promise<void> {
@@ -275,7 +280,7 @@ function reconcileSession(data: State, previous: State, now = new Date()): State
   if (!data.session) return data;
   const session=data.session;
   const eligible = session.mode==='scheduled'
-    ? new Set(dueCards(data,now,session.scopeDeckId).map(card=>card.id))
+    ? new Set([...dueCards(data,now,session.scopeDeckId).map(card=>card.id),...Object.keys(session.repetitionDue??{})])
     : new Set(data.cards.filter(card=>{const allowSuspended=session.focus?.criteria.includeSuspended||session.focus?.criteria.studyStates?.includes('suspended'),allowBuried=session.focus?.criteria.studyStates?.includes('buried'),control=data.cardControls[card.id],today=dayKey(now,data.preferences.timeZone),seen=new Set<string>();let deck=data.decks.find(item=>item.id===card.deckId),blocked=false;while(deck&&!seen.has(deck.id)){seen.add(deck.id);if(deck.archived||(!allowSuspended&&deck.suspended)){blocked=true;break;}deck=deck.parentId?data.decks.find(item=>item.id===deck!.parentId):undefined;}return !card.archived&&!blocked&&(allowSuspended||!card.suspended)&&(allowBuried||!control?.manualBuried&&control?.buriedOnDay!==today);}).map(card=>card.id));
   const queue = session.queue.filter(id => eligible.has(id));
   const currentId = queue[0];

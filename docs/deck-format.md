@@ -64,7 +64,7 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `back_media` | Optional media reference; blank reuses the front image. |
 | `image_description` | Required for visual cards; maximum 1,000 characters. Describe visible shapes/actions without spelling out the Italian answer. |
 | `suspended` | `true` or `false`; blank means `false`. |
-| `finish` | Optional card-level override: `matte`, `metallic`, `holographic`, `prismatic`, `etched`, `starfield`, `crystal`, `gilded`, or `aurora`. |
+| `finish` | Optional card-level override: `matte`, `gloss`, `metallic`, `holographic`, `reverse-holo`, `prismatic`, `etched`, `textured-foil`, `starfield`, `shattered-glass`, `crystal`, `gilded`, `neon-ink`, `obsidian`, or `aurora`. |
 | `front_audio` | JSON array of up to eight `asset:` references. These controls are available before reveal. Blank means `[]`. |
 | `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
 | `sibling_group_id` | Optional stable ID shared by cards generated from the same note, such as reversed or cloze siblings. It carries content relationships only, never review history. |

@@ -12,6 +12,7 @@ import type { DesignSet, FinishPreset, Rarity } from '../../domain/models';
 import { readArtwork } from '../upload';
 import { PageRevealDirective } from '../motion/page-reveal';
 import { CAPABILITY_POLICY } from '../platform/capability-policy';
+import { FINISH_TREATMENTS } from '../../domain/card-treatments';
 
 @Component({
   selector: 'hr-design-studio', standalone: true,
@@ -23,11 +24,7 @@ export class DesignStudioComponent {
   private readonly capabilityPolicy = inject(CAPABILITY_POLICY);
   readonly authoringDecision = this.capabilityPolicy.decide('custom-design-authoring');
   readonly tiers = RARITIES;
-  readonly finishes: { id: FinishPreset; label: string }[] = [
-    { id: 'matte', label: 'Matte' }, { id: 'metallic', label: 'Soft metallic foil' }, { id: 'holographic', label: 'Directional holographic' },
-    { id: 'prismatic', label: 'Prismatic rainbow' }, { id: 'etched', label: 'Etched metallic' }, { id: 'starfield', label: 'Sparse starfield' },
-    { id: 'crystal', label: 'Faceted crystal' }, { id: 'gilded', label: 'Gilded edges' }, { id: 'aurora', label: 'Aurora premium' },
-  ];
+  readonly finishes = FINISH_TREATMENTS;
   readonly busy = signal(false);
   readonly notice = signal('');
   readonly selected = signal('');

@@ -11,7 +11,7 @@ import { LocalStudyStore } from './data/study-store';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, RARITIES, rewardProgress } from '../domain/rewards';
-import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, Rarity } from '../domain/models';
+import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, Rarity, StudyExperienceMode } from '../domain/models';
 import { FlashcardComponent } from './card';
 import { DesignStudioComponent } from './design-studio/design-studio';
 import { CollectionComponent } from './collection/collection';
@@ -102,6 +102,7 @@ export class AppComponent {
   readonly reviewDue=computed(()=>this.ready().filter(c=>(this.data()?.states[c.id]?.reps??0)>0).length);
   readonly newReady=computed(()=>this.ready().length-this.reviewDue());
   readonly session=computed(()=>this.data()?.session??null);
+  readonly selectedStudyMode=computed(()=>this.data()?.preferences.studyMode??'mastery');
   readonly current=computed(()=>this.data()?.cards.find(c=>c.id===this.session()?.queue[0])??null);
   readonly currentPreset=computed(()=>{const data=this.data(),card=this.studyPresentationCard()??this.current();return data?effectiveStudyPreset(data,card?.deckId??this.session()?.scopeDeckId,new Date()):null;});
   readonly displayedCard=computed(()=>this.studyPresentationCard()??this.current());
@@ -248,7 +249,10 @@ export class AppComponent {
   frameFor(card:CardContent):string{const design=this.designFor(card);return this.store.mediaUrl(design?.frames?.[this.shownRarity(card)]||design?.frame);}
   rarityLabel(rarity?:Rarity):string{return this.tiers.find(t=>t.id===(rarity??'common'))?.label??'Common';}
   unlock(card:CardContent){return rewardProgress(this.data()!,card.id);}
-  async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId);this.prepareAutoAdvanceSession();this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async chooseStudyMode(mode:StudyExperienceMode):Promise<void>{try{await this.store.updatePreferences({studyMode:mode});}catch(error){this.fail(error);}}
+  studyModeLabel(mode=this.session()?.experienceMode??this.selectedStudyMode()):string{return mode==='anki'?'Anki mode':mode==='free-revision'?'Free revision':'Mastery mode';}
+  studyModeHelp(mode=this.selectedStudyMode()):string{return mode==='anki'?'Scheduled study with learning and relearning repeats.':mode==='free-revision'?'Practice without FSRS, due-date or reward changes.':'Scheduled study with HoloRecall confidence, mastery progress and collectible rewards.';}
+  async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId,this.selectedStudyMode());this.prepareAutoAdvanceSession();this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   openFocus(launch:FocusLaunch={}):void{this.focusLaunch.set(launch);this.go('focus');}
   async startFocus(request:FocusSessionRequest):Promise<void>{this.busy.set(true);try{await this.store.startFocusSession(request);this.prepareAutoAdvanceSession();this.elapsedMs=0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   startSelection(mode:'scheduled'|'practice',ids:string[],label:string):void{if(!ids.length)return;void this.startFocus({mode,label,criteria:{version:1,explicitCardIds:[...ids]},order:mode==='scheduled'?'due':'deck',limit:Math.min(10_000,ids.length)});}

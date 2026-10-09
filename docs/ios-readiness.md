@@ -181,3 +181,7 @@ For each meaningful change, add a proportional note to the durable handoff cover
 
 
 - Template-first Phase 1 gate (9 October 2026): the exact 254-card package passes Chromium and desktop Playwright WebKit imports with no mapping UI, declarative panel/choice rendering and 20 representative shared-player transitions. Compact/large/landscape WebKit regression profiles pass their existing import, list, Study and 200% checks. Production output is 818.58 kB raw / 195.02 kB transfer. The synced production build also passes the packaged iPhone 17 Pro / iOS 26.5 shared Study/navigation smoke 1/1, including three consecutive visible cards, Session Complete, Collection, Progress and Settings. Exact-package native document import plus physical-device verification remain pending. No native dependency or permission changed.
+
+## 9 October 2026 — Study Mode and imported-panel native regression
+
+The shared build adds persisted Anki/Mastery/Free Revision selection and deterministic native source-panel art without a Capacitor dependency on the web initial path. `npm run native:sync:ios` succeeded. The first iPhone 17 Pro / iOS 26.5 XCUITest found a genuine compact reachability regression: the new mode field appeared before Start and pushed the action below the tappable viewport. The shared dashboard action order was corrected; the unchanged packaged Study/navigation smoke then passed 1/1 through three cards, Results, Collection, Progress and Settings. This is Simulator/WKWebView evidence, not physical-device tactile, VoiceOver or performance evidence.

@@ -12,13 +12,14 @@ const id = (value: unknown): value is string => text(value, 120) && /^[a-zA-Z0-9
 const integer = (value: unknown, min = 0): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= min;
 const finite = (value: unknown, min = 0): value is number => typeof value === 'number' && Number.isFinite(value) && value >= min;
 const instant = (value: unknown): value is string => text(value, 40) && /^\d{4}-\d{2}-\d{2}T.+Z$/.test(value) && Number.isFinite(Date.parse(value));
-const FINISHES = ['matte', 'metallic', 'holographic', 'prismatic', 'etched', 'starfield', 'crystal', 'gilded', 'aurora'];
+const FINISHES = ['matte','gloss','metallic','holographic','reverse-holo','prismatic','etched','textured-foil','starfield','shattered-glass','crystal','gilded','neon-ink','obsidian','aurora'];
 
 export function validatePreferences(value: unknown): asserts value is Preferences {
   const prefs = object(value);
   if (typeof prefs['effects'] !== 'boolean' || !text(prefs['timeZone'], 100) || !integer(prefs['newCardLimit']) || prefs['newCardLimit'] > 1000 || !integer(prefs['reviewLimit'], 1) || prefs['reviewLimit'] > 10000) fail('invalid study preferences.');
   if (prefs['haptics'] !== undefined && typeof prefs['haptics'] !== 'boolean') fail('invalid haptics preference.');
   if (prefs['theme'] !== undefined && !['system', 'light', 'dark'].includes(String(prefs['theme']))) fail('invalid theme preference.');
+  if (prefs['studyMode'] !== undefined && !['anki','mastery','free-revision'].includes(String(prefs['studyMode']))) fail('invalid Study mode preference.');
   try { new Intl.DateTimeFormat('en', { timeZone: prefs['timeZone'] as string }).format(); } catch { fail('unknown time zone.'); }
 }
 
@@ -262,14 +263,16 @@ function validateExtensions(data: Record<string, unknown>): void {
     if (session['startedAt'] !== undefined && !instant(session['startedAt'])) fail('invalid session start.');
     if (session['endedAt'] !== undefined && !instant(session['endedAt'])) fail('invalid session completion.');
     if (session['partial'] !== undefined && typeof session['partial'] !== 'boolean') fail('invalid partial session flag.');
-    if (session['plannedTotal'] !== undefined && !integer(session['plannedTotal'], session['total'] as number)) fail('invalid planned session total.');
+    if (session['plannedTotal'] !== undefined && !integer(session['plannedTotal'])) fail('invalid planned session total.');
     if (session['recallMs'] !== undefined && (!integer(session['recallMs']) || session['recallMs'] > 120000)) fail('invalid persisted recall time.');
     if (session['lastReviewCardId'] !== undefined && !id(session['lastReviewCardId'])) fail('invalid previous session card.');
     if(session['scopeDeckId']!==undefined&&!id(session['scopeDeckId']))fail('invalid session deck scope.');
     if(!['scheduled','practice'].includes(String(session['mode'])))fail('invalid session mode.');
+    if(session['experienceMode']!==undefined&&!['anki','mastery','free-revision'].includes(String(session['experienceMode'])))fail('invalid Study experience mode.');
     if(session['label']!==undefined&&!text(session['label'],160))fail('invalid session label.');
     if(session['lastPracticeEventId']!==undefined&&!id(session['lastPracticeEventId']))fail('invalid practice event reference.');
     if(session['autoAdvancePaused']!==undefined&&typeof session['autoAdvancePaused']!=='boolean'||session['autoAdvanceRemainingMs']!==undefined&&(!integer(session['autoAdvanceRemainingMs'])||Number(session['autoAdvanceRemainingMs'])>120000))fail('invalid Auto Advance recovery state.');
+    if(session['repetitionDue']!==undefined){const entries=object(session['repetitionDue']);for(const [cardId,value] of Object.entries(entries))if(!id(cardId)||!instant(value))fail('invalid Study repetition state.');}
     if(session['focus']!==undefined)try{validateFocusRequest(session['focus'] as never);}catch(error){fail(error instanceof Error?error.message:'invalid Focus session.');}
   }
 }

@@ -65,12 +65,20 @@ function proto(bytes: Uint8Array): Map<number, (number | Uint8Array)[]> { const 
 function protoString(bytes: Uint8Array, field: number): string { const value = proto(bytes).get(field)?.[0]; return value instanceof Uint8Array ? bytesText(value) : ''; }
 function packageVersion(meta?: Uint8Array): number { if (!meta?.length) return 0; const value = proto(meta).get(1)?.[0]; return typeof value === 'number' ? value : 0; }
 export function plainAnkiText(input: string): string {
-  return input
+  // Adjacent inline elements inside table cells commonly represent separate
+  // columns/labels in Anki layouts. Preserve that authored boundary without
+  // globally inserting spaces between inline elements (which would damage
+  // languages and deliberately split words).
+  const separate=(body:string)=>body.replace(/(<\/(?:span|small|strong|em|div|p)>)\s*(<(?:span|small|strong|em|div|p)\b[^>]*>)/gi,'$1\n$2');
+  const tableAware=input
+    .replace(/<(td|th)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi,(_match,tag,attributes,body)=>`<${tag}${attributes}>${separate(String(body))}</${tag}>`)
+    .replace(/<div\b([^>]*\bclass=["'][^"']*\bword-tile\b[^"']*["'][^>]*)>([\s\S]*?)<\/div\s*>/gi,(_match,attributes,body)=>`<div${attributes}>${separate(String(body))}</div>`);
+  return tableAware
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/?(?:address|article|aside|blockquote|div|dl|dt|dd|fieldset|figcaption|figure|footer|form|h[1-6]|header|hr|li|main|nav|ol|p|pre|section|table|tbody|thead|tfoot|tr|ul)\b[^>]*>/gi, '\n')
-    .replace(/<\/?(?:td|th)\b[^>]*>/gi, ' ')
+    .replace(/<\/?(?:td|th)\b[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/gi, ' ')
     .replace(/&lt;/gi, '<')

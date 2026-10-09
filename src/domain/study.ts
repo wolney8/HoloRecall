@@ -33,7 +33,7 @@ export function createInitialState(decks: Deck[], cards: CardContent[]): State {
     events: [],
     designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null, ankiMappings: [], ankiSources: [],
     studyPresets:cloneBuiltInPresets(),todayOverrides:[],cardControls:{},administrativeEvents:[],practiceEvents:[],focusPresets:[],
-    preferences: { effects: true, haptics: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100 },
+    preferences: { effects: true, haptics: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100, studyMode: 'mastery' },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };
 }
@@ -135,16 +135,24 @@ export function applyScheduledReview(data: State, input: ReviewInput): State {
     studyRootDeckId:data.session?.scopeDeckId??content.deckId,
     studyDeckId:content.deckId,studyDeckPath,studyDay:dayKey(input.now,data.preferences.timeZone),studyTimeZone:data.preferences.timeZone,
   };
-  const remaining = data.session?.queue.slice(1) ?? [];
+  let remaining = data.session?.queue.slice(1) ?? [];
+  const repetitionDue={...(data.session?.repetitionDue??{})};
+  delete repetitionDue[input.cardId];
+  let total=data.session?.total??remaining.length+1;
+  if(data.session?.experienceMode==='anki'&&[1,3].includes(resultingState.state)){
+    repetitionDue[input.cardId]=resultingState.due;const normal=remaining.filter(id=>!repetitionDue[id]&&id!==input.cardId),repeats=[...remaining.filter(id=>!!repetitionDue[id]&&id!==input.cardId),input.cardId].sort((a,b)=>Date.parse(repetitionDue[a]!)-Date.parse(repetitionDue[b]!));remaining=[...normal,...repeats];total++;
+  }
   const cardControls={...data.cardControls};
   if(content.siblingGroupId){for(const sibling of data.cards){if(sibling.id===content.id||sibling.siblingGroupId!==content.siblingGroupId)continue;const siblingState=data.states[sibling.id],shouldBury=!siblingState?.reps?preset.buryNewSiblings:[1,3].includes(siblingState.state)?preset.buryLearningSiblings:preset.buryReviewSiblings;if(shouldBury)cardControls[sibling.id]={...cardControls[sibling.id],buriedOnDay:dayKey(input.now,data.preferences.timeZone)};}}
   const failures=activeReviews(data).filter(review=>review.cardId===content.id&&review.rating===1).length+(input.rating===1?1:0),leech=failures>=preset.leechThreshold;
   if(leech)cardControls[content.id]={...cardControls[content.id],leech:true,...(preset.leechAction==='suspend'?{leechSuspended:true}:{})};
   const cards=leech&&preset.leechAction==='suspend'?data.cards.map(card=>card.id===content.id?{...card,suspended:true}:card):data.cards;
+  const session=data.session?{...data.session,queue:remaining,total,completed:data.session.completed+1,revealed:false,activeMs:0,cardStartedAt:input.now.toISOString(),lastReviewCardId:input.cardId,...(Object.keys(repetitionDue).length?{repetitionDue}:{}),...(remaining.length?{}:{endedAt:input.now.toISOString(),partial:false})}:null;
+  if(session){delete session.recallMs;if(!Object.keys(repetitionDue).length)delete session.repetitionDue;}
   return {
     ...data, version: data.version + 1,cards,cardControls, states: { ...data.states, [input.cardId]: resultingState }, events: [...data.events, event],
     rewardEvents: [...data.rewardEvents, ...rewardEventsForReview(data, event, dayKey(input.now, data.preferences.timeZone))],
-    session: data.session ? { ...data.session, queue: remaining, completed: data.session.completed + 1, revealed: false, activeMs: 0, recallMs: undefined, cardStartedAt: input.now.toISOString(), lastReviewCardId: input.cardId, ...(remaining.length ? {} : { endedAt: input.now.toISOString(), partial: false }) } : null,
+    session,
   };
 }
 
@@ -169,7 +177,7 @@ export function undoLatestReview(data: State, now: Date, id: string, expectedCar
   return {
     ...data, version: data.version + 1,cards,cardControls,
     rewardEvents: [...data.rewardEvents, ...rewardReversal(data, latest.id, latest.cardId, now.toISOString(), id)],
-    session: data.session?.id === latest.sessionId ? { ...data.session, queue: [latest.cardId, ...data.session.queue.filter(cardId => cardId !== latest.cardId)], completed: Math.max(0, data.session.completed - 1), revealed: false, activeMs: 0, recallMs: undefined, endedAt: undefined, partial: undefined, lastReviewCardId: undefined, cardStartedAt: now.toISOString() } : data.session,
+    session: data.session?.id === latest.sessionId ? { ...data.session, queue: [latest.cardId, ...data.session.queue.filter(cardId => cardId !== latest.cardId)], total:Math.max(data.session.completed, data.session.total-(data.session.repetitionDue?.[latest.cardId]?1:0)),repetitionDue:Object.fromEntries(Object.entries(data.session.repetitionDue??{}).filter(([id])=>id!==latest.cardId)), completed: Math.max(0, data.session.completed - 1), revealed: false, activeMs: 0, recallMs: undefined, endedAt: undefined, partial: undefined, lastReviewCardId: undefined, cardStartedAt: now.toISOString() } : data.session,
     states: { ...data.states, [latest.cardId]: restored },
     events: [...data.events, {
       kind: 'reversal', id, userId: data.userId, cardId: latest.cardId,
