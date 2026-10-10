@@ -1,5 +1,13 @@
 # Current restart point
 
+## 10 October 2026 — HR-UX-IMPORTED-DECK-REVIEW active
+
+- **Recovered state:** `main` is clean at `e1a0c88`; accepted template-first import, three Study modes, hierarchy, source management and native work are preserved.
+- **Bounded scope:** HR-UX-IDR-01–05 are `IN_PROGRESS` in the canonical tracker. Work is limited to spacing rhythm, deck-scoped collectible browsing, post-transaction next steps, imported-card visual treatment and hierarchy/action clarity.
+- **Integration direction:** reuse the shared CardRenderer, Collection search/index, stable deck identities and lazy Exchange route. Completion and browse flows must not duplicate import/search logic or place importer code on the initial path.
+- **Acceptance boundary:** browser and responsive evidence must cover existing imported decks and representative subdecks. The initial production bundle remains capped at 850 kB. No push, deployment, auth/commercial work, Anki export, scheduler redesign or native-storage migration is authorised.
+- **Restart point:** inspect deck journey/source actions, Collection filtering/card tiles, Exchange transaction completion and shared imported-card art/effect layers; implement one coherent shared flow, then run targeted and full regression gates.
+
 ## 9 October 2026 — Anki replacement usability milestone complete
 
 - **Outcome:** HR-ANKI-V2-12/13, HR-MODE-01–06, HR-CARD-DELIGHT-01 and HR-DECK-UX-02 are DONE. Study Mode is independent from Study Preset: Anki Mode repeats genuine FSRS Learning/Relearning cards in due order; Mastery remains the scheduled five-confidence/real-cosmetic path; Free Revision is practice-only. Imported journeys now group Study, deck management and Anki-source management.
