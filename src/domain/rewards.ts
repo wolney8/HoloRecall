@@ -1,4 +1,4 @@
-import type { Rarity, RewardContribution, RewardEvent, RewardUnlock, ReviewEvent, State } from './models';
+import type { CollectiblePresentationState, PrestigeContribution, PrestigePromotion, Rarity, RewardContribution, RewardEvent, RewardReversal, RewardUnlock, ReviewEvent, State } from './models';
 
 export const RARITIES: { id: Rarity; label: string; symbol: string }[] = [
   { id: 'common', label: 'Common', symbol: '●' }, { id: 'uncommon', label: 'Uncommon', symbol: '◆' },
@@ -10,10 +10,41 @@ export const DEFAULT_REWARD_CONFIG: Record<Rarity, number> = {
   common: 1, uncommon: 2, rare: 3, 'holo-rare': 5, 'ultra-rare': 8, 'secret-rare': 12, relic: 20,
 };
 const MIN_SPACING_MS = 20 * 60 * 60 * 1000;
+export const MAX_PRESTIGE_LEVEL = 10;
+/** Distinct eligible study days required inside each cosmetic cycle, P1 through P10. */
+export const PRESTIGE_CYCLE_THRESHOLDS = [3,3,4,4,5,5,6,6,7,8] as const;
 
-export function activeRewardEvents(state: State): (RewardContribution | RewardUnlock)[] {
+export function activeRewardEvents(state: State): Exclude<RewardEvent, RewardReversal>[] {
   const reversed = new Set(state.rewardEvents.flatMap(event => event.kind === 'reward-reversal' ? event.reversedEventIds : []));
-  return state.rewardEvents.filter((event): event is RewardContribution | RewardUnlock => event.kind !== 'reward-reversal' && !reversed.has(event.id));
+  return state.rewardEvents.filter((event): event is Exclude<RewardEvent,RewardReversal> => event.kind !== 'reward-reversal' && !reversed.has(event.id));
+}
+export function collectiblePresentationState(state:State,cardId:string):CollectiblePresentationState{
+  if(prestigeProgress(state,cardId).level>0)return'prestige';
+  return rewardProgress(state,cardId).earned?'unlocked':'locked';
+}
+export interface CollectibleTeaser {
+  state:CollectiblePresentationState;
+  face:'card-back'|'collectible-face';
+  silhouette:boolean;
+  setNumber:number;
+  setSize:number;
+  rarityHint:Rarity;
+}
+/** Answer-free presentation metadata for a future Collection Desk. */
+export function collectibleTeaser(state:State,cardId:string):CollectibleTeaser{
+  const card=state.cards.find(item=>item.id===cardId);
+  if(!card)throw new Error(`Unknown card ${cardId}`);
+  const siblings=state.cards.filter(item=>item.deckId===card.deckId&&!item.archived);
+  const presentation=collectiblePresentationState(state,cardId);
+  return{state:presentation,face:presentation==='locked'?'card-back':'collectible-face',silhouette:presentation==='locked',setNumber:Math.max(1,siblings.findIndex(item=>item.id===cardId)+1),setSize:siblings.length,rarityHint:card.rarity??'common'};
+}
+export interface PrestigeProgress { level:number; cycle:number; days:number; required:number; capped:boolean }
+export function prestigeProgress(state:State,cardId:string):PrestigeProgress{
+  const active=activeRewardEvents(state).filter(event=>event.cardId===cardId);
+  const level=Math.min(MAX_PRESTIGE_LEVEL,active.filter((event):event is PrestigePromotion=>event.kind==='prestige-promotion').reduce((highest,event)=>Math.max(highest,event.level),0));
+  const cycle=level+1,capped=level>=MAX_PRESTIGE_LEVEL;
+  const days=capped?0:active.filter((event):event is PrestigeContribution=>event.kind==='prestige-contribution'&&event.cycle===cycle).length;
+  return{level,cycle,days,required:capped?0:PRESTIGE_CYCLE_THRESHOLDS[level]!,capped};
 }
 export function rewardProgress(state: State, cardId: string, rarity?: Rarity): { earned: boolean; days: number; required: number } {
   const tier = rarity ?? state.cards.find(card => card.id === cardId)?.rarity ?? 'common';
@@ -46,6 +77,18 @@ export function rewardEventsForReview(state: State, review: ReviewEvent, studyDa
       contributionIds: all.map(event => event.id),
     });
   }
+  const authored=state.cards.find(card=>card.id===review.cardId)?.rarity??'common';
+  const masteryRequired=state.rewardConfig[authored];
+  if(all.length>masteryRequired){
+    const current=prestigeProgress(state,review.cardId);
+    if(!current.capped){
+      const prestigeContribution:PrestigeContribution={kind:'prestige-contribution',id:`prestige-contribution:${review.id}`,reviewEventId:review.id,cardId:review.cardId,timestamp:review.timestamp,studyDay,timeZone:state.preferences.timeZone,cycle:current.cycle,configVersion:'prestige-days-v1'};
+      result.push(prestigeContribution);
+      const existing=active.filter((event):event is PrestigeContribution=>event.kind==='prestige-contribution'&&event.cycle===current.cycle);
+      const cycle=[...existing,prestigeContribution];
+      if(cycle.length>=current.required)result.push({kind:'prestige-promotion',id:`prestige-promotion:${current.cycle}:${review.id}`,reviewEventId:review.id,cardId:review.cardId,timestamp:review.timestamp,level:current.cycle,required:current.required,contributionIds:cycle.map(event=>event.id)});
+    }
+  }
   return result;
 }
 
@@ -53,6 +96,7 @@ export function rewardEventsForReview(state: State, review: ReviewEvent, studyDa
 export function rewardReversal(state: State, reviewId: string, cardId: string, timestamp: string, reversalId: string): RewardEvent[] {
   const active = activeRewardEvents(state);
   const contributionIds = active.filter(event => event.kind === 'contribution' && event.reviewEventId === reviewId).map(event => event.id);
-  const affected = active.filter(event => event.reviewEventId === reviewId || (event.kind === 'unlock' && event.contributionIds.some(id => contributionIds.includes(id))));
+  const prestigeContributionIds=active.filter(event=>event.kind==='prestige-contribution'&&event.reviewEventId===reviewId).map(event=>event.id);
+  const affected = active.filter(event => event.reviewEventId === reviewId || ((event.kind === 'unlock' || event.kind==='prestige-promotion') && event.contributionIds.some(id => contributionIds.includes(id)||prestigeContributionIds.includes(id))));
   return affected.length ? [{ kind: 'reward-reversal', id: `reward:${reversalId}`, cardId, reviewEventId: reviewId, timestamp, reversedEventIds: affected.map(event => event.id) }] : [];
 }

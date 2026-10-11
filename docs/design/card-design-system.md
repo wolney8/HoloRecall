@@ -51,6 +51,9 @@ Rules:
 - Prestige resets only the cosmetic/mastery progression loop for the next prestige cycle.
 - Prestige must never reset FSRS state, review history, due dates, actual learning progress, content, or deck membership.
 - Prestige should visually evolve the existing card rather than invent endless higher rarity tiers.
+- Prestige is implemented as ten event-derived cosmetic cycles. The authored-rarity unlock is the mastery ceiling; only later eligible scheduled reviews contribute to Prestige.
+- Cycle thresholds for P1–P10 are 3, 3, 4, 4, 5, 5, 6, 6, 7 and 8 qualifying days. They are a versioned product constant (`prestige-days-v1`), not scheduler mathematics.
+- Anki Mode and Mastery Mode use genuine scheduled review events and are eligible. Free Revision is practice-only and ineligible.
 
 Possible prestige rewards:
 - prestige star / pip / crest
@@ -295,9 +298,13 @@ Artwork, generated motifs, frame, protected learning copy and inert chips share 
 
 ## 12. Remaining open decisions
 
-1. Prestige cadence inside the confirmed 1–10 cap: visible changes at every level or grouped milestones.
-2. Exactly which Study Modes advance rarity unlock, mastery, and Prestige.
-3. How much locked teaser silhouettes reveal beyond numbering/frame hints.
-4. Collection Desk interaction depth and whether desk layouts persist.
-5. Whether one learning card can retain a gallery of unlocked editions or only one active collectible presentation.
-6. Whether set completion unlocks special frames, card backs, or future desk surfaces.
+1. How much locked teaser silhouettes reveal beyond numbering/frame hints.
+2. Collection Desk interaction depth and whether desk layouts persist.
+3. Whether one learning card can retain a gallery of unlocked editions or only one active collectible presentation.
+4. Whether set completion unlocks special frames, card backs, or future desk surfaces.
+
+## 13. Prestige visual cadence — implemented 11 October 2026
+
+Prestige is a cumulative enhancement after Design Set, rarity variant and finish. P1–P2 strengthen the edge and add the compact `P I`/`P II` crest. P3–P4 enrich frame detail and foil response. P5 is the midpoint treatment with a stronger material line and reflection profile. P6–P7 deepen that same family. P8–P9 add the premium static edge-light response. P10 is the capstone double-line material treatment and `P X` crest. These are bands of one coherent design family, with the numeral providing an exact non-colour distinction at every level.
+
+Effects Off and Reduced Motion retain the crest, numeral and static material border while suppressing decorative response. The shared renderer receives only the derived level; it does not own progression rules. Study keeps ratings and recall content dominant, while Collection and Results show the full milestone treatment.

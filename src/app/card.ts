@@ -19,12 +19,13 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
           <div class="frame-layer" aria-hidden="true">@if (frameUrl && !failedFrame()) { <img [src]="frameUrl" [style.object-fit]="design?.frameFit || 'contain'" alt="" (error)="failedFrame.set(true)"> }</div>
           <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="card-gleam"></i><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
+          @if(prestigeLevel){<span class="prestige-crest" [attr.aria-label]="'Prestige '+prestigeRoman">P {{prestigeRoman}}</span>}
           <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
           <div class="illustration-layer" [class.no-illustration]="!hasIllustrationReference && card.kind !== 'visual'" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
@@ -71,6 +72,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input({ required: true }) card!: CardContent;
   @Input() revealed = false;
   @Input() rarity?: Rarity;
+  @Input() prestigeLevel=0;
   @Input() treatment?: Treatment;
   @Input() effects = true;
   @Input() compact = false;
@@ -123,6 +125,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get resolvedTexture(): string { return this.textureUrl || this.store.mediaUrl(this.design?.texture); }
   get rarityLabel(): string { return RARITIES.find(item => item.id === this.shownRarity)?.label ?? 'Common'; }
   get raritySymbol(): string { return RARITIES.find(item => item.id === this.shownRarity)?.symbol ?? '○'; }
+  get prestigeRoman():string{return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][Math.max(0,Math.min(10,this.prestigeLevel))]??'';}
+  get prestigeBand():string{return this.prestigeLevel>=10?'capstone':this.prestigeLevel>=8?'radiant':this.prestigeLevel>=5?'midpoint':this.prestigeLevel>=3?'foil':this.prestigeLevel>=1?'edge':'none';}
   get presentationCard():CardContent{if(this.card?.art||this.card?.image||this.card?.backImage)return this.card;return{...this.card,art:{kind:'generated-text-art',title:this.generatedArtTitle,subtitle:this.generatedArtSubtitle,seed:this.artSeed}};}
   get hasNativeArt():boolean{return !this.card?.image&&!this.card?.backImage||this.card?.art?.kind==='source-visual-panel'||this.card?.art?.kind==='generated-text-art';}
   private get generatedArtTitle():string{const source=(this.card?.front||this.card?.answer||'Recall').trim();const formula=source.match(/[\dA-Za-z]+\s*[=+×÷−]\s*[\dA-Za-z+×÷− ]+/)?.[0];return(formula||source.split(/\s+/).slice(0,3).join(' ')).slice(0,34);}
@@ -196,7 +200,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     } else if (changes['revealed'] && !changes['revealed'].firstChange) queueMicrotask(() => void this.animateFlip(this.revealed));
   }
   private updateMotion(): void {
-    const enabled = this.effects && this.visible && this.lifecycle.active() && !this.preference?.matches;
+    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const enabled = this.effects && this.visible && this.lifecycle.active() && !reduced;
     this.animated.set(enabled);
     if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.displayedRevealed.set(this.revealed); this.settle(); }
   }
@@ -233,11 +238,17 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
   activateFlip(event: MouseEvent): void {
     if (!this.flippable || this.suppressFlipClick || (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="region"]')) return;
+    // A successful pointer hit is stronger visibility evidence than a delayed
+    // IntersectionObserver callback. Arm the owned flip lifecycle immediately.
+    this.visible = true;
+    this.updateMotion();
     this.flipped.emit(!this.revealed);
   }
   keyFlip(event: KeyboardEvent): void {
     if (!this.flippable || (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="region"]') || (event.key !== 'Enter' && event.key !== ' ')) return;
     event.preventDefault();
+    this.visible = true;
+    this.updateMotion();
     this.flipped.emit(!this.revealed);
   }
   beginTilt(event: PointerEvent): void {

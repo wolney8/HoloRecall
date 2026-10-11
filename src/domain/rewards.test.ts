@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyReview, createInitialState, undoLatestReview } from './study';
-import { activeRewardEvents, rewardEventsForReview, rewardProgress } from './rewards';
-import { validateRewardConfig, validateState } from './backup';
+import { activeRewardEvents, collectibleTeaser, MAX_PRESTIGE_LEVEL, PRESTIGE_CYCLE_THRESHOLDS, prestigeProgress, rewardEventsForReview, rewardProgress } from './rewards';
+import { exportBackup, parseBackup, validateRewardConfig, validateState } from './backup';
 import { buildReport } from './reports';
 import type { ConfidenceRating, State } from './models';
 import { recordPracticeRating } from './practice';
@@ -84,6 +84,51 @@ describe('auditable cosmetic earning', () => {
     state=recordPracticeRating(state,{id:'practice',cardId:'card',sessionId:'practice-session',rating:5,now:first});
     expect(state.practiceEvents).toHaveLength(1);expect(state.rewardEvents).toEqual(rewards);
     expect(activeRewardEvents(state)).toEqual([]);
+  });
+});
+
+describe('Mastery to Prestige event ledger',()=>{
+  const common=()=>{const state=initial();state.cards[0]={...state.cards[0]!,rarity:'common'};return state;};
+  const advance=(state:State,id:string)=>rate(state,id,5,nextTime(state));
+  it('starts only after authored-rarity mastery and promotes through capped, independent cycles',()=>{
+    let state=rate(common(),'mastery');
+    expect(rewardProgress(state,'card').earned).toBe(true);expect(prestigeProgress(state,'card')).toMatchObject({level:0,days:0,required:3});
+    const fsrsAfterMastery=structuredClone(state.states.card);
+    for(let index=0;index<3;index++)state=advance(state,`p1-${index}`);
+    expect(prestigeProgress(state,'card')).toMatchObject({level:1,cycle:2,days:0,required:3,capped:false});
+    expect(state.cards[0]!.rarity).toBe('common');expect(state.events.filter(event=>event.kind==='review')).toHaveLength(4);expect(state.states.card!.version).toBe(fsrsAfterMastery.version+3);
+    for(let level=2;level<=MAX_PRESTIGE_LEVEL;level++)for(let day=0;day<PRESTIGE_CYCLE_THRESHOLDS[level-1]!;day++)state=advance(state,`p${level}-${day}`);
+    expect(prestigeProgress(state,'card')).toEqual({level:10,cycle:11,days:0,required:0,capped:true});
+    const before=state.rewardEvents.length;state=advance(state,'after-cap');expect(state.rewardEvents.length).toBe(before+1);expect(state.rewardEvents.at(-1)?.kind).toBe('contribution');
+    validateState(state);
+  });
+  it('exposes an answer-free locked/unlocked/Prestige teaser contract',()=>{
+    const locked=common();
+    expect(collectibleTeaser(locked,'card')).toEqual({state:'locked',face:'card-back',silhouette:true,setNumber:1,setSize:1,rarityHint:'common'});
+    expect('answer' in collectibleTeaser(locked,'card')).toBe(false);
+    let prestiged=rate(locked,'mastery');for(let index=0;index<3;index++)prestiged=advance(prestiged,`teaser-${index}`);
+    expect(collectibleTeaser(prestiged,'card')).toMatchObject({state:'prestige',face:'collectible-face',silhouette:false});
+  });
+  it('ignores practice, duplicate delivery and same-day reviews',()=>{
+    let state=rate(common(),'mastery');
+    const sameDay=rate(state,'same-day',5,new Date(state.states.card!.due));
+    expect(prestigeProgress(sameDay,'card').days).toBe(0);
+    const replay=rate(sameDay,'same-day',5,new Date(sameDay.states.card!.due));expect(replay).toBe(sameDay);
+    const rewards=structuredClone(replay.rewardEvents);replay.session={id:'practice',mode:'practice',experienceMode:'free-revision',queue:['card'],total:1,completed:0,revealed:true,activeMs:0};
+    state=recordPracticeRating(replay,{id:'free',cardId:'card',sessionId:'practice',rating:5,now:nextTime(replay)});
+    expect(state.rewardEvents).toEqual(rewards);expect(prestigeProgress(state,'card').days).toBe(0);
+  });
+  it('undoes a promotion and its contribution once without changing authored rarity or history records',()=>{
+    let state=rate(common(),'mastery');for(let index=0;index<3;index++)state=advance(state,`p1-${index}`);
+    const reviewCount=state.events.filter(event=>event.kind==='review').length,rarity=state.cards[0]!.rarity;
+    const undone=undoLatestReview(state,nextTime(state),'undo-promotion');
+    expect(prestigeProgress(undone,'card')).toMatchObject({level:0,days:2,required:3});expect(undone.cards[0]!.rarity).toBe(rarity);expect(undone.events.filter(event=>event.kind==='review')).toHaveLength(reviewCount);expect(undone.events.at(-1)?.kind).toBe('reversal');
+    expect(()=>undoLatestReview(undone,nextTime(undone),'undo-promotion','card','session')).toThrow();validateState(undone);
+  });
+  it('preserves auditable Prestige evidence through a full backup without embedding it in card content',()=>{
+    let state=rate(common(),'mastery');for(let index=0;index<3;index++)state=advance(state,`p1-${index}`);
+    const restored=parseBackup(exportBackup(state,new Date('2026-10-11T12:00:00Z')));
+    expect(prestigeProgress(restored,'card')).toEqual(prestigeProgress(state,'card'));expect(restored.rewardEvents).toEqual(state.rewardEvents);expect('prestige' in restored.cards[0]!).toBe(false);validateState(restored);
   });
 });
 

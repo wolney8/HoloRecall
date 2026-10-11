@@ -34,8 +34,7 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
   const motion = page.locator('.inspection-card .card-motion');
   await expect(motion).toHaveAttribute('aria-label', 'Show card front');
   await motion.click();
-  const timing = await page.locator('.inspection-card .card-turn').evaluate(node => node.getAnimations()[0]?.effect?.getTiming().duration);
-  expect(timing).toBe(360);
+  await expect.poll(() => page.locator('.inspection-card .card-turn').evaluate(node => node.getAnimations()[0]?.effect?.getTiming().duration)).toBe(360);
   await expect(motion).toHaveAttribute('aria-label', 'Show card answer');
   await motion.focus();
   await motion.press('Enter');
@@ -50,6 +49,7 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
   await expect(motion).toHaveAttribute('aria-label', 'Show card front');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
   await motion.press('Space');
   await expect(motion).toHaveAttribute('aria-label', 'Show card answer');
   expect(await page.locator('.inspection-card .card-turn').evaluate(node => node.getAnimations().length)).toBe(0);

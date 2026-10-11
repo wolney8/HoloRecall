@@ -179,7 +179,7 @@ The renderer consumes declarative presentation rather than source HTML. Imported
 
 ## Decision 012: inherited Design Sets and portable declarative composition
 
-**Status: foundation implemented; Prestige and Collection Desk remain future work.**
+**Status: Design Suite and Prestige foundation implemented; Collection Desk remains future work.**
 
 Card presentation resolves through one chain: the built-in HoloRecall default, the nearest deck or ancestor-deck Design Set, a rarity-compatible variant derived from that set, then an optional per-card override. A missing card `designSetId` means inheritance; an explicit ID is a stable override. Presentation-only assignment and return-to-inherited operations never increment the card content revision or change source provenance, reviews, FSRS state, due dates, rewards or authored rarity.
 
@@ -196,3 +196,15 @@ External design V1 exports a trusted 1000 × 1500 SVG artwork guide with bleed, 
 The shared card renderer resolves a Design Set once, then derives one static material family for its whole background, frame bridge, artwork window, protected copy and native choice surfaces. Raster source assets remain unchanged. Declarative focal/crop data places them; the selected surface preset supplies tint, bleed, edge transition, texture and shallow embossed cues. The default is a restrained embedded treatment, including for legacy sets that do not declare an artwork treatment. Generated, text-only and technical cards use the same material variables instead of a separate renderer.
 
 Readable copy is a protected layer above decorative finish effects. Its surface is mixed from the authored surface and palette while onSurface remains the authoritative ink colour; muted ink is derived from that pair. Palette extraction chooses contrast against the final derived surface, avoiding dark-on-dark output for sparse white artwork. Effects Off and Reduced Motion remove decorative texture/motion without changing content, layout, persisted Design Set data or source artwork.
+
+## Decision 014: event-derived Mastery and Prestige
+
+**Status: Prestige I–X foundation implemented.**
+
+Prestige extends the immutable reward ledger rather than `CardContent`, rarity or FSRS state. A scheduled confidence 4/5 review may first create the existing rarity/mastery contribution. Once the authored rarity threshold is crossed, later qualifying reviews create `prestige-contribution` records for the current cycle. A `prestige-promotion` records the exact evidence IDs that completed that cycle. Level and progress derive from active events, so a mutable card counter cannot drift from history.
+
+Anki Mode and Mastery Mode create scheduled reviews and may contribute. Free Revision creates only `PracticeEvent` records and cannot enter this path. Every contribution requires a distinct learner study day and at least 20 elapsed hours from the prior eligible contribution. Review IDs make duplicate delivery idempotent. Imports, previews, flips and Results presentation never call the reward writer. Undo appends one reward reversal covering the review contribution and any dependent unlock/promotion; it never rewrites FSRS history.
+
+The authored-rarity unlock is the mastery ceiling. Version `prestige-days-v1` uses P1–P10 cycle thresholds of 3/3/4/4/5/5/6/6/7/8 qualifying days and stops at X. The renderer applies a derived Prestige enhancement after Design Set → rarity variant → finish. Full backup retains all evidence. Content-only deck exchange deliberately excludes learner reward/Prestige history, matching its existing no-learning-state contract.
+
+The Collection-facing teaser projection exposes only locked/unlocked/Prestige state, card-back versus collectible-face treatment, silhouette state, stable in-deck numbering and an authored-rarity hint. It deliberately contains no prompt or answer, so a future Collection Desk can render locked cards without leaking learning content.

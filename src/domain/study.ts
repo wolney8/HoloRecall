@@ -131,6 +131,7 @@ export function applyScheduledReview(data: State, input: ReviewInput): State {
     schedulerVersion: data.scheduler.version, configVersion: data.scheduler.configVersion,
     studyPresetId:preset.id,schedulerParameters:structuredClone(parameters),
     mode: 'scheduled', activeMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
+    experienceMode:data.session?.experienceMode==='anki'?'anki':'mastery',
     ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
     studyRootDeckId:data.session?.scopeDeckId??content.deckId,
     studyDeckId:content.deckId,studyDeckPath,studyDay:dayKey(input.now,data.preferences.timeZone),studyTimeZone:data.preferences.timeZone,

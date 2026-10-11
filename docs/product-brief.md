@@ -42,6 +42,8 @@ The previous four treatments were presentation samples, not stored learner achie
 
 The user-authorized cosmetic policy uses high-confidence scheduled ratings 4/5, distinct study dates and at least 20 elapsed hours between contributions. Default thresholds are 1, 2, 3, 5, 8, 12 and 20 qualifying days, configurable in strictly increasing order. This is a motivational policy based on self-report, not a claim of knowledge or mastery. Maintain idempotent contribution/unlock events and reversal evidence; undo reverses its contribution and dependent unlocks, while later forgetting preserves earned cosmetics. Imports, flips, previews, practice and duplicate delivery cannot farm rewards. Scheduling is unchanged.
 
+After a card earns its authored-rarity presentation, later eligible scheduled activity advances ten capped Prestige cycles with versioned thresholds of 3/3/4/4/5/5/6/6/7/8 qualifying days. Prestige is independent from rarity and scheduling: `Rare · Prestige III` is valid, while Free Revision earns none. Promotion evidence is immutable, reversible with its owning review and preserved by full backup. Collection can identify/filter/sort Prestige and Results presents deterministic earned promotions; Collection Desk remains separate future work.
+
 Later XP must remain independent of self-awarded high confidence. Levels, streaks, mastery badges and skippable booster packs require separately reviewed rules. Missed days never remove learned progress or earned cosmetics. Packs may suggest new cards within daily limits; required content remains directly accessible. No paid random packs are in scope.
 
 ## Accessibility and interaction

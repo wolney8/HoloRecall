@@ -10,8 +10,8 @@ import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { LocalStudyStore } from './data/study-store';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
-import { activeRewardEvents, RARITIES, rewardProgress } from '../domain/rewards';
-import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, Rarity, StudyExperienceMode } from '../domain/models';
+import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '../domain/rewards';
+import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode } from '../domain/models';
 import { FlashcardComponent } from './card';
 import { DesignStudioComponent } from './design-studio/design-studio';
 import { CollectionComponent } from './collection/collection';
@@ -38,6 +38,7 @@ import { JsonAuthoringComponent } from './authoring/json-authoring';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
+interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
 @Component({
   selector:'app-root', standalone:true,
   imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,PageRevealDirective],
@@ -122,9 +123,10 @@ export class AppComponent {
   readonly resultUnique=computed(()=>new Set(this.resultEvents().map(event=>event.cardId)).size);
   readonly practiceLowCards=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionPracticeEvents().filter(event=>event.rating<=2).map(event=>event.cardId));return state.cards.filter(card=>ids.has(card.id));});
   readonly practiceDistribution=computed(()=>[1,2,3,4,5].map(rating=>({rating,count:this.sessionPracticeEvents().filter(event=>event.rating===rating).length})));
-  readonly resultRewardRows=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id));const contributions=activeRewardEvents(state).filter(event=>event.kind==='contribution'&&ids.has(event.reviewEventId));return [...new Set(this.sessionReviews().map(event=>event.cardId))].map(cardId=>{const card=state.cards.find(item=>item.id===cardId)!;const progress=rewardProgress(state,cardId);const gained=contributions.filter(event=>event.cardId===cardId).length;return{card,progress,gained,before:Math.max(0,progress.days-gained)};});});
-  readonly resultUnlocks=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id));return activeRewardEvents(state).flatMap(event=>event.kind==='unlock'&&ids.has(event.reviewEventId)?[{event,card:state.cards.find(card=>card.id===event.cardId)!}]:[]);});
+  readonly resultRewardRows=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id)),active=activeRewardEvents(state);const contributions=active.filter(event=>event.kind==='contribution'&&ids.has(event.reviewEventId)),prestigeContributions=active.filter(event=>event.kind==='prestige-contribution'&&ids.has(event.reviewEventId)),unlocks=active.filter(event=>event.kind==='unlock'&&ids.has(event.reviewEventId)),promotions=active.filter((event):event is PrestigePromotion=>event.kind==='prestige-promotion'&&ids.has(event.reviewEventId));return [...new Set(this.sessionReviews().map(event=>event.cardId))].map(cardId=>{const card=state.cards.find(item=>item.id===cardId)!;const progress=rewardProgress(state,cardId),prestige=prestigeProgress(state,cardId),promotion=promotions.filter(event=>event.cardId===cardId&&event.kind==='prestige-promotion').at(-1);const gained=contributions.filter(event=>event.cardId===cardId).length,masteryUnlocked=unlocks.some(event=>event.cardId===cardId&&event.kind==='unlock'&&event.rarity===(card.rarity??'common')),prestigeGained=prestigeContributions.filter(event=>event.cardId===cardId).length,prestigeRequired=promotion?.required??prestige.required,prestigeDays=promotion?.required??prestige.days;return{card,progress,prestige,promotion,gained,prestigeGained,prestigeRequired,prestigeDays,showPrestige:progress.earned&&!masteryUnlocked,before:Math.max(0,progress.days-gained),prestigeBefore:promotion?Math.max(0,promotion.required-prestigeGained):Math.max(0,prestige.days-prestigeGained)};});});
+  readonly resultUnlocks=computed<ResultAward[]>(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id)),result:ResultAward[]=[];for(const event of activeRewardEvents(state)){const card=state.cards.find(item=>item.id===event.cardId);if(!card||!ids.has(event.reviewEventId))continue;if(event.kind==='unlock')result.push({event,card,rarity:event.rarity,label:`${this.rarityLabel(event.rarity)} · Unlocked`,prestigeLevel:prestigeProgress(state,card.id).level});else if(event.kind==='prestige-promotion')result.push({event,card,rarity:card.rarity??'common',label:`Prestige ${this.roman(event.level)}`,prestigeLevel:event.level});}return result;});
   readonly activeResultUnlock=computed(()=>this.resultUnlocks()[this.unlockRevealIndex()]??null);
+  roman(level:number):string{return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][level]??'';}
   private elapsedMs=0;
   private lastTick=performance.now();
   private lastActivity=performance.now();
@@ -263,6 +265,7 @@ export class AppComponent {
   frameFor(card:CardContent):string{const design=this.designFor(card);return this.store.mediaUrl(design?.frames?.[this.shownRarity(card)]||design?.frame);}
   rarityLabel(rarity?:Rarity):string{return this.tiers.find(t=>t.id===(rarity??'common'))?.label??'Common';}
   unlock(card:CardContent){return rewardProgress(this.data()!,card.id);}
+  prestige(card:CardContent){return prestigeProgress(this.data()!,card.id);}
   async chooseStudyMode(mode:StudyExperienceMode):Promise<void>{try{await this.store.updatePreferences({studyMode:mode});}catch(error){this.fail(error);}}
   studyModeLabel(mode=this.session()?.experienceMode??this.selectedStudyMode()):string{return mode==='anki'?'Anki mode':mode==='free-revision'?'Free revision':'Mastery mode';}
   studyModeHelp(mode=this.selectedStudyMode()):string{return mode==='anki'?'Scheduled study with learning and relearning repeats.':mode==='free-revision'?'Practice without FSRS, due-date or reward changes.':'Scheduled study with HoloRecall confidence, mastery progress and collectible rewards.';}

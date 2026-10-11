@@ -1,5 +1,14 @@
 # Current restart point
 
+## 11 October 2026 — Mastery to Prestige I–X foundation complete
+
+- **Outcome:** HR-PRESTIGE-01–12 are `DONE`. Prestige is a capped, event-derived cosmetic progression after authored-rarity mastery. It remains independent from rarity, Design Sets, content and FSRS; Scheduled Anki/Mastery reviews can contribute, while Free Revision cannot.
+- **Integrity:** `prestige-contribution`, `prestige-promotion` and existing reversal records retain review evidence. Distinct learner days plus 20 elapsed hours prevent same-session farming; review IDs prevent duplicate delivery; Undo reverses dependent progress/promotion once. Full backup retains the ledger, while content-only deck exchange cannot grant learner Prestige.
+- **Presentation:** the shared Design Set renderer adds cumulative P1–P10 material bands and a compact Roman crest. Collection identifies, filters, sorts and explains cycle progress; Results completes the real threshold before a deterministic promotion reveal and reuses the existing semantic unlock haptic. Effects Off and Reduced Motion retain the static level indicator.
+- **Evidence:** unit/domain **199/199** and the unchanged full Playwright matrix **208/208** pass across Chromium, desktop WebKit and compact/large/landscape WebKit profiles. Production is **843.06 kB raw / 200.84 kB transfer**, below the unchanged 850 kB ceiling; Collection remains lazy at **34.89 kB**. The synced packaged iPhone 17 Pro / iOS 26.5 smoke passes **1/1 in 38.624 s**. Logs, screenshots and result bundle are in ignored `.runtime/evidence/hr-prestige-20261011/`.
+- **Retries/gaps:** the first broad run used a stale dev-server compile; later integration runs exposed and fixed mastery-to-Prestige Results sequencing, an 814 px landscape overflow, and a visibility/reduced-motion flip race. No timeout was increased and the final unchanged matrix is clean. Physical-device haptic quality, OLED/material compositing, VoiceOver and device performance remain pending. Collection Desk was not started.
+- **Recommended next bounded milestone:** Collection Desk foundation, consuming the implemented locked/unlocked/Prestige presentation state; do not start it without authorization.
+
 ## 11 October 2026 — HR-DESIGN-16 artwork blending correction complete
 
 - **Outcome:** HR-DESIGN-16A–F are `DONE`. The shared renderer now composes background/art, frame, native visual panels, inert choices and protected learning copy from one palette-derived material family. Prompt/answer dominance is unchanged; finish effects stay below readable copy and never affect content or learning state.

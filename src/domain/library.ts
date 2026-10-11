@@ -58,7 +58,7 @@ export function buildLibraryIndex(state: State, now = new Date()): LibraryIndex 
   for (const event of activeRewardEvents(state)) {
     const progress = rewardByCard.get(event.cardId) ?? { contributions: 0, unlocks: new Set<Rarity>() };
     if (event.kind === 'contribution') progress.contributions += 1;
-    else progress.unlocks.add(event.rarity);
+    else if(event.kind==='unlock') progress.unlocks.add(event.rarity);
     rewardByCard.set(event.cardId, progress);
   }
   const deckLineage=(id:string):string[]=>{const result:string[]=[];let current=deckById.get(id);while(current&&!result.includes(current.id)){result.push(current.id);current=current.parentId?deckById.get(current.parentId):undefined;}return result;};

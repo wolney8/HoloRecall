@@ -120,6 +120,8 @@ media/<asset filename>.png  (or .jpg/.jpeg/.webp/.mp3/.wav)
 
 Import first reads and validates the entire file, then shows new, updated and unchanged duplicate cards, deck/design changes, bundled asset count and blocking errors. Matching IDs update content; identical content is a no-op. Content revisions increase only for a changed existing card. Omitted cards/decks are never deleted. Updates preserve saved scheduling state, review history, current session and rewards. New cards receive no imported learning state and no unlocks. Applying is one IndexedDB transaction checked against the exact local version observed during preview. If local data changes, inspect the file again; no partial import is saved.
 
+Content packages intentionally do not carry learner-specific reward, mastery or Prestige events. Full HoloRecall backups preserve the immutable reward ledger, including Prestige contribution/promotion evidence and reversals. Sharing a deck therefore cannot grant earned presentation state, while a full learner restore retains it.
+
 Changing an existing card's meaning substantially while retaining its ID preserves its old review history by design. Prefer a new card ID when it becomes a different learning task.
 
 ## Implementation references

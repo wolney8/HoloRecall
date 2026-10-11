@@ -38,6 +38,13 @@ describe('Study Mode domain boundary',()=>{
     expect(after.rewardEvents.length).toBeGreaterThanOrEqual(before.rewardEvents.length);
   });
 
+  it.each(['anki','mastery'] as const)('records %s as an eligible scheduled mode without changing scheduler semantics',mode=>{
+    const before=session(mode),after=applyScheduledReview(before,{id:`${mode}-eligible`,cardId:'ciao',sessionId:`${mode}-session`,rating:4,now});
+    const review=after.events.find(event=>event.kind==='review');
+    expect(review?.kind==='review'&&review.experienceMode).toBe(mode);
+    expect(after.rewardEvents.some(event=>event.kind==='contribution'&&event.reviewEventId===`${mode}-eligible`)).toBe(true);
+  });
+
   it('keeps Free Revision entirely outside FSRS, due dates and rewards',()=>{
     const before=session('free-revision'),after=recordPracticeRating(before,{id:'free-rating',cardId:'ciao',sessionId:'free-revision-session',rating:5,now});
     expect(after.practiceEvents).toHaveLength(1);

@@ -166,6 +166,8 @@ export interface ReviewEvent {
   schedulerVersion: string;
   configVersion: string;
   mode?: 'scheduled';
+  /** Learner-facing mode at acceptance. Practice never creates ReviewEvents. */
+  experienceMode?: Exclude<StudyExperienceMode, 'free-revision'>;
   activeMs?: number;
   /** Focused, non-idle time from question display to reveal. */
   recallMs?: number;
@@ -405,7 +407,16 @@ export interface RewardReversal {
   kind: 'reward-reversal'; id: string; cardId: string; reviewEventId: string;
   timestamp: string; reversedEventIds: string[];
 }
-export type RewardEvent = RewardContribution | RewardUnlock | RewardReversal;
+export interface PrestigeContribution {
+  kind: 'prestige-contribution'; id: string; cardId: string; reviewEventId: string;
+  timestamp: string; studyDay: string; timeZone: string; cycle: number; configVersion: 'prestige-days-v1';
+}
+export interface PrestigePromotion {
+  kind: 'prestige-promotion'; id: string; cardId: string; reviewEventId: string;
+  timestamp: string; level: number; required: number; contributionIds: string[];
+}
+export type RewardEvent = RewardContribution | RewardUnlock | PrestigeContribution | PrestigePromotion | RewardReversal;
+export type CollectiblePresentationState = 'locked' | 'unlocked' | 'prestige';
 export interface ContentImport {
   decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[];
 }

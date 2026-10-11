@@ -1,12 +1,33 @@
 # Canonical work-item tracker
 
-Updated: 3 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 11 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Completed milestone — Mastery to Prestige 1–10 foundation
+
+Authorised 11 October 2026. Prestige is an earned cosmetic/mastery domain layered after Design Set, authored rarity and finish. It never rewrites scheduling, content or source identity; Collection Desk remains out of scope.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-PRESTIGE-01 | Separate progression domains | DONE | Rarity, scheduling, rarity unlock, mastery, Prestige, treatment and cosmetics remain independent. |
+| HR-PRESTIGE-02 | Eligible Study modes | DONE | Scheduled Anki/Mastery reviews may contribute; Free Revision/practice never does. |
+| HR-PRESTIGE-03 | Mastery ceiling | DONE | Eligible activity promotes through Prestige I–X and resets only its cosmetic cycle. |
+| HR-PRESTIGE-04 | Anti-farming | DONE | Immutable review IDs, distinct study days and spacing prevent duplicate/session/import/replay farming; Undo is safe. |
+| HR-PRESTIGE-05 | P1–P10 visual cadence | DONE | Cumulative treatments make P1, P5 and P10 distinct without obscuring content. |
+| HR-PRESTIGE-06 | Design Set integration | DONE | Prestige follows Design Set → rarity variant → finish across art/content types. |
+| HR-PRESTIGE-07 | Badge / crest | DONE | Compact non-colour indicator appears in Collection, inspection/browser and earned results. |
+| HR-PRESTIGE-08 | Post-Study progression | DONE | Results present actual persisted progress/promotions and cannot duplicate awards. |
+| HR-PRESTIGE-09 | Collection presentation | DONE | Identify, filter/sort, inspect level and next-cycle progress without Collection Desk. |
+| HR-PRESTIGE-10 | Locked/unlocked/prestige state | DONE | Teaser-safe reusable presentation state exists without revealing answers. |
+| HR-PRESTIGE-11 | Concise explanation | DONE | Level/progress/counting rules are understandable with detail behind disclosure. |
+| HR-PRESTIGE-12 | Data / portability | DONE | Promotion state derives from validated events; Undo/reload are idempotent and backup preserves it. |
+
+Platform acceptance covers Chromium, desktop/mobile WebKit and available Simulator evidence. Physical haptics, VoiceOver and device performance remain separate. Initial web budget remains 850 kB.
 
 ## Active milestone — Search, organisation and scalable local media
 
