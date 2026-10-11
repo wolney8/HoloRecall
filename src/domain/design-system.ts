@@ -1,0 +1,78 @@
+import type { CardCompositionId, CardContent, Deck, DesignPalette, DesignSet, Rarity, State } from './models';
+
+export const GLOBAL_DESIGN_SET_ID = 'holorecall-default';
+export const CARD_COMPOSITIONS: readonly CardCompositionId[] = [
+  'full-bleed', 'framed-art', 'illustration-window', 'split-art-content',
+  'typographic-showcase', 'minimal-prestige', 'diagram-technical',
+  'photo-focus', 'symbolic-generated',
+] as const;
+
+/** Built-in fallback. It need not be duplicated in every legacy state or on every card. */
+export const DEFAULT_DESIGN_SET: Readonly<DesignSet> = Object.freeze({
+  id: GLOBAL_DESIGN_SET_ID,
+  name: 'HoloRecall',
+  backgroundFit: 'cover',
+  backgroundPositionX: 50,
+  backgroundPositionY: 50,
+  frameFit: 'contain',
+  credit: 'HoloRecall',
+  source: 'Built-in',
+  license: 'Original',
+  composition: 'symbolic-generated',
+  layoutPolicy: 'suggest',
+  palette: { primary: '#6750a4', secondary: '#625b71', surface: '#1d1b20', onSurface: '#e6e1e5', accent: '#d0bcff' },
+});
+
+export interface ResolvedDesign {
+  design: DesignSet;
+  source: 'card-override' | 'deck' | 'ancestor-deck' | 'global';
+  sourceDeckId?: string;
+}
+
+export function inheritedDesignId(decks: readonly Deck[], deckId: string): { id?: string; deckId?: string } {
+  const byId = new Map(decks.map(deck => [deck.id, deck]));
+  const visited = new Set<string>();
+  let current = byId.get(deckId);
+  while (current && !visited.has(current.id)) {
+    visited.add(current.id);
+    if (current.designSetId) return { id: current.designSetId, deckId: current.id };
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return {};
+}
+
+export function resolveCardDesign(state: Pick<State, 'decks' | 'designs'>, card: Pick<CardContent, 'deckId' | 'designSetId'>): ResolvedDesign {
+  const byId = new Map(state.designs.map(design => [design.id, design]));
+  if (card.designSetId) return { design: byId.get(card.designSetId) ?? DEFAULT_DESIGN_SET, source: 'card-override' };
+  const inherited = inheritedDesignId(state.decks, card.deckId);
+  if (inherited.id) return { design: byId.get(inherited.id) ?? DEFAULT_DESIGN_SET, source: inherited.deckId === card.deckId ? 'deck' : 'ancestor-deck', sourceDeckId: inherited.deckId };
+  return { design: DEFAULT_DESIGN_SET, source: 'global' };
+}
+
+/** Coherent defaults from one family; explicit authored overrides always win. */
+export function rarityVariant(design: DesignSet, rarity: Rarity): NonNullable<DesignSet['rarityVariants']>[Rarity] {
+  const intensity: Record<Rarity, number> = { common: 0, uncommon: .12, rare: .28, 'holo-rare': .46, 'ultra-rare': .62, 'secret-rare': .78, relic: .9 };
+  return {
+    finish: design.finishes?.[rarity] ?? design.finish ?? (rarity === 'common' ? 'matte' : rarity === 'uncommon' ? 'gloss' : 'holographic'),
+    frame: design.frames?.[rarity] ?? design.frame,
+    texture: design.texture,
+    accent: design.palette?.accent ?? design.palette?.primary,
+    composition: design.composition,
+    effectIntensity: intensity[rarity],
+    ...design.rarityVariants?.[rarity],
+  };
+}
+
+const hex = (red: number, green: number, blue: number): string => `#${[red,green,blue].map(value=>Math.max(0,Math.min(255,Math.round(value))).toString(16).padStart(2,'0')).join('')}`;
+const luminance = ([red,green,blue]:readonly number[]):number => .2126*red+.7152*green+.0722*blue;
+/** Small deterministic palette extraction primitive; source pixels are never modified. */
+export function deriveDesignPalette(rgba: ArrayLike<number>): DesignPalette {
+  const samples:Array<[number,number,number]>=[];
+  const stride=Math.max(4,Math.floor(rgba.length/4096/4)*4);
+  for(let index=0;index+3<rgba.length;index+=stride){if(Number(rgba[index+3])<32)continue;samples.push([Number(rgba[index]),Number(rgba[index+1]),Number(rgba[index+2])]);}
+  if(!samples.length)return structuredClone(DEFAULT_DESIGN_SET.palette!);
+  samples.sort((a,b)=>luminance(a)-luminance(b));
+  const average=(from:number,to:number):[number,number,number]=>{const selected=samples.slice(from,Math.max(from+1,to)),sum=selected.reduce((value,item)=>[value[0]+item[0],value[1]+item[1],value[2]+item[2]] as [number,number,number],[0,0,0]);return sum.map(value=>value/selected.length) as [number,number,number];};
+  const dark=average(0,Math.ceil(samples.length*.3)),mid=average(Math.floor(samples.length*.3),Math.ceil(samples.length*.72)),light=average(Math.floor(samples.length*.72),samples.length);
+  return {primary:hex(...mid),secondary:hex(...dark),surface:hex(...dark.map(value=>value*.42) as [number,number,number]),onSurface:luminance(dark)<145?'#ffffff':'#111111',accent:hex(...light)};
+}

@@ -263,51 +263,37 @@ Recommended reveal contents:
 
 This is meant to create curiosity and completion motivation without leaking the educational content.
 
-## 11. New open decisions for next design session
+## 11. Design Suite foundation decisions — CONFIRMED 11 October 2026
 
-### 11.1 JSON authoring scope
-Decide:
-- whether the JSON import should use a strict official schema only;
-- whether HoloRecall should also accept a forgiving "simple JSON list" and map it automatically;
-- whether users can save reusable schemas per subject.
+### 11.1 JSON authoring
 
-### 11.2 Subject-neutral back-face field labels
-Because cards will not only be language cards, decide the generic field system.
+HoloRecall supports both a versioned official structured schema and a friendly JSON list that normalises into that schema. Both paths validate completely before an atomic apply. Subject-specific reusable schemas remain a future option.
 
-Candidate approach:
-- Primary answer
-- Secondary line
-- Additional details
-- Extra sections
+### 11.2 Subject-neutral learning fields
 
-With optional subject presets:
-- Languages: Pronunciation / Meaning / Usage
-- Maths: Method / Formula / Worked note
-- Science: Definition / Rule / Example
-- History: Date / Context / Notes
+The domain uses **Primary answer**, **Secondary line**, **Short interpretation**, and labelled **Supporting sections**. Friendly subject presets may label those concepts as Pronunciation/Meaning/Usage, Formula/Method/Worked note, Definition/Rule/Example, Date/Context/Notes, or Syntax/Explanation/Example. Legacy language fields remain readable compatibility aliases; the renderer and new authoring contracts do not assume a language subject.
 
-### 11.3 Canva-style round trip depth
-Decide whether reimported design templates are:
-- full-card flattened art only;
-- layered regions with known anchor zones;
-- or a hybrid where HoloRecall exports a designed shell and the user edits only the illustration/art panel.
+### 11.3 External artwork round trip
 
-### 11.4 Auto-generation of rarity variants
-Decide how much the system should auto-derive from one uploaded base design:
-- frame colours
-- foil treatments
-- chip styles
-- card backs
-- prestige variants
-- seasonal variants
+V1 exports an artwork-region guide rather than a flattened editable learning card. The guide communicates exact 2:3 dimensions, bleed, safe zones, focal/art region and protected content regions. Reimport supplies a source artwork asset; HoloRecall continues to own learning content, frame, rarity, finish, motion and accessibility layers.
 
-### 11.5 Prestige visual cadence
-Now that Prestige is capped at 10, decide whether:
-- every level has a visible change,
-- or levels are grouped into milestones (for example 1–3 / 4–6 / 7–9 / 10).
+### 11.4 Rarity variants
 
-### 11.6 Design suite guardrails
-Decide how much freedom the user gets before the UI becomes too complex:
-- simple mode only
-- simple mode + advanced mode
-- locked curated templates for most users with deeper controls for power users
+One base Design Set derives a coherent family across all authored rarities through declarative frame, accent, material/finish, texture and effect-intensity differences. A user may supply a bespoke asset override for an individual rarity. Rarity variants must remain recognisably part of one set rather than seven separate designs.
+
+### 11.5 Layout and generated-art templates
+
+The curated initial composition family is Full Bleed, Framed Art, Illustration Window, Split Art / Content, Typographic Showcase, Minimal Prestige, Diagram / Technical, Photo Focus, and Symbolic / Generated Art. A Design Set may lock one layout or permit a deterministic suggestion that the learner can override. Media-free art is local, deterministic, portable and derived from stable card/deck/topic/type/rarity/Design Set inputs; it is not generic network AI clip-art.
+
+### 11.6 Design Suite guardrails
+
+The default Design Suite is content-first and progressively disclosed. Design identity, Artwork, Layout, Rarity variants and Preview form the primary path. Composition/material controls are grouped behind Advanced disclosure. The UI exposes declarative product choices rather than raw CSS.
+
+## 12. Remaining open decisions
+
+1. Prestige cadence inside the confirmed 1–10 cap: visible changes at every level or grouped milestones.
+2. Exactly which Study Modes advance rarity unlock, mastery, and Prestige.
+3. How much locked teaser silhouettes reveal beyond numbering/frame hints.
+4. Collection Desk interaction depth and whether desk layouts persist.
+5. Whether one learning card can retain a gallery of unlocked editions or only one active collectible presentation.
+6. Whether set completion unlocks special frames, card backs, or future desk surfaces.

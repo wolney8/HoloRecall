@@ -12,6 +12,8 @@ import { recordPracticeRating } from '../../domain/practice';
 import { validateFocusPreset } from '../../domain/focus-validation';
 import type { AdministrativeAction } from '../../domain/administrative';
 import type { BulkCardPatch } from '../../domain/card-organisation';
+import { resolveCardDesign, type ResolvedDesign } from '../../domain/design-system';
+import type { JsonAuthoringPreview } from '../../domain/json-authoring';
 
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
@@ -20,8 +22,6 @@ export class LocalStudyStore {
   readonly cards = computed(() => this.data()?.cards ?? []);
   readonly decks = computed(() => this.data()?.decks ?? []);
   private readonly assetById = computed(() => new Map((this.data()?.assets ?? []).map(asset => [asset.id, asset])));
-  private readonly deckById = computed(() => new Map((this.data()?.decks ?? []).map(deck => [deck.id, deck])));
-  private readonly designById = computed(() => new Map((this.data()?.designs ?? []).map(design => [design.id, design])));
   private readonly database: StudyPersistence;
   private saving = false;
   private pendingChange: Promise<void> = Promise.resolve();
@@ -109,6 +109,56 @@ export class LocalStudyStore {
     });
   }
 
+  async setDeckDesign(deckId: string, designSetId?: string): Promise<void> {
+    await this.change(data => {
+      if (designSetId && !data.designs.some(design => design.id === designSetId)) throw new Error('Choose an existing Design Set.');
+      if (!data.decks.some(deck => deck.id === deckId)) throw new Error('Choose an existing deck.');
+      return { ...data, version: data.version + 1, decks: data.decks.map(deck => { if (deck.id !== deckId) return deck; const next = { ...deck, designSetId }; if (!designSetId) delete next.designSetId; return next; }) };
+    });
+  }
+
+  async setCardDesignOverrides(ids: string[], designSetId: string): Promise<void> {
+    const selected = new Set(ids);
+    await this.change(data => {
+      if (!selected.size) throw new Error('Select at least one card.');
+      if (!data.designs.some(design => design.id === designSetId)) throw new Error('Choose an existing Design Set.');
+      if ([...selected].some(id => !data.cards.some(card => card.id === id))) throw new Error('A selected card no longer exists.');
+      const cards = data.cards.map(card => selected.has(card.id) && card.designSetId !== designSetId ? { ...card, designSetId } : card);
+      return cards.every((card, index) => card === data.cards[index]) ? data : { ...data, version: data.version + 1, cards };
+    });
+  }
+
+  /** Clears only presentation overrides. Content, learner state, rewards and source identity are untouched. */
+  async returnCardsToInherited(ids: string[]): Promise<void> {
+    const selected = new Set(ids);
+    await this.change(data => {
+      if ([...selected].some(id => !data.cards.some(card => card.id === id))) throw new Error('A selected card no longer exists.');
+      const cards = data.cards.map(card => { if (!selected.has(card.id) || card.designSetId === undefined) return card; const next = { ...card }; delete next.designSetId; return next; });
+      return cards.every((card, index) => card === data.cards[index]) ? data : { ...data, version: data.version + 1, cards };
+    });
+  }
+
+  async returnDeckCardsToInherited(deckId: string, includeDescendants = true): Promise<void> {
+    const data = this.data();
+    if (!data) throw new Error('Local study data is not ready.');
+    const deckIds = new Set([deckId]);
+    if (includeDescendants) { let changed = true; while (changed) { changed = false; for (const deck of data.decks) if (deck.parentId && deckIds.has(deck.parentId) && !deckIds.has(deck.id)) { deckIds.add(deck.id); changed = true; } } }
+    await this.returnCardsToInherited(data.cards.filter(card => deckIds.has(card.deckId)).map(card => card.id));
+  }
+
+  /** Applies a previously validated all-or-nothing authoring plan. */
+  async applyJsonAuthoring(preview: JsonAuthoringPreview, expectedVersion: number): Promise<void> {
+    if (!preview.valid || preview.errors.length) throw new Error('Fix every card error before applying this batch.');
+    await this.change(data => {
+      if (data.version !== expectedVersion) throw new Error('The preview is stale. Analyse the JSON again.');
+      if (!data.decks.some(deck => deck.id === preview.deckId)) throw new Error('The destination deck no longer exists.');
+      const existing = new Set(data.cards.map(card => card.id));
+      if (preview.cards.some(card => existing.has(card.id) || card.deckId !== preview.deckId)) throw new Error('A proposed card ID already exists or targets another deck.');
+      preview.cards.forEach(validateCard);
+      return { ...data, version: data.version + 1, cards: [...data.cards, ...structuredClone(preview.cards)] };
+    });
+  }
+
   async detachAnkiCard(cardId:string):Promise<void>{await this.change(data=>{const card=data.cards.find(item=>item.id===cardId);if(!card?.ankiSource)return data;const cards=data.cards.map(item=>item.id===cardId?{...item,revision:item.revision+1,ankiSource:{...item.ankiSource!,linkState:'detached' as const}}:item);return reconcileSession({...data,version:data.version+1,cards},data);});}
   async detachAnkiDeck(deckId:string):Promise<void>{await this.change(data=>{const branch=new Set([deckId]);let changed=true;while(changed){changed=false;for(const deck of data.decks)if(deck.parentId&&branch.has(deck.parentId)&&!branch.has(deck.id)){branch.add(deck.id);changed=true;}}const decks=data.decks.map(deck=>branch.has(deck.id)?{...deck,ankiSource:undefined}:deck),cards=data.cards.map(card=>branch.has(card.deckId)&&card.ankiSource?{...card,revision:card.revision+1,ankiSource:{...card.ankiSource,linkState:'detached' as const}}:card);return reconcileSession({...data,version:data.version+1,decks,cards},data);});}
   async deleteDeckBranch(deckId:string):Promise<void>{const {deleteDeckBranch}=await import('../../domain/deck-management');await this.change(data=>deleteDeckBranch(data,deckId));}
@@ -182,10 +232,13 @@ export class LocalStudyStore {
     if (ref.startsWith('asset:')) return this.assetById().get(ref.slice(6))?.dataUrl ?? '';
     return /^\/?(?:art|assets)\/[a-zA-Z0-9/_-]+\.(svg|png|webp|jpe?g)$/.test(ref) ? ref : '';
   }
-  designFor(card: CardContent): DesignSet | undefined {
+  resolvedDesignFor(card: CardContent): ResolvedDesign {
     const data = this.data();
-    const designId = card.designSetId ?? this.deckById().get(card.deckId)?.designSetId;
-    return this.designById().get(designId ?? '');
+    if (!data) throw new Error('Local study data is not ready.');
+    return resolveCardDesign(data, card);
+  }
+  designFor(card: CardContent): DesignSet | undefined {
+    return this.resolvedDesignFor(card).design;
   }
   async saveAsset(asset: LocalAsset): Promise<LocalAsset> {
     const described=await describeAsset(asset);validateAsset(described);let retained=described;
@@ -270,7 +323,7 @@ export class LocalStudyStore {
 
 
 function sameCardContent(a: CardContent, b: CardContent): boolean {
-  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId,art:card.art,choices:card.choices,answerLabel:card.answerLabel,details:card.details}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
+  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,secondary:card.secondary,interpretation:card.interpretation,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId,art:card.art,choices:card.choices,answerLabel:card.answerLabel,details:card.details}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
   return normalized(a) === normalized(b);
 }
 

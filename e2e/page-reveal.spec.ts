@@ -55,7 +55,7 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
     ['Import / export', 'hr-exchange .hr-reveal', 3],
     ['Settings', '.settings-grid .hr-reveal', 2],
   ];
-  const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Studio', Progress: 'Progress', 'Import / export': 'Import & export', Settings: 'Settings' };
+  const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Suite', Progress: 'Progress', 'Import / export': 'Import & export', Settings: 'Settings' };
   for (const [pageName, selector, minimum] of coverage) {
     if (pageName !== 'Dashboard') { await navigate(page, pageName); await expect(page.getByRole('heading', { name: headings[pageName], exact: true })).toBeVisible(); }
     await expect.poll(()=>page.locator(selector).count(),{message:`${pageName} shared reveal coverage`}).toBeGreaterThanOrEqual(minimum);
@@ -146,6 +146,6 @@ test('HR-UX-12 landscape navigation settles visible Design Studio blocks @ios-la
   await preview.scrollIntoViewIfNeeded();
   await expect(preview).toHaveAttribute('data-reveal-state', /active|settled/);
   await expectNoOverflow(page);
-  await page.getByLabel('Design name').focus();
+  await page.getByLabel('Design Set name').focus();
   await expect(page.locator('.studio-editor.hr-reveal')).toHaveAttribute('data-reveal-state', 'settled');
 });

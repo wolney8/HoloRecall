@@ -9,25 +9,26 @@ export interface ImportPreview {
   newDecks: string[]; updatedDecks: string[]; duplicateDecks: string[];
   newDesigns: string[]; updatedDesigns: string[]; duplicateDesigns: string[];
 }
-export const FORMAT_VERSION = '7';
+export const FORMAT_VERSION = '8';
 export const EXCHANGE_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic'];
 export const HEADERS = {
   Metadata: ['key', 'value'],
   Decks: ['deck_id', 'title', 'description', 'design_set_id', 'suspended', 'parent_deck_id', 'anki_source', 'cover_media'],
-  Cards: ['card_id', 'deck_id', 'card_type', 'front_text', 'back_text', 'pronunciation', 'meaning', 'notes', 'tags', 'rarity', 'design_set_id', 'front_media', 'back_media', 'image_description', 'suspended', 'finish', 'front_audio', 'back_audio', 'sibling_group_id', 'anki_source','art','choices','answer_label','details'],
-  Designs: ['design_set_id', 'name', 'background', 'frame', 'common_frame', 'uncommon_frame', 'rare_frame', 'holo_rare_frame', 'ultra_rare_frame', 'secret_rare_frame', 'relic_frame', 'background_fit', 'background_position_x', 'background_position_y', 'frame_fit', 'credit', 'source', 'license', 'base_finish', 'rarity_finishes', 'layout', 'texture'],
+  Cards: ['card_id', 'deck_id', 'card_type', 'front_text', 'back_text', 'pronunciation', 'meaning', 'notes', 'tags', 'rarity', 'design_set_id', 'front_media', 'back_media', 'image_description', 'suspended', 'finish', 'front_audio', 'back_audio', 'sibling_group_id', 'anki_source','art','choices','answer_label','details','secondary','interpretation'],
+  Designs: ['design_set_id', 'name', 'background', 'frame', 'common_frame', 'uncommon_frame', 'rare_frame', 'holo_rare_frame', 'ultra_rare_frame', 'secret_rare_frame', 'relic_frame', 'background_fit', 'background_position_x', 'background_position_y', 'frame_fit', 'credit', 'source', 'license', 'base_finish', 'rarity_finishes', 'layout', 'texture','design_schema'],
   Assets: ['asset_id', 'file', 'name', 'mime', 'width', 'height', 'credit', 'source', 'license'],
 } as const;
+const V7_HEADERS = { ...HEADERS, Cards: HEADERS.Cards.slice(0, 24), Designs: HEADERS.Designs.slice(0, 22) } as const;
 const LEGACY_HEADERS = {
   ...HEADERS,
   Cards: HEADERS.Cards.slice(0, 15),
   Designs: HEADERS.Designs.slice(0, 18),
 } as const;
-const V2_HEADERS = { ...HEADERS, Cards: HEADERS.Cards.slice(0, 16) } as const;
-const V3_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 5), Cards: HEADERS.Cards.slice(0, 18) } as const;
-const V4_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 6), Cards: HEADERS.Cards.slice(0, 19) } as const;
-const V5_HEADERS = { ...HEADERS, Decks: HEADERS.Decks.slice(0, 7),Cards:HEADERS.Cards.slice(0,20) } as const;
-const V6_HEADERS = { ...HEADERS, Cards: HEADERS.Cards.slice(0,20) } as const;
+const V2_HEADERS = { ...V7_HEADERS, Cards: HEADERS.Cards.slice(0, 16) } as const;
+const V3_HEADERS = { ...V7_HEADERS, Decks: HEADERS.Decks.slice(0, 5), Cards: HEADERS.Cards.slice(0, 18) } as const;
+const V4_HEADERS = { ...V7_HEADERS, Decks: HEADERS.Decks.slice(0, 6), Cards: HEADERS.Cards.slice(0, 19) } as const;
+const V5_HEADERS = { ...V7_HEADERS, Decks: HEADERS.Decks.slice(0, 7),Cards:HEADERS.Cards.slice(0,20) } as const;
+const V6_HEADERS = { ...V7_HEADERS, Cards: HEADERS.Cards.slice(0,20) } as const;
 type SheetName = keyof typeof HEADERS;
 type Tables = Record<SheetName, string[][]>;
 export const MAX_FILE_BYTES = 30 * 1024 * 1024;
@@ -61,8 +62,8 @@ export function bundleTables(bundle: ContentBundle): Tables {
   return {
     Metadata: [['format_version', FORMAT_VERSION], ['content_only', 'true']],
     Decks: bundle.decks.map(deck => [deck.id, deck.name, deck.description, deck.designSetId ?? '', String(deck.suspended), deck.parentId ?? '', deck.ankiSource ? JSON.stringify(deck.ankiSource) : '',deck.coverImage??'']),
-    Cards: bundle.cards.map(card => [card.id, card.deckId, card.kind, card.front, card.answer, card.pronunciation, card.meaning, card.notes, JSON.stringify(card.tags), card.rarity ?? 'common', card.designSetId ?? '', card.image ?? '', card.backImage ?? '', card.imageDescription ?? '', String(card.suspended), card.finish ?? '', JSON.stringify(card.frontAudio ?? []), JSON.stringify(card.backAudio ?? []), card.siblingGroupId ?? '', card.ankiSource ? JSON.stringify(card.ankiSource) : '',card.art?JSON.stringify(card.art):'',JSON.stringify(card.choices??[]),card.answerLabel??'',JSON.stringify(card.details??[])]),
-    Designs: bundle.designs.map(design => [design.id, design.name, design.background ?? '', design.frame ?? '', ...EXCHANGE_RARITIES.map(rarity => design.frames?.[rarity] ?? ''), design.backgroundFit, String(design.backgroundPositionX), String(design.backgroundPositionY), design.frameFit, design.credit, design.source, design.license, design.finish ?? '', design.finishes ? JSON.stringify(design.finishes) : '', design.layout ?? '', design.texture ?? '']),
+    Cards: bundle.cards.map(card => [card.id, card.deckId, card.kind, card.front, card.answer, card.pronunciation, card.meaning, card.notes, JSON.stringify(card.tags), card.rarity ?? 'common', card.designSetId ?? '', card.image ?? '', card.backImage ?? '', card.imageDescription ?? '', String(card.suspended), card.finish ?? '', JSON.stringify(card.frontAudio ?? []), JSON.stringify(card.backAudio ?? []), card.siblingGroupId ?? '', card.ankiSource ? JSON.stringify(card.ankiSource) : '',card.art?JSON.stringify(card.art):'',JSON.stringify(card.choices??[]),card.answerLabel??'',JSON.stringify(card.details??[]),card.secondary??'',card.interpretation??'']),
+    Designs: bundle.designs.map(design => [design.id, design.name, design.background ?? '', design.frame ?? '', ...EXCHANGE_RARITIES.map(rarity => design.frames?.[rarity] ?? ''), design.backgroundFit, String(design.backgroundPositionX), String(design.backgroundPositionY), design.frameFit, design.credit, design.source, design.license, design.finish ?? '', design.finishes ? JSON.stringify(design.finishes) : '', design.layout ?? '', design.texture ?? '', JSON.stringify({ ...(design.composition?{composition:design.composition}:{}), ...(design.layoutPolicy?{layoutPolicy:design.layoutPolicy}:{}), ...(design.palette?{palette:design.palette}:{}), ...(design.artwork?{artwork:design.artwork}:{}), ...(design.rarityVariants?{rarityVariants:design.rarityVariants}:{}) })]),
     Assets: bundle.assets.map(asset => [asset.id, `media/${asset.id}.${extension(asset)}`, asset.name, asset.mime, asset.width === undefined ? '' : String(asset.width), asset.height === undefined ? '' : String(asset.height), asset.credit ?? '', asset.source ?? '', asset.license ?? '']),
   };
 }
@@ -137,9 +138,9 @@ async function readTables(bytes: Uint8Array): Promise<Tables> {
       });
       if (number === 1) {
         const actual = values.slice(0, sheet.columnCount);
-        const current = [...HEADERS[name]],v6=[...V6_HEADERS[name]], v5=[...V5_HEADERS[name]],v4 = [...V4_HEADERS[name]], v3 = [...V3_HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
+        const current = [...HEADERS[name]],v7=[...V7_HEADERS[name]],v6=[...V6_HEADERS[name]], v5=[...V5_HEADERS[name]],v4 = [...V4_HEADERS[name]], v3 = [...V3_HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
         const matches = (expected: readonly string[]) => actual.slice(0, expected.length).every((value, index) => value === expected[index]) && actual.slice(expected.length).every(value => value === '');
-        if (!matches(current) && !matches(v6) && !matches(v5) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-7 template.`);
+        if (!matches(current) && !matches(v7) && !matches(v6) && !matches(v5) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-8 template.`);
       }
       else if (values.some(value => value !== '')) rows.push(values);
     });
@@ -157,7 +158,7 @@ function validRef(ref: string | undefined, assets: Set<string>, label: string): 
 function duplicates(items: { id: string }[], name: string): void { const ids = new Set<string>(); for (const item of items) { if (ids.has(item.id)) throw new Error(`${name}: duplicate ID ${item.id} inside this file.`); ids.add(item.id); } }
 
 export function parseTables(tables: Tables, state: State, incomingAssets: LocalAsset[] = []): ContentBundle {
-  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4','5','6', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 7) and content_only=true only.');
+  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4','5','6','7', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 8) and content_only=true only.');
   const bundle = emptyBundle(); bundle.assets = incomingAssets;
   bundle.decks = tables.Decks.map(([deckId, title, description, designSetId, suspended,parentId,ankiSourceRaw,coverImage]) => {let ankiSource:Deck['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Deck ${deckId}: anki_source must be valid inert JSON.`);}}const deck:Deck={ id: id(deckId, 'Deck ID'), name: required(title, 'Deck title'), description, designSetId: optional(designSetId), suspended: bool(suspended, 'Deck suspended'),parentId:optional(parentId),coverImage:optional(coverImage),...(ankiSource?{ankiSource}:{})};validateDeck(deck);return deck;});
   bundle.designs = tables.Designs.map(row => {
@@ -169,9 +170,10 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
     let finishes: Record<string, unknown> = {};
     try { finishes = row[19] ? JSON.parse(row[19]) : {}; } catch { throw new Error(`Design ${designId}: rarity_finishes must be a JSON object.`); }
     if (!finishes || Array.isArray(finishes) || typeof finishes !== 'object') throw new Error(`Design ${designId}: rarity_finishes must be a JSON object.`);
-    return { id: id(designId, 'Design ID'), name: required(name, 'Design name'), background: optional(background), frame: optional(frame), frames, backgroundFit: backgroundFit as 'cover' | 'contain', backgroundPositionX: boundedNumber(row[12], 50, 'Background X'), backgroundPositionY: boundedNumber(row[13], 50, 'Background Y'), frameFit: frameFit as 'cover' | 'contain', credit: row[15], source: row[16], license: row[17], ...(row[18] ? { finish: row[18] as DesignSet['finish'] } : {}), ...(Object.keys(finishes).length ? { finishes: finishes as DesignSet['finishes'] } : {}), ...(row[20] ? { layout: row[20] as DesignSet['layout'] } : {}), ...(row[21] ? { texture: row[21] } : {}) };
+    let schema:Record<string,unknown>={};try{schema=row[22]?JSON.parse(row[22]):{};}catch{throw new Error(`Design ${designId}: design_schema must be valid inert JSON.`);}if(!schema||Array.isArray(schema)||typeof schema!=='object')throw new Error(`Design ${designId}: design_schema must be an object.`);const allowedSchema=new Set(['composition','layoutPolicy','palette','artwork','rarityVariants']);if(Object.keys(schema).some(key=>!allowedSchema.has(key)))throw new Error(`Design ${designId}: design_schema contains an unsupported property.`);
+    const design={ id: id(designId, 'Design ID'), name: required(name, 'Design name'), background: optional(background), frame: optional(frame), frames, backgroundFit: backgroundFit as 'cover' | 'contain', backgroundPositionX: boundedNumber(row[12], 50, 'Background X'), backgroundPositionY: boundedNumber(row[13], 50, 'Background Y'), frameFit: frameFit as 'cover' | 'contain', credit: row[15], source: row[16], license: row[17], ...(row[18] ? { finish: row[18] as DesignSet['finish'] } : {}), ...(Object.keys(finishes).length ? { finishes: finishes as DesignSet['finishes'] } : {}), ...(row[20] ? { layout: row[20] as DesignSet['layout'] } : {}), ...(row[21] ? { texture: row[21] } : {}),...schema } as DesignSet;validateDesign(design);return design;
   });
-  bundle.cards = tables.Cards.map(([cardId, deckId, kind, front, answer, pronunciation, meaning, notes, tags, rarity, designSetId, image, backImage, imageDescription, suspended, finish, frontAudioRaw, backAudioRaw,siblingGroupId,ankiSourceRaw,artRaw,choicesRaw,answerLabel,detailsRaw]) => {
+  bundle.cards = tables.Cards.map(([cardId, deckId, kind, front, answer, pronunciation, meaning, notes, tags, rarity, designSetId, image, backImage, imageDescription, suspended, finish, frontAudioRaw, backAudioRaw,siblingGroupId,ankiSourceRaw,artRaw,choicesRaw,answerLabel,detailsRaw,secondary,interpretation]) => {
     if (kind !== 'text' && kind !== 'visual') throw new Error(`Card ${cardId}: card_type must be text or visual.`);
     if (!EXCHANGE_RARITIES.includes((rarity || 'common') as Rarity)) throw new Error(`Card ${cardId}: unknown rarity ${rarity}.`);
     let parsedTags: unknown; try { parsedTags = tags ? JSON.parse(tags) : []; } catch { throw new Error(`Card ${cardId}: tags must be a JSON array of strings.`); }
@@ -182,7 +184,7 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
     const frontAudio = parseAudio(frontAudioRaw, 'front_audio'), backAudio = parseAudio(backAudioRaw, 'back_audio');
     let ankiSource:CardContent['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Card ${cardId}: anki_source must be valid inert JSON.`);}}
     let art:CardContent['art'],choices:string[]=[],details:NonNullable<CardContent['details']>=[];try{art=artRaw?JSON.parse(artRaw):undefined;choices=choicesRaw?JSON.parse(choicesRaw):[];details=detailsRaw?JSON.parse(detailsRaw):[];}catch{throw new Error(`Card ${cardId}: structured content must be valid inert JSON.`);}
-    const card:CardContent={ id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], ...(frontAudio.length ? { frontAudio } : {}), ...(backAudio.length ? { backAudio } : {}),siblingGroupId:optional(siblingGroupId),...(ankiSource?{ankiSource}:{}),...(art?{art}:{}),...(choices.length?{choices}:{}),...(answerLabel?{answerLabel}:{}),...(details.length?{details}:{}), revision: 1, suspended: bool(suspended, 'Card suspended') };validateCard(card);return card;
+    const card:CardContent={ id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, ...(secondary?{secondary}:{}),...(interpretation?{interpretation}:{}), tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], ...(frontAudio.length ? { frontAudio } : {}), ...(backAudio.length ? { backAudio } : {}),siblingGroupId:optional(siblingGroupId),...(ankiSource?{ankiSource}:{}),...(art?{art}:{}),...(choices.length?{choices}:{}),...(answerLabel?{answerLabel}:{}),...(details.length?{details}:{}), revision: 1, suspended: bool(suspended, 'Card suspended') };validateCard(card);return card;
   });
   duplicates(bundle.decks, 'Decks'); duplicates(bundle.cards, 'Cards'); duplicates(bundle.designs, 'Designs'); duplicates(bundle.assets, 'Assets');
   bundle.decks.forEach(validateDeck); bundle.cards.forEach(validateCard); bundle.designs.forEach(validateDesign); bundle.assets.forEach(validateAsset);
@@ -204,7 +206,7 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
   if (new Set(tables.Assets.map(row => row[0])).size !== tables.Assets.length) throw new Error('Assets contains duplicate IDs.');
   for (const item of [...bundle.decks, ...bundle.cards]) if (item.designSetId && !designIds.has(item.designSetId)) throw new Error(`Missing design set ${item.designSetId}.`);
   for (const card of bundle.cards) { if (!deckIds.has(card.deckId)) throw new Error(`Card ${card.id}: missing deck ${card.deckId}.`); validRef(card.image, assetIds, `Card ${card.id} front`); validRef(card.backImage, assetIds, `Card ${card.id} back`); for (const ref of card.frontAudio ?? []) validRef(ref, assetIds, `Card ${card.id} front audio`); for (const ref of card.backAudio ?? []) validRef(ref, assetIds, `Card ${card.id} answer audio`); }
-  for (const design of bundle.designs) for (const ref of [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})]) validRef(ref, assetIds, `Design ${design.id}`);
+  for (const design of bundle.designs) for (const ref of [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {}), ...Object.values(design.rarityVariants ?? {}).flatMap(variant=>[variant?.frame,variant?.texture])]) validRef(ref, assetIds, `Design ${design.id}`);
   return bundle;
 }
 
@@ -236,7 +238,7 @@ export async function readContentFile(bytes: Uint8Array, filename: string, state
         const data = await entry.async('uint8array'); validateMediaSignature(data, mime); const image = mime.startsWith('image/');
         incomingAssets.push({ id: assetId, name: required(name, 'Asset name'), mime: mime as LocalAsset['mime'], dataUrl: `data:${mime};base64,${bytesBase64(data)}`, ...(image ? { width: boundedNumber(width, 0, 'Image width', 1, 8192), height: boundedNumber(height, 0, 'Image height', 1, 8192) } : {}), credit, source, license });
       }
-    } else throw new Error('Choose a supported version-1 through version-5 .xlsx workbook or portable .zip archive.');
+    } else throw new Error('Choose a supported version-1 through version-8 .xlsx workbook or portable .zip archive.');
     const bundle = parseTables(tables, state, incomingAssets);if(ankiSources.length)bundle.ankiSources=ankiSources;
     const sourceIds=new Set(ankiSources.map(source=>source.id));bundle.cards=bundle.cards.map(card=>card.ankiSource?.sourceSnapshotId&&!sourceIds.has(card.ankiSource.sourceSnapshotId)?{...card,ankiSource:{...card.ankiSource,sourceSnapshotId:undefined}}:card);
     if (jsonDesigns !== undefined && !sameContent(jsonDesigns, bundle.designs)) throw new Error('designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.');
@@ -248,7 +250,7 @@ export type Rasterize = (ref: string) => Promise<{ dataUrl: string; width: numbe
 /** Rasterize trusted app illustrations so the portable archive contains only supported inert media. */
 export async function makePortableBundle(source: ContentBundle, rasterize: Rasterize): Promise<ContentBundle> {
   const bundle = structuredClone(source); const replacements = new Map<string, string>();
-  const refs = [...bundle.cards.flatMap(card => [card.image, card.backImage]), ...bundle.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})])].filter((ref): ref is string => !!ref && BUNDLED_ART.has(ref));
+  const refs = [...bundle.cards.flatMap(card => [card.image, card.backImage]), ...bundle.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {}), ...Object.values(design.rarityVariants ?? {}).flatMap(variant=>[variant?.frame,variant?.texture])])].filter((ref): ref is string => !!ref && BUNDLED_ART.has(ref));
   for (const ref of new Set(refs)) {
     const rendered = await rasterize(ref); let assetId = `bundled-${ref.split('/').pop()!.replace('.svg', '')}`;
     while (bundle.assets.some(asset => asset.id === assetId && asset.dataUrl !== rendered.dataUrl)) assetId += '-copy';
@@ -257,7 +259,7 @@ export async function makePortableBundle(source: ContentBundle, rasterize: Raste
   }
   const replace = (ref: string | undefined) => ref ? replacements.get(ref) ?? ref : undefined;
   bundle.cards = bundle.cards.map(card => ({ ...card, image: replace(card.image), backImage: replace(card.backImage) }));
-  bundle.designs = bundle.designs.map(design => ({ ...design, background: replace(design.background), frame: replace(design.frame), texture: replace(design.texture), frames: Object.fromEntries(Object.entries(design.frames ?? {}).map(([rarity, ref]) => [rarity, replace(ref)])) }));
+  bundle.designs = bundle.designs.map(design => ({ ...design, background: replace(design.background), frame: replace(design.frame), texture: replace(design.texture), frames: Object.fromEntries(Object.entries(design.frames ?? {}).map(([rarity, ref]) => [rarity, replace(ref)])),...(design.rarityVariants?{rarityVariants:Object.fromEntries(Object.entries(design.rarityVariants).map(([rarity,variant])=>[rarity,variant?{...variant,frame:replace(variant.frame),texture:replace(variant.texture)}:variant]))}:{}) }));
   return bundle;
 }
 export async function writePortableZip(bundle: ContentBundle): Promise<Uint8Array> {

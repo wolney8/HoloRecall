@@ -88,7 +88,7 @@ test('HR-IOS large portrait supports 200 percent text and keyboard-sized viewpor
   await expect(page.getByRole('button', { name: 'Save card' })).toBeAttached();
 });
 
-test('HR-IOS landscape keeps Collection and Design Studio usable without hover @ios-landscape', async ({ page }) => {
+test('HR-IOS landscape keeps Collection and Design Studio usable without hover @ios-landscape', async ({ page }, testInfo) => {
   await openApp(page);
   await navigate(page, 'Collection');
   const card = page.locator('.inspection-card .card-motion');
@@ -96,8 +96,9 @@ test('HR-IOS landscape keeps Collection and Design Studio usable without hover @
   await expect(card).toHaveAttribute('aria-label', 'Show card answer');
   await expectNoOverflow(page);
   await navigate(page, 'Design Studio');
-  await expect(page.getByRole('heading', { name: 'Design Studio' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Design Suite' })).toBeVisible();
   await expectNoOverflow(page);
+  await page.screenshot({ path: testInfo.outputPath('design-suite-landscape.png'), fullPage: true });
   const firstInput = page.locator('input').first();
   if (await firstInput.count()) { await firstInput.focus(); await expect(firstInput).toBeFocused(); }
 });

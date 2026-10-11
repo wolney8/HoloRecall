@@ -13,6 +13,10 @@ export interface CardContent {
   pronunciation: string;
   meaning: string;
   notes: string;
+  /** Subject-neutral line immediately below the primary answer. Legacy pronunciation remains a readable alias. */
+  secondary?: string;
+  /** Concise subject-neutral interpretation. Legacy meaning remains a readable alias. */
+  interpretation?: string;
   tags: string[];
   revision: number;
   suspended: boolean;
@@ -101,7 +105,7 @@ export interface AnkiSourceSnapshot {
   media: Array<{ name: string; assetId: string }>;
   contentHash: string;
 }
-export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details';
+export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'secondary' | 'interpretation' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details';
 export interface AnkiDeckSource {
   kind: 'anki';
   sourceDeckId?: string;
@@ -286,6 +290,12 @@ export interface DesignSet {
   finish?: FinishPreset;
   finishes?: Partial<Record<Rarity, FinishPreset>>;
   layout?: 'clean' | 'ornate' | 'showcase';
+  /** Curated physical-card composition. `layout` remains a readable legacy style hint. */
+  composition?: CardCompositionId;
+  layoutPolicy?: 'fixed' | 'suggest';
+  palette?: DesignPalette;
+  artwork?: ArtworkComposition;
+  rarityVariants?: Partial<Record<Rarity, RarityDesignVariant>>;
   backgroundFit: 'cover' | 'contain';
   backgroundPositionX: number;
   backgroundPositionY: number;
@@ -293,6 +303,40 @@ export interface DesignSet {
   credit: string;
   source: string;
   license: string;
+}
+
+export type CardCompositionId = 'full-bleed' | 'framed-art' | 'illustration-window' | 'split-art-content' | 'typographic-showcase' | 'minimal-prestige' | 'diagram-technical' | 'photo-focus' | 'symbolic-generated';
+export interface DesignPalette {
+  primary: string;
+  secondary: string;
+  surface: string;
+  onSurface: string;
+  accent?: string;
+}
+export interface ArtworkComposition {
+  focalX: number;
+  focalY: number;
+  fit: 'cover' | 'contain';
+  treatment?: 'clean' | 'edge-fade' | 'background-bleed' | 'masked' | 'duotone' | 'embedded';
+  mask?: 'none' | 'soft-oval' | 'rounded-window' | 'frame-window';
+  fullBleed?: boolean;
+  vignette?: number;
+  tint?: string;
+  safeZone?: 'centre' | 'top' | 'bottom' | 'left' | 'right';
+  edgeFade?: number;
+  backgroundBleed?: number;
+  duotone?: number;
+  textureBlend?: number;
+  emboss?: number;
+  depth?: number;
+}
+export interface RarityDesignVariant {
+  frame?: string;
+  finish?: FinishPreset;
+  texture?: string;
+  accent?: string;
+  composition?: CardCompositionId;
+  effectIntensity?: number;
 }
 
 export interface LocalAsset {

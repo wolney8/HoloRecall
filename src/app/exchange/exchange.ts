@@ -24,7 +24,7 @@ export interface ExchangeCompletionAction { action:'review'|'deck'|'search'|'stu
   imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, PageRevealDirective],
   template: `
     @if(updateDeckId){<div class="exchange-heading contextual-update-heading"><div><p class="eyebrow">{{sourceMode==='manage'?'ANKI SOURCE':sourceMode==='update'?'ANKI SOURCE UPDATE':'ANKI CONTENT REPAIR'}}</p><h1>{{sourceMode==='manage'?'Manage Anki source':sourceMode==='mapping'?'Advanced compatibility':sourceMode==='repair'?'Repair imported content':'Update from Anki package'}}</h1><p>{{sourceMode==='manage'?'Manage the linked source for':sourceMode==='update'?'Compare revised source content for':'Re-render source templates for'}} <strong>{{updateDeckName()}}</strong>. Learning history and scheduling stay intact.</p></div><button mat-button type="button" (click)="cancelUpdate.emit()">Back to deck</button></div>@if(sourceMode!=='manage'){<ol class="update-steps" aria-label="Update progress"><li [class.active]="!ankiAnalysis()">Choose package</li><li [class.active]="!!busy()">Analyse</li>@if(ankiPreview()?.update?.conflicts?.length){<li [class.active]="!conflictsResolved()">Resolve conflicts</li>}@if(mappingNeedsReview()){<li class="active">Compatibility review</li>}<li [class.active]="!!ankiPreview()&&conflictsResolved()">Apply</li></ol>}}@else{
-    <div class="exchange-heading" hrReveal><div><p class="eyebrow">CONTENT EXCHANGE</p><h1>Import & export</h1><p>Share decks and designs. Your study history stays in this browser.</p></div><span class="version">Format v7</span></div>
+    <div class="exchange-heading" hrReveal><div><p class="eyebrow">CONTENT EXCHANGE</p><h1>Import & export</h1><p>Share decks and designs. Your study history stays in this browser.</p></div><span class="version">Format v8</span></div>
     <div class="exchange-grid">
       <section class="exchange-panel" hrReveal><h2>Download</h2><p>Start from a workbook or export your current content.</p>
         <div class="download-links"><a mat-stroked-button href="/downloads/holorecall-blank-v5.xlsx" download>Blank workbook</a><a mat-stroked-button href="/downloads/holorecall-italian-v5.xlsx" download>Italian example</a><a mat-stroked-button href="/downloads/holorecall-italian-v5.zip" download>Portable example ZIP</a></div>
@@ -32,7 +32,7 @@ export interface ExchangeCompletionAction { action:'review'|'deck'|'search'|'stu
         <dl><dt>XLSX</dt><dd>Structured deck content, design settings and media references. Media files are not embedded.</dd><dt>Portable ZIP</dt><dd>The workbook, validated image/audio files and design definitions. Bundled illustrations are converted to PNG.</dd></dl>
         <p class="help">For another AI: <a href="/downloads/deck-generation-prompt.md" download>generation prompt</a> · <a href="/downloads/deck-format.md" download>exact format specification</a>.</p>
       </section>
-      <section class="exchange-panel" hrReveal [hrRevealDelay]="55"><h2>Import content</h2><p>Select a version-1 through version-7 workbook or portable ZIP, inspect its changes, then apply.</p>
+      <section class="exchange-panel" hrReveal [hrRevealDelay]="55"><h2>Import content</h2><p>Select a version-1 through version-8 workbook or portable ZIP, inspect its changes, then apply.</p>
         <label class="file-label" for="content-import">Workbook or portable archive</label><input id="content-import" type="file" accept=".xlsx,.zip" (change)="selectFile($event)" [disabled]="!!busy()" />
         <p class="help">Up to 30 MiB compressed. Formula cells, embedded worksheet images, SVG uploads and external media URLs are rejected. Image-only cards require an answer-safe image description.</p>
         <p class="help">A deck import never grants cosmetics or imports reviews. Stable IDs update matching content; missing rows never delete existing cards.</p>
@@ -221,7 +221,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
       if (portable) bundle = await makePortableBundle(bundle, rasterizeBundled);
       const bytes = portable ? await writePortableZip(bundle) : await writeWorkbook(bundle);
       const blob = new Blob([bytes.slice().buffer], { type: portable ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      await this.fileDelivery.deliver(blob, `holorecall-content-v7.${portable ? 'zip' : 'xlsx'}`);
+      await this.fileDelivery.deliver(blob, `holorecall-content-v8.${portable ? 'zip' : 'xlsx'}`);
       this.message.set(portable ? 'Portable ZIP download requested with media and design definitions. No learning history is included.' : 'Workbook download requested. Uploaded media references require the portable ZIP when shared with another browser.');
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }

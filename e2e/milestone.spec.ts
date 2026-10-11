@@ -47,31 +47,32 @@ test('System follows device; explicit themes persist and dark startup paints bef
 
 test('uploaded design artwork survives assignment, reload and a portable full-progress backup', async ({ page }) => {
   await openApp(page); const original = await snapshot(page); await navigate(page, 'Design Studio');
-  await page.getByLabel('Design name', { exact: true }).fill('Family forest frames');
+  await page.getByLabel('Design Set name', { exact: true }).fill('Family forest frames');
+  await page.getByText('Rarity variants', { exact: true }).click(); await page.getByText('Texture and attribution', { exact: true }).click();
   await page.getByLabel('Artist / attribution').fill('Original family artwork');
   await page.getByLabel('Licence / permission').fill('Permission for personal study');
   const artwork = await localArtwork(page);
-  await page.getByLabel('Upload or replace background').setInputFiles(artwork);
+  await page.getByLabel('Upload or reimport artwork').setInputFiles(artwork);
   await expect(page.getByRole('status')).toContainText('Artwork uploaded locally');
-  await expect(page.getByRole('button', { name: 'Save design', exact: true })).toBeEnabled();
-  await page.getByLabel('Upload or replace frame').setInputFiles(artwork);
+  await expect(page.getByRole('button', { name: 'Save Design Set', exact: true })).toBeEnabled();
+  await page.getByLabel('Upload rarity frame').setInputFiles(artwork);
   await expect(page.locator('.studio-card .frame-layer img')).toHaveAttribute('src', /^data:image\/png;base64,/);
-  await selectMaterial(page, 'Background fit', 'Fit entire image');
-  await page.getByLabel('Horizontal crop').focus(); await page.getByLabel('Horizontal crop').press('ArrowRight');
+  await selectMaterial(page, 'Fit', 'Fit entire image');
+  await page.getByLabel('Focal point X').focus(); await page.getByLabel('Focal point X').press('ArrowRight');
   await selectMaterial(page, 'Deck', 'Italian essentials');
   await page.getByRole('button', { name: 'Save and assign', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Design saved and assigned');
+  await expect(page.getByRole('status')).toContainText('Design Set saved and assigned');
   const saved = await snapshot(page);
   expect(saved.designs).toHaveLength(1); expect(saved.assets).toHaveLength(1);
   expect(saved.decks[0].designSetId).toBe(saved.designs[0].id);
-  expect(saved.designs[0]).toMatchObject({ backgroundFit: 'contain', backgroundPositionX: 51, credit: 'Original family artwork' });
+  expect(saved.designs[0]).toMatchObject({ artwork: { fit: 'contain', focalX: 51 }, credit: 'Original family artwork' });
   expect(saved.cards).toEqual(original.cards); expect(saved.events).toEqual([]); expect(saved.rewardEvents).toEqual([]);
   expect(saved.assets.every(asset => asset.dataUrl.startsWith('data:image/png;base64,'))).toBe(true);
-  await page.reload(); await selectMaterial(page, 'Saved design', 'Family forest frames');
+  await page.reload(); await selectMaterial(page, 'Saved Design Set', 'Family forest frames'); await page.getByText('Rarity variants', { exact: true }).click();
   await expect(page.locator('.studio-card .background-layer img')).toHaveAttribute('src', saved.assets[0].dataUrl);
   await page.getByRole('radiogroup', { name: 'Preview theme' }).getByRole('radio', { name: 'Dark', exact: true }).click();
   await expect(page.locator('.studio-preview')).toHaveAttribute('data-preview-theme', 'dark');
-  await page.getByRole('combobox', { name: 'Preview rarity', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Rarity to tune', exact: true }).click();
   await page.getByRole('option', { name: /Relic$/ }).click();
   await expect(page.locator('.studio-card .memory-card')).toHaveAttribute('data-rarity', 'relic');
   await navigate(page, 'Dashboard'); await page.getByRole('button', { name: /Start studying/ }).click();
@@ -172,7 +173,7 @@ for (const theme of ['Light', 'Dark']) test(`mobile ${theme.toLowerCase()} layou
   await expect(page.getByRole('banner').getByText('Study', { exact: true })).toBeVisible(); await expectNoOverflow(page);
   await page.screenshot({ path: testInfo.outputPath(`study-${theme.toLowerCase()}.png`), fullPage: true });
   for (const screen of ['Collection', 'Design Studio', 'Progress']) {
-    await navigate(page, screen); await expect(page.getByRole('heading', { name: screen, exact: true })).toBeVisible();
+    await navigate(page, screen); await expect(page.getByRole('heading', { name: screen === 'Design Studio' ? 'Design Suite' : screen, exact: true })).toBeVisible();
     await expectNoOverflow(page);
     if (screen === 'Design Studio') await page.getByRole('radiogroup', { name: 'Preview theme' }).getByRole('radio', { name: theme, exact: true }).click();
     await page.waitForTimeout(850);

@@ -100,6 +100,14 @@ final class NativeSmokeUITests: XCTestCase {
         cancel.tap()
     }
 
+    func testDesignSuiteFoundation() throws {
+        openMore("Design Studio")
+        XCTAssertTrue(app.staticTexts["Design Suite"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["＋ New Design Set"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Preview"].waitForExistence(timeout: 8))
+        attachScreenshot("native-design-suite")
+    }
+
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")

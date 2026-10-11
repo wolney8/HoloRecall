@@ -865,27 +865,27 @@ Phase 1 acceptance requires the exact supplied package to pass automatic templat
 
 - **Anki replacement usability acceptance (9 October 2026):** HR-ANKI-V2-12/13, HR-MODE-01–06, HR-CARD-DELIGHT-01 and HR-DECK-UX-02 are DONE for this bounded milestone. The exact 254-card package revalidates 3 roots, 21 subdecks, 254 native panels, 134 choice cards/593 inert choices, no binary media, no Tier C/D cards, no executable source behavior and no manual mapping. Current HTML normalization also preserves table-cell and word-tile boundaries without adding global language-dependent spacing. Update/Repair continues through the same template-first transaction plan and the legacy `Language = it` repair remains passing.
 
-## DESIGN SUITE FOUNDATION — active bounded milestone
+## DESIGN SUITE FOUNDATION — complete bounded milestone
 
 Source: Will's 11 October 2026 Design Suite Foundation authorization and `docs/design/card-design-system.md`. This milestone establishes reusable presentation, inheritance, authoring and portability contracts. Prestige progression and Collection Desk remain outside scope.
 
 | ID | Title | Product area | Milestone | Priority | Status | Dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
-| HR-DESIGN-03 | Design Set inheritance and override provenance | Design/domain/data | Design Suite Foundation | P0 | IN_PROGRESS | Existing deck/card Design Set references |
-| HR-DESIGN-04 | Hybrid rarity and finish model | Design/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Authored rarity and finish registry |
-| HR-DESIGN-05 | Subject-neutral card content semantics | Content/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Structured card details and template-first import |
-| HR-DESIGN-06 | Content-first manual and JSON batch creation | Authoring/import | Design Suite Foundation | P0 | IN_PROGRESS | Card editor, validation and atomic persistence |
-| HR-DESIGN-07 | Responsive progressive-disclosure Design Suite | Design Studio/UX | Design Suite Foundation | P0 | IN_PROGRESS | Shared CardRenderer and Material 3 |
-| HR-DESIGN-08 | Declarative uploaded-art composition and palette | Design/media/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Durable asset registry |
-| HR-DESIGN-09 | Embedded/printed artwork treatment primitives | Design/renderer/accessibility | Design Suite Foundation | P1 | IN_PROGRESS | HR-DESIGN-08 and effects preferences |
-| HR-DESIGN-10 | Reusable layout/composition templates | Design/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Subject-neutral content hierarchy |
-| HR-DESIGN-11 | Stable offline no-image typographic art | Design/renderer/portability | Design Suite Foundation | P1 | IN_PROGRESS | Existing generated-text-art |
-| HR-DESIGN-12 | Coherent automatic rarity variants | Design/domain/renderer | Design Suite Foundation | P1 | IN_PROGRESS | Hybrid rarity/finish model |
-| HR-DESIGN-13 | Universal recall/answer face hierarchy | Card renderer/Study | Design Suite Foundation | P0 | IN_PROGRESS | Authoritative design brief |
-| HR-DESIGN-14 | Artwork-region guide export/reimport | Design/media/portability | Design Suite Foundation | P1 | IN_PROGRESS | Declarative composition settings |
-| HR-DESIGN-15 | Portable Design Suite format and assets | Exchange/data integrity | Design Suite Foundation | P0 | IN_PROGRESS | Existing content format v7 |
+| HR-DESIGN-03 | Design Set inheritance and override provenance | Design/domain/data | Design Suite Foundation | P0 | DONE | Global → ancestor/deck → rarity variant → card override resolution |
+| HR-DESIGN-04 | Hybrid rarity and finish model | Design/domain/renderer | Design Suite Foundation | P0 | DONE | Authored rarity remains independent from declarative finish/frame variants |
+| HR-DESIGN-05 | Subject-neutral card content semantics | Content/domain/renderer | Design Suite Foundation | P0 | DONE | Secondary, interpretation and labelled support with legacy language aliases |
+| HR-DESIGN-06 | Content-first manual and JSON batch creation | Authoring/import | Design Suite Foundation | P0 | DONE | Friendly/official JSON, strict preview and atomic apply |
+| HR-DESIGN-07 | Responsive progressive-disclosure Design Suite | Design Studio/UX | Design Suite Foundation | P0 | DONE | Shared renderer, representative previews and Light/Dark inspection |
+| HR-DESIGN-08 | Declarative uploaded-art composition and palette | Design/media/renderer | Design Suite Foundation | P0 | DONE | Durable source asset, focal/crop/mask controls and editable derived palette |
+| HR-DESIGN-09 | Embedded/printed artwork treatment primitives | Design/renderer/accessibility | Design Suite Foundation | P1 | DONE | Texture, emboss, depth, fade and vignette constrained by effects preferences |
+| HR-DESIGN-10 | Reusable layout/composition templates | Design/domain/renderer | Design Suite Foundation | P0 | DONE | Nine curated compositions with fixed or deterministic suggestion policy |
+| HR-DESIGN-11 | Stable offline no-image typographic art | Design/renderer/portability | Design Suite Foundation | P1 | DONE | Deterministic identity/design/rarity generated art |
+| HR-DESIGN-12 | Coherent automatic rarity variants | Design/domain/renderer | Design Suite Foundation | P1 | DONE | One family derives compatible frame/finish/accent variants; bespoke overrides supported |
+| HR-DESIGN-13 | Universal recall/answer face hierarchy | Card renderer/Study | Design Suite Foundation | P0 | DONE | Dominant prompt/answer; long support disclosed outside the physical card |
+| HR-DESIGN-14 | Artwork-region guide export/reimport | Design/media/portability | Design Suite Foundation | P1 | DONE | Trusted 1000×1500 SVG guide plus raster reimport without content replacement |
+| HR-DESIGN-15 | Portable Design Suite format and assets | Exchange/data integrity | Design Suite Foundation | P0 | DONE | Content format v8; v1–v7 readable; shared assets remain deduplicated |
 
-Acceptance requires evidence-backed inheritance, atomic JSON authoring, responsive real-card previews, non-destructive artwork composition/palette controls, coherent rarity variants, curated layouts, an external artwork-guide round trip and portable persistence without changing learning state. The 850 kB initial bundle ceiling remains unchanged. Authentication, commercial work, cloud/native storage, Prestige and Collection Desk are outside scope.
+**Acceptance evidence:** unit/domain **190/190** covers inheritance and presentation-only mutation contracts, atomic JSON authoring, schema-v8 backward compatibility, palette/composition controls and rarity variants. The clean Playwright matrix passes **201/201** across Chromium, desktop WebKit and compact/large/landscape WebKit, including uploaded white/smiley artwork integration, deterministic generated art and JSON preview/apply; a final `suggest`-policy resolution fix passes explicit Chromium/WebKit coverage **2/2**. Packaged iPhone 17 Pro / iOS 26.5 Design Suite smoke passes **1/1** and remains separate from physical-device evidence. Production is **837.79 kB raw / 199.57 kB transfer**, below the unchanged 850 kB ceiling; Design Suite is lazy. Screenshots and the native result bundle are retained in ignored `.runtime/evidence/hr-design-suite-foundation-20261011/`. Authentication, commercial work, cloud/native storage, Prestige and Collection Desk are outside scope.
 
 ## HR-UX-IMPORTED-DECK-REVIEW — active bounded milestone
 

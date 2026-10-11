@@ -1,4 +1,5 @@
 import type { AnkiMappingPreset, AnkiSourceSnapshot, CardContent, CardState, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyPreset, TodayStudyOverride } from './models';
+import { CARD_COMPOSITIONS } from './design-system';
 import { migrateState } from './migrations';
 import { RARITIES } from './rewards';
 import { CONFIG_VERSION, SCHEDULER_PARAMETERS, SCHEDULER_VERSION, mapRating } from './study';
@@ -41,6 +42,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
   const card = object(value);
   if (!id(card['id']) || !id(card['deckId']) || !['text', 'visual'].includes(String(card['kind'])) || !integer(card['revision'], 1) || typeof card['suspended'] !== 'boolean') fail('invalid card identity.');
   for (const field of ['front', 'answer', 'pronunciation', 'meaning', 'notes']) if (!text(card[field])) fail(`invalid card ${field}.`);
+  for (const field of ['secondary', 'interpretation']) if (card[field] !== undefined && !text(card[field])) fail(`invalid card ${field}.`);
   if (!(card['answer'] as string).trim() || (card['kind'] === 'text' && !(card['front'] as string).trim())) fail('cards need a prompt and answer.');
   if (!Array.isArray(card['tags']) || card['tags'].length > 30 || !card['tags'].every(tag => text(tag, 100))) fail('invalid card tags.');
   if (card['imageDescription'] !== undefined && !text(card['imageDescription'], 1000)) fail('invalid image description.');
@@ -221,6 +223,20 @@ export function validateDesign(value: unknown): asserts value is DesignSet {
   for (const field of ['frame', 'background']) if (design[field] !== undefined) validateMediaRef(design[field]);
   if (!FINISHES.includes(String(design['finish'] ?? 'matte'))) fail('invalid design finish.');
   if (design['layout'] !== undefined && !['clean', 'ornate', 'showcase'].includes(String(design['layout']))) fail('invalid design layout.');
+  if (design['composition'] !== undefined && !CARD_COMPOSITIONS.includes(design['composition'] as never)) fail('invalid design composition.');
+  if (design['layoutPolicy'] !== undefined && !['fixed', 'suggest'].includes(String(design['layoutPolicy']))) fail('invalid design layout policy.');
+  const colour = (value: unknown): boolean => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+  if (design['palette'] !== undefined) {
+    const palette = object(design['palette']);
+    if (!colour(palette['primary']) || !colour(palette['secondary']) || !colour(palette['surface']) || !colour(palette['onSurface']) || palette['accent'] !== undefined && !colour(palette['accent'])) fail('invalid design palette.');
+  }
+  if (design['artwork'] !== undefined) {
+    const artwork = object(design['artwork']);
+    if (!finite(artwork['focalX']) || artwork['focalX'] > 100 || !finite(artwork['focalY']) || artwork['focalY'] > 100 || !['cover','contain'].includes(String(artwork['fit']))) fail('invalid artwork composition.');
+    if (artwork['treatment'] !== undefined && !['clean','edge-fade','background-bleed','masked','duotone','embedded'].includes(String(artwork['treatment']))) fail('invalid artwork treatment.');
+    if (artwork['mask'] !== undefined && !['none','soft-oval','rounded-window','frame-window'].includes(String(artwork['mask'])) || artwork['fullBleed'] !== undefined && typeof artwork['fullBleed'] !== 'boolean' || artwork['tint'] !== undefined && !colour(artwork['tint']) || artwork['safeZone'] !== undefined && !['centre','top','bottom','left','right'].includes(String(artwork['safeZone']))) fail('invalid artwork composition settings.');
+    for (const field of ['vignette','edgeFade','backgroundBleed','duotone','textureBlend','emboss','depth']) if (artwork[field] !== undefined && (!finite(artwork[field]) || Number(artwork[field]) > 100)) fail('invalid artwork treatment intensity.');
+  }
   if (design['texture'] !== undefined) validateMediaRef(design['texture']);
   if (design['frames'] !== undefined) for (const [rarity, ref] of Object.entries(object(design['frames']))) {
     if (!RARITIES.some(tier => tier.id === rarity)) fail('invalid frame rarity.');
@@ -228,6 +244,13 @@ export function validateDesign(value: unknown): asserts value is DesignSet {
   }
   if (design['finishes'] !== undefined) for (const [rarity, finish] of Object.entries(object(design['finishes']))) {
     if (!RARITIES.some(tier => tier.id === rarity) || !FINISHES.includes(String(finish))) fail('invalid rarity finish.');
+  }
+  if (design['rarityVariants'] !== undefined) for (const [rarity, raw] of Object.entries(object(design['rarityVariants']))) {
+    if (!RARITIES.some(tier => tier.id === rarity)) fail('invalid design rarity variant.');
+    const variant = object(raw);
+    if (variant['frame'] !== undefined) validateMediaRef(variant['frame']);
+    if (variant['texture'] !== undefined) validateMediaRef(variant['texture']);
+    if (variant['finish'] !== undefined && !FINISHES.includes(String(variant['finish'])) || variant['accent'] !== undefined && !colour(variant['accent']) || variant['composition'] !== undefined && !CARD_COMPOSITIONS.includes(variant['composition'] as never) || variant['effectIntensity'] !== undefined && (!finite(variant['effectIntensity']) || Number(variant['effectIntensity']) > 1)) fail('invalid design rarity variant settings.');
   }
 }
 export function validateRewardConfig(value: unknown): asserts value is Record<Rarity, number> {
@@ -278,7 +301,7 @@ function validateExtensions(data: Record<string, unknown>): void {
 }
 export function validateReferences(data: State): void {
   const assets = new Set(data.assets.map(asset => asset.id)), designs = new Set(data.designs.map(design => design.id)),presets=new Set(data.studyPresets.map(preset=>preset.id)),cards=new Set(data.cards.map(card=>card.id)),decks=new Set(data.decks.map(deck=>deck.id));
-  const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {})]),...data.ankiSources.flatMap(source=>source.media.map(media=>`asset:${media.assetId}`))];
+  const refs = [...data.cards.flatMap(card => [card.image, card.backImage, ...(card.frontAudio ?? []), ...(card.backAudio ?? [])]), ...data.designs.flatMap(design => [design.background, design.frame, design.texture, ...Object.values(design.frames ?? {}), ...Object.values(design.rarityVariants ?? {}).flatMap(variant => [variant?.frame, variant?.texture])]),...data.ankiSources.flatMap(source=>source.media.map(media=>`asset:${media.assetId}`))];
   // Missing imported references are rejected, while deleted bundled assets get a renderer fallback.
   if (refs.some(ref => ref?.startsWith('asset:') && !assets.has(ref.slice(6)))) fail('image reference does not resolve to an uploaded asset.');
   if ([...data.cards, ...data.decks].some(item => item.designSetId && !designs.has(item.designSetId))) fail('design reference does not resolve.');

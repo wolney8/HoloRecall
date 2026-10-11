@@ -34,12 +34,13 @@ import { DeckAnkiActionsComponent } from './authoring/deck-anki-actions';
 import { DeckJourneyActionsComponent, type DeckManagementAction } from './authoring/deck-journey-actions';
 import { SubdeckRowComponent } from './authoring/subdeck-row';
 import { SubdeckDisclosureComponent } from './authoring/subdeck-disclosure';
+import { JsonAuthoringComponent } from './authoring/json-authoring';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -251,7 +252,13 @@ export class AppComponent {
   toggleFilter(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'finishes'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key,value as never);}
   chooseSearchResult(result:SearchResult):void{this.library.selectResult(result);if(result.kind==='card'){const card=this.data()?.cards.find(item=>item.id===result.cardId);if(card)this.edit(card);}else this.go('library');}
   deckName(id:string):string{return this.data()?.decks.find(d=>d.id===id)?.name??'Deck';}
-  designFor(card:CardContent):DesignSet|undefined{const id=card.designSetId||this.data()?.decks.find(d=>d.id===card.deckId)?.designSetId;return this.data()?.designs.find(d=>d.id===id);}
+  designFor(card:CardContent):DesignSet|undefined{return this.store.designFor(card);}
+  designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
+  deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}
+  deckDesignSample():CardContent|undefined{return this.deckEditor?this.deckCards(this.deckEditor.id)[0]:undefined;}
+  deckOverrideCount():number{return this.deckEditor?this.deckCards(this.deckEditor.id).filter(card=>!!card.designSetId).length:0;}
+  deckInheritedCount():number{return this.deckEditor?this.deckCards(this.deckEditor.id).length-this.deckOverrideCount():0;}
+  async returnDeckDesignOverrides():Promise<void>{if(!this.deckEditor||this.busy())return;this.busy.set(true);try{await this.store.returnDeckCardsToInherited(this.deckEditor.id);this.message.set('Card overrides cleared. Cards now follow the deck Design Set; learning history was unchanged.');}catch(error){this.fail(error);}finally{this.busy.set(false);}}
   shownRarity(card:CardContent):Rarity{return this.data()&&rewardProgress(this.data()!,card.id).earned?(card.rarity??'common'):'common';}
   frameFor(card:CardContent):string{const design=this.designFor(card);return this.store.mediaUrl(design?.frames?.[this.shownRarity(card)]||design?.frame);}
   rarityLabel(rarity?:Rarity):string{return this.tiers.find(t=>t.id===(rarity??'common'))?.label??'Common';}
