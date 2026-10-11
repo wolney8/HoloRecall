@@ -1,5 +1,12 @@
 # Current restart point
 
+## 11 October 2026 — Design Suite Foundation active
+
+- **Recovered baseline:** `main` is clean at `3de7bea` except for Will's newly supplied authoritative `docs/design/card-design-system.md`. The completed imported-deck review, Study, FSRS, Anki conversion, card editing and native/adaptive work are preserved.
+- **Tracked scope:** HR-DESIGN-03–15 are `IN_PROGRESS`. The implementation will extend the existing declarative `DesignSet`, shared CardRenderer, durable asset registry and portable exchange format rather than introducing a competing visual model.
+- **Architecture boundary:** rarity, finish, layout, artwork composition, future Prestige, entitlement and learner state remain independent. Design changes may never mutate FSRS, reviews, source identity, authored rarity or earned cosmetics.
+- **Restart point:** reconcile current `DesignSet`/renderer/Design Studio fields with the authoritative brief; version the shared domain and portability contracts first, then integrate the progressive Design Suite and verify inheritance, JSON authoring, artwork composition and round-trip evidence.
+
 ## 10 October 2026 — HR-UX-IMPORTED-DECK-REVIEW complete
 
 - **Outcome:** HR-UX-IDR-01–05 are `DONE`. Parent and subdeck management now opens a hierarchy-scoped collectible browser using the existing search/index. Fresh import, update and repair end with concise Review, Study, Deck and Search actions; multi-root imports review every imported lesson branch.

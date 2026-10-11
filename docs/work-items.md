@@ -865,6 +865,28 @@ Phase 1 acceptance requires the exact supplied package to pass automatic templat
 
 - **Anki replacement usability acceptance (9 October 2026):** HR-ANKI-V2-12/13, HR-MODE-01–06, HR-CARD-DELIGHT-01 and HR-DECK-UX-02 are DONE for this bounded milestone. The exact 254-card package revalidates 3 roots, 21 subdecks, 254 native panels, 134 choice cards/593 inert choices, no binary media, no Tier C/D cards, no executable source behavior and no manual mapping. Current HTML normalization also preserves table-cell and word-tile boundaries without adding global language-dependent spacing. Update/Repair continues through the same template-first transaction plan and the legacy `Language = it` repair remains passing.
 
+## DESIGN SUITE FOUNDATION — active bounded milestone
+
+Source: Will's 11 October 2026 Design Suite Foundation authorization and `docs/design/card-design-system.md`. This milestone establishes reusable presentation, inheritance, authoring and portability contracts. Prestige progression and Collection Desk remain outside scope.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-DESIGN-03 | Design Set inheritance and override provenance | Design/domain/data | Design Suite Foundation | P0 | IN_PROGRESS | Existing deck/card Design Set references |
+| HR-DESIGN-04 | Hybrid rarity and finish model | Design/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Authored rarity and finish registry |
+| HR-DESIGN-05 | Subject-neutral card content semantics | Content/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Structured card details and template-first import |
+| HR-DESIGN-06 | Content-first manual and JSON batch creation | Authoring/import | Design Suite Foundation | P0 | IN_PROGRESS | Card editor, validation and atomic persistence |
+| HR-DESIGN-07 | Responsive progressive-disclosure Design Suite | Design Studio/UX | Design Suite Foundation | P0 | IN_PROGRESS | Shared CardRenderer and Material 3 |
+| HR-DESIGN-08 | Declarative uploaded-art composition and palette | Design/media/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Durable asset registry |
+| HR-DESIGN-09 | Embedded/printed artwork treatment primitives | Design/renderer/accessibility | Design Suite Foundation | P1 | IN_PROGRESS | HR-DESIGN-08 and effects preferences |
+| HR-DESIGN-10 | Reusable layout/composition templates | Design/domain/renderer | Design Suite Foundation | P0 | IN_PROGRESS | Subject-neutral content hierarchy |
+| HR-DESIGN-11 | Stable offline no-image typographic art | Design/renderer/portability | Design Suite Foundation | P1 | IN_PROGRESS | Existing generated-text-art |
+| HR-DESIGN-12 | Coherent automatic rarity variants | Design/domain/renderer | Design Suite Foundation | P1 | IN_PROGRESS | Hybrid rarity/finish model |
+| HR-DESIGN-13 | Universal recall/answer face hierarchy | Card renderer/Study | Design Suite Foundation | P0 | IN_PROGRESS | Authoritative design brief |
+| HR-DESIGN-14 | Artwork-region guide export/reimport | Design/media/portability | Design Suite Foundation | P1 | IN_PROGRESS | Declarative composition settings |
+| HR-DESIGN-15 | Portable Design Suite format and assets | Exchange/data integrity | Design Suite Foundation | P0 | IN_PROGRESS | Existing content format v7 |
+
+Acceptance requires evidence-backed inheritance, atomic JSON authoring, responsive real-card previews, non-destructive artwork composition/palette controls, coherent rarity variants, curated layouts, an external artwork-guide round trip and portable persistence without changing learning state. The 850 kB initial bundle ceiling remains unchanged. Authentication, commercial work, cloud/native storage, Prestige and Collection Desk are outside scope.
+
 ## HR-UX-IMPORTED-DECK-REVIEW — active bounded milestone
 
 Source: Will's 10 October 2026 imported-deck review and presentation request. This milestone refines the accepted template-first import result; it does not reopen importer architecture or begin another roadmap phase.
