@@ -19,12 +19,12 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
           <div class="frame-layer" aria-hidden="true">@if (frameUrl && !failedFrame()) { <img [src]="frameUrl" [style.object-fit]="design?.frameFit || 'contain'" alt="" (error)="failedFrame.set(true)"> }</div>
-          <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
+          <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="card-gleam"></i><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
           <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
           <div class="illustration-layer" [class.no-illustration]="!hasIllustrationReference && card.kind !== 'visual'" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
@@ -124,6 +124,11 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get resolvedTexture(): string { return this.textureUrl || this.store.mediaUrl(this.design?.texture); }
   get rarityLabel(): string { return RARITIES.find(item => item.id === this.shownRarity)?.label ?? 'Common'; }
   get raritySymbol(): string { return RARITIES.find(item => item.id === this.shownRarity)?.symbol ?? '○'; }
+  get hasNativeArt():boolean{return this.card?.art?.kind==='source-visual-panel'||this.card?.art?.kind==='generated-text-art';}
+  private get artSeed():string{const art=this.card?.art;if(art?.kind==='generated-text-art')return art.seed;if(art?.kind==='source-visual-panel')return[art.title,art.subtitle,art.badge,art.lesson,art.topic,art.sourceKind].filter(Boolean).join(':');return this.card?.id??'';}
+  private artHash(offset=0):number{let value=2166136261+offset;for(const character of this.artSeed)value=Math.imul(value^character.charCodeAt(0),16777619);return value>>>0;}
+  get artHue():string{return String(this.artHash()%360);}
+  get artAccent():string{return String(this.artHash(97)%360);}
   get illustration(): string {
     const front = this.imageUrl !== undefined ? this.imageUrl : this.card?.image || '';
     const back = this.backImageUrl !== undefined ? this.backImageUrl : this.card?.backImage;

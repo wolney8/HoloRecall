@@ -17,6 +17,8 @@ import { AnkiWorkerClient } from './anki-worker-client';
 import { CAPABILITY_POLICY } from '../platform/capability-policy';
 import { BALANCED_PRESET_ID } from '../../domain/study-settings';
 
+export interface ExchangeCompletionAction { action:'review'|'deck'|'search'|'study';deckId:string;deckIds:string[];label:string }
+
 @Component({
   selector: 'hr-exchange', standalone: true,
   imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, PageRevealDirective],
@@ -39,6 +41,7 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
     }
     @if (busy()) { <div class="busy" role="status"><mat-spinner diameter="24" /><span>{{ busy() }}</span></div> }
     @if (message()) { <p class="notice" role="status">{{ message() }}</p> }
+    @if(completion();as done){<section class="completion-panel" aria-labelledby="exchange-complete-title"><div><p class="eyebrow">{{done.kind}} COMPLETE</p><h2 id="exchange-complete-title">{{done.label}}</h2><p>{{done.deckIds.length>1?done.deckIds.length+' lesson groups are ready.':'Your deck is ready.'}} Choose what to do next.</p></div><div class="completion-actions"><button mat-flat-button type="button" (click)="complete('review',done)">Review imported deck</button><button mat-stroked-button type="button" (click)="complete('study',done)">{{done.deckIds.length>1?'Study first lesson':'Study now'}}</button><button mat-button type="button" (click)="complete('deck',done)">Go to deck</button><button mat-button type="button" (click)="complete('search',done)">Search cards</button></div></section>}
     @if (failure()) { <p class="failure" role="alert">{{ failure() }}</p> }
     @if (preview(); as item) {
       <section class="exchange-panel preview" aria-label="Import preview" hrReveal><div class="preview-heading"><h2>Import preview</h2><span>{{ filename() }}</span></div>
@@ -103,7 +106,8 @@ import { BALANCED_PRESET_ID } from '../../domain/study-settings';
     .conversion-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1rem 0}.conversion-counts>div{display:grid;gap:.15rem;padding:.8rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-medium);background:var(--mat-sys-surface-container-low)}.conversion-counts strong{font:var(--mat-sys-title-large)}.conversion-counts span{font:var(--mat-sys-label-small);color:var(--mat-sys-on-surface-variant)}
     .issue-summary{margin:1rem 0;padding:1rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-large);background:var(--mat-sys-surface-container-low)}.issue-summary>p{color:var(--mat-sys-on-surface-variant);margin:.4rem 0 1rem}.issue-panel{margin:.5rem 0;padding:.75rem;border-inline-start:4px solid var(--mat-sys-outline);background:var(--mat-sys-surface)}.issue-panel.error{border-inline-start-color:var(--mat-sys-error)}.issue-panel.warning{border-inline-start-color:var(--mat-sys-tertiary)}.issue-panel.info{border-inline-start-color:var(--mat-sys-primary)}.issue-panel summary{font-weight:600;cursor:pointer}.issue-panel li{margin:.5rem 0}.issue-panel .ids{display:block;color:var(--mat-sys-on-surface-variant);overflow-wrap:anywhere}.exclusion-choice{display:flex;align-items:flex-start;gap:.65rem;margin-top:1rem}
     .update-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:1rem 0}.update-summary>div{display:grid;gap:.15rem;padding:.75rem;border:1px solid var(--mat-sys-outline-variant);border-radius:var(--mat-sys-corner-medium)}.update-summary strong{font:var(--mat-sys-title-large)}.update-summary span{font:var(--mat-sys-label-small);color:var(--mat-sys-on-surface-variant)}.conflict-panel{margin:1rem 0;padding:1rem;border-inline-start:4px solid var(--mat-sys-tertiary);background:var(--mat-sys-tertiary-container);color:var(--mat-sys-on-tertiary-container);border-radius:var(--mat-sys-corner-medium)}.conflict-panel h3{margin-top:0}.conflict-diff{padding:.6rem 0;border-bottom:1px solid color-mix(in srgb,currentColor 20%,transparent)}.conflict-diff p{white-space:pre-line;margin:.25rem 0}
-    @media(max-width:760px){.exchange-heading{flex-direction:column}.mapping-row{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}.preview-counts,.conversion-counts,.update-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.update-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.comparison-preview article{grid-template-columns:1fr}.contextual-update-heading h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.contextual-update-heading{margin-bottom:1rem}.source-manager-actions article{align-items:stretch;flex-direction:column}.source-manager-actions button{align-self:flex-start}}
+    .completion-panel{display:flex;align-items:center;justify-content:space-between;gap:var(--space-5);margin:var(--space-4) 0;padding:var(--space-5);border:1px solid var(--mat-sys-primary);border-radius:var(--mat-sys-corner-extra-large);background:var(--mat-sys-primary-container);color:var(--mat-sys-on-primary-container)}.completion-panel h2{margin:var(--space-1) 0}.completion-panel p{margin:0}.completion-actions{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);flex-wrap:wrap}
+    @media(max-width:760px){.exchange-heading,.completion-panel{align-items:stretch;flex-direction:column}.completion-actions{justify-content:flex-start}.mapping-row{grid-template-columns:1fr}.mapping-model>div:first-child{align-items:flex-start;flex-direction:column}.preview-counts,.conversion-counts,.update-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.update-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.comparison-preview article{grid-template-columns:1fr}.contextual-update-heading h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.contextual-update-heading{margin-bottom:1rem}.source-manager-actions article{align-items:stretch;flex-direction:column}.source-manager-actions button{align-self:flex-start}}
     @media(max-width:460px){.update-steps{grid-template-columns:1fr 1fr}.update-steps li{padding:.5rem;font-size:.72rem}}
     @media(max-width:420px){.conversion-counts{grid-template-columns:1fr}}
   `],
@@ -113,6 +117,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   @Input() sourceMode:'manage'|'update'|'repair'|'mapping'='update';
   @Input() initialAnkiFile: File | null = null;
   @Output() readonly updateComplete = new EventEmitter<string>();
+  @Output() readonly completionAction = new EventEmitter<ExchangeCompletionAction>();
   @Output() readonly cancelUpdate = new EventEmitter<void>();
   @Output() readonly sourceAction = new EventEmitter<'update'|'repair'|'mapping'>();
   @Output() readonly detachSource = new EventEmitter<void>();
@@ -134,6 +139,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   private activeMappings:AnkiMappingPreset[]=[];
   readonly mappingTargets: { id: AnkiFieldTarget; label: string }[] = [{id:'ignore',label:'Keep as source metadata'},{id:'front',label:'Front'},{id:'answer',label:'Answer'},{id:'pronunciation',label:'Pronunciation'},{id:'meaning',label:'Meaning'},{id:'notes',label:'Notes'},{id:'front-media',label:'Front media'},{id:'back-media',label:'Answer media'}];
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
+  readonly completion=signal<{deckId:string;deckIds:string[];label:string;kind:'IMPORT'|'UPDATE'|'REPAIR'}|null>(null);
 
   ngOnInit():void{if(this.initialAnkiFile)void this.analyseAnkiFile(this.initialAnkiFile);else if(this.updateDeckId&&this.sourceMode!=='update'&&this.sourceMode!=='manage')void this.loadStoredSource();}
   ngOnChanges(changes:SimpleChanges):void{if(!changes['initialAnkiFile']?.firstChange&&this.initialAnkiFile)void this.analyseAnkiFile(this.initialAnkiFile);}
@@ -146,7 +152,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
 
   async selectFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file) return;
-    this.message.set(''); this.failure.set(''); this.preview.set(null); this.filename.set(file.name); this.busy.set('Validating content and media…');
+    this.message.set(''); this.failure.set(''); this.completion.set(null);this.preview.set(null); this.filename.set(file.name); this.busy.set('Validating content and media…');
     try {
       const state = this.store.data(); if (!state) throw new Error('Local data is still loading.');
       const { MAX_FILE_BYTES, readContentFile } = await import('../../domain/exchange');
@@ -168,7 +174,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   async apply(): Promise<void> {
     const preview = this.preview(); if (!preview || preview.errors.length || this.busy()) return;
     this.busy.set('Saving content atomically…'); this.failure.set('');
-    try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion); this.message.set(`Imported ${preview.newCards.length} new cards and updated ${preview.updatedCards.length} cards. Existing reviews and earned cosmetics are preserved.`); this.preview.set(null); }
+    try { const deckIds=this.completionDecks(preview.bundle.decks,preview.newDecks.concat(preview.updatedDecks));await this.store.applyContentImport(preview.bundle, preview.expectedVersion); this.message.set(`Imported ${preview.newCards.length} new cards and updated ${preview.updatedCards.length} cards. Existing reviews and earned cosmetics are preserved.`); this.preview.set(null);if(deckIds.length)this.setCompletion(deckIds,'IMPORT'); }
     catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }
   }
@@ -178,7 +184,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
     await this.analyseAnkiFile(file); input.value = '';
   }
   private async analyseAnkiFile(file:File):Promise<void>{
-    this.cancelAnki(); this.usingStoredSource.set(false);this.failure.set(''); this.message.set(''); this.ankiAbort = new AbortController(); this.busy.set('Opening the Anki archive…');
+    this.cancelAnki(); this.usingStoredSource.set(false);this.failure.set(''); this.message.set('');this.completion.set(null); this.ankiAbort = new AbortController(); this.busy.set('Opening the Anki archive…');
     try {
       if (file.size > 30 * 1024 * 1024) throw new Error('Choose an Anki package of at most 30 MiB compressed.');
       this.ankiBytes = new Uint8Array(await file.arrayBuffer()); this.ankiPackageName = file.name;
@@ -200,7 +206,11 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   issueHeading(severity:'error'|'warning'|'info'):string{return severity==='error'?'Cannot convert safely':severity==='warning'?'Content or media omitted':'Anki presentation simplified';}
   requiresExclusion(analysis:AnkiAnalysis):boolean{return analysis.conversion.excluded+analysis.conversion.unsafe>0;}
   canApplyAnki(preview:AnkiImportPreview,analysis:AnkiAnalysis):boolean{return !this.busy()&&!preview.errors.length&&analysis.compatibility.tierC===0&&(!this.requiresExclusion(analysis)||this.acceptAnkiIssues)&&this.conflictsResolved();}
-  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || !analysis || !this.canApplyAnki(preview,analysis)) return; this.busy.set('Saving the supported Anki content atomically…'); try { await this.store.applyContentImport(preview.bundle, preview.expectedVersion,this.ankiStudyPresetId,true,this.activeMappings); const verb=this.sourceMode==='repair'||this.sourceMode==='mapping'?'Repaired':this.updateDeckId?'Updated':'Imported',result=`${verb} ${preview.newCards.length} new and ${preview.updatedCards.length} changed Anki cards. Scheduling, review history and cosmetic unlocks were preserved.`;this.message.set(result); const completedDeck=this.updateDeckId;this.cancelAnki();if(completedDeck)this.updateComplete.emit(completedDeck); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
+  async applyAnki(): Promise<void> { const preview = this.ankiPreview(), analysis = this.ankiAnalysis(); if (!preview || !analysis || !this.canApplyAnki(preview,analysis)) return; this.busy.set('Saving the supported Anki content atomically…'); try { const mode=this.sourceMode,completedDecks=this.updateDeckId?[this.updateDeckId]:this.completionDecks(preview.bundle.decks,preview.update.newDecks),packageLabel=this.ankiPackageName.replace(/\.apkg$/i,'').replaceAll('_',' ');await this.store.applyContentImport(preview.bundle, preview.expectedVersion,this.ankiStudyPresetId,true,this.activeMappings); const verb=mode==='repair'||mode==='mapping'?'Repaired':this.updateDeckId?'Updated':'Imported',result=`${verb} ${preview.newCards.length} new and ${preview.updatedCards.length} changed Anki cards. Scheduling, review history and cosmetic unlocks were preserved.`;this.message.set(result);this.cancelAnki();if(completedDecks.length)this.setCompletion(completedDecks,mode==='repair'||mode==='mapping'?'REPAIR':this.updateDeckId?'UPDATE':'IMPORT',completedDecks.length>1?packageLabel:undefined); } catch (error) { this.failure.set(this.errorMessage(error)); } finally { this.busy.set(''); } }
+
+  complete(action:ExchangeCompletionAction['action'],done:NonNullable<ReturnType<typeof this.completion>>):void{this.completionAction.emit({action,deckId:done.deckId,deckIds:done.deckIds,label:done.label});}
+  private completionDecks(decks:{id:string;name?:string;parentId?:string}[],preferred:string[]):string[]{const ids=new Set(decks.map(deck=>deck.id)),preferredSet=new Set(preferred),roots=decks.filter(deck=>preferredSet.has(deck.id)&&(!deck.parentId||!ids.has(deck.parentId))),chosen=roots.length?roots:decks.filter(deck=>preferredSet.has(deck.id));return chosen.sort((a,b)=>(a.name??a.id).localeCompare(b.name??b.id)).map(deck=>deck.id);}
+  private setCompletion(deckIds:string[],kind:'IMPORT'|'UPDATE'|'REPAIR',label?:string):void{const deckId=deckIds[0]!;this.completion.set({deckId,deckIds,kind,label:label||this.store.decks().find(deck=>deck.id===deckId)?.name||'Imported deck'});}
 
   async export(portable: boolean): Promise<void> {
     this.message.set(''); this.failure.set(''); this.busy.set(portable ? 'Packaging workbook, media and designs…' : 'Building content workbook…');

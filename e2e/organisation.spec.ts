@@ -16,7 +16,7 @@ test('HR-ORG-02 combined filters are visible, clearable and retained through Col
   await openApp(page);await navigate(page,'Decks');await waitForIndex(page);
   await page.getByRole('button',{name:/Filters/}).click();await page.getByRole('checkbox',{name:'Verbs'}).check();await page.getByRole('checkbox',{name:'image'}).check();
   await expect(page.getByText(/matching cards/)).toBeVisible();const filtered=await page.locator('.card-list-row').count();expect(filtered).toBeGreaterThan(0);expect(filtered).toBeLessThan(16);
-  await navigate(page,'Collection');await waitForIndex(page);await expect(page.locator('.owned-section .collection-item')).toHaveCount(filtered);
+  await navigate(page,'Collection');await waitForIndex(page);await expect(page.locator('.owned-section .collectible-item')).toHaveCount(filtered);
   await page.getByRole('button',{name:'Clear filters'}).click();await expect(page.getByText(/Showing 16 of 16/)).toBeVisible();
 });
 

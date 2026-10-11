@@ -85,10 +85,12 @@ test('collection explicitly previews seven tiers and effects preference persists
   await expect(page.locator('.sample-button')).toHaveCount(7);
   for (const rarity of ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic']) {
     await page.locator(`.sample-button[data-rarity="${rarity}"]`).click();
-    await expect(page.locator('.memory-card')).toHaveAttribute('data-rarity', rarity);
+    await expect(page.locator('.inspection-card .memory-card')).toHaveAttribute('data-rarity', rarity);
     await expect(page.getByText('Design sample · not earned', { exact: true })).toBeVisible();
   }
-  const motion = page.locator('.card-motion');
+  const motion = page.locator('.inspection-card .card-motion');
+  await motion.evaluate(element => element.scrollIntoView({behavior:'instant',block:'center'}));
+  await expect(motion).toHaveClass(/motion-enabled/);
   await motion.hover({ position: { x: 25, y: 30 } });
   await expect.poll(() => motion.evaluate(element => (element as HTMLElement).style.getPropertyValue('--px'))).not.toBe('');
   expect((await snapshot(page)).events).toEqual([]);
@@ -99,7 +101,7 @@ test('collection explicitly previews seven tiers and effects preference persists
   await page.reload();
   await expect(page.getByRole('switch', { name: 'Card effects' })).not.toBeChecked();
   await navigate(page, 'Collection');
-  await expect(page.locator('.memory-card')).not.toHaveClass(/effects/);
+  await expect(page.locator('.inspection-card .memory-card')).not.toHaveClass(/effects/);
   expect((await snapshot(page)).preferences.effects).toBe(false);
 });
 
@@ -112,9 +114,9 @@ test('mobile layout and reduced motion suppress shimmer, reveal and pointer anim
   expect(await page.locator('.card-turn').evaluate(element => element.getAnimations().length)).toBe(0);
   await expectNoOverflow(page); await navigate(page, 'Collection');
   await page.locator('.sample-button[data-rarity="holo-rare"]').click();
-  await expect(page.locator('.memory-card')).not.toHaveClass(/effects/);
-  await page.locator('.card-motion').hover({ position: { x: 25, y: 30 } });
-  expect(await page.locator('.card-motion').evaluate(element => (element as HTMLElement).style.getPropertyValue('--px'))).toBe('');
+  await expect(page.locator('.inspection-card .memory-card')).not.toHaveClass(/effects/);
+  await page.locator('.inspection-card .card-motion').hover({ position: { x: 25, y: 30 } });
+  expect(await page.locator('.inspection-card .card-motion').evaluate(element => (element as HTMLElement).style.getPropertyValue('--px'))).toBe('');
   await expectNoOverflow(page); await navigate(page, 'Decks'); await expectNoOverflow(page);
 });
 

@@ -1,12 +1,11 @@
 # Current restart point
 
-## 10 October 2026 — HR-UX-IMPORTED-DECK-REVIEW active
+## 10 October 2026 — HR-UX-IMPORTED-DECK-REVIEW complete
 
-- **Recovered state:** `main` is clean at `e1a0c88`; accepted template-first import, three Study modes, hierarchy, source management and native work are preserved.
-- **Bounded scope:** HR-UX-IDR-01–05 are `IN_PROGRESS` in the canonical tracker. Work is limited to spacing rhythm, deck-scoped collectible browsing, post-transaction next steps, imported-card visual treatment and hierarchy/action clarity.
-- **Integration direction:** reuse the shared CardRenderer, Collection search/index, stable deck identities and lazy Exchange route. Completion and browse flows must not duplicate import/search logic or place importer code on the initial path.
-- **Acceptance boundary:** browser and responsive evidence must cover existing imported decks and representative subdecks. The initial production bundle remains capped at 850 kB. No push, deployment, auth/commercial work, Anki export, scheduler redesign or native-storage migration is authorised.
-- **Restart point:** inspect deck journey/source actions, Collection filtering/card tiles, Exchange transaction completion and shared imported-card art/effect layers; implement one coherent shared flow, then run targeted and full regression gates.
+- **Outcome:** HR-UX-IDR-01–05 are `DONE`. Parent and subdeck management now opens a hierarchy-scoped collectible browser using the existing search/index. Fresh import, update and repair end with concise Review, Study, Deck and Search actions; multi-root imports review every imported lesson branch.
+- **Presentation:** imported native/generated art fills the physical card surface, a subtle whole-card gleam follows Effects/Reduced Motion, redundant source-panel metadata was removed, and inert choice chips inherit the art palette. Shared spacing tokens now govern affected panel/action/status surfaces.
+- **Regression evidence:** unit/domain 181/181 and the clean Playwright matrix 199/199 pass across Chromium, desktop WebKit, compact/large/landscape WebKit phone profiles. The first full matrix exposed four paired Collection regressions; selection context and intended-renderer assertions were corrected, then the unchanged clean matrix passed. Production is **826.24 kB raw / 196.78 kB transfer**, below 850 kB. Exact-package isolated evidence sampled twenty native-art cards under `.runtime/evidence/hr-ux-imported-deck-review-20261010/`.
+- **Acceptance boundary:** HR-ACCEPT-ANKI-01 remains **VERIFY — USER RETEST REQUIRED** for Will's genuine existing learner profile. No genuine learner data was changed. No push or deployment occurred.
 
 ## 9 October 2026 — Anki replacement usability milestone complete
 

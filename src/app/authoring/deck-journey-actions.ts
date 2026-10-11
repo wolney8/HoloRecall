@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
-export type DeckManagementAction = 'add-card' | 'add-subdeck' | 'import' | 'study-settings' | 'edit' | 'toggle-archive';
+export type DeckManagementAction = 'view-cards' | 'add-card' | 'add-subdeck' | 'import' | 'study-settings' | 'edit' | 'toggle-archive';
 
 @Component({
   selector: 'hr-deck-journey-actions',
@@ -14,6 +14,7 @@ export type DeckManagementAction = 'add-card' | 'add-subdeck' | 'import' | 'stud
       <button mat-stroked-button type="button" (click)="focus.emit()" [disabled]="archived">Focus</button></div></section>
     <section class="manage-group" aria-label="Manage deck"><span>Manage deck</span>
       <details #menu class="management-menu" (keydown.escape)="menu.open = false"><summary role="button" aria-label="More deck actions">More</summary><div role="menu">
+        <button type="button" role="menuitem" (click)="choose(menu, 'view-cards')">View cards</button>
         <button type="button" role="menuitem" (click)="choose(menu, 'add-card')" [disabled]="archived">Add card</button>
         <button type="button" role="menuitem" (click)="choose(menu, 'add-subdeck')" [disabled]="archived">Add subdeck</button>
         @if (allowImport) { <button type="button" role="menuitem" (click)="choose(menu, 'import')">Import content</button> }
