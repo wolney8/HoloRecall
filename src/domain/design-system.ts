@@ -8,7 +8,7 @@ export const CARD_COMPOSITIONS: readonly CardCompositionId[] = [
 ] as const;
 
 /** Built-in fallback. It need not be duplicated in every legacy state or on every card. */
-export const DEFAULT_DESIGN_SET: Readonly<DesignSet> = Object.freeze({
+export const DEFAULT_DESIGN_SET: Readonly<DesignSet> = Object.freeze<DesignSet>({
   id: GLOBAL_DESIGN_SET_ID,
   name: 'HoloRecall',
   backgroundFit: 'cover',
@@ -21,6 +21,7 @@ export const DEFAULT_DESIGN_SET: Readonly<DesignSet> = Object.freeze({
   composition: 'symbolic-generated',
   layoutPolicy: 'suggest',
   palette: { primary: '#6750a4', secondary: '#625b71', surface: '#1d1b20', onSurface: '#e6e1e5', accent: '#d0bcff' },
+  artwork: { fit: 'cover', focalX: 50, focalY: 48, treatment: 'embedded', mask: 'rounded-window', fullBleed: false, vignette: 20, tint: '#6750a4', safeZone: 'centre', edgeFade: 24, backgroundBleed: 30, duotone: 8, textureBlend: 18, emboss: 10, depth: 5 },
 });
 
 export interface ResolvedDesign {
@@ -74,5 +75,9 @@ export function deriveDesignPalette(rgba: ArrayLike<number>): DesignPalette {
   samples.sort((a,b)=>luminance(a)-luminance(b));
   const average=(from:number,to:number):[number,number,number]=>{const selected=samples.slice(from,Math.max(from+1,to)),sum=selected.reduce((value,item)=>[value[0]+item[0],value[1]+item[1],value[2]+item[2]] as [number,number,number],[0,0,0]);return sum.map(value=>value/selected.length) as [number,number,number];};
   const dark=average(0,Math.ceil(samples.length*.3)),mid=average(Math.floor(samples.length*.3),Math.ceil(samples.length*.72)),light=average(Math.floor(samples.length*.72),samples.length);
-  return {primary:hex(...mid),secondary:hex(...dark),surface:hex(...dark.map(value=>value*.42) as [number,number,number]),onSurface:luminance(dark)<145?'#ffffff':'#111111',accent:hex(...light)};
+  const surface=dark.map(value=>value*.42) as [number,number,number];
+  // Ink contrast belongs to the derived card surface, not the brighter source
+  // sample it came from. This matters most for sparse white artwork with a
+  // small dark motif, where the old comparison could choose dark-on-dark.
+  return {primary:hex(...mid),secondary:hex(...dark),surface:hex(...surface),onSurface:luminance(surface)<145?'#ffffff':'#111111',accent:hex(...light)};
 }

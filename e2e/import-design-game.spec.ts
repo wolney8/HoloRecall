@@ -114,11 +114,35 @@ test('HR-DESIGN-07/12 previews curated composition and rarity finish settings an
   await page.getByRole('button', { name: 'Show answer face' }).click(); await expect(preview.getByRole('heading', { name: 'Retrieval strengthens memory' })).toBeVisible();
   await page.getByLabel('Preview content').click(); await page.getByRole('option', { name: 'Generated art' }).click(); await expect(preview).toHaveAttribute('data-composition', 'illustration-window'); await expect(preview.locator('.missing-image')).toHaveCount(0); await expect(preview.locator('[aria-label="Generated text artwork"]')).toBeVisible();
   await page.getByTestId('design-art-upload').setInputFiles(await smileyArtwork(page)); await expect(page.getByRole('status')).toContainText('palette was derived');
-  await page.getByLabel('Integration treatment').click(); await page.getByRole('option', { name: 'Printed / embedded' }).click(); await expect(preview).toHaveAttribute('data-art-treatment', 'embedded'); await expect(preview.locator('.background-layer img')).toBeVisible();
+  await expect(page.getByLabel('Surface style')).toHaveText(/Balanced printed/); await expect(preview).toHaveAttribute('data-art-treatment', 'embedded'); await expect(preview.locator('.background-layer img')).toBeVisible();
+  await expect.poll(() => preview.locator('.background-layer img').evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('multiply');
+  await expect.poll(() => preview.locator('.card-copy').evaluate(element => getComputedStyle(element, '::before').borderTopColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({ path: testInfo.outputPath('design-suite-balanced-printed.png'), fullPage: true });
+  await page.getByRole('combobox',{name:'Surface style'}).click(); await page.getByRole('option', { name: 'Soft edge blend' }).click(); await expect(preview).toHaveAttribute('data-art-treatment', 'edge-fade');
   await page.getByLabel('Use one composition').check(); await page.getByText('Full Bleed', { exact: true }).click(); await expect(preview).toHaveAttribute('data-composition', 'full-bleed');
   await page.getByText('Rarity variants', { exact: true }).click(); await page.getByLabel('Finish').click(); await page.getByRole('option', { name: 'Aurora premium' }).click(); await expect(preview).toHaveAttribute('data-finish', 'aurora');
   await page.screenshot({ path: testInfo.outputPath('design-suite-foundation.png'), fullPage: true });
   await page.getByRole('button', { name: 'Collection' }).click(); await expect(page.getByText('NEXT UNLOCK', { exact: true })).toBeVisible(); await expect(page.locator('.next-unlock mat-progress-bar')).toHaveCount(1);
+});
+
+test('HR-DESIGN-16 keeps printed surfaces coherent and learning copy dominant across content and accessibility modes', async ({ page }, testInfo) => {
+  await openApp(page); await page.getByRole('button', { name: 'Design Studio' }).click();
+  const preview=page.locator('hr-design-studio .memory-card');
+  await page.getByLabel('Preview content').click(); await page.getByRole('option',{name:'Technical / formula'}).click();
+  await page.getByLabel('Use one composition').check(); await page.getByText('Diagram / Technical',{exact:true}).click();
+  await expect(preview).toHaveAttribute('data-composition','diagram-technical');
+  await expect(preview.getByRole('heading',{name:'x = 7'})).toBeVisible();
+  await expect.poll(()=>preview.locator('.card-copy').evaluate(element=>getComputedStyle(element,'::before').borderTopColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.getByText('Rarity variants',{exact:true}).click(); await page.getByLabel('Rarity to tune').click(); await page.getByRole('option',{name:/Common/}).click();
+  await expect(preview).toHaveAttribute('data-rarity','common');
+  await page.getByLabel('Suggest per card').check();
+  await page.getByLabel('Preview content').click(); await page.getByRole('option',{name:'Text only'}).click();
+  await expect(preview).toHaveAttribute('data-composition','typographic-showcase');
+  await expect(preview.getByRole('heading',{name:'Retrieval strengthens memory'})).toBeVisible();
+  await page.locator('mat-button-toggle').filter({hasText:'Dark'}).click(); await expect(preview).toHaveAttribute('data-theme-preview','dark'); await expect(preview.getByRole('heading',{name:'Retrieval strengthens memory'})).toBeVisible();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(preview.locator('.effects-layer')).toHaveCSS('display','none');
+  await page.screenshot({path:testInfo.outputPath('printed-surface-reduced-motion.png'),fullPage:true});
 });
 
 test('HR-DESIGN-06 validates and atomically applies friendly JSON with inherited deck design', async ({ page }) => {

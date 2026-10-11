@@ -32,7 +32,7 @@ export class DesignStudioComponent {
   readonly busy = signal(false); readonly notice = signal(''); readonly selected = signal(''); readonly cards = computed(() => this.store.data()?.cards ?? []);
   editor: DesignSet = this.blank(); cardId = this.store.data()?.cards[0]?.id ?? ''; previewCase: PreviewCase = 'real'; rarity: Rarity = 'holo-rare'; frameSlot: 'base' | Rarity = 'base'; previewTheme: 'light' | 'dark' = 'light'; revealed = true; deckId = '';
 
-  blank(): DesignSet { return { id: crypto.randomUUID(), name: '', backgroundFit: 'cover', backgroundPositionX: 50, backgroundPositionY: 50, frameFit: 'contain', finish: 'matte', layout: 'clean', composition: 'illustration-window', layoutPolicy: 'fixed', palette: { primary: '#285c50', secondary: '#d3ad5b', surface: '#f4efe2', onSurface: '#17372f', accent: '#78a79a' }, artwork: { fit: 'cover', focalX: 50, focalY: 50, treatment: 'clean', mask: 'rounded-window', fullBleed: false, vignette: 18, tint: '#285c50', safeZone: 'centre', edgeFade: 12, backgroundBleed: 18, duotone: 0, textureBlend: 12, emboss: 8, depth: 8 }, rarityVariants: {}, credit: '', source: '', license: '', frames: {}, finishes: {} }; }
+  blank(): DesignSet { return { id: crypto.randomUUID(), name: '', backgroundFit: 'cover', backgroundPositionX: 50, backgroundPositionY: 50, frameFit: 'contain', finish: 'matte', layout: 'clean', composition: 'illustration-window', layoutPolicy: 'fixed', palette: { primary: '#285c50', secondary: '#d3ad5b', surface: '#f4efe2', onSurface: '#17372f', accent: '#78a79a' }, artwork: { fit: 'cover', focalX: 50, focalY: 48, treatment: 'embedded', mask: 'rounded-window', fullBleed: false, vignette: 20, tint: '#285c50', safeZone: 'centre', edgeFade: 24, backgroundBleed: 30, duotone: 8, textureBlend: 18, emboss: 10, depth: 5 }, rarityVariants: {}, credit: '', source: '', license: '', frames: {}, finishes: {} }; }
   private withDefaults(design: DesignSet): DesignSet { const defaults = this.blank(); return { ...defaults, ...design, palette: { ...defaults.palette!, ...design.palette }, artwork: { ...defaults.artwork!, ...design.artwork }, rarityVariants: { ...design.rarityVariants }, frames: { ...design.frames }, finishes: { ...design.finishes } }; }
   choose(id: string): void { this.selected.set(id); this.editor = this.withDefaults(structuredClone(this.store.data()?.designs.find(design => design.id === id) ?? this.blank())); this.notice.set(''); }
 
@@ -52,6 +52,19 @@ export class DesignStudioComponent {
   setPalette(key: keyof DesignPalette, value: string): void { this.editor.palette = { ...this.editor.palette!, [key]: value }; this.editor = { ...this.editor }; }
   artwork<K extends keyof NonNullable<DesignSet['artwork']>>(key: K): NonNullable<DesignSet['artwork']>[K] | undefined { return this.editor.artwork?.[key]; }
   setArtwork<K extends keyof NonNullable<DesignSet['artwork']>>(key: K, value: NonNullable<DesignSet['artwork']>[K]): void { this.editor.artwork = { ...this.editor.artwork!, [key]: value }; this.editor = { ...this.editor }; }
+  surfacePreset(): string { const treatment=this.editor.artwork?.treatment;return treatment==='edge-fade'?'soft-edge':treatment==='background-bleed'?'full-bleed':treatment==='clean'?'crisp-frame':treatment==='duotone'?'duotone':treatment==='masked'?'masked':'printed'; }
+  setSurfacePreset(preset: string): void {
+    const current=this.editor.artwork!;
+    const values:Record<string,Partial<typeof current>>={
+      printed:{treatment:'embedded',mask:'rounded-window',fullBleed:false,edgeFade:24,backgroundBleed:30,vignette:20,duotone:8,textureBlend:18,emboss:10,depth:5},
+      'soft-edge':{treatment:'edge-fade',mask:'soft-oval',fullBleed:false,edgeFade:44,backgroundBleed:36,vignette:16,duotone:4,textureBlend:14,emboss:5,depth:2},
+      'full-bleed':{treatment:'background-bleed',mask:'none',fullBleed:true,edgeFade:18,backgroundBleed:55,vignette:28,duotone:10,textureBlend:22,emboss:4,depth:0},
+      'crisp-frame':{treatment:'clean',mask:'frame-window',fullBleed:false,edgeFade:0,backgroundBleed:12,vignette:12,duotone:0,textureBlend:8,emboss:4,depth:7},
+      duotone:{treatment:'duotone',mask:'rounded-window',fullBleed:false,edgeFade:18,backgroundBleed:28,vignette:18,duotone:45,textureBlend:14,emboss:5,depth:3},
+      masked:{treatment:'masked',mask:'soft-oval',fullBleed:false,edgeFade:32,backgroundBleed:28,vignette:14,duotone:5,textureBlend:12,emboss:5,depth:3},
+    };
+    this.editor={...this.editor,artwork:{...current,...values[preset]}};
+  }
   finishForPreview(): FinishPreset { return this.editor.rarityVariants?.[this.rarity]?.finish ?? this.editor.finishes?.[this.rarity] ?? this.editor.finish ?? 'matte'; }
   setTierFinish(value: FinishPreset): void { this.editor.rarityVariants = { ...this.editor.rarityVariants, [this.rarity]: { ...this.editor.rarityVariants?.[this.rarity], finish: value } }; this.editor = { ...this.editor }; }
   tierAccent(): string { return this.editor.rarityVariants?.[this.rarity]?.accent ?? this.editor.palette?.accent ?? '#78a79a'; }

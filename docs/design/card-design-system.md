@@ -289,6 +289,10 @@ The curated initial composition family is Full Bleed, Framed Art, Illustration W
 
 The default Design Suite is content-first and progressively disclosed. Design identity, Artwork, Layout, Rarity variants and Preview form the primary path. Composition/material controls are grouped behind Advanced disclosure. The UI exposes declarative product choices rather than raw CSS.
 
+### 11.7 Printed-surface composition
+
+Artwork, generated motifs, frame, protected learning copy and inert chips share one palette-derived material family. The default artwork treatment is a restrained printed blend: source pixels remain unchanged while tint, edge transition, surface texture and shallow relief integrate them with the card. Prompt and answer surfaces may carry that material response, but their contrast and hierarchy take precedence over decoration. Rarity changes the accent/finish response without creating a disconnected visual layer. Reduced Motion and Effects Off suppress decorative texture/motion while retaining readable static composition.
+
 ## 12. Remaining open decisions
 
 1. Prestige cadence inside the confirmed 1–10 cap: visible changes at every level or grouped milestones.

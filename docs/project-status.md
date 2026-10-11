@@ -1,5 +1,12 @@
 # Current restart point
 
+## 11 October 2026 — HR-DESIGN-16 artwork blending correction complete
+
+- **Outcome:** HR-DESIGN-16A–F are `DONE`. The shared renderer now composes background/art, frame, native visual panels, inert choices and protected learning copy from one palette-derived material family. Prompt/answer dominance is unchanged; finish effects stay below readable copy and never affect content or learning state.
+- **Defaults and Design Suite:** new/global designs use the restrained **Balanced printed** preset. Soft edge, full-bleed wash and crisp framed are the other primary choices; raw integration values remain under optional fine tuning. The simple white/smiley fixture found a real contrast bug: ink had been selected against the bright source sample rather than its darkened derived surface. Contrast now resolves from the final surface.
+- **Evidence:** unit/domain **192/192** and the clean full Playwright matrix **203/203** pass across Chromium, desktop WebKit and compact/large/landscape WebKit profiles. Final artwork coverage is **4/4** in Chromium/WebKit, including Dark and reduced motion. Production is **838.01 kB raw / 199.70 kB transfer**, below 850 kB; Design Suite remains lazy at **36.24 kB**. The packaged iPhone 17 Pro / iOS 26.5 Design Suite smoke passes **1/1 in 13.464 s**. Screenshots/log/result bundle are in ignored `.runtime/evidence/hr-design-16-20261011/`.
+- **Retries/gaps:** two initial browser commands reached no app while the restarted dev server was still compiling. Subsequent failures were test-contract issues (a pseudo-element style assertion, fixed-vs-suggested composition expectation, and WebKit Material overlay detachment); no timeout was raised. Physical-device colour/compositing, OLED contrast, VoiceOver and tactile review remain pending. Prestige and Collection Desk were not started. The recommended next bounded milestone is a physical-device card-material and accessibility acceptance pass; do not start it without authorization.
+
 ## 11 October 2026 — Design Suite Foundation complete
 
 - **Outcome:** HR-DESIGN-03–15 are `DONE`. Presentation resolves through global default → nearest ancestor/deck Design Set → rarity-compatible variant → optional card override. New cards inherit by reference, deck changes propagate only to inherited cards, and returning an override to the deck design is explicit. These operations do not alter content revisions, Anki provenance, reviews, FSRS, due dates, authored rarity or rewards.

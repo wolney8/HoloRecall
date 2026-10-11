@@ -188,3 +188,11 @@ Card presentation resolves through one chain: the built-in HoloRecall default, t
 Content-first batch authoring accepts either the official `holorecall-card-batch` v1 JSON document or its friendly top-level card-list shorthand. Both normalize through the same strict plain-text validator, preview per-card errors and commit atomically against the previewed state version. New cards omit a copied Design Set ID and therefore follow their deck. Portable content format v8 carries subject-neutral fields and the validated Design Suite schema while retaining v1–v7 readability and deduplicated `asset:` media.
 
 External design V1 exports a trusted 1000 × 1500 SVG artwork guide with bleed, safe, focal/art and protected-content regions. Reimport accepts supported raster artwork as a source asset; HoloRecall retains learning text, rarity, finish, frame, motion and accessibility layers. Generated no-image art is deterministic, offline and derived from stable card/deck/content/design/rarity inputs. Uploaded HTML, CSS, JavaScript, executable SVG and remote dependencies are outside the design boundary.
+
+## Decision 013: palette-derived printed-surface pipeline
+
+**Status: implemented.**
+
+The shared card renderer resolves a Design Set once, then derives one static material family for its whole background, frame bridge, artwork window, protected copy and native choice surfaces. Raster source assets remain unchanged. Declarative focal/crop data places them; the selected surface preset supplies tint, bleed, edge transition, texture and shallow embossed cues. The default is a restrained embedded treatment, including for legacy sets that do not declare an artwork treatment. Generated, text-only and technical cards use the same material variables instead of a separate renderer.
+
+Readable copy is a protected layer above decorative finish effects. Its surface is mixed from the authored surface and palette while onSurface remains the authoritative ink colour; muted ink is derived from that pair. Palette extraction chooses contrast against the final derived surface, avoiding dark-on-dark output for sparse white artwork. Effects Off and Reduced Motion remove decorative texture/motion without changing content, layout, persisted Design Set data or source artwork.

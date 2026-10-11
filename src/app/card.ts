@@ -19,7 +19,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-treatment]="design?.artwork?.treatment || 'clean'" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
@@ -64,7 +64,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
     .audio-button{min-width:44px;min-height:44px;border:1px solid color-mix(in srgb,var(--mat-sys-outline) 55%,transparent);border-radius:999px;background:var(--mat-sys-surface-container-high);color:var(--mat-sys-on-surface);display:inline-flex;align-items:center;justify-content:center;gap:4px;font:600 12px/1 Roboto,Arial,sans-serif;box-shadow:0 3px 10px color-mix(in srgb,var(--mat-sys-shadow) 15%,transparent)}
     .audio-button:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:2px}
     .audio-error{position:absolute;z-index:6;left:20px;right:20px;bottom:84px;margin:0;padding:6px 8px;border-radius:8px;background:var(--mat-sys-error-container);color:var(--mat-sys-on-error-container);font-size:12px;text-align:start}
-    .answer-label{align-self:center;padding:.15rem .5rem;border-radius:999px;background:var(--mat-sys-secondary-container);color:var(--mat-sys-on-secondary-container);font-size:.68rem}
+    .answer-label{align-self:center;padding:.15rem .5rem;border:1px solid color-mix(in srgb,var(--frame-color) 36%,transparent);border-radius:999px;background:color-mix(in srgb,var(--card-surface) 78%,var(--design-primary,var(--frame-color)));color:var(--card-ink);font-size:.68rem;box-shadow:inset 0 1px color-mix(in srgb,#fff 34%,transparent)}
   `],
 })
 export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
@@ -132,10 +132,14 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get artHue():string{return String(this.artHash()%360);}
   get artAccent():string{return String(this.artHash(97)%360);}
   get rarityAccent():string{return this.design?.rarityVariants?.[this.shownRarity]?.accent??this.design?.palette?.accent??'';}
+  get artTreatment():string{return this.design?.artwork?.treatment??'embedded';}
+  get artTint():string{return this.design?.artwork?.tint??this.design?.palette?.primary??'';}
   get resolvedComposition():string{return this.design?.rarityVariants?.[this.shownRarity]?.composition??(this.design?.layoutPolicy==='suggest'?this.suggestedComposition:this.design?.composition)??this.suggestedComposition;}
   private get suggestedComposition():string{if(this.card?.image||this.card?.backImage)return'photo-focus';if(this.card?.kind==='visual'||this.card?.art)return'illustration-window';if(/[=+×÷−]|\b(?:formula|syntax|method)\b/i.test(`${this.card?.front} ${this.card?.answer}`))return'diagram-technical';if((this.card?.answer?.length??0)>110)return'split-art-content';return'typographic-showcase';}
   get artVignette():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.vignette??0))/100}`;}
   get artEdgeFade():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.edgeFade??0))/100}`;}
+  get artBackgroundBleed():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.backgroundBleed??0))}%`;}
+  get artDuotone():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.duotone??0))}%`;}
   get artTexture():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.textureBlend??0))/100}`;}
   get artEmboss():string{return`${Math.max(0,Math.min(40,this.design?.artwork?.emboss??0))/10}px`;}
   get artDepth():string{return`${Math.max(0,Math.min(40,this.design?.artwork?.depth??0))/10}px`;}

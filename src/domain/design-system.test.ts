@@ -21,4 +21,14 @@ describe('Design Set domain',()=>{
     expect(deriveDesignPalette(pixels)).toEqual(deriveDesignPalette(pixels));
     expect(Object.values(deriveDesignPalette(pixels)).every(value=>/^#[0-9a-f]{6}$/.test(value))).toBe(true);
   });
+  it('chooses readable ink from the derived surface rather than the brighter source sample',()=>{
+    const sparseDarkOnWhite=Uint8ClampedArray.from(Array.from({length:80},(_,index)=>index%4===3?255:index<4?24:245));
+    const palette=deriveDesignPalette(sparseDarkOnWhite);
+    expect(palette.surface).not.toBe(palette.onSurface);
+    expect(palette.onSurface).toBe('#ffffff');
+  });
+  it('uses an accessible integrated surface as the global default',()=>{
+    expect(DEFAULT_DESIGN_SET.artwork).toMatchObject({treatment:'embedded',mask:'rounded-window',edgeFade:24,backgroundBleed:30});
+    expect(DEFAULT_DESIGN_SET.palette?.onSurface).toBeTruthy();
+  });
 });

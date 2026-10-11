@@ -887,6 +887,23 @@ Source: Will's 11 October 2026 Design Suite Foundation authorization and `docs/d
 
 **Acceptance evidence:** unit/domain **190/190** covers inheritance and presentation-only mutation contracts, atomic JSON authoring, schema-v8 backward compatibility, palette/composition controls and rarity variants. The clean Playwright matrix passes **201/201** across Chromium, desktop WebKit and compact/large/landscape WebKit, including uploaded white/smiley artwork integration, deterministic generated art and JSON preview/apply; a final `suggest`-policy resolution fix passes explicit Chromium/WebKit coverage **2/2**. Packaged iPhone 17 Pro / iOS 26.5 Design Suite smoke passes **1/1** and remains separate from physical-device evidence. Production is **837.79 kB raw / 199.57 kB transfer**, below the unchanged 850 kB ceiling; Design Suite is lazy. Screenshots and the native result bundle are retained in ignored `.runtime/evidence/hr-design-suite-foundation-20261011/`. Authentication, commercial work, cloud/native storage, Prestige and Collection Desk are outside scope.
 
+## HR-DESIGN-16 — Artwork Blending and Printed-Surface Correction — active bounded milestone
+
+Source: Will's 11 October 2026 corrective artwork-composition request and `docs/design/card-design-system.md`. This milestone corrects the shared renderer and Design Suite defaults; it does not begin Prestige, Collection Desk or another product area.
+
+| ID | Title | Product area | Milestone | Priority | Status | Dependencies |
+| --- | --- | --- | --- | --- | --- | --- |
+| HR-DESIGN-16A | Blend artwork, frame, background and protected surfaces as one composition | Card renderer/design | Artwork blending correction | P0 | DONE | Existing declarative composition pipeline |
+| HR-DESIGN-16B | Add accessible printed-ink learning-content treatment | Card renderer/accessibility | Artwork blending correction | P0 | DONE | Palette and protected-content layers |
+| HR-DESIGN-16C | Preserve dominant prompt/answer hierarchy and readable contrast | Learning UX/accessibility | Artwork blending correction | P0 | DONE | Shared recall/answer renderer |
+| HR-DESIGN-16D | Apply blending consistently across art sources, templates and rarities | Design system/renderer | Artwork blending correction | P0 | DONE | Curated compositions and rarity variants |
+| HR-DESIGN-16E | Simplify Design Suite blending controls and make effects previewable | Design Studio/UX | Artwork blending correction | P1 | DONE | Existing progressive artwork controls |
+| HR-DESIGN-16F | Improve integrated defaults for uploaded, simple and generated artwork | Design/domain/defaults | Artwork blending correction | P0 | DONE | Design Set defaults and legacy-safe fallbacks |
+
+Acceptance requires representative uploaded, white/smiley, generated, text-only and technical cards across at least two compositions and rarities. Artwork and frames must read as one material; protected copy must remain immediately legible in Light/Dark/System, reduced motion and Effects Off. Chromium, desktop WebKit, mobile WebKit and the unchanged 850 kB initial-bundle gate are required; native Simulator evidence is recorded separately where the shared renderer warrants it.
+
+**Acceptance evidence (11 October 2026):** the renderer now uses one palette-derived material across full-card background, frame bridge, artwork, headings/copy/footer and imported choice panels. New/global designs default to a printed blend; six concise surface presets replace the raw primary treatment selector while focal, crop, palette and optional fine controls remain. The sparse white/smiley fixture exposed and fixed an inherited palette bug where ink was selected against the pre-darkened sample rather than the final surface. Unit/domain passes **192/192**; the clean full Playwright matrix passes **203/203** across Chromium, desktop WebKit and compact/large/landscape profiles, with final artwork coverage passing **4/4** in Chromium/WebKit. Production is **838.01 kB raw / 199.70 kB transfer**, below 850 kB; Design Suite remains a **36.24 kB** lazy chunk. The synced production shell passes the iPhone 17 Pro / iOS 26.5 Design Suite XCUITest **1/1 in 13.464 s**. Evidence: .runtime/evidence/hr-design-16-20261011/. Initial browser attempts failed before product load while the dev server compiled; later assertion/Material-overlay test defects were corrected without changing timeouts, and the final gates are clean.
+
 ## HR-UX-IMPORTED-DECK-REVIEW — active bounded milestone
 
 Source: Will's 10 October 2026 imported-deck review and presentation request. This milestone refines the accepted template-first import result; it does not reopen importer architecture or begin another roadmap phase.
