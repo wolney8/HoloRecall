@@ -1,8 +1,8 @@
-# HoloRecall deck-content format, version 9
+# HoloRecall deck-content format, version 10
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 9 adds portable subject-presentation metadata plus inherited Study artwork policy. Presentation can identify a general/language profile, recall task/cue/guidance, a non-destructive artwork role, and an Auto/Image first/Text first override; it never owns the answer or learner state. Version 8 added subject-neutral secondary/interpretation fields and the reusable Design Suite schema. Version 7 added portable declarative card art, native choice labels, an optional answer label and labelled supporting-detail blocks. State schema 8 retains normalized Anki source snapshots for template-first package-free repair; referenced snapshots are included as `anki-source.json` in portable ZIPs and in full backups. Versions 1–8 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 10 adds a validated declarative Image Occlusion payload to each card: normalized rectangle/ellipse/polygon geometry, stable shape/group and active-target identities, mode, source dimensions, Header/Back Extra/Comments metadata, accessibility descriptions and Anki/native provenance. Version 9 added portable subject-presentation metadata plus inherited Study artwork policy. Presentation can identify a general/language profile, recall task/cue/guidance, a non-destructive artwork role, and an Auto/Image first/Text first override; it never owns the answer or learner state. Version 8 added subject-neutral secondary/interpretation fields and the reusable Design Suite schema. Version 7 added portable declarative card art, native choice labels, an optional answer label and labelled supporting-detail blocks. State schema 8 retains normalized Anki source snapshots for template-first package-free repair; referenced snapshots are included as `anki-source.json` in portable ZIPs and in full backups. Versions 1–9 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
 Download the [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. The `anki_source` columns contain validated inert JSON written by HoloRecall; ordinary authored decks leave them blank.
 
@@ -18,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 9
+format_version | 10
 content_only | true
 ```
 
@@ -45,7 +45,7 @@ deck_id | title | description | design_set_id | suspended | parent_deck_id | ank
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details | secondary | interpretation | presentation
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details | secondary | interpretation | presentation | image_occlusion
 ```
 
 | Field | Meaning and validation |
@@ -77,6 +77,7 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `secondary` | Optional subject-neutral line beneath the primary answer, such as a pronunciation, formula name or date. |
 | `interpretation` | Optional concise subject-neutral interpretation, such as a meaning, explanation or context. |
 | `presentation` | Optional validated inert JSON containing `profile`, recall task/cue plus independent situation context, task guidance and hint, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
+| `image_occlusion` | Optional validated inert JSON. Version 1 stores `source`, mode (`hide-all-guess-one` or `hide-one-guess-one`), active group, stable shapes/groups, normalized geometry, optional source dimensions, Header, Back Extra, Comments, image/target descriptions and Anki identities. Rectangles use `x/y/width/height`, ellipses use `cx/cy/rx/ry`, and polygons use normalized point arrays. Rendering this field never creates learning events. |
 
 ### Designs
 
@@ -137,4 +138,11 @@ Regenerate checked-in templates/examples with the repository workbook generator 
 
 Anki mapping records are versioned independently from source, template-engine, converter and normalizer versions. V4 profiles retain source schema signature, optional template identity/name, scope (`template`, `model` or `deck`), authorship (`automatic` or `user-confirmed`), per-source-field subject-neutral destination and optional confidence/reason evidence. The exact note-type + card-template profile is the ordinary scope. Older profile versions remain readable and keep their legacy role aliases; they never outrank a confirmed compatible v4 profile. Source snapshots retain raw inert fields/templates, so remapping changes only derived presentation.
 
-The Anki export semantic contract is not a replacement for HoloRecall portable format v9. Basic exports Front/Back. Extended v1 exports stable Identity, Deck, Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, Source and Tags through an Anki-compatible UTF-8 text file. Imported identities derive from Anki model/note/template provenance; native identities derive from stable HoloRecall card IDs. Production APKG assembly is deferred and must validate note-type, database and media packaging separately.
+The Anki export semantic contract is not a replacement for HoloRecall portable format v10. Basic exports Front/Back. Extended v1 exports stable Identity, Deck, Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, Source and Tags through an Anki-compatible UTF-8 text file. Imported identities derive from Anki model/note/template provenance; native identities derive from stable HoloRecall card IDs. Production APKG assembly is deferred and must validate note-type, database and media packaging separately.
+
+
+## Image Occlusion portability and Anki export boundary
+
+Portable v10 preserves Image Occlusion declaratively and reuses the ordinary content-addressed `asset:` media registry, so one source image is not duplicated per target card. Editing a mask keeps stable group/card identity; removing a group that already owns a learning card is blocked until the learner uses the existing explicit archive/delete path. Full learner backup additionally preserves reviews, FSRS, due dates, Mastery and Prestige outside this content-only format.
+
+HoloRecall Extended v1 text export includes the normalized payload in an `ImageOcclusion` column and displays a fidelity warning. TSV cannot create Anki-native Image Occlusion cards and never silently flattens or drops masks. Native Anki Image Occlusion APKG emission remains deferred to a validated package-writer milestone.

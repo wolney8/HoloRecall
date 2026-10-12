@@ -8,6 +8,36 @@ Updated: 12 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed milestone — HR-ANKI-UX-02 + HR-IMAGE-OCCLUSION-01 + HR-BUNDLE-POLICY-01
+
+Authorised 12 October 2026. This bounded milestone simplifies ordinary Anki review, adds native Image Occlusion data/rendering/authoring, and replaces the exhausted warning threshold without relaxing lazy-loading discipline. Collection Desk and production APKG output remain out of scope.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-BUNDLE-POLICY-01 | Realistic initial-bundle budget | DONE | Keep budgets; set initial warning to 900 kB and error to 1 MB, report measured raw/transfer/lazy changes, and keep specialist UI lazy. |
+| HR-ANKI-UX-02A | Simple first experience | DONE | Ordinary review shows detection, confidence, representative Recall/Answer and one primary action. |
+| HR-ANKI-UX-02B | Conversion Templates | DONE | Auto resolves friendly Basic, reversed, language, rich, cloze, Image Occlusion or custom families over Mapping Profiles. |
+| HR-ANKI-UX-02C | Confidence-driven review | DONE | High-confidence imports proceed immediately; only uncertain cards/blocks receive prominent review. |
+| HR-ANKI-UX-02D | Advanced Mapping disclosure | DONE | Existing c751930 Mapping Studio remains complete but is progressive disclosure. |
+| HR-ANKI-UX-02E | Clear progress state | DONE | Analyse, conditional Review and Apply expose exactly one current state; retained-source repair omits irrelevant package selection. |
+| HR-ANKI-UX-02F | Chip spacing | DONE | Rarity/status chips use token gaps and wrap without text-space hacks. |
+| HR-IMAGE-OCCLUSION-01A | Native source analysis | DONE | Model Anki 23.10+ note/image/occlusion/header/back-extra/comments/tags/mode semantics from official structures and fixtures. |
+| HR-IMAGE-OCCLUSION-01B | Normalised shapes | DONE | Rectangle, ellipse and polygon geometry stays source-normalised through scale/orientation/high-DPI changes. |
+| HR-IMAGE-OCCLUSION-01C | Native modes | DONE | Hide All/Guess One and Hide One/Guess One retain Anki recall/reveal semantics. |
+| HR-IMAGE-OCCLUSION-01D | Study presentation | DONE | Header, masked image, revealed target and concise/extended back material coexist with unobstructive collectible treatment. |
+| HR-IMAGE-OCCLUSION-01E | Learning integration | DONE | Scheduled/Mastery/Free Revision, Recall Peek, Undo, Results and history retain existing scheduling semantics. |
+| HR-IMAGE-OCCLUSION-01F | Native authoring | DONE | Create → Image Occlusion → image → masks/mode/support → preview → save works without external code. |
+| HR-IMAGE-OCCLUSION-01G | Responsive mask editor | DONE | Select, shapes, move/resize/delete/duplicate/group/ungroup, undo/redo, zoom/pan and translucency support pointer/touch. |
+| HR-IMAGE-OCCLUSION-01H | Stable card generation | DONE | Shape/group identities generate stable cards without accidental duplicates; studied-card removal uses existing destructive safeguards. |
+| HR-IMAGE-OCCLUSION-01I | Supporting fields | DONE | Header/Back Extra render appropriately; Comments remain preserved authoring/source metadata. |
+| HR-IMAGE-OCCLUSION-01J | Collection inspection | DONE | Recall is masked, Answer revealed, and inspection remains presentation-only. |
+| HR-IMAGE-OCCLUSION-01K | Accessibility | DONE | Authored image/target descriptions identify the hidden-region task without leaking answers. |
+| HR-IMAGE-OCCLUSION-01L | Import Review | DONE | Native variants show Image Occlusion · Native support; unsupported add-on variants remain review-required and retained. |
+| HR-IMAGE-OCCLUSION-01M | Persistence/portability | DONE | Assets, shapes/groups/mode/support/accessibility/provenance and stable identities survive validated round-trip with deduplicated media. |
+| HR-IMAGE-OCCLUSION-01N | Future export contract | DONE | Extended semantic contract carries native occlusion intent; TSV warns and never silently flattens masks. |
+
+Evidence: unit/domain **226/226**, with one opt-in exact-package suite intentionally skipped by default; native Image Occlusion acceptance **7/7** across Chromium, desktop WebKit and compact WebKit; complete browser/profile matrix **238/238**. Production is **858.24 kB raw / 205.67 kB estimated transfer**, below the new 900 kB warning threshold and 1 MB error threshold. Exchange (**77.32 kB**), the Anki Worker (**56.82 kB**), Collection (**35.67 kB**) and the deferred Image Occlusion editor remain outside the initial route. The exact synced production shell passes the clean-fixture iPhone 17 Pro / iOS 26.5 packaged smoke **1/1 in 39.441 s**. The first rerun reused prior Simulator learning state and exhausted its seeded queue after one card; uninstalling that test-only app container restored the controlled fixture and the unchanged smoke passed. Evidence is retained under `.runtime/evidence/hr-anki-ux-io-20261012/`; physical-device touch, VoiceOver and native system-picker import remain separate acceptance gaps. Production APKG generation and Collection Desk were not started.
+
 ## Completed milestone — HR-ANKI-INTEROP-01 · Mapping Studio and bidirectional semantic contract
 
 Authorised 12 October 2026. This bounded milestone keeps Collection Desk out of scope and preserves all learner, source, cosmetic and presentation state while making semantic projection reviewable at the Anki note-type/card-template boundary.
@@ -36,7 +66,7 @@ Evidence: unit/domain **220/220** with one opt-in real-package test skipped by d
 | ID | Requirement | Status | Acceptance boundary |
 |---|---|---|---|
 | HR-ANKI-CLOZE-ADV-01 | Advanced cloze/add-on compatibility | PLANNED | Standard cloze is supported; advanced add-on filters/behavior require explicit fixtures and must stay simplification/review until evidenced. |
-| HR-ANKI-IMAGE-OCCLUSION-01 | Dedicated Image Occlusion projection | PLANNED | Detect and retain the note type now; implement faithful masks/occlusions only in a separately bounded interoperability milestone. |
+| HR-ANKI-IMAGE-OCCLUSION-01 | Dedicated Image Occlusion projection | DONE | Superseded and completed by HR-IMAGE-OCCLUSION-01A–N: native masks, modes, shared rendering, authoring and portable v10 are implemented; native APKG writing remains separately deferred. |
 
 ## Completed corrective milestone — HR-STUDY-RESULTS-POLISH-01
 

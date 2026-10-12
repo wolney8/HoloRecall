@@ -158,3 +158,8 @@ Supported Anki packages now use one simple template-first import/update/repair p
 Study Mode is now distinct from Study Preset. Anki Mode retains genuine scheduled FSRS reviews and within-session Learning/Relearning repeats. Mastery Mode is the scheduled five-confidence experience with honest earned-cosmetic progress. Free Revision is practice-only and cannot affect scheduling, limits or rewards. The same player, accessibility controls, audio, animation ownership and persistence boundaries serve all three modes.
 
 The next unfinished canonical phase is Dogfood Phase 3: full-fidelity HoloRecall portability followed by safe content-compatible Anki export. The real existing-profile Anki acceptance remains user-owned VERIFY, and physical-device effect/haptic tuning remains pending.
+
+
+### Native Image Occlusion and simple Anki review (implemented)
+
+Anki compatibility is summary-first: Auto selects a friendly Basic, reversed, language, rich-reference, cloze, native Image Occlusion or custom family, shows confidence and representative native previews, and keeps the full Mapping Studio behind Advanced mapping. Native Anki 23.10+ Image Occlusion supports normalized rectangle, ellipse and polygon groups, both standard modes, Header/Back Extra/Comments preservation, shared Study/Collection presentation, local authoring/editing and portable v10 round-trip. Unsupported add-on variants remain retained review items. TSV cannot reproduce native masks and warns; production APKG writing remains deferred.

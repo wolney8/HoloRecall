@@ -5,6 +5,7 @@ import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
 import { LocalStudyStore } from './data/study-store';
 import {ImportedCardContentComponent} from './imported-card-content';
+import { visibleOcclusionShapes } from '../domain/image-occlusion';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -30,7 +31,8 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
           <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
           <div class="illustration-layer" [class.no-illustration]="hideStudyArt || (!hasIllustrationReference && card.kind !== 'visual')" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
-              <img [src]="illustration" [style.object-fit]="design?.artwork?.fit || 'contain'" [style.object-position]="(design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%'" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
+              <img [src]="illustration" [style.object-fit]="card.imageOcclusion ? 'contain' : (design?.artwork?.fit || 'contain')" [style.object-position]="card.imageOcclusion ? '50% 50%' : ((design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%')" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
+              @if(card.imageOcclusion){<svg class="image-occlusion-overlay" [attr.viewBox]="occlusionViewBox" preserveAspectRatio="xMidYMid meet" aria-hidden="true">@for(shape of occlusionMasks;track shape.id){@switch(shape.type){@case('rect'){<rect [attr.x]="shape.x*occlusionWidth" [attr.y]="shape.y*occlusionHeight" [attr.width]="shape.width*occlusionWidth" [attr.height]="shape.height*occlusionHeight" rx="8"/>}@case('ellipse'){<ellipse [attr.cx]="shape.cx*occlusionWidth" [attr.cy]="shape.cy*occlusionHeight" [attr.rx]="shape.rx*occlusionWidth" [attr.ry]="shape.ry*occlusionHeight"/>}@case('polygon'){<polygon [attr.points]="polygonPoints(shape.points)"/>}}}</svg><span class="visually-hidden">{{occlusionAccessibleState}}</span>}
             } @else if (illustrationMissing) {
               <span class="missing-image"><span aria-hidden="true">▧</span> Illustration unavailable</span>
             }
@@ -160,6 +162,12 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const expectsBinaryImage = !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl)) || this.card?.art?.kind === 'imported-media');
     return expectsBinaryImage && (!this.illustration || this.failedImage());
   }
+  get occlusionWidth():number{return this.card?.imageOcclusion?.imageWidth??1000;}
+  get occlusionHeight():number{return this.card?.imageOcclusion?.imageHeight??1000;}
+  get occlusionViewBox():string{return`0 0 ${this.occlusionWidth} ${this.occlusionHeight}`;}
+  get occlusionMasks(){return this.card?.imageOcclusion?visibleOcclusionShapes(this.card.imageOcclusion,this.displayedRevealed()):[];}
+  polygonPoints(points:Array<{x:number;y:number}>):string{return points.map(point=>`${point.x*this.occlusionWidth},${point.y*this.occlusionHeight}`).join(' ');}
+  get occlusionAccessibleState():string{const value=this.card?.imageOcclusion;if(!value)return'';return this.displayedRevealed()?`Image Occlusion answer. Target region revealed.${value.targetDescription?' '+value.targetDescription:''}`:`Image Occlusion question. Target region hidden.${value.imageDescription?' '+value.imageDescription:''}${value.header?' '+value.header:''}`;}
   get missingDesignAsset(): boolean { return this.failedBackground() || this.failedFrame() || !!(this.design?.background && !this.backgroundUrl) || !!((this.design?.frames?.[this.shownRarity] || this.design?.frame) && !this.frameUrl); }
   get audioRefs(): string[] { return this.displayedRevealed() ? this.card?.backAudio ?? [] : this.card?.frontAudio ?? []; }
 

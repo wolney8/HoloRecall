@@ -57,12 +57,37 @@ export interface CardContent {
   details?: CardDetail[];
   /** Subject-aware presentation metadata; source content remains intact. */
   presentation?: CardPresentation;
+  /** Native, declarative image-occlusion learning content. Geometry is normalised to the source image. */
+  imageOcclusion?: ImageOcclusionContent;
   archived?: boolean;
   createdAt?: string;
   /** Stable relationship shared by reversed/template/cloze siblings. */
   siblingGroupId?: string;
   /** Inert source identity and last-import baseline. Never contains scheduling state. */
   ankiSource?: AnkiCardSource;
+}
+
+export type ImageOcclusionMode = 'hide-all-guess-one' | 'hide-one-guess-one';
+interface ImageOcclusionShapeBase { id:string;groupId:string;angle?:number;targetDescription?:string }
+export type ImageOcclusionShape =
+  | (ImageOcclusionShapeBase & {type:'rect';x:number;y:number;width:number;height:number})
+  | (ImageOcclusionShapeBase & {type:'ellipse';cx:number;cy:number;rx:number;ry:number})
+  | (ImageOcclusionShapeBase & {type:'polygon';points:Array<{x:number;y:number}>});
+export interface ImageOcclusionContent {
+  version:1;
+  source:'anki-native'|'holorecall-native';
+  mode:ImageOcclusionMode;
+  activeGroupId:string;
+  shapes:ImageOcclusionShape[];
+  header?:string;
+  backExtra?:string;
+  comments?:string;
+  imageDescription?:string;
+  targetDescription?:string;
+  sourceNoteId?:string;
+  sourceMaskOrdinal?:number;
+  imageWidth?:number;
+  imageHeight?:number;
 }
 
 export type SafeContentBlock =
@@ -136,10 +161,10 @@ export interface AnkiSourceSnapshot {
   noteTypes: AnkiSourceNoteType[];
   notes: AnkiSourceNote[];
   cards: AnkiSourceCard[];
-  media: Array<{ name: string; assetId: string }>;
+  media: Array<{ name: string; assetId: string; width?:number; height?:number }>;
   contentHash: string;
 }
-export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'secondary' | 'interpretation' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details' | 'presentation';
+export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'secondary' | 'interpretation' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details' | 'presentation' | 'imageOcclusion';
 export interface AnkiDeckSource {
   kind: 'anki';
   sourceDeckId?: string;
