@@ -78,3 +78,6 @@
 .compact .prestige-crest{inset-block-start:8px;min-width:28px;padding:2px 5px;font-size:7px}
 :host-context(.effects-off) .memory-card[data-prestige] .prestige-crest{box-shadow:none}:host-context(.effects-off) .memory-card[data-prestige-band=radiant] .edge-light,:host-context(.effects-off) .memory-card[data-prestige-band=capstone] .edge-light{display:none}
 @media(prefers-reduced-motion:reduce){.memory-card[data-prestige] .prestige-crest{transition:none}.memory-card[data-prestige-band=radiant] .edge-light,.memory-card[data-prestige-band=capstone] .edge-light{animation:none}}
+.memory-card[data-art-policy=text-first] .card-copy.prompt{flex:1 1 auto;max-height:none;padding:clamp(18px,7%,34px) clamp(12px,5%,24px)}
+.memory-card[data-art-policy=text-first] .card-copy.prompt h3{font-size:clamp(24px,4.6vw,38px);line-height:1.16;text-wrap:balance}
+.recall-cue,.recall-guidance{margin:.22rem 0 0;line-height:1.35;white-space:pre-line}.recall-cue{font-size:clamp(.92rem,2vw,1.08rem);font-weight:600;color:var(--card-ink)}.recall-guidance{font-size:clamp(.72rem,1.5vw,.86rem);color:var(--card-muted)}

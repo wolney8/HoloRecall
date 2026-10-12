@@ -1,10 +1,10 @@
-# HoloRecall deck-content format, version 6
+# HoloRecall deck-content format, version 9
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 6 adds deck-cover media and versioned inert Anki conversion provenance. Version 5 introduced Anki source identities/import baselines; version 4 introduced deck parents and sibling groups. Versions 1–5 remain readable; missing hierarchy or provenance is treated conservatively and never guessed. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 9 adds portable subject-presentation metadata plus inherited Study artwork policy. Presentation can identify a general/language profile, recall task/cue/guidance, a non-destructive artwork role, and an Auto/Image first/Text first override; it never owns the answer or learner state. Version 8 added subject-neutral secondary/interpretation fields and the reusable Design Suite schema. Version 7 added portable declarative card art, native choice labels, an optional answer label and labelled supporting-detail blocks. State schema 8 retains normalized Anki source snapshots for template-first package-free repair; referenced snapshots are included as `anki-source.json` in portable ZIPs and in full backups. Versions 1–8 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
-Download the compatible [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. HoloRecall writes version 6 and continues to read these version 5 examples.
+Download the [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Import & export. The `anki_source` columns contain validated inert JSON written by HoloRecall; ordinary authored decks leave them blank.
 
 ## Workbook contract
 
@@ -18,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 6
+format_version | 9
 content_only | true
 ```
 
@@ -27,7 +27,7 @@ Exactly these two data rows are required, in either order. No other metadata ent
 ### Decks
 
 ```text
-deck_id | title | description | design_set_id | suspended | parent_deck_id | anki_source | cover_media
+deck_id | title | description | design_set_id | suspended | parent_deck_id | anki_source | cover_media | study_art_policy
 ```
 
 | Field | Meaning and validation |
@@ -38,13 +38,14 @@ deck_id | title | description | design_set_id | suspended | parent_deck_id | ank
 | `design_set_id` | Optional ID from Designs or an existing local design; blank uses the application default. |
 | `suspended` | Literal `true` or `false`; blank defaults to `false`. |
 | `parent_deck_id` | Optional ID of another row in Decks or an existing local deck. Self-reference, missing parents and cycles are rejected. Blank creates a top-level journey. |
-| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable source identity and conversion provenance; it is never executed. |
+| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable source identity and imported deck baseline; it is never executed. |
 | `cover_media` | Optional `asset:` reference for the deck cover. The asset must be included or already exist locally. |
+| `study_art_policy` | Optional `auto`, `image-first` or `text-first`. Blank inherits the Design Set/global default. |
 
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details | secondary | interpretation | presentation
 ```
 
 | Field | Meaning and validation |
@@ -54,8 +55,8 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `card_type` | Required `text` or `visual`. |
 | `front_text` | Required for text cards. For visual cards this can hold author guidance, but the study front remains image-only. |
 | `back_text` | Required nonblank answer. |
-| `pronunciation` | Optional approximation, separate from the answer; label approximations as such in content or notes. |
-| `meaning` | Optional natural English meaning. |
+| `pronunciation` | Optional language-friendly legacy field, separate from the answer. New subject-neutral authoring may use `secondary`. |
+| `meaning` | Optional language-friendly legacy field. New subject-neutral authoring may use `interpretation`. |
 | `notes` | Optional grammar, examples or literal explanation; multiline supported. |
 | `tags` | JSON array of up to 30 nonblank strings, each at most 100 characters; e.g. `["Verbs","Essere"]`. Blank means `[]`. Tag order and existing duplicate values are preserved. |
 | `rarity` | `common`, `uncommon`, `rare`, `holo-rare`, `ultra-rare`, `secret-rare`, or `relic`; blank means `common`. This is authored rarity, never earned status or scheduling difficulty. |
@@ -64,19 +65,26 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `back_media` | Optional media reference; blank reuses the front image. |
 | `image_description` | Required for visual cards; maximum 1,000 characters. Describe visible shapes/actions without spelling out the Italian answer. |
 | `suspended` | `true` or `false`; blank means `false`. |
-| `finish` | Optional card-level override: `matte`, `metallic`, `holographic`, `prismatic`, `etched`, `starfield`, `crystal`, `gilded`, or `aurora`. |
+| `finish` | Optional card-level override: `matte`, `gloss`, `metallic`, `holographic`, `reverse-holo`, `prismatic`, `etched`, `textured-foil`, `starfield`, `shattered-glass`, `crystal`, `gilded`, `neon-ink`, `obsidian`, or `aurora`. |
 | `front_audio` | JSON array of up to eight `asset:` references. These controls are available before reveal. Blank means `[]`. |
 | `back_audio` | JSON array of up to eight `asset:` references. These controls remain hidden until the answer is revealed. Blank means `[]`. |
 | `sibling_group_id` | Optional stable ID shared by cards generated from the same note, such as reversed or cloze siblings. It carries content relationships only, never review history. |
-| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable note/template identity, source fingerprint, versioned conversion contract and per-field accepted baselines. It is never rendered or executed. |
+| `anki_source` | Optional validated inert JSON written by HoloRecall. It may include stable note/template/snapshot identity, source fingerprint, template-derived content provenance, versioned conversion contract and per-field accepted baselines. It is never rendered or executed. The referenced normalized snapshot is a full-backup concern. |
+| `art` | Optional validated declarative JSON. Supported kinds are `imported-media`, `source-visual-panel`, and `generated-text-art`; no HTML, CSS, script, event handler, URL fetch, or device path is accepted. |
+| `choices` | JSON array of visible inert choice labels. Selecting one never submits a Study rating. |
+| `answer_label` | Optional short source category/label displayed separately from the primary answer. |
+| `details` | JSON array of `{label, content}` supporting blocks. Labels and values remain separate; the default card list does not concatenate this content. |
+| `secondary` | Optional subject-neutral line beneath the primary answer, such as a pronunciation, formula name or date. |
+| `interpretation` | Optional concise subject-neutral interpretation, such as a meaning, explanation or context. |
+| `presentation` | Optional validated inert JSON containing `profile`, recall task/cue/guidance, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
 
 ### Designs
 
 ```text
-design_set_id | name | background | frame | common_frame | uncommon_frame | rare_frame | holo_rare_frame | ultra_rare_frame | secret_rare_frame | relic_frame | background_fit | background_position_x | background_position_y | frame_fit | credit | source | license | base_finish | rarity_finishes | layout | texture
+design_set_id | name | background | frame | common_frame | uncommon_frame | rare_frame | holo_rare_frame | ultra_rare_frame | secret_rare_frame | relic_frame | background_fit | background_position_x | background_position_y | frame_fit | credit | source | license | base_finish | rarity_finishes | layout | texture | design_schema
 ```
 
-`design_set_id` and nonblank `name` (maximum 160 characters) are required. `background`, `frame`, `texture` and tier-specific frame columns are optional media references. An absent tier frame falls back to `frame`, then the application frame. `background_fit` is `cover` (default) or `contain`; `frame_fit` is `contain` (default) or `cover`. Position coordinates are numbers 0–100, default 50. `base_finish` uses a finish ID above; `rarity_finishes` is a JSON object from rarity ID to finish ID; `layout` is `clean`, `ornate` or `showcase`. Attribution fields are optional plain text. Designs remain declarative: HTML, JavaScript, CSS, active SVG and custom animation code are unsupported.
+`design_set_id` and nonblank `name` (maximum 160 characters) are required. `background`, `frame`, `texture` and tier-specific frame columns are optional media references. An absent tier frame falls back to `frame`, then the application frame. `background_fit` is `cover` (default) or `contain`; `frame_fit` is `contain` (default) or `cover`. Position coordinates are numbers 0–100, default 50. `base_finish` uses a finish ID above; `rarity_finishes` is a JSON object from rarity ID to finish ID; `layout` is `clean`, `ornate` or `showcase`. The optional `design_schema` cell is inert JSON containing only `composition`, `layoutPolicy`, `palette`, `artwork`, `rarityVariants` and `studyArtPolicy`. Composition is one of the nine curated Design Suite IDs; palettes use validated six-digit hex colours; artwork stores focal/crop/mask/safe-zone and restrained surface-treatment settings; rarity variants may override frame, finish, texture, accent, composition and effect intensity without changing the card rarity. Attribution fields are optional plain text. Designs remain declarative: HTML, JavaScript, CSS, active SVG and custom animation code are unsupported.
 
 ### Assets
 
@@ -105,14 +113,17 @@ XLSX alone carries references only. Its `asset:` references must already exist i
 ```text
 deck.xlsx
 designs.json
+anki-source.json  (only when referenced imported-source snapshots are present)
 media/<asset filename>.png  (or .jpg/.jpeg/.webp/.mp3/.wav)
 ```
 
-`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. Do not add executable fields. All declared media must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Media is encoded once and reused by ID. An asset ID collision with different bytes is an error: use a new ID for replacement media.
+`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`, optional `composition`, optional `layoutPolicy`, optional `palette`, optional `artwork`, and optional `rarityVariants`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. Do not add executable fields. All declared media must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Media is encoded once and reused by ID. An asset ID collision with different bytes is an error: use a new ID for replacement media.
 
 ## Preview and atomic updates
 
 Import first reads and validates the entire file, then shows new, updated and unchanged duplicate cards, deck/design changes, bundled asset count and blocking errors. Matching IDs update content; identical content is a no-op. Content revisions increase only for a changed existing card. Omitted cards/decks are never deleted. Updates preserve saved scheduling state, review history, current session and rewards. New cards receive no imported learning state and no unlocks. Applying is one IndexedDB transaction checked against the exact local version observed during preview. If local data changes, inspect the file again; no partial import is saved.
+
+Content packages intentionally do not carry learner-specific reward, mastery or Prestige events. Full HoloRecall backups preserve the immutable reward ledger, including Prestige contribution/promotion evidence and reversals. Sharing a deck therefore cannot grant earned presentation state, while a full learner restore retains it.
 
 Changing an existing card's meaning substantially while retaining its ID preserves its old review history by design. Prefer a new card ID when it becomes a different learning task.
 

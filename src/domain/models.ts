@@ -3,6 +3,20 @@ import type { Card as FsrsCard, FSRSParameters, Grade } from 'ts-fsrs';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'holo-rare' | 'ultra-rare' | 'secret-rare' | 'relic';
 export type FinishPreset = 'matte' | 'gloss' | 'metallic' | 'holographic' | 'reverse-holo' | 'prismatic' | 'etched' | 'textured-foil' | 'starfield' | 'shattered-glass' | 'crystal' | 'gilded' | 'neon-ink' | 'obsidian' | 'aurora';
 export type ThemePreference = 'light' | 'dark' | 'system';
+export type SubjectPresentationProfile = 'general' | 'language';
+export type ArtworkRole = 'instructional' | 'supportive' | 'decorative' | 'hidden';
+export type StudyArtPolicy = 'auto' | 'image-first' | 'text-first';
+
+/** Presentation-only learning hierarchy. It never owns the answer or scheduler state. */
+export interface CardPresentation {
+  profile?: SubjectPresentationProfile;
+  recallTask?: string;
+  recallCue?: string;
+  recallGuidance?: string[];
+  artRole?: ArtworkRole;
+  /** Omitted means inherit the deck/Design Set preference. */
+  studyArtPolicy?: StudyArtPolicy;
+}
 
 export interface CardContent {
   id: string;
@@ -36,6 +50,8 @@ export interface CardContent {
   answerLabel?: string;
   /** Structured supporting content kept out of the primary answer. */
   details?: CardDetail[];
+  /** Subject-aware presentation metadata; source content remains intact. */
+  presentation?: CardPresentation;
   archived?: boolean;
   createdAt?: string;
   /** Stable relationship shared by reversed/template/cloze siblings. */
@@ -50,7 +66,7 @@ export type CardArtSource =
   | { kind: 'generated-text-art'; title: string; subtitle?: string; seed: string }
   | { kind: 'imported-media' };
 
-export interface Deck { id: string; name: string; description: string; suspended: boolean; coverImage?: string; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; ankiSource?: AnkiDeckSource }
+export interface Deck { id: string; name: string; description: string; suspended: boolean; coverImage?: string; designSetId?: string; parentId?: string; archived?: boolean; studyPresetId?: string; studyOverrides?: DeckStudyOverrides; studyArtPolicy?: StudyArtPolicy; ankiSource?: AnkiDeckSource }
 export interface AnkiCardSource {
   kind: 'anki';
   noteGuid: string;
@@ -105,7 +121,7 @@ export interface AnkiSourceSnapshot {
   media: Array<{ name: string; assetId: string }>;
   contentHash: string;
 }
-export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'secondary' | 'interpretation' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details';
+export type AnkiDerivedField = 'deckId' | 'kind' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'secondary' | 'interpretation' | 'notes' | 'tags' | 'image' | 'backImage' | 'imageDescription' | 'frontAudio' | 'backAudio' | 'siblingGroupId' | 'art' | 'choices' | 'answerLabel' | 'details' | 'presentation';
 export interface AnkiDeckSource {
   kind: 'anki';
   sourceDeckId?: string;
@@ -298,6 +314,7 @@ export interface DesignSet {
   palette?: DesignPalette;
   artwork?: ArtworkComposition;
   rarityVariants?: Partial<Record<Rarity, RarityDesignVariant>>;
+  studyArtPolicy?: StudyArtPolicy;
   backgroundFit: 'cover' | 'contain';
   backgroundPositionX: number;
   backgroundPositionY: number;

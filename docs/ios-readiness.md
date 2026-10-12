@@ -2,9 +2,11 @@
 
 This retains the project's iOS-readiness history and is the canonical evidence matrix for Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac is not planned. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS Simulator, Android WebView, an emulator, a physical device or a native Mac run was tested.
 
+- Language recall gate (12 October 2026): retained real-profile fields now resolve through a shared subject presentation layer with text-first/image-first/Auto policy and non-destructive artwork roles. The final production assets sync successfully and the iPhone 17 Pro / iOS 26.5 packaged three-card Study/navigation XCUITest passes **1/1 in 39.101 s**. The actual Lesson 1 language presentation is Chromium/WebKit evidence; physical-device touch, VoiceOver, Dynamic Type and visual-material acceptance remain pending.
+
 ## Current toolchain constraints
 
-- Latest shared-runtime regression: after the structured Anki Repair integration, `npm run native:sync:ios` packaged the 819.96 kB production build and the iPhone 17 Pro / iOS 26.5 XCUITest Study/navigation smoke passed 1/1. This verifies the changed shared build and Study surfaces in WKWebView; the exact `.apkg` Repair workflow itself remains browser evidence, not Simulator document-import evidence.
+- Latest shared-runtime regression: after the language recall presentation integration, `npm run native:sync:ios` packaged the 849.63 kB production build and the iPhone 17 Pro / iOS 26.5 XCUITest Study/navigation smoke passed 1/1 in 39.101 s. This verifies the changed shared build and Study surfaces in WKWebView; the actual retained Lesson 1 presentation remains browser evidence, not Simulator document-import evidence.
 
 - Web application: Angular 21.2.24, Angular Material/CDK 21.2.14, TypeScript 5.9.3, Node 24.3.0 and npm 11.4.2.
 - Browser gate: Playwright 1.63.0 with repository-local Chromium and WebKit 26.6 build 2359 on macOS arm64.

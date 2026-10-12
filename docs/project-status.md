@@ -1,5 +1,14 @@
 # Current restart point
 
+## 12 October 2026 — HR-LANGUAGE-RECALL-01 complete
+
+- **Outcome:** HR-LANGUAGE-RECALL-01A–H are `DONE`. A subject-neutral presentation contract now has an optional language profile, recall task/cue/guidance, a non-destructive artwork role, and inherited Auto/Image first/Text first Study-art policy. It changes presentation only: answers, source identity/media, card IDs, reviews, FSRS, due dates, rarity and Prestige remain intact.
+- **Real profile trace:** the current profile was copied read-only for inspection and contains 312 cards, two retained Anki snapshots, 86 review events and 19 assets. Ciao/Buongiorno retain source illustrations and use retained English meanings instead of `Recall from the illustration`; the name and woman cards use retained Focus values; the incomplete phrase shows retained `Io ___ Marco.`; and the verb card uses retained `Question = I come` with source Context/Prompt/Hint. No target-language answer appears on recall.
+- **Presentation:** Auto chooses image-first for explicitly instructional language art and text-first for language cards whose art is only supportive/decorative. Text-first reuses Typographic Showcase, rarity materials, finishes and Prestige rather than becoming a plain panel. Language answers show answer, pronunciation and short meaning on-card; long details stay in Answer Support. Deck/Design Set policy inherits to cards, with a stable card override.
+- **Portability/update safety:** format v9 carries presentation metadata and remains backward-readable through v8. Explicit local presentation overrides participate in Anki provenance/merge protection; retained-source defaults can improve without deleting media or mutating learning state.
+- **Evidence:** unit/domain **208/208**; production **849.63 kB raw / 202.75 kB transfer**; dedicated language acceptance passes Chromium, desktop WebKit and compact WebKit at 200% text. The complete browser matrix reached **209/211**; its two existing animation-sampling failures passed unchanged **12/12** over three Chromium/WebKit repeats. The synced packaged iPhone 17 Pro / iOS 26.5 smoke passes **1/1 in 39.101 s**. Evidence is under ignored `.runtime/language-trace-20261012/` and `.runtime/evidence/hr-language-recall-20261012/`.
+- **Remaining boundary:** the XCUITest validates the packaged shared Study/navigation path, while the actual imported Lesson 1 trace and language-specific visuals are browser evidence. Physical-device touch, VoiceOver, Dynamic Type, colour/material and performance acceptance remain pending. Collection Desk was not started.
+
 ## 11 October 2026 — Mastery to Prestige I–X foundation complete
 
 - **Outcome:** HR-PRESTIGE-01–12 are `DONE`. Prestige is a capped, event-derived cosmetic progression after authored-rarity mastery. It remains independent from rarity, Design Sets, content and FSRS; Scheduled Anki/Mastery reviews can contribute, while Free Revision cannot.

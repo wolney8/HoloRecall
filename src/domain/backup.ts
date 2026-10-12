@@ -30,6 +30,7 @@ export function validateDeck(value: unknown): asserts value is Deck {
   if (deck['designSetId'] !== undefined && !id(deck['designSetId'])) fail('invalid deck design reference.');
   if (deck['parentId'] !== undefined && !id(deck['parentId']) || deck['archived'] !== undefined && typeof deck['archived'] !== 'boolean') fail('invalid deck organisation.');
   if(deck['studyPresetId']!==undefined&&!id(deck['studyPresetId']))fail('invalid deck study preset.');
+  if(deck['studyArtPolicy']!==undefined&&!['auto','image-first','text-first'].includes(String(deck['studyArtPolicy'])))fail('invalid deck study-art policy.');
   try{validateDeckOverrides(deck['studyOverrides'] as Deck['studyOverrides']);}catch(error){fail(error instanceof Error?error.message:'invalid deck study override.');}
   if (!id(deck['id']) || !text(deck['name'], 160) || !deck['name'].trim() || !text(deck['description'], 2000) || typeof deck['suspended'] !== 'boolean') fail('invalid deck.');
   if (deck['ankiSource'] !== undefined) {
@@ -54,6 +55,7 @@ export function validateCard(value: unknown): asserts value is CardContent {
   if(card['choices']!==undefined&&(!Array.isArray(card['choices'])||card['choices'].length>24||!card['choices'].every(value=>text(value,500))))fail('invalid card choices.');
   if(card['answerLabel']!==undefined&&!text(card['answerLabel'],500))fail('invalid card answer label.');
   if(card['details']!==undefined){if(!Array.isArray(card['details'])||card['details'].length>24)fail('invalid card details.');for(const item of card['details']){const detail=object(item);if(!text(detail['label'],120)||!text(detail['content'],100000))fail('invalid card detail.');}}
+  if(card['presentation']!==undefined){const presentation=object(card['presentation']);if(presentation['profile']!==undefined&&!['general','language'].includes(String(presentation['profile'])))fail('invalid card presentation profile.');if(presentation['artRole']!==undefined&&!['instructional','supportive','decorative','hidden'].includes(String(presentation['artRole'])))fail('invalid card artwork role.');if(presentation['studyArtPolicy']!==undefined&&!['auto','image-first','text-first'].includes(String(presentation['studyArtPolicy'])))fail('invalid card study-art policy.');for(const field of ['recallTask','recallCue'])if(presentation[field]!==undefined&&!text(presentation[field],20000))fail('invalid card recall presentation.');if(presentation['recallGuidance']!==undefined&&(!Array.isArray(presentation['recallGuidance'])||presentation['recallGuidance'].length>8||!presentation['recallGuidance'].every(value=>text(value,20000))))fail('invalid card recall guidance.');}
   if(card['art']!==undefined){const art=object(card['art']),kind=String(art['kind']);if(!['source-visual-panel','generated-text-art','imported-media'].includes(kind))fail('invalid card art.');if(kind!=='imported-media'&&!text(art['title'],500))fail('invalid card art title.');for(const field of ['badge','subtitle','lesson','topic','sourceKind','seed'])if(art[field]!==undefined&&!text(art[field],1000))fail('invalid card art metadata.');}
   if (card['archived'] !== undefined && typeof card['archived'] !== 'boolean') fail('invalid card archive state.');
   if (card['createdAt'] !== undefined && !instant(card['createdAt'])) fail('invalid card creation time.');
@@ -226,6 +228,7 @@ export function validateDesign(value: unknown): asserts value is DesignSet {
   if (design['layout'] !== undefined && !['clean', 'ornate', 'showcase'].includes(String(design['layout']))) fail('invalid design layout.');
   if (design['composition'] !== undefined && !CARD_COMPOSITIONS.includes(design['composition'] as never)) fail('invalid design composition.');
   if (design['layoutPolicy'] !== undefined && !['fixed', 'suggest'].includes(String(design['layoutPolicy']))) fail('invalid design layout policy.');
+  if (design['studyArtPolicy'] !== undefined && !['auto','image-first','text-first'].includes(String(design['studyArtPolicy']))) fail('invalid design study-art policy.');
   const colour = (value: unknown): boolean => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
   if (design['palette'] !== undefined) {
     const palette = object(design['palette']);

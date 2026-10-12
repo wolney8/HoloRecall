@@ -208,3 +208,13 @@ Anki Mode and Mastery Mode create scheduled reviews and may contribute. Free Rev
 The authored-rarity unlock is the mastery ceiling. Version `prestige-days-v1` uses P1–P10 cycle thresholds of 3/3/4/4/5/5/6/6/7/8 qualifying days and stops at X. The renderer applies a derived Prestige enhancement after Design Set → rarity variant → finish. Full backup retains all evidence. Content-only deck exchange deliberately excludes learner reward/Prestige history, matching its existing no-learning-state contract.
 
 The Collection-facing teaser projection exposes only locked/unlocked/Prestige state, card-back versus collectible-face treatment, silhouette state, stable in-deck numbering and an authored-rarity hint. It deliberately contains no prompt or answer, so a future Collection Desk can render locked cards without leaking learning content.
+
+## Decision 015: subject presentation profiles over source-faithful content
+
+**Status: implemented for the language profile and generic fallback.**
+
+Card content and learner state remain unchanged. `CardPresentation` is a presentation-only layer with a generic subject profile, recall task/cue/guidance, artwork role and optional Study-art preference. The resolver can use a retained normalized Anki snapshot to recover cues that older native projections did not place in `front`; it never writes scheduler state and it filters the target answer from recall guidance. New imports persist the derived presentation with importer provenance. Existing schema-8 cards resolve it dynamically, so current user data benefits without a destructive migration.
+
+Artwork policy resolves card override → nearest deck/ancestor preference → Design Set → Auto. Auto maps instructional art to image-first and other language art to text-first. Hidden and text-first modes suppress only Study rendering; media identity and portable source snapshots remain intact. Explicit editor changes are marked local through the existing Anki field-provenance merge and are preserved as field-specific conflicts on later updates.
+
+Portable content format 9 carries deck/Design Set policy and card presentation JSON. Formats 1–8 remain readable. Full backup needs no state-schema migration because the added fields are optional and validated.

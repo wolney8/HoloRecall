@@ -174,6 +174,15 @@ describe('Anki content-only import', () => {
     const root=analysis.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(analysis,state,true,root,'repair'),repaired=preview.bundle.cards[0]!;
     expect(preview.update.conflicts).toEqual([]);expect(repaired.answer).toBe('My own Italian answer');expect(repaired.pronunciation).toBe('mee KYAH-moh');expect(repaired.ankiSource?.conversion?.fieldOrigins?.answer).toBe('local');
   });
+  it('preserves an explicit local language presentation override during an Anki update',async()=>{
+    const analysis=await analyseAnkiPackage(await languageMetadataPackage(),'introductions.apkg'),state=createInitialState(analysis.decks,analysis.cards),original=state.cards[0]!,edited=structuredClone(original);
+    edited.presentation={...edited.presentation,profile:'language',artRole:'hidden',studyArtPolicy:'text-first'};
+    state.cards[0]=markAnkiLocalEdits(original,edited);
+    const root=analysis.decks.find(deck=>!deck.parentId)!.id,preview=previewAnkiImport(analysis,state,true,root,'repair'),plan=preview.transaction.cards.find(item=>item.cardId===edited.id)!;
+    expect(preview.update.conflictFields[edited.id]).toBeUndefined();
+    expect(plan.proposed.presentation).not.toEqual(edited.presentation);
+    expect(plan.selected.presentation).toEqual(edited.presentation);
+  });
 
   it('previews source updates, local conflicts, legacy reconversion and recoverable removals', async () => {
     const original=await analyseAnkiPackage(await structuredItalianPackage(),'original.apkg');

@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
 import type { CardContent, DesignSet, FinishPreset, Rarity } from '../domain/models';
+import type { ResolvedCardPresentation } from '../domain/card-presentation';
 import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
 import { LocalStudyStore } from './data/study-store';
@@ -19,7 +20,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
@@ -27,7 +28,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
           <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="card-gleam"></i><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
           @if(prestigeLevel){<span class="prestige-crest" [attr.aria-label]="'Prestige '+prestigeRoman">P {{prestigeRoman}}</span>}
           <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
-          <div class="illustration-layer" [class.no-illustration]="!hasIllustrationReference && card.kind !== 'visual'" [class.image-missing]="illustrationMissing">
+          <div class="illustration-layer" [class.no-illustration]="hideStudyArt || (!hasIllustrationReference && card.kind !== 'visual')" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
               <img [src]="illustration" [style.object-fit]="design?.artwork?.fit || 'contain'" [style.object-position]="(design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%'" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
             } @else if (illustrationMissing) {
@@ -41,8 +42,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
               <h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>
               @if (card.secondary || card.pronunciation) { <p class="secondary">{{ card.secondary || card.pronunciation }}</p> }
               @if ((card.interpretation || card.meaning) && !compact) { <p class="interpretation">{{ card.interpretation || card.meaning }}</p> }
-            } @else if (card.kind === 'text') { <h3>{{ card.front }}</h3> }
-            @else { <span class="visual-prompt">Reveal for the answer</span> }
+            } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@for(item of resolvedPresentation.guidance;track item){<p class="recall-guidance">{{item}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
           </div>
           @if (missingDesignAsset) { <span class="fallback-note protected"><span>Design asset missing · default frame shown</span></span> }
           <footer class="protected"><span>{{ demo ? 'SAMPLE · NOT EARNED' : (displayedRevealed() ? 'Answer side' : 'Front side') }}</span>@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="tier-marks" aria-hidden="true">{{ raritySymbol }}</span></footer>
@@ -88,6 +88,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() frameUrl?: string;
   @Input() textureUrl?: string;
   @Input() themePreview?: 'light' | 'dark';
+  @Input() presentation?: ResolvedCardPresentation;
   @Input() audioAutoplay=false;
   @Input() stopAudioOnAction=true;
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
@@ -127,6 +128,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get raritySymbol(): string { return RARITIES.find(item => item.id === this.shownRarity)?.symbol ?? '○'; }
   get prestigeRoman():string{return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][Math.max(0,Math.min(10,this.prestigeLevel))]??'';}
   get prestigeBand():string{return this.prestigeLevel>=10?'capstone':this.prestigeLevel>=8?'radiant':this.prestigeLevel>=5?'midpoint':this.prestigeLevel>=3?'foil':this.prestigeLevel>=1?'edge':'none';}
+  get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',primary:this.card?.front??'',guidance:[],artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
+  get hideStudyArt():boolean{return this.resolvedPresentation.artRole==='hidden'||!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first';}
   get presentationCard():CardContent{if(this.card?.art||this.card?.image||this.card?.backImage)return this.card;return{...this.card,art:{kind:'generated-text-art',title:this.generatedArtTitle,subtitle:this.generatedArtSubtitle,seed:this.artSeed}};}
   get hasNativeArt():boolean{return !this.card?.image&&!this.card?.backImage||this.card?.art?.kind==='source-visual-panel'||this.card?.art?.kind==='generated-text-art';}
   private get generatedArtTitle():string{const source=(this.card?.front||this.card?.answer||'Recall').trim();const formula=source.match(/[\dA-Za-z]+\s*[=+×÷−]\s*[\dA-Za-z+×÷− ]+/)?.[0];return(formula||source.split(/\s+/).slice(0,3).join(' ')).slice(0,34);}
@@ -138,7 +141,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get rarityAccent():string{return this.design?.rarityVariants?.[this.shownRarity]?.accent??this.design?.palette?.accent??'';}
   get artTreatment():string{return this.design?.artwork?.treatment??'embedded';}
   get artTint():string{return this.design?.artwork?.tint??this.design?.palette?.primary??'';}
-  get resolvedComposition():string{return this.design?.rarityVariants?.[this.shownRarity]?.composition??(this.design?.layoutPolicy==='suggest'?this.suggestedComposition:this.design?.composition)??this.suggestedComposition;}
+  get resolvedComposition():string{if(!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first')return'typographic-showcase';return this.design?.rarityVariants?.[this.shownRarity]?.composition??(this.design?.layoutPolicy==='suggest'?this.suggestedComposition:this.design?.composition)??this.suggestedComposition;}
   private get suggestedComposition():string{if(this.card?.image||this.card?.backImage)return'photo-focus';if(this.card?.kind==='visual'||this.card?.art)return'illustration-window';if(/[=+×÷−]|\b(?:formula|syntax|method)\b/i.test(`${this.card?.front} ${this.card?.answer}`))return'diagram-technical';if((this.card?.answer?.length??0)>110)return'split-art-content';return'typographic-showcase';}
   get artVignette():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.vignette??0))/100}`;}
   get artEdgeFade():string{return`${Math.max(0,Math.min(100,this.design?.artwork?.edgeFade??0))/100}`;}

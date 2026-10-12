@@ -14,6 +14,7 @@ import type { AdministrativeAction } from '../../domain/administrative';
 import type { BulkCardPatch } from '../../domain/card-organisation';
 import { resolveCardDesign, type ResolvedDesign } from '../../domain/design-system';
 import type { JsonAuthoringPreview } from '../../domain/json-authoring';
+import { resolveCardPresentation, type ResolvedCardPresentation } from '../../domain/card-presentation';
 
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
@@ -239,6 +240,13 @@ export class LocalStudyStore {
   }
   designFor(card: CardContent): DesignSet | undefined {
     return this.resolvedDesignFor(card).design;
+  }
+  presentationFor(card:CardContent):ResolvedCardPresentation {
+    const data=this.data();if(!data)throw new Error('Local study data is not ready.');
+    let deck=data.decks.find(item=>item.id===card.deckId),cursor=deck;
+    while(cursor?.parentId&&!cursor.studyArtPolicy){const parent=data.decks.find(item=>item.id===cursor!.parentId);if(!parent)break;cursor=parent;}
+    if(cursor?.studyArtPolicy)deck={...deck!,studyArtPolicy:cursor.studyArtPolicy};
+    return resolveCardPresentation(card,data.ankiSources,deck,this.designFor(card));
   }
   async saveAsset(asset: LocalAsset): Promise<LocalAsset> {
     const described=await describeAsset(asset);validateAsset(described);let retained=described;
