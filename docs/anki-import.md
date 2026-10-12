@@ -113,6 +113,12 @@ Imported cards retain block-level provenance sufficient to trace source field/bl
 
 The importer has bounded archive, database, note/card, cell, media count, byte, MIME, signature, and image-dimension checks. Parsing, template rendering, and media analysis stay in the lazy Worker; no main-thread parser fallback exists.
 
+## Structured Answer Support contract
+
+Safe source structure remains declarative after import. Headings, paragraphs, lists, tables, code/preformatted content and term/description or key/value pairs have distinct block types; table-cell line breaks stay associated with their row and column. The Study renderer may recover those blocks from a retained normalized source snapshot when an older native projection stored only a flattened `CardDetail.content`. Recovery matches the accepted source-derived text, executes no source behavior and does not mutate the card, accepted baseline or learner state. If no source structure can be matched safely, the content remains one inert readable paragraph rather than being guessed into language-specific columns.
+
+Answer Support is outside the collectible card and belongs to the whole revealed Study stage. Small useful sections render directly; longer reference sections may use progressive disclosure. Wide tables scroll within their own region and cannot widen the page.
+
 ## Verification and remaining acceptance
 
 Fixtures cover Basic, reversed, optional reversed, cloze, image-first, audio, arbitrary/custom field names, metadata fields, nested conditionals, `FrontSide`, `text:` filters, HTML block boundaries, multiple generated cards, hierarchy, source update, and schema evolution. The regression schema includes `Language = it` and distinct `Italian` answers; templates, never field position or metadata, produce the answer. Snapshot repair proves the same source can replace two legacy corrupted answers across list, editor, search, Collection, Study, and export-facing native data without changing learning state.

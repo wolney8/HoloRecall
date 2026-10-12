@@ -95,7 +95,7 @@ test('HR-UX-09 rapid and failed review attempts do not duplicate feedback or rev
   } finally { await stale.close(); }
 });
 
-test('HR-UX-10 and 11 intro, scroll progress, zero glow, Skip and Replay are real and persistence-neutral', async ({ page }, testInfo) => {
+test('HR-UX-10 and 11 intro, scroll progress, zero glow and Skip are real and persistence-neutral', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 900, height: 520 });
   await openApp(page);
   await setNewLimit(page, 1);
@@ -138,9 +138,7 @@ test('HR-UX-10 and 11 intro, scroll progress, zero glow, Skip and Replay are rea
   await page.waitForTimeout(900);
   expect(await zeroTrack.evaluate(node => node.getAnimations().length)).toBe(0);
   await page.evaluate(() => scrollTo(0, 0));
-  await page.getByRole('button', { name: 'Replay' }).click();
-  await expect(page.getByRole('button', { name: 'Skip animation' })).toBeVisible();
-  await expect(progress).toHaveClass(/motion-waiting/);
+  await expect(page.getByRole('button', { name: 'Replay' })).toHaveCount(0);
   expect((await snapshot(page)).events).toEqual(persisted.events);
   expect((await snapshot(page)).rewardEvents).toEqual(persisted.rewardEvents);
   await page.reload();

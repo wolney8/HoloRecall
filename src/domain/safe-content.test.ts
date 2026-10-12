@@ -19,3 +19,9 @@ describe('safe imported support content',()=>{
     expect(safeContentBlocks('<table><tr><th>Italian</th></tr><tr><td><div>io sono</div><div>EE-oh SOH-noh</div></td></tr></table>')).toEqual([{type:'table',headers:['Italian'],rows:[['io sono\nEE-oh SOH-noh']]}]);
   });
 });
+
+describe('semantic relationship blocks',()=>{
+  it('preserves source term/role tiles as one inert relationship group',()=>{
+    expect(safeContentBlocks('<div class="tiles"><div class="word-tile"><span>lui</span><small>subject pronoun</small></div><div class="word-tile"><span>è</span><small>verb</small></div></div>')).toContainEqual({type:'pairs',rows:[{term:'lui',description:'subject pronoun'},{term:'è',description:'verb'}]});
+  });
+});

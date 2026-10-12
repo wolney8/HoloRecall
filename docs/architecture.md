@@ -222,3 +222,11 @@ Card content and learner state remain unchanged. `CardPresentation` is a present
 Artwork policy resolves card override → nearest deck/ancestor preference → Design Set → Auto. Auto maps instructional art to image-first and other language art to text-first. Hidden and text-first modes suppress only Study rendering; media identity and portable source snapshots remain intact. Explicit editor changes are marked local through the existing Anki field-provenance merge and are preserved as field-specific conflicts on later updates.
 
 Portable content format 9 carries deck/Design Set policy and card presentation JSON. Formats 1–8 remain readable. Full backup needs no state-schema migration because the added fields are optional and validated.
+
+## Decision 016: stable revealed Study stage and presentation-only inspection
+
+**Status: implemented.**
+
+The authoritative revealed state remains in the Study session. A separate ephemeral Recall Peek signal controls only the shared card face for 2.5 seconds; it never re-enters the reveal command or changes rating availability. Manual return, rating, card/session transition, navigation and lifecycle loss cancel its owned timer. Results and Collection reuse the same renderer flip contract, but their face state is local presentation state and cannot call the scheduler or reward writer.
+
+Answer Support spans the complete wide Study stage beneath card and rating controls. Root scrollbar-gutter reservation prevents horizontal viewport movement when long support makes the page scrollable, while local table overflow prevents rich references from widening the document. Safe block parsing remains a domain concern; the lazy Answer Support component may resolve a legacy flat detail against the retained Anki snapshot and render pairs/tables without changing persistence.

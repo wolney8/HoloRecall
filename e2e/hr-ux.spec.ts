@@ -93,8 +93,7 @@ test('HR-UX-05 and 06 completed results persist and focused Study stays quiet', 
   expect(completed.session?.endedAt).toBeTruthy();
   expect(completed.events[0].kind === 'review' && completed.events[0].recallMs! > 0).toBe(true);
   const eventCount = completed.events.length, rewardCount = completed.rewardEvents.length;
-  await page.getByRole('button', { name: 'Replay', exact: true }).click();
-  await page.getByRole('button', { name: 'Skip animation', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Replay', exact: true })).toHaveCount(0);
   expect((await snapshot(page)).events).toHaveLength(eventCount);
   expect((await snapshot(page)).rewardEvents).toHaveLength(rewardCount);
   await page.reload();

@@ -23,7 +23,7 @@ test('HR-PRESTIGE Collection distinguishes P1, P5 and P10 and Results reuses the
   const prestigeCards=page.locator('.owned-section hr-card .memory-card[data-prestige]');await expect(prestigeCards).toHaveCount(3);expect(await prestigeCards.evaluateAll(nodes=>nodes.map(node=>[node.getAttribute('data-prestige'),node.getAttribute('data-prestige-band')]))).toEqual(expect.arrayContaining([['1','edge'],['5','midpoint'],['10','capstone']]));
   await expect(page.getByRole('heading',{name:'Recently prestiged'})).toBeVisible();await testInfo.attach('prestige-collection.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   await page.goto('/?prestige=results#results');await expect(page.getByRole('heading',{name:'Nice work'})).toBeVisible();await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded();await expect(page.getByRole('progressbar',{name:/Prestige progress: 8 of 8/})).toBeVisible();await expect(page.locator('.unlock-reveal')).toContainText('Prestige X');
-  const before=(await snapshot(page)).rewardEvents;await page.getByRole('button',{name:'Replay'}).click();await page.getByRole('button',{name:'Skip animation'}).click();expect((await snapshot(page)).rewardEvents).toEqual(before);
+  const before=(await snapshot(page)).rewardEvents;await expect(page.getByRole('button',{name:'Replay'})).toHaveCount(0);expect((await snapshot(page)).rewardEvents).toEqual(before);
 });
 
 test('HR-PRESTIGE remains identifiable with reduced motion and effects off @ios-compact @ios-large @ios-landscape',async({page})=>{

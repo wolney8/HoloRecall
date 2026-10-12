@@ -68,6 +68,7 @@ export interface CardContent {
 export type SafeContentBlock =
   | { type: 'heading'; text: string; level: 2 | 3 | 4 }
   | { type: 'paragraph'; text: string }
+  | { type: 'pairs'; rows: Array<{ term: string; description: string }> }
   | { type: 'list'; ordered: boolean; items: string[] }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'code'; text: string };

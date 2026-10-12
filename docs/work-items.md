@@ -8,6 +8,25 @@ Updated: 12 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed corrective milestone — HR-STUDY-RESULTS-POLISH-01
+
+Authorised 12 October 2026 after manual Study and Results review exposed six interaction and presentation defects. Collection Desk remains out of scope.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-STUDY-RESULTS-01 | Remove cosmetic-animation Replay | DONE | Remove only the Results control and code that replay cosmetic presentation; retain legitimate navigation and inspection. |
+| HR-STUDY-RESULTS-02 | Stable Study viewport | DONE | Recall, Answer and temporary Recall Peek retain the same horizontal page geometry for short and long support. |
+| HR-STUDY-RESULTS-03 | Answer Support proximity | DONE | Full-width support remains below both Study tracks with a smaller token-defined gap. |
+| HR-STUDY-RESULTS-04 | Structured Answer Support | DONE | Recognised headings, pairs, tables, lists and code retain native semantic relationships and local overflow. |
+| HR-STUDY-RESULTS-05 | Support-section hierarchy | DONE | Useful reference material is scannable without a flat dump or needless nested panels. |
+| HR-STUDY-RESULTS-06 | Temporary Recall Peek | DONE | A revealed Study card can show Recall temporarily, returns to Answer after about 2.5 seconds, and ratings remain valid. |
+| HR-STUDY-RESULTS-07 | Reveal-only auto-return | DONE | No timer runs before answer reveal; manual return and session/card changes cancel stale work. |
+| HR-STUDY-RESULTS-08 | Results collectible inspection | DONE | Existing cosmetic/unlock/Prestige cards use the shared accessible click/tap/keyboard inspection contract. |
+| HR-STUDY-RESULTS-09 | Semantically correct Results cards | DONE | Results reuse the real card faces and Design Set/rarity/Prestige treatment without learner-state mutation. |
+| HR-STUDY-RESULTS-10 | Exact manual cases and regression gate | DONE | Six reported cases pass across Chromium/WebKit/compact layouts, unit/domain and production budget checks; available Simulator evidence stays distinct. |
+
+Evidence: unit/domain **215/215**; focused Study/Results acceptance **7/7** in Chromium; the complete browser run passed **225/226**, with its one existing WebKit reduced-motion animation-object sampling assertion passing unchanged **1/1** in immediate isolation. All new cases passed in Chromium, desktop WebKit, compact WebKit and landscape WebKit. Production is **849.91 kB raw / 203.09 kB transfer**, 0.09 kB below the unchanged 850 kB ceiling. Structured pair/table data survives portable exchange. The packaged iPhone 17 Pro / iOS 26.5 smoke passes **1/1 in 42.361 s**; physical-device evidence remains separate.
+
 ## Completed corrective milestone — HR-PRESENTATION-POLISH-01
 
 Authorised and completed 12 October 2026 after manual browser acceptance exposed four presentation defects not covered by the preceding automated checks. Collection Desk remains out of scope. Will's observations are retained as the failure evidence and the exact rendered surfaces now have regression coverage.

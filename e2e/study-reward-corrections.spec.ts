@@ -74,7 +74,7 @@ test('HR-UX-14 last-card feedback completes before Results and reduced motion se
   expect(after.events[0].kind === 'review' ? after.events[0].activeMs : -2).toBe(activeMs);
 });
 
-test('HR-UX-15 real unlock waits for completed progress and Skip/Replay stay presentation-only', async ({ page }) => {
+test('HR-UX-15 real unlock waits for completed progress and Results stay presentation-only', async ({ page }) => {
   await openApp(page);
   await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByLabel('New cards per day').fill('1');
@@ -96,9 +96,20 @@ test('HR-UX-15 real unlock waits for completed progress and Skip/Replay stay pre
   const fill = page.locator('.result-bar i').first();
   expect(Math.abs((await fill.boundingBox())!.width - (await bar.boundingBox())!.width)).toBeLessThan(2);
   await expect(page.locator('.unlock-feature')).toContainText('Unlocked');
-  await page.getByRole('button', { name: 'Replay', exact: true }).click();
-  await page.getByRole('button', { name: 'Skip animation', exact: true }).click();
-  await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'settled');
+  await expect(page.getByRole('button', { name: 'Replay', exact: true })).toHaveCount(0);
+  const resultCard=page.locator('.unlock-feature hr-card .card-motion');
+  await expect(resultCard).toHaveAttribute('aria-label','Show card answer');
+  await resultCard.click();
+  await expect(resultCard).toHaveAttribute('aria-label','Show card front');
+  await resultCard.click();
+  await expect(resultCard).toHaveAttribute('aria-label','Show card answer');
+  await resultCard.focus();await resultCard.press('Enter');
+  await expect(resultCard).toHaveAttribute('aria-label','Show card front');
+  await page.getByRole('button',{name:'Keep cards'}).click();
+  const settledCard=page.locator('.unlock-cards.static hr-card .card-motion');
+  await expect(settledCard).toHaveAttribute('aria-label','Show card answer');
+  await settledCard.click();await expect(settledCard).toHaveAttribute('aria-label','Show card front');
+  await settledCard.press('Space');await expect(settledCard).toHaveAttribute('aria-label','Show card answer');
   expect((await snapshot(page)).events).toHaveLength(eventCount);
   expect((await snapshot(page)).rewardEvents).toHaveLength(rewardCount);
 });
