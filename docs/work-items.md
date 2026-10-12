@@ -1019,6 +1019,30 @@ Acceptance uses actual retained/imported Lesson 1 source evidence for Ciao, a na
 
 Unit/domain passes **208/208**. The complete browser matrix passes **209/211** on its first final run; the two failures were the existing finite-animation sampling checks, and their unchanged Chromium/WebKit cases then passed **12/12** over three repeats. Dedicated language recall acceptance passes in Chromium, desktop WebKit and compact WebKit at 200% text. Production is **849.63 kB raw / 202.75 kB transfer**, below the unchanged 850 kB ceiling. The synced iPhone 17 Pro / iOS 26.5 packaged Study/navigation smoke passes **1/1 in 39.101 s**. Ignored evidence is under `.runtime/evidence/hr-language-recall-20261012/` and `.runtime/language-trace-20261012/`. Physical-device touch, VoiceOver, Dynamic Type and material/contrast acceptance remain pending.
 
+## HR-ANKI-SEMANTIC-FIDELITY-01 + HR-COLLECTION-DETAIL-01 — completed bounded corrective milestone
+
+Source: Will's 12 October 2026 front/back semantic-fidelity and Collection inspection request. The scope preserves concise collectible faces while accounting for every meaningful safe Anki template block and correcting Collection inspection layout/flip behavior. Collection Desk remains outside scope.
+
+| ID | Title | Product area | Priority | Status |
+| --- | --- | --- | --- | --- |
+| HR-ANKI-FIDELITY-01A | Trace the real formal `Which “you”?` card end to end | Anki evidence | P0 | DONE |
+| HR-ANKI-FIDELITY-01B | Add subject-neutral situation/prompt/task/hint/choice/art front semantics | Anki/content | P0 | DONE |
+| HR-ANKI-FIDELITY-01C | Enforce complete front-template block coverage | Anki/content integrity | P0 | DONE |
+| HR-ANKI-FIDELITY-01D | Keep collectible Answer faces to answer essentials | Study/design | P0 | DONE |
+| HR-ANKI-FIDELITY-01E | Preserve supporting back content outside the card | Study/content | P0 | DONE |
+| HR-ANKI-FIDELITY-01F | Handle FrontSide, answer boundaries and internal dividers structurally | Anki template engine | P0 | DONE |
+| HR-ANKI-FIDELITY-01G | Enforce complete back-template block coverage | Anki/content integrity | P0 | DONE |
+| HR-ANKI-FIDELITY-01H | Preserve safe headings, paragraphs, lists, tables, code and accepted media | Anki/security | P0 | DONE |
+| HR-ANKI-FIDELITY-01I | Retain unclassified safe content under an Original card details fallback | Anki/compatibility | P0 | DONE |
+| HR-ANKI-FIDELITY-01J | Retain source-block classification provenance | Anki/debugging | P0 | DONE |
+| HR-ANKI-FIDELITY-01K | Keep Answer Support outside stable Study geometry | Study/responsive | P0 | DONE |
+| HR-COLLECTION-DETAIL-01A | Correct Collection inspection responsiveness and top alignment | Collection/layout | P0 | DONE |
+| HR-COLLECTION-DETAIL-01B | Add inert shared-renderer Recall/Answer inspection flip | Collection/interaction | P0 | DONE |
+
+**Completion evidence (12 October 2026):** retained snapshot `anki-source-2072609220`, note GUID `26af5d2f4845d6d5`, places `A formal interaction with an unfamiliar adult` in `Prompt`, `Which “you”?` in `Focus`, and `Say it in Italian` in `Task`; qfmt renders all three. The former resolver selected `Task || Prompt`, so Task suppressed the answer-constraining situation. The subject-neutral projection now retains situation, primary prompt, task, hint, choices and instructional art independently. The matching afmt is interpreted through `FrontSide` plus the explicit `hr#answer` boundary; internal dividers remain safe structure rather than universal split points. Answer essentials stay concise while labelled safe headings, paragraphs, lists, tables and code render in lazy Answer Support; residual meaningful material is retained under `Original card details`. Source-block provenance records source → classification → destination.
+
+A read-only real-profile audit covered formal and informal “Which you?”, asking a friend’s name, talking about a woman, phrase completion, a verb form, greeting, image-led and rich-back cards without mutating 86 retained reviews. Collection defaults to Recall, flips by pointer/touch/Enter/Space, resets on selection and writes no review/reward state. Its 1280×720 inspection grid top-aligns and has no horizontal overflow. Unit/domain **214/214** pass. The full browser matrix reached **208/213** before five superseded answer-first Collection assertions were corrected; the corrected cases pass **5/5** across Chromium, desktop WebKit and compact WebKit without weakened coverage. Production is **849.37 kB raw / 202.96 kB transfer**, below the unchanged ceiling. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 39.657 s**. Ignored evidence is under `.runtime/evidence/hr-anki-semantic-fidelity-01/` and `.runtime/language-trace-20261012/`.
+
 ## Preserved completed history
 
 The detailed acceptance evidence for these items remains in `docs/project-status.md`, `docs/architecture.md`, `docs/ios-readiness.md`, and `docs/anki-import.md`. They retain their original stable IDs and are not reopened by this milestone.

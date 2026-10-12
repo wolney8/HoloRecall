@@ -35,13 +35,14 @@ import { DeckJourneyActionsComponent, type DeckManagementAction } from './author
 import { SubdeckRowComponent } from './authoring/subdeck-row';
 import { SubdeckDisclosureComponent } from './authoring/subdeck-disclosure';
 import { JsonAuthoringComponent } from './authoring/json-authoring';
+import { AnswerSupportComponent } from './answer-support';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -256,6 +257,7 @@ export class AppComponent {
   deckName(id:string):string{return this.data()?.decks.find(d=>d.id===id)?.name??'Deck';}
   designFor(card:CardContent):DesignSet|undefined{return this.store.designFor(card);}
   presentationFor(card:CardContent){return this.store.presentationFor(card);}
+  hasAnswerSupport(card:CardContent):boolean{return !!card.details?.length||!!card.notes.replace(/^Imported source\s*·[^\n]*(?:\n\n)?/i,'').trim()||!this.presentationFor(card).answerInterpretation&&!!(card.meaning||card.interpretation);}
   designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
   deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}
   deckDesignSample():CardContent|undefined{return this.deckEditor?this.deckCards(this.deckEditor.id)[0]:undefined;}

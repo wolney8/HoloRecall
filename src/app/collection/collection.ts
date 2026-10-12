@@ -12,11 +12,12 @@ import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '
 import { PageRevealDirective } from '../motion/page-reveal';
 import { LibraryViewService } from '../library/library-view.service';
 import { ReviewHistoryComponent } from '../history/review-history';
+import { AnswerSupportComponent } from '../answer-support';
 
 @Component({
   selector: 'hr-collection',
   standalone: true,
-  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatCheckboxModule, PageRevealDirective,ReviewHistoryComponent],
+  imports: [FormsModule, FlashcardComponent, MatButtonModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, MatCheckboxModule, PageRevealDirective,ReviewHistoryComponent,AnswerSupportComponent],
   template: `
     <div class="page-heading collection-heading" hrReveal><div><p class="eyebrow">{{contextDeck()||contextLabel?'DECK CARDS':'CARD LIBRARY'}}</p><h1>{{contextLabel||contextDeck()?.name||'Collection'}}</h1><p>{{contextDeck()||contextLabel?'Browse this imported set as collectible cards. Search and filters stay scoped until cleared.':'Inspect cards, authored rarity and earned cosmetics.'}}</p></div></div>
     <section class="collection-tools" hrReveal aria-label="Search collection"><mat-form-field appearance="outline"><mat-label>{{contextDeck()?'Search this deck':'Search collection'}}</mat-label><input id="collection-search" matInput [ngModel]="library.query()" (ngModelChange)="library.setQuery($event)" autocomplete="off"></mat-form-field><div class="view-presets" aria-label="Collection views"><button mat-stroked-button (click)="showAll()">All cards</button><button mat-button (click)="library.setFilter('rarities',['rare','holo-rare','ultra-rare','secret-rare','relic'])">Higher rarities</button><button mat-button (click)="library.setFilter('earned','earned')">Earned</button><button mat-button (click)="prestigeFilter.set(prestigeFilter()==='prestige'?'all':'prestige')" [attr.aria-pressed]="prestigeFilter()==='prestige'">Prestige</button><button mat-button (click)="prestigeSort.set(prestigeSort()==='level'?'library':'level')" [attr.aria-pressed]="prestigeSort()==='level'">Sort by Prestige</button><button mat-button (click)="library.setFilter('earned','unearned')">Next unlock</button><button mat-button (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">Filters{{library.activeFilterCount()?' ('+library.activeFilterCount()+')':''}}</button>@if(library.activeFilterCount()||prestigeFilter()!=='all'||prestigeSort()!=='library'){<button mat-button (click)="showAll()">Clear filters</button>}</div>
@@ -25,7 +26,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
       @if(library.status()==='building'){<p class="hint" aria-live="polite">Updating local index…</p>}@else if(library.query()&&!library.page().total){<p class="empty-inline">No results.</p>}</section>
     @if(library.page().total){<div class="actions collection-practice-actions" hrReveal><button mat-flat-button (click)="practiceCards.emit(library.allMatchingIds())">Practice current results</button></div>}
     @if (selected(); as card) {
-      <section class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
+      <section id="collection-inspection" class="showcase" aria-labelledby="inspection-title" hrReveal [hrRevealDelay]="55">
         <div class="inspection-card">
           <hr-card [card]="card" [presentation]="store.presentationFor(card)" [prestigeLevel]="prestige(card).level" [dragTilt]="true" [flippable]="true" (flipped)="revealed.set($event)" [revealed]="revealed()" [rarity]="displayRarity()" [demo]="isPreview()" [effects]="store.data()?.preferences?.effects ?? true" [design]="store.designFor(card)" [imageUrl]="store.mediaUrl(card.image)" [backImageUrl]="store.mediaUrl(card.backImage || card.image)" [backgroundUrl]="store.mediaUrl(store.designFor(card)?.background)" [frameUrl]="store.mediaUrl(store.designFor(card)?.frames?.[displayRarity()] || store.designFor(card)?.frame)" [textureUrl]="store.mediaUrl(store.designFor(card)?.texture)"/>
         </div>
@@ -35,8 +36,7 @@ import { ReviewHistoryComponent } from '../history/review-history';
           <p class="deck-name">{{ deckName(card.deckId) }}</p>
           @if (!sampleTier() && !progress(card).earned && (card.rarity || 'common') !== 'common') { <div class="inspection-actions"><button mat-stroked-button (click)="previewLocked.set(!previewLocked())">{{ previewLocked() ? 'Show current appearance' : 'Preview authored cosmetic' }}</button></div> }
           <dl class="card-details"><div><dt>Authored rarity</dt><dd>{{ tierName(card.rarity || 'common') }}</dd></div><div><dt>Prestige</dt><dd>{{prestige(card).level?'P '+roman(prestige(card).level):'Not yet prestiged'}}</dd></div><div><dt>Current view</dt><dd>{{ tierName(displayRarity()) }}{{ isPreview() ? ' · preview' : '' }}</dd></div><div><dt>Design</dt><dd>{{ store.designFor(card)?.name || 'HoloRecall original' }}</dd></div><div><dt>Design credit</dt><dd>{{ store.designFor(card) ? (store.designFor(card)?.credit || 'No credit provided') : 'Original HoloRecall artwork and frame' }}</dd></div>@if (store.designFor(card)?.source) {<div><dt>Source</dt><dd>{{ store.designFor(card)?.source }}</dd></div>}@if (store.designFor(card)?.license) {<div><dt>Licence</dt><dd>{{ store.designFor(card)?.license }}</dd></div>}</dl>
-          @if(card.details?.length){<details class="source-notes"><summary>Supporting details</summary>@for(detail of card.details;track detail.label){<div><strong>{{detail.label}}</strong><p>{{detail.content}}</p></div>}</details>}
-          @if(card.notes){<details class="source-notes"><summary>Local notes</summary><p>{{card.notes}}</p></details>}
+          @if(card.details?.length||card.meaning||card.interpretation||card.notes){<hr-answer-support [card]="card" [interpretationOnCard]="false"/>}
           @if(!sampleTier()){<div class="inspection-actions"><button mat-flat-button (click)="practiceCards.emit([card.id])">Practice this card</button></div>}
           @if (sampleTier()) {
             <div class="unlock-panel"><h3>Sample presentation</h3><p>This view demonstrates a treatment. It creates no reviews, reward events or earned progress.</p><p>{{ required(sampleTier()!) }} qualifying study {{ required(sampleTier()!) === 1 ? 'day' : 'days' }} currently required to earn this tier.</p></div>
@@ -70,7 +70,7 @@ export class CollectionComponent {
   readonly selectedId = signal('');
   readonly sampleTier = signal<Rarity | null>(null);
   readonly previewLocked = signal(false);
-  readonly revealed = signal(true);
+  readonly revealed = signal(false);
   readonly filtersOpen=signal(false);
   readonly prestigeFilter=signal<'all'|'prestige'>('all');
   readonly prestigeSort=signal<'library'|'level'>('library');
@@ -100,9 +100,9 @@ export class CollectionComponent {
   tierSymbol(rarity: Rarity): string { return this.tiers.find(tier => tier.id === rarity)?.symbol ?? '●'; }
   deckName(id: string): string { return this.store.decks().find(deck => deck.id === id)?.name ?? 'Deck unavailable'; }
   inspectionTitle(card:CardContent):string{return card.kind==='visual'&&!card.front.trim()?'Card details':card.front.trim()||'Card details';}
-  inspect(card: CardContent): void { this.selectedId.set(card.id); this.sampleTier.set(null); this.previewLocked.set(false); this.revealed.set(true); this.scrollToInspection(); }
-  inspectSample(rarity: Rarity): void { this.sampleTier.set(rarity); this.revealed.set(true); this.scrollToInspection(); }
+  inspect(card: CardContent): void { this.selectedId.set(card.id); this.sampleTier.set(null); this.previewLocked.set(false); this.revealed.set(false); this.scrollToInspection(); }
+  inspectSample(rarity: Rarity): void { this.sampleTier.set(rarity); this.revealed.set(false); this.scrollToInspection(); }
   showAll():void{this.library.setQuery('');this.library.clear();this.prestigeFilter.set('all');this.prestigeSort.set('library');this.contextCleared.emit();}
   toggle(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key as never,value as never);}
-  private scrollToInspection(): void { document.getElementById('inspection-title')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' }); }
+  private scrollToInspection(): void { document.getElementById('collection-inspection')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }); }
 }

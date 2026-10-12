@@ -92,8 +92,9 @@ test('HR-IOS landscape keeps Collection and Design Studio usable without hover @
   await openApp(page);
   await navigate(page, 'Collection');
   const card = page.locator('.inspection-card .card-motion');
-  await card.tap();
   await expect(card).toHaveAttribute('aria-label', 'Show card answer');
+  await card.tap();
+  await expect(card).toHaveAttribute('aria-label', 'Show card front');
   await expectNoOverflow(page);
   await navigate(page, 'Design Studio');
   await expect(page.getByRole('heading', { name: 'Design Suite' })).toBeVisible();
@@ -112,7 +113,8 @@ test('HR-IOS reduced motion remains static in WebKit while theme choice survives
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await navigate(page, 'Collection');
   const card = page.locator('.inspection-card .card-motion');
-  await card.tap();
   await expect(card).toHaveAttribute('aria-label', 'Show card answer');
+  await card.tap();
+  await expect(card).toHaveAttribute('aria-label', 'Show card front');
   expect(await page.locator('.inspection-card .card-turn').evaluate(node => node.getAnimations().length)).toBe(0);
 });

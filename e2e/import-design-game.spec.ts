@@ -61,6 +61,8 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
 
   await page.getByRole('button', { name: 'Collection' }).click();
   await page.getByRole('button', { name: 'Inspect buonasera' }).click();
+  await expect(page.locator('.inspection-card .card-motion')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('.inspection-card .card-motion').click();
   await expect(page.locator('.inspection-card .card-motion')).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Play answer audio 1' }).click();
   await expect(page.getByRole('button', { name: 'Pause answer audio 1' })).toBeVisible({ timeout: 1_000 });

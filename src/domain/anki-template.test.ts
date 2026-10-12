@@ -17,6 +17,13 @@ describe('safe Anki template rendering',()=>{
     const rendered=renderAnkiTemplate(answerTemplate,{fields:{Italian:'Buonasera!',English:'Good evening'},frontSide:'Question',answerSide:true});
     expect(rendered.markup).toContain('Buonasera!');expect(rendered.markup).not.toContain('Question');
   });
+  it('uses only the explicit Anki answer marker and retains internal dividers',()=>{
+    const template='{{FrontSide}}<hr id="answer"><h2>{{Answer}}</h2><hr><table><tr><th>Form</th><th>Value</th></tr><tr><td>io</td><td>{{Form}}</td></tr></table>';
+    const answer=answerOnlyMarkup(template);
+    expect(answer).toContain('<hr>');
+    expect(answer).toContain('{{Answer}}');
+    expect(answer).not.toContain('FrontSide');
+  });
   it('supports text and cloze filters and simplifies typed answers and TTS',()=>{
     expect(renderAnkiTemplate('{{text:Rich}}',{fields:{Rich:'<b>Hello</b>'},answerSide:false}).markup).toBe('Hello');
     expect(renderAnkiTemplate('{{cloze:Text}}',{fields:{Text:'{{c1::Ciao::greeting}}'},clozeOrdinal:1,answerSide:false}).markup).toBe('[greeting]');

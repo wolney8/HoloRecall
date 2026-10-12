@@ -15,13 +15,13 @@ describe('language card presentation',()=>{
     const source=snapshot('gap',{Prompt:'Talking ABOUT a woman. Complete the phrase.',Question:'Lei si &lt;b&gt;<span>____</span>&lt;/b&gt; Giulia.',Context:'The name belongs to a fictional person.',Italian:'Lei si chiama Giulia.',Meaning:'She is called Giulia.'}),value=card('Talking ABOUT a woman. Complete the phrase.','Lei si chiama Giulia.','gap');
     const result=resolveCardPresentation(value,[source]);
     expect(result.primary).toBe('Lei si ____ Giulia.');
-    expect(result.guidance).toContain('The name belongs to a fictional person.');
+    expect(result.situationContext).toBe('The name belongs to a fictional person.');
     expect(result.primary).not.toContain('chiama');
   });
 
   it('uses question, context and hint from a template-rich verb card',()=>{
     const source=snapshot('verb',{Prompt:'Use venire to say:',Question:'I come',Context:'One person · pronoun + verb',Hint:'Use venire to say: I come.',Italian:'io vengo',Meaning:'I come'}),value=card('Use venire to say:\nI come\nOne person · pronoun + verb','io vengo','verb');
-    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'I come',guidance:['One person · pronoun + verb','Use venire to say:','Use venire to say: I come.']});
+    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'I come',situationContext:'One person · pronoun + verb',taskGuidance:'Use venire to say:',hint:'Use venire to say: I come.'});
   });
 
   it('honours deck and per-card art policy without changing source art',()=>{
@@ -34,12 +34,19 @@ describe('language card presentation',()=>{
 
   it('promotes retained Focus and Task fields on the real asking-a-friend schema',()=>{
     const source=snapshot('name',{Prompt:'Speaking TO a friend or peer',Focus:'You are called…',Task:'Say it in Italian',Italian:'Tu ti chiami…',English:'You are called / named… — informal'}),value=card('Speaking TO a friend or peer','Tu ti chiami…','name');
-    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'You are called…',guidance:['Say it in Italian'],artRole:'supportive',effectiveArtPolicy:'text-first'});
+    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'You are called…',situationContext:'Speaking TO a friend or peer',taskGuidance:'Say it in Italian',artRole:'supportive',effectiveArtPolicy:'text-first'});
+  });
+
+  it('keeps material register context alongside a stronger Focus prompt',()=>{
+    const source=snapshot('formal',{Prompt:'A formal interaction with an unfamiliar adult',Focus:'Which “you”?',Task:'Say it in Italian',Italian:'Lei',Pronunciation:'LAY',English:'You — formal'}),value=card('A formal interaction with an unfamiliar adult','Lei','formal');
+    const result=resolveCardPresentation(value,[source]);
+    expect(result).toMatchObject({primary:'Which “you”?',situationContext:'A formal interaction with an unfamiliar adult',taskGuidance:'Say it in Italian'});
+    expect(JSON.stringify(result)).not.toContain('Lei');
   });
 
   it('promotes the visible incomplete phrase rather than its vague instruction',()=>{
     const source=snapshot('pattern',{Prompt:'Fill the gap, then say the whole phrase',Focus:'Io ___ Marco.',Task:'Complete the pattern',Italian:'sono',English:'I am Marco.'}),value=card('Fill the gap, then say the whole phrase','sono','pattern');
-    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'Io ___ Marco.',guidance:['Complete the pattern'],effectiveArtPolicy:'text-first'});
+    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'Io ___ Marco.',taskGuidance:'Complete the pattern',effectiveArtPolicy:'text-first'});
   });
 
   it('leaves a non-language subject on its generic hierarchy',()=>{

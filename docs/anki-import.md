@@ -87,6 +87,16 @@ The structured projection keeps the principal template answer in `answer`, dedic
 
 Apply commits cards, decks, durable assets, exact enrichment mappings, and the normalized source snapshot in one optimistic transaction. It never writes scheduler/history/reward state.
 
+## Front and back semantic fidelity
+
+The safe template projection applies a coverage contract to both faces. Every meaningful rendered source block is classified or retained; optional semantic enrichment may improve placement, but it cannot make source content disappear.
+
+On Recall, the subject-neutral presentation model separates `situationContext`, `primaryPrompt`, `taskGuidance`, `hint`, choices and instructional artwork. A material situation remains visible when a Question/Focus is also present. For example, the retained Lesson 1 note `26af5d2f4845d6d5` renders Prompt `A formal interaction with an unfamiliar adult`, Focus `Which “you”?`, and Task `Say it in Italian`; all three are represented, while the target `Lei` remains absent until reveal.
+
+On Answer, `FrontSide` is classified as duplicate Recall content rather than repeated. An explicit `<hr id="answer">` establishes the ordinary answer boundary, but unlabelled/internal `<hr>` elements remain structural evidence and are never a universal split algorithm. Primary answer, optional secondary cue and a genuinely concise interpretation remain on the collectible face. Other meaningful content becomes labelled Answer Support outside the card. Safe headings, paragraphs, lists, tables and code/preformatted blocks use an inert declarative model; scripts, handlers, active SVG, remote execution and source CSS remain excluded. Meaningful safe content that cannot be classified without guessing is retained once under collapsed **Original card details**.
+
+Imported cards retain block-level provenance sufficient to trace source field/block → classification → Recall, Answer or support destination. This is internal evidence, not learner-facing Study chrome. Repair and update derive this projection from the retained source snapshot and preserve explicit local presentation overrides plus all learner state.
+
 ## Package and media subset
 
 | Package/content | Status |

@@ -157,11 +157,11 @@ test('all 16 Italian subjects display distinct intended illustrations on both fa
     const image = page.locator('.inspection-card .illustration-layer img');
     await expect(image).toHaveAttribute('src', `/art/${card.id.replace('it-', '')}.svg`);
     await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-    await expect(page.locator('.inspection-card').getByRole('heading', { name: card.answer, exact: true })).toBeVisible();
-    await page.locator('.inspection-card .card-motion').click();
-    await expect(image).toHaveAttribute('src', card.image!);
     if (card.kind === 'visual') await expect(page.locator('.inspection-card').getByText(card.answer, { exact: true })).toHaveCount(0);
     else await expect(page.locator('.inspection-card').getByRole('heading', { name: card.front, exact: true })).toBeVisible();
+    await page.locator('.inspection-card .card-motion').click();
+    await expect(image).toHaveAttribute('src', card.image!);
+    await expect(page.locator('.inspection-card').getByRole('heading', { name: card.answer, exact: true })).toBeVisible();
   }
   expect((await snapshot(page)).events).toEqual([]); expect((await snapshot(page)).rewardEvents).toEqual([]);
 });

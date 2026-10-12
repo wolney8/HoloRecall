@@ -87,6 +87,21 @@ async function reconstructedSourcePackage():Promise<Uint8Array>{
 }
 
 describe('Anki content-only import', () => {
+  it('projects the real formal-you template into complete Recall and concise Answer/Support semantics',()=>{
+    const fields={Italian:'Lei',Pronunciation:'LAY',English:'You — formal',Literal:'Lei addresses you politely.',Usage:'Typical use: strangers and professional situations.',Rule:'<h3>Forms to notice</h3><table><tr><th>Person</th><th>Form</th></tr><tr><td>Lei</td><td>è</td></tr></table>',Sources:'Session 1 handout · p. 2',Prompt:'A formal interaction with an unfamiliar adult',Focus:'Which “you”?',Task:'Say it in Italian'};
+    const snapshot={id:'formal-source',version:2 as const,packageVariant:'legacy-anki2' as const,sourceDecks:[{id:'d',path:'Lesson 1::03 Tu and Lei'}],noteTypes:[{id:'m',name:'Italian Lesson 1 - Visual and Practice v1',cloze:false,fields:Object.keys(fields).map((name,ordinal)=>({id:String(ordinal),name,ordinal})),templates:[{id:'m:0',name:'Card 1',ordinal:0,question:'<div>{{Prompt}}</div><h2>{{Focus}}</h2><small>{{Task}}</small>',answer:'{{FrontSide}}<hr id="answer"><div class="italian">{{Italian}}</div><div>{{Pronunciation}}</div><div>{{English}}</div><div class="label">Literal</div>{{Literal}}<div class="label">Usage</div>{{Usage}}<div class="label">Rule</div>{{Rule}}<div class="meta">{{Sources}}</div>'}],signature:'anki-model-v1-formal'}],notes:[{id:'n',guid:'26af5d2f4845d6d5',noteTypeId:'m',fields,tags:['italian']}],cards:[{id:'c',noteId:'n',templateId:'m:0',templateOrdinal:0,sourceDeckId:'d'}],media:[],contentHash:'formal'};
+    const analysis=analyseAnkiSourceSnapshot(snapshot),card=analysis.cards[0]!,presentation=card.presentation!;
+    expect(card).toMatchObject({answer:'Lei',pronunciation:'LAY',meaning:'You — formal'});
+    expect(presentation).toMatchObject({recallTask:'Which “you”?',situationContext:'A formal interaction with an unfamiliar adult',taskGuidance:'Say it in Italian'});
+    expect(card.details).toEqual(expect.arrayContaining([expect.objectContaining({label:'Rule',blocks:expect.arrayContaining([expect.objectContaining({type:'table',headers:['Person','Form'],rows:[['Lei','è']]})])}),expect.objectContaining({label:'Reference',content:'Session 1 handout · p. 2'})]));
+    expect(card.ankiSource?.contentProvenance?.blocks).toEqual(expect.arrayContaining([
+      expect.objectContaining({source:'Prompt',classification:'situation-context'}),
+      expect.objectContaining({source:'Focus',classification:'primary-prompt'}),
+      expect.objectContaining({source:'Task',classification:'task-guidance'}),
+      expect.objectContaining({source:'Italian',classification:'primary-answer'}),
+      expect.objectContaining({source:'FrontSide',classification:'duplicate-frontside'}),
+    ]));
+  });
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
     expect(plainAnkiText('<span>Hello</span> <strong>world</strong>')).toBe('Hello world');
@@ -96,7 +111,7 @@ describe('Anki content-only import', () => {
   it('keeps mapped Laura-style fields structured and removes FrontSide from the native answer', async () => {
     const first=await analyseAnkiPackage(await structuredItalianPackage(),'laura.apkg');
     expect(first.cards[0]).toMatchObject({front:'Buonasera!',answer:'Good evening',pronunciation:'bwoh-nah-SEH-rah',meaning:'good evening'});
-    expect(first.cards[0]!.notes).toContain('buona = good; sera = evening.\n\nUsed from late afternoon.');
+    expect(first.cards[0]!.details).toEqual(expect.arrayContaining([expect.objectContaining({label:'Original card details',content:'buona = good; sera = evening.'}),expect.objectContaining({label:'Original card details',content:'Used from late afternoon.'})]));
     const schema=first.modelSchemas[0]!;
     const mapping={id:'laura-map',version:1 as const,name:'Laura recap',sourceSignature:schema.signature,modelName:schema.name,fields:{Prompt:'front',Response:'answer',Pronunciation:'pronunciation',NaturalMeaning:'meaning',WordBreakdown:'notes',EverydayUse:'notes'} as const};
     const analysis=await analyseAnkiPackage(await structuredItalianPackage(),'laura.apkg',undefined,undefined,[mapping]);
@@ -105,7 +120,7 @@ describe('Anki content-only import', () => {
     expect(card.answer).toBe('Good evening');
     expect(card.pronunciation).toBe('bwoh-nah-SEH-rah');
     expect(card.meaning).toBe('good evening');
-    expect(card.notes).toContain('buona = good; sera = evening.\n\nUsed from late afternoon.');
+    expect(card.details).toEqual(expect.arrayContaining([expect.objectContaining({content:'buona = good; sera = evening.'}),expect.objectContaining({content:'Used from late afternoon.'})]));
     expect(card.answer).not.toContain('Meaning & notes');
     expect(card.ankiSource).toMatchObject({kind:'anki',noteGuid:'buonasera-guid',templateOrdinal:0,modelSignature:schema.signature});
     expect(card.ankiSource?.importedContentHash).toMatch(/^[a-f0-9]{8}$/);

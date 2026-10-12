@@ -12,6 +12,11 @@ export interface CardPresentation {
   profile?: SubjectPresentationProfile;
   recallTask?: string;
   recallCue?: string;
+  /** Material situation/register that constrains the expected answer. */
+  situationContext?: string;
+  /** Concise instruction for how to perform the retrieval task. */
+  taskGuidance?: string;
+  hint?: string;
   recallGuidance?: string[];
   artRole?: ArtworkRole;
   /** Omitted means inherit the deck/Design Set preference. */
@@ -60,7 +65,13 @@ export interface CardContent {
   ankiSource?: AnkiCardSource;
 }
 
-export interface CardDetail { label: string; content: string }
+export type SafeContentBlock =
+  | { type: 'heading'; text: string; level: 2 | 3 | 4 }
+  | { type: 'paragraph'; text: string }
+  | { type: 'list'; ordered: boolean; items: string[] }
+  | { type: 'table'; headers: string[]; rows: string[][] }
+  | { type: 'code'; text: string };
+export interface CardDetail { label: string; content: string; blocks?: SafeContentBlock[] }
 export type CardArtSource =
   | { kind: 'source-visual-panel'; badge?: string; title: string; subtitle?: string; lesson?: string; topic?: string; sourceKind?: string }
   | { kind: 'generated-text-art'; title: string; subtitle?: string; seed: string }
@@ -102,6 +113,12 @@ export interface AnkiCardSource {
     answer: 'mapping' | 'template' | 'cloze';
     frontFields: string[];
     answerFields: string[];
+    blocks?: Array<{
+      side: 'front' | 'back';
+      source: string;
+      classification: 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-art' | 'primary-answer' | 'secondary-cue' | 'concise-interpretation' | 'support' | 'duplicate-frontside' | 'decorative' | 'metadata' | 'fallback';
+      destination: string;
+    }>;
   };
 }
 export interface AnkiSourceField { id: string; name: string; ordinal: number }

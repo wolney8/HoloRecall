@@ -73,10 +73,10 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `art` | Optional validated declarative JSON. Supported kinds are `imported-media`, `source-visual-panel`, and `generated-text-art`; no HTML, CSS, script, event handler, URL fetch, or device path is accepted. |
 | `choices` | JSON array of visible inert choice labels. Selecting one never submits a Study rating. |
 | `answer_label` | Optional short source category/label displayed separately from the primary answer. |
-| `details` | JSON array of `{label, content}` supporting blocks. Labels and values remain separate; the default card list does not concatenate this content. |
+| `details` | JSON array of `{label, content, blocks?}` supporting sections. Optional inert `blocks` preserve headings, paragraphs, lists, tables and code without executable HTML. Labels and values remain separate; the default card list does not concatenate this content. |
 | `secondary` | Optional subject-neutral line beneath the primary answer, such as a pronunciation, formula name or date. |
 | `interpretation` | Optional concise subject-neutral interpretation, such as a meaning, explanation or context. |
-| `presentation` | Optional validated inert JSON containing `profile`, recall task/cue/guidance, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
+| `presentation` | Optional validated inert JSON containing `profile`, recall task/cue plus independent situation context, task guidance and hint, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
 
 ### Designs
 

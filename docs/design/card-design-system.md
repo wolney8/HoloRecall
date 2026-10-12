@@ -80,17 +80,19 @@ Possible prestige rewards:
 - Longer supporting material should normally move outside the card into progressive disclosure.
 
 ### Answer Support outside the card
+The collectible Answer face remains concise: primary answer first, then an optional subject-neutral secondary cue, concise example or short interpretation. Meaningful extended source material lives outside the physical card in a lazy Answer Support surface.
+
 Potential sections:
-- Explanation
-- Literal construction
-- Rule / pattern
-- Worked example
+- Natural English / interpretation
+- Explanation or literal construction
+- Rule / pattern or forms to notice
+- Method or worked solution
 - Usage / examples
 - Memory aid
 - Reference / source
-- Additional detail
+- Additional or original card detail
 
-The support layer must not move/recentre the card or interfere with rating.
+Structured headings, paragraphs, lists, tables and code remain semantically structured. Unknown but safe meaningful source material is retained under a collapsed `Original card details` fallback rather than discarded. The support layer appears only after reveal and must not move/recentre the card, move desktop rating controls, or break the compact rating dock.
 
 ## Confirmed uploaded-art integration direction
 
