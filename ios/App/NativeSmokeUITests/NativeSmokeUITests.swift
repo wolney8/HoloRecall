@@ -82,16 +82,19 @@ final class NativeSmokeUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
 
         openMore("Import / export")
-        XCTAssertTrue(app.staticTexts["Import & export"].waitForExistence(timeout: 10))
-        tapButton("Export current XLSX")
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 10))
+        tapButton("Export")
+        tapScrollableButton("Export XLSX")
         let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
         XCTAssertTrue(shareSheet.waitForExistence(timeout: 20), "Native share sheet did not appear\n\(app.debugDescription)")
-        XCTAssertTrue(app.cells["Save to Files"].exists)
+        XCTAssertTrue(app.cells["Save to Files"].waitForExistence(timeout: 8))
         attachScreenshot("native-export-share-sheet")
         app.otherElements["dismiss popup"].tap()
-        XCTAssertTrue(app.staticTexts["Import & export"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 8))
 
-        let pickerLabel = app.staticTexts["Workbook or portable archive"]
+        for _ in 0..<4 { app.swipeDown() }
+        tapButton("Import")
+        let pickerLabel = app.descendants(matching: .any).matching(identifier: "Workbook or portable archive").firstMatch
         XCTAssertTrue(pickerLabel.waitForExistence(timeout: 8))
         pickerLabel.tap()
         let cancel = app.buttons["Cancel"]
@@ -111,6 +114,16 @@ final class NativeSmokeUITests: XCTestCase {
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")
+        button.tap()
+    }
+
+    private func tapScrollableButton(_ label: String, timeout: TimeInterval = 8) {
+        let button = app.buttons[label]
+        XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")
+        for _ in 0..<4 where !button.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(button.isHittable, "Button is outside the reachable scroll area: \(label)\n\(app.debugDescription)")
         button.tap()
     }
 

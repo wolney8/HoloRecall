@@ -1,5 +1,11 @@
 # Architecture
 
+## Decision 018: task-oriented Exchange and explicit partial Anki imports
+
+Exchange is a lazy task surface with three independent URL states: Import, Export and Templates. Provider parsers, Mapping Studio and export previews open inside their relevant journey rather than sharing one permanently expanded page. Anki analysis exposes a reconciled generated-card partition—Ready, Needs review and Cannot import—while retaining the detailed compatibility taxonomy behind progressive disclosure.
+
+A partial Anki import is an explicit transaction. Apply requires confirmation whenever the source population exceeds the safe projection, persists only safe native cards, and retains the complete normalized source snapshot, media aliases and issue identities for later review/update/rebuild. A tier-C item no longer globally blocks tier-A/B cards. Missing native Image Occlusion source media is an unsafe source-incomplete card; valid but unsupported mask syntax is a review item. This policy does not change learner, scheduler, mastery, Prestige or presentation domains.
+
 
 ## Decision 017: native Image Occlusion and summary-first Anki compatibility
 

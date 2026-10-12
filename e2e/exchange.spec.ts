@@ -15,7 +15,7 @@ async function snapshot(page: Page): Promise<State> {
   }));
 }
 async function openExchange(page: Page): Promise<void> {
-  await page.goto('/#exchange'); await expect(page.getByRole('heading', { name: 'Import & export', exact: true })).toBeVisible();
+  await page.goto('/#exchange'); await expect(page.getByRole('heading', { name: 'Exchange', exact: true })).toBeVisible();
 }
 
 test('XLSX preview adds accented content atomically and preserves existing cards across reload', async ({ page }) => {
@@ -30,7 +30,7 @@ test('XLSX preview adds accented content atomically and preserves existing cards
   expect((await snapshot(page)).cards).toEqual(before.cards);
   await page.getByRole('button', { name: 'Apply 1 card changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Imported 1 new cards');
-  await page.reload(); await expect(page.getByRole('heading', { name: 'Import & export', exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Exchange', exact: true })).toBeVisible();
   const after = await snapshot(page);
   expect(after.cards).toHaveLength(before.cards.length + 1); expect(after.events).toEqual(before.events); expect(after.states).toEqual(before.states); expect(after.rewardEvents).toEqual(before.rewardEvents);
   expect(after.cards.find(card => card.id === 'exchange-test-card')).toMatchObject({ answer: 'la città', notes: 'Line one\nLine two', rarity: 'ultra-rare' });
@@ -38,14 +38,16 @@ test('XLSX preview adds accented content atomically and preserves existing cards
 
 test('portable ZIP packages all sixteen illustrations and imports decodable durable media', async ({ page }) => {
   await openExchange(page);
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export portable ZIP', exact: true }).click()]);
+  await page.getByRole('tab', { name: 'Export' }).click();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export ZIP', exact: true }).click()]);
   const bytes = await readFile((await download.path())!);
+  await page.getByRole('tab', { name: 'Import' }).click();
   await page.getByLabel('Workbook or portable archive').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/zip', buffer: bytes });
   await expect(page.getByRole('heading', { name: 'Import preview' })).toBeVisible();
   await expect(page.getByText(/16 bundled media files/)).toBeVisible();
   await page.getByRole('button', { name: 'Apply 16 card changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('updated 16 cards');
-  await page.reload(); await expect(page.getByRole('heading', { name: 'Import & export', exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('heading', { name: 'Exchange', exact: true })).toBeVisible();
   const data = await snapshot(page); expect(data.assets).toHaveLength(16); expect(data.cards.every(card => card.image?.startsWith('asset:'))).toBe(true); expect(data.events).toEqual([]); expect(data.rewardEvents).toEqual([]);
   expect(data.assets.every(asset => asset.dataUrl.startsWith('data:image/png;base64,') && asset.width === 900)).toBe(true);
 });

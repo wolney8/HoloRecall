@@ -68,6 +68,14 @@ The default compatibility experience is summary-first. After analysis it names t
 
 High-confidence packages never open Mapping Studio automatically. A small uncertain subset receives a focused **Review N** action. **Advanced mapping** progressively discloses the full source/sample/role editor, scope, reset and provenance tools. Update uses Analyse → conditional Review → Apply with exactly one current state; retained-source repair omits package-selection theatre. Native Image Occlusion appears as **Image Occlusion · Native support** with a representative preview.
 
+## Exchange import states and partial-import rules
+
+Exchange presents Import, Export and Templates as separate reload-safe views. The normal Anki journey is package selection → local analysis → one summary → Import. The summary uses exactly three learner-facing categories: **Ready**, **Needs review** and **Cannot import**; their total equals the source-generated card population. Technical compatibility tiers, model/template counts, issue IDs and Mapping Studio stay collapsed under Advanced details.
+
+All-ready packages import directly. If any generated card must be omitted, Apply remains disabled until the learner explicitly confirms the exact ready count and omitted categories. Review-required and unsafe source cards never import silently. The retained normalized snapshot and compatibility issues preserve their identities and reasons, and completion reports a partial import rather than claiming the full deck succeeded. Existing source management starts with Update from Anki, Rebuild imported content, Review conversion and Detach; Review conversion shows the semantic preview before exposing Advanced mapping.
+
+The `bBarryy anatomy thorax pt 1` acceptance package contains 61 source-generated cards. Fifty-eight are safe, including 26 native Image Occlusion cards. Two Basic cards have no Back answer, and one native Image Occlusion note has valid rectangle-mask syntax but no Image value. A missing source image is therefore **Cannot import**, not an “Advanced Image Occlusion variant.” Unsupported mask syntax remains **Needs review**. This distinction is generic and does not depend on the deck name.
+
 ## Semantic interoperability and Mapping Studio
 
 HoloRecall uses one versioned, subject-neutral semantic role contract for projection review. Recall roles are situation/context, primary prompt, task guidance, hint, choices and instructional artwork. Answer essentials are primary answer, secondary cue, concise example and concise interpretation. Support roles are explanation, rule/pattern, method, worked steps, reference table, usage/examples, memory aid, source/reference, additional detail and the safe original-details fallback. Media, decorative, duplicate-FrontSide, hidden and ignored roles are presentation classifications rather than learning content.

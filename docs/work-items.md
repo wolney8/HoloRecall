@@ -8,6 +8,29 @@ Updated: 12 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed milestone — HR-EXCHANGE-UX-03 + HR-ANKI-IMPORT-REAL-01
+
+Authorised 12 October 2026. This bounded milestone resets Exchange information architecture and makes the real `bBarryy anatomy thorax pt 1` Anki result actionable without beginning Collection Desk or APKG export generation.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-EXCHANGE-03A | Focused Import view | DONE | Default Exchange view separates Anki provider import from supported HoloRecall file imports and hides compatibility internals. |
+| HR-EXCHANGE-03B | Focused Export view | DONE | Separate HoloRecall content export from the nested Anki Basic/Extended text-export journey. |
+| HR-EXCHANGE-03C | Templates view | DONE | Move starter workbooks, examples, prompt and format specification out of Export. |
+| HR-EXCHANGE-03D | Remove normal-user stepper | DONE | Use title, analysis state, concise result and one primary action; retained-source workflows omit irrelevant steps. |
+| HR-EXCHANGE-03E | One actionable Anki summary | DONE | Show deck, detected family, reconciled Ready/Needs review/Cannot import counts and only relevant actions before collapsed details. |
+| HR-EXCHANGE-03F | Reconciled counts and grammar | DONE | User categories sum to the generated-card population and use correct singular/plural wording. |
+| HR-EXCHANGE-03G | Explicit partial import | DONE | Review-required and unsafe cards cannot invisibly block ready cards; omission is explicit, confirmed and reported. |
+| HR-EXCHANGE-03H | Actionable issue presentation | DONE | Translate missing answers and unsupported occlusion into review/exclusion actions; keep taxonomy under Advanced details. |
+| HR-EXCHANGE-03I | Advanced mapping disclosure | DONE | Preserve the complete Mapping Studio behind Advanced details → Advanced mapping. |
+| HR-EXCHANGE-03J | Simplified Manage Anki source | DONE | Default management offers Update, Rebuild, Review conversion and Detach; mapping internals require another explicit action. |
+| HR-EXCHANGE-03K | Responsive accessible Exchange navigation | DONE | Import/Export/Templates states support reload/back, keyboard, touch and 200% text without a horizontal stepper. |
+| HR-ANKI-REAL-01A | Trace real bBarryy occlusion | DONE | Inspect the actual package model, fields, payload, templates, ordinal, media and shape syntax; identify the evidenced classification cause. |
+| HR-ANKI-REAL-01B | Correct native compatibility or fallback | DONE | Extend general native support when valid; otherwise retain source and expose an honest review/fallback without a deck-name special case. |
+| HR-ANKI-REAL-01C | Real-package actionable acceptance | DONE | The real package reports reconciled counts, an understandable primary action and no hidden disabled-import reason. |
+
+Evidence: the exact 2,724,246-byte package at `/Users/will_work/Downloads/bBarryy_anatomy_thorax_pt_1.apkg` has SHA-256 `ac1afdf3dd7e69f3de43fd8907b7a9f999556d4d970b39fe59fe076a151a55f1`, 29 notes, 61 generated cards, 16 JPEG media files and zero review-log entries. Analysis now reconciles **58 Ready + 0 Needs review + 3 Cannot import = 61**. The three exclusions are evidenced source defects: two Basic notes have empty Back fields, and one otherwise-native rectangle Image Occlusion note has an empty Image field. Valid native occlusion projection produces 26 cards. The former `tierC === 0` dead end is replaced by explicit omission consent, retained issue/source reporting and atomic import of the 58 safe cards. Complete unit/domain passes with the exact-package gate enabled. Exchange/real-package browser acceptance passes **3/3 Chromium**, **3/3 desktop WebKit** and **1/1 compact WebKit**; targeted legacy update/repair and Image Occlusion regressions pass. Production is **858.25 kB raw / 205.69 kB estimated transfer**; Exchange (**86.38 kB**) and the Anki Worker (**57.06 kB**) remain lazy under the 900 kB warning / 1 MB error policy. Collection Desk and APKG output were not started.
+
 ## Completed milestone — HR-ANKI-UX-02 + HR-IMAGE-OCCLUSION-01 + HR-BUNDLE-POLICY-01
 
 Authorised 12 October 2026. This bounded milestone simplifies ordinary Anki review, adds native Image Occlusion data/rendering/authoring, and replaces the exhausted warning threshold without relaxing lazy-loading discipline. Collection Desk and production APKG output remain out of scope.
