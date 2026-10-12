@@ -240,7 +240,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     try { await home.finished; } catch { /* A newer face change owns the card. */ }
   }
   activateFlip(event: MouseEvent): void {
-    if (!this.flippable || this.suppressFlipClick || (event.target as HTMLElement).closest('button,a,input,select,textarea,[role="region"]')) return;
+    if (!this.flippable || this.suppressFlipClick || (event.target as HTMLElement).closest('button,a,input,select,textarea')) return;
     // A successful pointer hit is stronger visibility evidence than a delayed
     // IntersectionObserver callback. Arm the owned flip lifecycle immediately.
     this.visible = true;

@@ -1,12 +1,29 @@
 # Canonical work-item tracker
 
-Updated: 11 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 12 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Completed corrective milestone — HR-PRESENTATION-POLISH-01
+
+Authorised and completed 12 October 2026 after manual browser acceptance exposed four presentation defects not covered by the preceding automated checks. Collection Desk remains out of scope. Will's observations are retained as the failure evidence and the exact rendered surfaces now have regression coverage.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-PRESENTATION-01A | Composition-aware text-first alignment | DONE | Typographic Showcase uses one deliberate axis and compatible widths for prompt, context, cue and guidance without changing other composition alignments. |
+| HR-PRESENTATION-01B | Full-width Study Answer Support | DONE | Wide Study renders card and rating in row one with Answer Support spanning both columns; compact Study stacks card, rating, then support. |
+| HR-PRESENTATION-01C | Readable answer-reference presentation | DONE | Native support sections, prose, lists and locally scrolling tables use a clear reading hierarchy without bloating the collectible card. |
+| HR-PRESENTATION-01D | Trace the actual Collection grid surface | DONE | The inert, answer-only `.collectible-item.hr-reveal .collectible-card` surface and its scroll-region click guard were identified; earlier evidence covered only selected detail. |
+| HR-PRESENTATION-01E | Unified collectible inspection flip | DONE | The actual Collection card grid uses the shared renderer: Recall by default, click/tap/Enter/Space toggles, meaningful drag only tilts, and another inspected card resets the grid to Recall. |
+| HR-PRESENTATION-01F | Pure and accessible inspection | DONE | Grid flips retain button name/pressed state and leave reviews, FSRS, due dates, mastery, Prestige, rarity and content unchanged. |
+| HR-PRESENTATION-01G | Collection support/action spacing | DONE | Answer Support and Practice use distinct token-spaced regions; neighbouring mastery and history retain a consistent vertical rhythm. |
+| HR-PRESENTATION-01H | Exact manual-case and responsive acceptance | DONE | The vowel card, wide/compact Study, Collection support/action and real collectible-grid cases pass across requested widths and 200% text. |
+
+Evidence: unit/domain **214/214**; focused corrective matrix **7/7**; complete Chromium/WebKit/mobile-WebKit matrix **220/220**; packaged iPhone 17 Pro / iOS 26.5 smoke **1/1**. Production is **849.50 kB raw / 202.98 kB transfer**, below the unchanged 850 kB ceiling. Ignored artifacts live under `.runtime/evidence/hr-presentation-polish-20261012/`.
 
 ## Completed milestone — Mastery to Prestige 1–10 foundation
 

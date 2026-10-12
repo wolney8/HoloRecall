@@ -290,6 +290,8 @@ One base Design Set derives a coherent family across all authored rarities throu
 
 The curated initial composition family is Full Bleed, Framed Art, Illustration Window, Split Art / Content, Typographic Showcase, Minimal Prestige, Diagram / Technical, Photo Focus, and Symbolic / Generated Art. A Design Set may lock one layout or permit a deterministic suggestion that the learner can override. Media-free art is local, deterministic, portable and derived from stable card/deck/topic/type/rarity/Design Set inputs; it is not generic network AI clip-art.
 
+Typographic Showcase is an intentionally centred composition. Its primary prompt, concise cue, situation/context, guidance and hint share the same content axis and compatible maximum width; symmetric rules may separate context without shifting it. Split Art / Content, Diagram / Technical and image-led compositions retain alignment suited to their own structure.
+
 ### 11.6 Design Suite guardrails
 
 The default Design Suite is content-first and progressively disclosed. Design identity, Artwork, Layout, Rarity variants and Preview form the primary path. Composition/material controls are grouped behind Advanced disclosure. The UI exposes declarative product choices rather than raw CSS.
@@ -314,5 +316,9 @@ Effects Off and Reduced Motion retain the crest, numeral and static material bor
 ## 14. Subject presentation and Study artwork — implemented 12 October 2026
 
 The generic learning card remains subject-neutral. A presentation profile may interpret retained source content for a subject without replacing the authoritative prompt or answer. The first profile is `language`: its recall face prioritises the concrete retrieval task, then a natural-language cue and concise grammatical/situational guidance. Its answer face keeps the target answer dominant, pronunciation secondary and a short meaning/interpretation on-card; long labelled sections stay in Answer Support.
+
+In wide Study, Answer Support belongs to the complete revealed-answer stage: card and rating controls form the first row and support spans beneath both. Compact Study orders card, rating controls, then support. This keeps ratings immediately reachable while giving reference prose, lists and tables a readable width outside the collectible object.
+
+Inspectable Collection cards use the shared card interaction contract. They start on Recall, toggle through click/tap or focused Enter/Space, and treat pointer movement past the shared gesture threshold as tilt rather than a flip. Turning a card is presentation state only and never writes reviews, scheduling, mastery, Prestige, rarity or content. Accessible names expose Recall versus Answer even when redundant visible side labels are omitted.
 
 Artwork has a non-destructive Study role: `instructional`, `supportive`, `decorative` or `hidden`. The source asset and Anki provenance remain stored for every role. Study artwork policy inherits from Design Set to deck to card override and offers Auto, Image first and Text first. Auto uses image-first only for instructional art; supportive/decorative language art uses the Typographic Showcase while retaining the same Design Set, rarity, finish, printed material and Prestige layers. Text-first is a collectible composition, not a plain application panel.

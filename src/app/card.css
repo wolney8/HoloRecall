@@ -82,4 +82,14 @@
 .memory-card[data-art-policy=text-first] .card-copy.prompt h3{font-size:clamp(24px,4.6vw,38px);line-height:1.16;text-wrap:balance}
 .recall-cue,.recall-context,.recall-guidance,.recall-hint{margin:.28rem 0 0;line-height:1.35;white-space:pre-line}.recall-cue{font-size:clamp(.92rem,2vw,1.08rem);font-weight:600;color:var(--card-ink)}.recall-context{padding:.38rem .55rem;border-inline-start:2px solid color-mix(in srgb,var(--frame-color) 68%,transparent);font-size:clamp(.82rem,1.75vw,.98rem);font-weight:520;color:var(--card-ink);text-align:start}.recall-guidance,.recall-hint{font-size:clamp(.72rem,1.5vw,.86rem);color:var(--card-muted)}.recall-hint{font-style:italic}
 
-:host-context(.inspection-card) footer>span:first-child{display:none}
+:host-context(.inspection-card) footer>span:first-child,:host-context(.collectible-card) footer>span:first-child{display:none}
+
+/* A centred Typographic Showcase gives each recall semantic the same axis.
+   Split, technical and image-led compositions retain their own alignment. */
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt{align-items:center;text-align:center}
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>h3,
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-cue,
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-context,
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-guidance,
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-hint{box-sizing:border-box;width:min(100%,18rem);margin-inline:auto;text-align:center}
+.memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-context{border-inline-start:0;border-block-start:1px solid color-mix(in srgb,var(--frame-color) 68%,transparent);padding-inline:.55rem}
