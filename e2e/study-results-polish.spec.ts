@@ -36,7 +36,7 @@ test('HR-STUDY-RESULTS stable viewport, close support and structured legacy sour
   const gap=supportBox!.y-Math.max(card!.y+card!.height,controls!.y+controls!.height);expect(gap).toBeGreaterThanOrEqual(10);expect(gap).toBeLessThanOrEqual(18);
   await support.getByText('Answer Support',{exact:true}).click();
   await expect(support.locator('.support-pairs dt')).toHaveText(['lui','è']);await expect(support.locator('.support-pairs dd')).toHaveText(['subject pronoun','verb']);
-  const table=support.getByRole('table');await expect(table).toBeVisible();await expect(table.getByRole('columnheader')).toHaveText(['Italian + pronunciation','English']);await expect(table.getByRole('cell').first()).toContainText('io sono\nEE-oh SOH-noh');
+  const table=support.getByRole('table');await expect(table).toBeVisible();await expect(table.getByRole('columnheader')).toHaveText(['Italian + pronunciation','English']);const termCell=table.getByRole('cell').first();await expect(termCell.locator('.semantic-primary')).toHaveText('io sono');await expect(termCell.locator('.semantic-secondary')).toHaveText('EE-oh SOH-noh');await expect(termCell.locator('.semantic-secondary')).toHaveCSS('display','block');
   expect(await geometry(page)).toEqual(before);await expectNoOverflow(page);await page.screenshot({path:testInfo.outputPath('structured-support-stable-study.png'),fullPage:true});
 });
 

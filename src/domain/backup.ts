@@ -274,7 +274,7 @@ function validateExtensions(data: Record<string, unknown>): void {
   data['assets'].forEach(validateAsset); data['designs'].forEach(validateDesign);
   if (!Array.isArray(data['ankiMappings'])) fail('missing Anki mapping presets.');
   data['ankiMappings'].forEach(validateAnkiMapping);
-  if(new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>item.id)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length||new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>item.sourceSignature)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length)fail('duplicate Anki mapping presets.');
+  if(new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>item.id)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length||new Set((data['ankiMappings'] as AnkiMappingPreset[]).map(item=>`${item.sourceSignature}:${item.templateId??''}`)).size!==(data['ankiMappings'] as AnkiMappingPreset[]).length)fail('duplicate Anki mapping presets.');
   if(!Array.isArray(data['studyPresets'])||!data['studyPresets'].length||!Array.isArray(data['todayOverrides'])||!Array.isArray(data['administrativeEvents'])||!Array.isArray(data['practiceEvents'])||!Array.isArray(data['focusPresets']))fail('missing study configuration or management history.');
   try{(data['studyPresets'] as StudyPreset[]).forEach(validateStudyPreset);(data['todayOverrides'] as TodayStudyOverride[]).forEach(validateTodayOverride);(data['focusPresets'] as FocusPreset[]).forEach(validateFocusPreset);}catch(error){fail(error instanceof Error?error.message:'invalid study configuration.');}
   if(new Set((data['studyPresets'] as StudyPreset[]).map(item=>item.id)).size!==(data['studyPresets'] as StudyPreset[]).length)fail('duplicate study preset IDs.');
@@ -320,10 +320,10 @@ export function validateReferences(data: State): void {
   const sourceIds=new Set(data.ankiSources.map(source=>source.id));if(data.cards.some(card=>card.ankiSource?.sourceSnapshotId&&!sourceIds.has(card.ankiSource.sourceSnapshotId)))fail('card references a missing Anki source snapshot.');
 }
 export function validateAnkiMapping(value: unknown): asserts value is AnkiMappingPreset {
-  const mapping = object(value), targets = ['ignore','front','answer','pronunciation','meaning','notes','front-media','back-media'];
-  if (!id(mapping['id']) || ![1,2,3].includes(Number(mapping['version'])) || mapping['policyVersion']!==undefined&&!integer(mapping['policyVersion'],0) || mapping['origin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(mapping['origin'])) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
+  const mapping = object(value);
+  if (!id(mapping['id']) || ![1,2,3,4].includes(Number(mapping['version'])) || mapping['policyVersion']!==undefined&&!integer(mapping['policyVersion'],0) || mapping['origin']!==undefined&&!['auto-inferred','user-confirmed','legacy-unclassified'].includes(String(mapping['origin'])) || mapping['scope']!==undefined&&!['template','model','deck'].includes(String(mapping['scope'])) || mapping['templateId']!==undefined&&!text(mapping['templateId'],120) || mapping['templateName']!==undefined&&!text(mapping['templateName'],240) || !text(mapping['name'], 120) || !mapping['name'].trim() || !text(mapping['sourceSignature'], 120) || !mapping['sourceSignature'].startsWith('anki-model-v1-') || !text(mapping['modelName'], 240)) fail('invalid Anki mapping identity.');
   const fields = object(mapping['fields']);
-  if (Object.keys(fields).length > 100 || Object.values(fields).some(target => !targets.includes(String(target)))) fail('invalid Anki field mapping.');
+  if (Object.keys(fields).length > 100 || Object.values(fields).some(target => typeof target!=='string'||target.length>32||!/^[a-z]+(?:-[a-z]+)*$/.test(target))) fail('invalid Anki field mapping.');
 }
 export function validateAnkiSourceSnapshot(value: unknown): asserts value is AnkiSourceSnapshot {
   const snapshot=object(value);

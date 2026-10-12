@@ -390,14 +390,27 @@ export interface LocalAsset {
   byteLength?: number;
 }
 
-export type AnkiFieldTarget = 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';
+/** Subject-neutral semantic destination for one Anki source field/block. Legacy
+ * aliases remain readable so existing backups can be reviewed and upgraded. */
+export type AnkiFieldTarget =
+  | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-artwork'
+  | 'primary-answer' | 'secondary-cue' | 'concise-example' | 'concise-interpretation'
+  | 'explanation' | 'rule-pattern' | 'method' | 'worked-steps' | 'reference-table' | 'usage-examples' | 'memory-aid' | 'source-reference' | 'additional-detail' | 'safe-original-details'
+  | 'media' | 'decorative' | 'duplicate-frontside' | 'hidden' | 'ignored'
+  | 'ignore' | 'front' | 'answer' | 'pronunciation' | 'meaning' | 'notes' | 'front-media' | 'back-media';
+export type AnkiMappingConfidence = 'high' | 'medium' | 'low' | 'confirmed';
 export interface AnkiMappingPreset {
   id: string;
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   name: string;
   sourceSignature: string;
   modelName: string;
+  /** Omitted on legacy/model-wide profiles. New profiles default to one card template. */
+  templateId?: string;
+  templateName?: string;
+  scope?: 'template' | 'model' | 'deck';
   fields: Record<string, AnkiFieldTarget>;
+  evidence?: Record<string,{ confidence: AnkiMappingConfidence; reason: string }>;
   policyVersion?: number;
   origin?: 'auto-inferred' | 'user-confirmed' | 'legacy-unclassified';
 }

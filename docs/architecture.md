@@ -89,6 +89,12 @@ The local prototype has one local learner. It does not establish cloud identity,
 
 ## Local implementation details
 
+### Decision 003a: semantic Anki interoperability boundary
+
+The template-first renderer remains the authority for usable front/back content. A separate versioned semantic-projection layer assigns source fields/blocks to subject-neutral Recall, Answer-essential, Answer-Support and presentation roles. Profiles are keyed by stable note-type plus card-template identity and retain confidence, evidence, authorship and scope. User-confirmed exact-template profiles outrank automatic/model inference. Mapping Studio, previews and export generation stay in the lazy Exchange route; Apply uses the existing source-snapshot transaction and cannot reach review, FSRS, due, mastery, Prestige, rarity or Design Set writers.
+
+The reverse boundary defines Basic and Extended-v1 Anki note contracts. Current delivery is deterministic UTF-8 Anki text with declared columns/templates and stable identity; production APKG packaging is a separate tracked capability. This keeps SQLite/media packaging out of the semantic contract and avoids representing an unvalidated archive writer as interoperability.
+
 ### Decision 004: template-first Anki compatibility
 
 **Status: accepted architecture; mapping-first conversion is legacy.** Anki note fields are arbitrary, so a field-name/position mapping cannot be the authority for card validity. HoloRecall now retains a compact source-native representation of source decks, note types, ordered fields, templates, notes, generated cards and media aliases. A safe non-executing template interpreter derives each question and answer from the source card template; optional semantic enrichment then populates pronunciation, meaning, notes and media metadata. Enrichment uncertainty never replaces or blocks a valid template answer.

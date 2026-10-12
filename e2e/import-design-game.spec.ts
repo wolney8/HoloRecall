@@ -101,7 +101,7 @@ test('HR-IMPORT-01 advanced enrichment reflows at enlarged text on phone profile
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByText('legacy-anki2')).toBeVisible(); await page.getByRole('button',{name:'Advanced field enrichment'}).click();
   await page.evaluate(() => document.documentElement.style.fontSize = '200%');
-  await expect(page.getByRole('button', { name: 'Refresh compatibility preview' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Update semantic preview' })).toBeVisible();
   await expectNoOverflow(page);
 });
 

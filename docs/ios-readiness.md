@@ -1,3 +1,5 @@
+
+- Anki interoperability gate (12 October 2026): Mapping Studio and Basic/Extended-v1 preview stay in the lazy Exchange route; production assets at **849.99 kB** sync into Capacitor. The packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 44.650 s**. This verifies the shared packaged build and existing Study/navigation journey, not native system-picker `.apkg` analysis, physical-device accessibility or tactile quality. Evidence: `.runtime/evidence/hr-anki-interop-20261012/`.
 # Web and native-platform readiness
 
 This retains the project's iOS-readiness history and is the canonical evidence matrix for Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac is not planned. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS Simulator, Android WebView, an emulator, a physical device or a native Mac run was tested.

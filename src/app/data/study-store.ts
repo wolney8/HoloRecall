@@ -16,6 +16,8 @@ import { resolveCardDesign, type ResolvedDesign } from '../../domain/design-syst
 import type { JsonAuthoringPreview } from '../../domain/json-authoring';
 import { resolveCardPresentation, type ResolvedCardPresentation } from '../../domain/card-presentation';
 
+const ankiMappingKey=(mapping:AnkiMappingPreset)=>`${mapping.sourceSignature}:${mapping.templateId??''}`;
+
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
   readonly data = signal<State | null>(null);
@@ -268,10 +270,10 @@ export class LocalStudyStore {
   async saveAnkiMappings(mappings: AnkiMappingPreset[]): Promise<void> {
     mappings.forEach(validateAnkiMapping);
     if (new Set(mappings.map(mapping => mapping.id)).size !== mappings.length) throw new Error('Mapping preset IDs must be unique.');
-    if (new Set(mappings.map(mapping => mapping.sourceSignature)).size !== mappings.length) throw new Error('Keep one reviewed mapping preset for each exact Anki source schema.');
+    if (new Set(mappings.map(ankiMappingKey)).size !== mappings.length) throw new Error('Mapping profiles must be unique.');
     await this.change(data => {
-      const signatures=new Set(mappings.map(mapping=>mapping.sourceSignature));
-      const ankiMappings = data.ankiMappings.filter(mapping=>!signatures.has(mapping.sourceSignature));
+      const signatures=new Set(mappings.map(ankiMappingKey));
+      const ankiMappings = data.ankiMappings.filter(mapping=>!signatures.has(ankiMappingKey(mapping)));
       ankiMappings.push(...mappings.map(mapping=>structuredClone(mapping)));
       return { ...data, version: data.version + 1, ankiMappings };
     });
@@ -303,7 +305,7 @@ export class LocalStudyStore {
         const previous = data.cards.find(item => item.id === card.id);
         return { ...card,suspended:preserveLearnerFields?(previous?.suspended??card.suspended):card.suspended,archived:preserveLearnerFields?(previous?.archived??card.archived):card.archived,rarity:preserveLearnerFields?(previous?.rarity??card.rarity):card.rarity,designSetId:preserveLearnerFields?(previous?.designSetId??card.designSetId):card.designSetId,finish:preserveLearnerFields?(previous?.finish??card.finish):card.finish, tags: canonicalTags(card.tags), createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString(), revision: previous ? previous.revision + (sameCardContent(previous, card) ? 0 : 1) : 1 };
       });
-      const mappingSignatures=new Set(mappingUpdates.map(mapping=>mapping.sourceSignature)),ankiMappings=[...data.ankiMappings.filter(mapping=>!mappingSignatures.has(mapping.sourceSignature)),...mappingUpdates.map(mapping=>structuredClone(mapping))];
+      const mappingSignatures=new Set(mappingUpdates.map(ankiMappingKey)),ankiMappings=[...data.ankiMappings.filter(mapping=>!mappingSignatures.has(ankiMappingKey(mapping))),...mappingUpdates.map(mapping=>structuredClone(mapping))];
       return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)),ankiMappings,ankiSources:merge(data.ankiSources,bundle.ankiSources??[]) }, data);
     });
   }

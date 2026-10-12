@@ -62,6 +62,25 @@ Once a template has produced a safe question and answer, HoloRecall may populate
 
 Advanced field enrichment is collapsed by default. It uses one compact row per source field with sample values and a destination. It appears automatically only when a card genuinely needs compatibility review, or when the learner explicitly opens it to enrich native fields. Historical automatic mappings do not override template-rendered question/answer content. Explicit user mappings can rescue an otherwise unsupported template when they provide a complete safe front and answer, but they still cannot replace a valid template-derived answer.
 
+## Semantic interoperability and Mapping Studio
+
+HoloRecall uses one versioned, subject-neutral semantic role contract for projection review. Recall roles are situation/context, primary prompt, task guidance, hint, choices and instructional artwork. Answer essentials are primary answer, secondary cue, concise example and concise interpretation. Support roles are explanation, rule/pattern, method, worked steps, reference table, usage/examples, memory aid, source/reference, additional detail and the safe original-details fallback. Media, decorative, duplicate-FrontSide, hidden and ignored roles are presentation classifications rather than learning content.
+
+Analysis creates a Mapping Profile for each stable note-type and card-template identity. Each source field retains its destination, confidence and evidence. Confirmed exact-template profiles outrank confirmed model profiles and automatic inference; a later automatic analysis cannot silently replace a learner-confirmed profile. Automatic inference uses template-side references and conservative semantic evidence after template rendering, so optional mapping never decides whether an otherwise valid card has a front or answer.
+
+New imports include an **Import Review** with representative Recall, Answer and Answer Support previews. High-confidence packages remain a short Review → Import flow. **Review semantic mapping** opens the lazy Mapping Studio only on request or when meaningful content needs review. Its compact source/sample/role rows update the same import preview and can be reset to current automatic inference. The default mapping scope is the exact note type + card template and therefore applies to every matching card rather than one card at a time. Existing imported decks expose the same action under Manage Anki source; Apply reprojects the retained snapshot in place through the ordinary atomic transaction, preserving IDs and every learner/cosmetic state.
+
+Standard cloze deletions in generated source cards remain supported within the documented filter subset. Advanced add-on cloze behavior remains a safe simplification or review result. Image Occlusion note types are detected and retained but require a dedicated mask/occlusion projector; they are not claimed as faithfully supported and cannot silently degrade into ordinary cards.
+
+## HoloRecall to Anki export contract
+
+Two versioned profiles are available as a preview and Anki-compatible UTF-8 text export:
+
+- **HoloRecall Basic** emits Front and Back. Selecting it for a rich card shows an explicit loss warning.
+- **HoloRecall Extended v1** emits stable Identity and Deck plus Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, Source and Tags. Blank optional fields are valid. Its predictable templates use conditional sections and an explicit `{{FrontSide}}<hr id="answer">` boundary.
+
+The file includes documented Anki text-import headers for separator, HTML, note type, deck, tags and columns. It is an interoperable intermediate, not an `.apkg`. Production APKG database/media creation remains `HR-ANKI-EXPORT-APKG-01`; HoloRecall will not emit an undocumented SQLite archive merely to claim package support. Imported cards derive export identity from source model/note/template identity. Native cards use their stable HoloRecall card ID, so repeated exports have deterministic identities. Source provenance remains authoritative for later Anki package updates; export does not detach or rewrite it.
+
 ## Compatibility tiers
 
 | Tier | UI label | Meaning |

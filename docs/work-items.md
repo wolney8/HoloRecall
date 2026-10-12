@@ -8,6 +8,36 @@ Updated: 12 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed milestone — HR-ANKI-INTEROP-01 · Mapping Studio and bidirectional semantic contract
+
+Authorised 12 October 2026. This bounded milestone keeps Collection Desk out of scope and preserves all learner, source, cosmetic and presentation state while making semantic projection reviewable at the Anki note-type/card-template boundary.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-INTEROP-01A | Canonical subject-neutral semantic roles | DONE | One role vocabulary covers Recall, Answer essentials, Answer Support and non-learning presentation without language-specific domain assumptions. |
+| HR-ANKI-INTEROP-01B | Import semantic analysis | DONE | Each distinct note type/template retains source-block mapping, confidence, evidence and stable identity. |
+| HR-ANKI-INTEROP-01C | Import Review | DONE | New imports show representative Recall, Answer and Answer Support outcomes; obvious mappings retain a short Review → Import path. |
+| HR-ANKI-INTEROP-01D | Manual Mapping Studio | DONE | A compact source/sample/role editor updates representative previews without exposing raw HTML. |
+| HR-ANKI-INTEROP-01E | Mapping scope | DONE | Default scope is note type + card template, with deliberate matching-template/deck reuse and exceptional per-card overrides only. |
+| HR-ANKI-INTEROP-01F | Reusable Mapping Profiles | DONE | Confirmed profiles survive update/reimport, outrank automatic inference and can be reviewed, edited or reset. |
+| HR-ANKI-INTEROP-01G | Existing-deck semantic repair | DONE | Retained source can be remapped and atomically applied in place without changing learner state or source identity. |
+| HR-ANKI-INTEROP-01H | Lossless semantic coverage | DONE | Meaningful safe source content is assigned, explicitly excluded, or retained as Original card details; front/back fidelity remains permanent. |
+| HR-ANKI-INTEROP-01I | Answer Support term/pronunciation treatment | DONE | Multiline term cells keep a primary term and subordinate secondary line instead of concatenating them. |
+| HR-ANKI-INTEROP-01J | Answer Support visual rhythm | DONE | Major sections, pairs and tables use spacing/hierarchy instead of separator-heavy raw-HTML presentation. |
+| HR-ANKI-INTEROP-01K | Broad note/template-family status | DONE | Basic, reversed, custom, FrontSide, rich safe HTML and media paths are evidenced; Cloze/Image Occlusion gaps are detected and stated accurately. |
+| HR-ANKI-INTEROP-01L | Basic and Extended v1 export contracts | DONE | Versioned subject-neutral fields and predictable qfmt/afmt are defined for simple and rich HoloRecall cards. |
+| HR-ANKI-INTEROP-01M | Export preview | DONE | The learner can compare HoloRecall content with generated Anki front/back and sees Basic-loss warnings. |
+| HR-ANKI-INTEROP-01N | Safe export format feasibility | DONE | Implement only an evidenced Anki-compatible format; production APKG packaging remains explicit follow-on work if absent. |
+| HR-ANKI-INTEROP-01O | Round-trip identity contract | DONE | Imported provenance and native stable export identity prevent accidental unrelated duplicates. |
+| HR-ANKI-EXPORT-APKG-01 | Production APKG generation | DEFERRED | Build and validate an actual Anki package only in a later bounded milestone; do not emit brittle undocumented SQLite archives. |
+
+Evidence: unit/domain **220/220** with one opt-in real-package test skipped by default; the exact 254-card Italian package test passes separately. The complete browser matrix reached **227/231** on its first pass: three phone-profile failures were an obsolete button-name assertion after the deliberate Mapping Studio rename and pass **3/3** with the current name; one existing WebKit animation-object sample passes unchanged **4/4** in focused rerun. New Mapping Studio/preview/export acceptance passes in Chromium, desktop WebKit and compact WebKit. Production is **849.99 kB raw / 203.12 kB transfer**, under the unchanged 850 kB ceiling; Exchange (73.56 kB) and the Anki Worker (52.55 kB) remain lazy. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 44.650 s**.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-CLOZE-ADV-01 | Advanced cloze/add-on compatibility | PLANNED | Standard cloze is supported; advanced add-on filters/behavior require explicit fixtures and must stay simplification/review until evidenced. |
+| HR-ANKI-IMAGE-OCCLUSION-01 | Dedicated Image Occlusion projection | PLANNED | Detect and retain the note type now; implement faithful masks/occlusions only in a separately bounded interoperability milestone. |
+
 ## Completed corrective milestone — HR-STUDY-RESULTS-POLISH-01
 
 Authorised 12 October 2026 after manual Study and Results review exposed six interaction and presentation defects. Collection Desk remains out of scope.
