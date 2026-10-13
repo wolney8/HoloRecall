@@ -31,20 +31,23 @@ export function buildReport(state: State, now: Date, range: DateRange = {}) {
   const recallSuccess = reviews.length ? reviews.filter(review => review.rating >= 2).length / reviews.length : null;
   const perDeck = state.decks.map(deck => {
     const cards = state.cards.filter(card => card.deckId === deck.id);
-    const ids = new Set(cards.map(card => card.id));
-    const events = reviews.filter(review => ids.has(review.cardId));
     return { id: deck.id, name: deck.name, total: cards.length, introduced: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0).length,
       due: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime() && !card.suspended && !deck.suspended).length,
-      reviews: events.length, recallSuccess: events.length ? events.filter(event => event.rating >= 2).length / events.length : null,
       earned: cards.filter(card => rewardProgress(state, card.id).earned).length };
   });
+  const historicalGroups=new Map<string,{id:string;name:string;reviews:number;successful:number}>();
+  for(const review of reviews){
+    const path=review.studyDeckSnapshot?.path.slice().reverse(),id=path?.map(item=>item.id).join('>')??'unattributed',name=path?.map(item=>item.name).join(' > ')??'Unattributed legacy reviews',prior=historicalGroups.get(id)??{id,name,reviews:0,successful:0};
+    historicalGroups.set(id,{...prior,reviews:prior.reviews+1,successful:prior.successful+(review.rating>=2?1:0)});
+  }
+  const historicalDecks=[...historicalGroups.values()].map(item=>({id:item.id,name:item.name,reviews:item.reviews,recallSuccess:item.reviews?item.successful/item.reviews:null})).sort((a,b)=>a.name.localeCompare(b.name));
   const cosmetics = state.cards.map(card => ({ cardId: card.id, answer: card.answer, rarity: card.rarity ?? 'common', ...rewardProgress(state, card.id) }));
   const practice = state.practiceEvents.filter(event => (!range.from || dayKey(new Date(event.timestamp), state.preferences.timeZone) >= range.from) && (!range.to || dayKey(new Date(event.timestamp), state.preferences.timeZone) <= range.to));
   const practiceCount = practice.length;
   return {
     due, newCards: newCards.length, available: dueCards(state, now).length, reviewedCards: reviewedIds.size, reviewCount: reviews.length,
     activeMs: reviews.reduce((sum, review) => sum + (review.activeMs ?? 0), 0), activeTimeSamples: reviews.filter(review => review.activeMs !== undefined).length,
-    recallSuccess, confidence, activity: [...days.values()].sort((a, b) => a.date.localeCompare(b.date)), attention, perDeck, cosmetics,
+    recallSuccess, confidence, activity: [...days.values()].sort((a, b) => a.date.localeCompare(b.date)), attention, perDeck, historicalDecks, cosmetics,
     earnedCount: cosmetics.filter(item => item.earned).length,
     estimatedRetrievability: estimates.length ? estimates.reduce((a, b) => a + b, 0) / estimates.length : null,
     retrievabilitySampleSize: estimates.length, practiceCount,

@@ -24,7 +24,7 @@ export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'A
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     version: 0,
     userId: 'local-learner',
     decks: structuredClone(decks).map(deck=>({...deck,studyPresetId:deck.studyPresetId??BALANCED_PRESET_ID})),
@@ -69,7 +69,7 @@ export function dueCards(data: State, now: Date, deckId?: string): CardContent[]
   const deckEnabled=(id:string):boolean=>{const seen=new Set<string>();let deck=byId.get(id);while(deck&&!seen.has(deck.id)){if(deck.suspended||deck.archived)return false;seen.add(deck.id);deck=deck.parentId?byId.get(deck.parentId):undefined;}return !!byId.get(id);};
   const selectedDecks=deckId?new Set<string>([deckId]):null;if(selectedDecks){let changed=true;while(changed){changed=false;for(const deck of data.decks)if(deck.parentId&&selectedDecks.has(deck.parentId)&&!selectedDecks.has(deck.id)){selectedDecks.add(deck.id);changed=true;}}}
   const deckPath=(ownerId:string):string[]=>{const path:string[]=[];const seen=new Set<string>();let current=byId.get(ownerId);while(current&&!seen.has(current.id)){seen.add(current.id);path.push(current.id);if(deckId&&current.id===deckId)return path;current=current.parentId?byId.get(current.parentId):undefined;}return deckId?[]:path;};
-  const storedPath=(event:ReviewEvent):string[]=>event.studyDeckPath?.length?[...event.studyDeckPath]:event.studyDeckId?deckPath(event.studyDeckId):cardsById.get(event.cardId)?deckPath(cardsById.get(event.cardId)!.deckId):[];
+  const storedPath=(event:ReviewEvent):string[]=>event.studyDeckSnapshot?.path.map(item=>item.id)??(cardsById.get(event.cardId)?deckPath(cardsById.get(event.cardId)!.deckId):[]);
   const branchReviews=reviewsToday.filter(event=>!deckId||storedPath(event).includes(deckId));
   const reviewCount=branchReviews.filter(event=>event.previousState.reps>0&&![1,3].includes(event.previousState.state)).length;
   const reviewsLeft = Math.max(0, selectedPreset.maxReviewsPerDay - reviewCount);
@@ -120,7 +120,7 @@ export function applyScheduledReview(data: State, input: ReviewInput): State {
   if (previous.last_review && input.now.getTime() < Date.parse(previous.last_review)) throw new Error('Your clock is earlier than the last review. Check the system time before continuing.');
   const grade = mapRating(input.rating);
   const preset=effectiveStudyPreset(data,content.deckId,input.now),parameters=fsrsParameters(preset);
-  const deckById=new Map(data.decks.map(deck=>[deck.id,deck])),studyDeckPath:string[]=[];let studyDeck=deckById.get(content.deckId);const seenDecks=new Set<string>();while(studyDeck&&!seenDecks.has(studyDeck.id)){seenDecks.add(studyDeck.id);studyDeckPath.push(studyDeck.id);studyDeck=studyDeck.parentId?deckById.get(studyDeck.parentId):undefined;}
+  const deckById=new Map(data.decks.map(deck=>[deck.id,deck])),studyDeckPath:Deck[]=[];let studyDeck=deckById.get(content.deckId);const seenDecks=new Set<string>();while(studyDeck&&!seenDecks.has(studyDeck.id)){seenDecks.add(studyDeck.id);studyDeckPath.push(studyDeck);studyDeck=studyDeck.parentId?deckById.get(studyDeck.parentId):undefined;}
   const next = fsrs(parameters).next(hydrateCard(previous), input.now, grade).card;
   const resultingState = serializeCard(next, previous.version + 1);
   const event: ReviewEvent = {
@@ -133,8 +133,7 @@ export function applyScheduledReview(data: State, input: ReviewInput): State {
     mode: 'scheduled', activeMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.activeMs ?? data.session?.activeMs ?? 0))),
     experienceMode:data.session?.experienceMode==='anki'?'anki':'mastery',
     ...(Number.isFinite(input.recallMs ?? data.session?.recallMs) ? { recallMs: Math.max(0, Math.min(preset.maxAnswerSeconds*1000, Math.round(input.recallMs ?? data.session!.recallMs!))) } : {}),
-    studyRootDeckId:data.session?.scopeDeckId??content.deckId,
-    studyDeckId:content.deckId,studyDeckPath,studyDay:dayKey(input.now,data.preferences.timeZone),studyTimeZone:data.preferences.timeZone,
+    studyDeckSnapshot:{deck:{id:content.deckId,name:deckById.get(content.deckId)!.name},path:studyDeckPath.map(deck=>({id:deck.id,name:deck.name})),rootDeckId:data.session?.scopeDeckId??content.deckId},studyDay:dayKey(input.now,data.preferences.timeZone),studyTimeZone:data.preferences.timeZone,
   };
   let remaining = data.session?.queue.slice(1) ?? [];
   const repetitionDue={...(data.session?.repetitionDue??{})};

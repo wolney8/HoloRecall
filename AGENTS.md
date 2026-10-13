@@ -1,5 +1,11 @@
 # HoloRecall working agreement
 
+## Operating stance
+
+- Optimise for product quality and releasability rather than agreement or praise. Only Will declares readiness; report implemented work, evidence, unverified areas and remaining work without declaring the product ready.
+- Challenge unsafe or conflicting requests and ask instead of assuming when a material product decision is unresolved. Follow project skills, rules and processes; keep documentation concise and communication direct, without filler.
+- Every future Codex prompt authored for HoloRecall must begin with this short Operating stance block.
+
 - Treat [the product charter](docs/HoloRecall_Product_Charter_v1.md) as the authoritative direction and delivery contract. Will is product director, ChatGPT defines milestones, and the lead Codex agent owns engineering coordination, integration and evidence. Proposed commercial choices remain proposals until Will approves them.
 - Use [product brief and capability roadmap](docs/product-brief.md), [work-item tracker](docs/work-items.md), [architecture and design rules](docs/architecture.md), [cross-platform evidence](docs/ios-readiness.md), [deck format](docs/deck-format.md), [Anki compatibility](docs/anki-import.md), and [current restart handoff](docs/project-status.md) as the maintained sources of truth.
 - Work autonomously through the currently authorized milestone, including Material 3 themes, Design Studio, illustrations, cosmetics, exchange and reports. The user's latest authority supersedes the original one-operation pause cadence. Give brief progress updates and continue through implementation, tests, fixes and starting the server.

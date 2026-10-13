@@ -14,6 +14,11 @@ h1,h2,h3,p{margin:0}h1{font:var(--mat-sys-headline-large);letter-spacing:-1px}h2
 
 .deck-journey{grid-column:1/-1}.subdeck-list{display:grid;gap:10px;margin-top:10px}
 
+/* Deck management keeps routine controls primary and the collectible preview bounded. */
+.deck-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);gap:var(--space-6);align-items:start}.deck-editor-form{display:flex;min-width:0;flex-direction:column}.deck-routine-actions{display:flex;flex-wrap:wrap;gap:var(--space-3) var(--space-5);padding-block:var(--space-3);border-block:1px solid var(--mat-sys-outline-variant)}.deck-save-actions{padding-top:var(--space-4)}.deck-design-preview{display:grid;min-width:0;justify-items:center;gap:var(--space-3);align-self:start}.deck-design-preview .status-chip{text-align:center}.deck-preview-card{display:block;width:min(100%,250px)}.deck-preview-card hr-card{display:block;width:100%}.deck-danger-zone{display:flex;align-items:center;justify-content:space-between;gap:var(--space-5);border-color:var(--mat-sys-error)}.deck-danger-zone p{margin-top:var(--space-2);color:var(--mat-sys-on-surface-variant)}.danger-action{flex:0 0 auto;color:var(--mat-sys-error)!important;border-color:var(--mat-sys-error)!important}
+@media(max-width:1100px){.deck-editor-layout{grid-template-columns:1fr}.deck-design-preview{justify-items:start}.deck-preview-card{width:min(100%,230px)}}
+@media(max-width:580px){.deck-editor-panel .section-heading,.deck-danger-zone{align-items:flex-start;flex-direction:column}.deck-design-preview{justify-items:center}.deck-preview-card{width:min(100%,240px)}.deck-danger-zone .danger-action{width:100%}}
+
 
 
 

@@ -111,6 +111,27 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-design-suite")
     }
 
+    func testDeckManagementLayoutAndDeleteDialog() throws {
+        tapButton("Decks")
+        let actions = app.buttons["More deck actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 8))
+        actions.tap()
+        let edit = app.menuItems["Edit deck"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 8), "Missing menu item: Edit deck\n\(app.debugDescription)")
+        edit.tap()
+        XCTAssertTrue(app.staticTexts["Deck details"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Save deck"].exists)
+        let delete = app.buttons["Delete deck…"]
+        for _ in 0..<6 where !delete.isHittable { app.swipeUp() }
+        XCTAssertTrue(delete.isHittable, "Delete action is outside the reachable deck-management flow\n\(app.debugDescription)")
+        attachScreenshot("native-deck-management")
+        delete.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Delete'" )).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Delete permanently"].exists)
+        XCTAssertFalse(app.buttons["Delete permanently"].isEnabled)
+        tapButton("Cancel")
+    }
+
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")

@@ -1,4 +1,4 @@
-import type { CardContent, State } from './models';
+import type { CardContent, Deck, State } from './models';
 import { DEFAULT_REWARD_CONFIG } from './rewards';
 import { validateState } from './backup';
 import { BALANCED_PRESET_ID, cloneBuiltInPresets } from './study-settings';
@@ -7,7 +7,7 @@ import { BALANCED_PRESET_ID, cloneBuiltInPresets } from './study-settings';
 export function migrateState(input: unknown, bundledCards: CardContent[] = []): State {
   if (!input || typeof input !== 'object') throw new Error('Invalid HoloRecall data: expected an object.');
   const raw = structuredClone(input) as Record<string, unknown>;
-  if (![1, 2, 3, 4, 5, 6, 7, 8].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
+  if (![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(Number(raw['schemaVersion']))) throw new Error('Invalid HoloRecall data: unsupported schema.');
   if (raw['schemaVersion'] === 1) {
     raw['schemaVersion'] = 2;
     raw['designs'] = [];
@@ -46,6 +46,23 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     });
   }
   if (raw['schemaVersion'] === 7) { raw['schemaVersion'] = 8; raw['ankiSources'] = []; }
+  if(raw['schemaVersion']===8){
+    const decks=(raw['decks'] as Deck[]??[]),cards=(raw['cards'] as CardContent[]??[]),deckById=new Map(decks.map(deck=>[deck.id,deck])),cardById=new Map(cards.map(card=>[card.id,card]));
+    const pathFrom=(deckId:string):Deck[]=>{const result:Deck[]=[];const seen=new Set<string>();let deck=deckById.get(deckId);while(deck&&!seen.has(deck.id)){seen.add(deck.id);result.push(deck);deck=deck.parentId?deckById.get(deck.parentId):undefined;}if(!result.length||result.at(-1)?.parentId)throw new Error('Invalid HoloRecall data: legacy review deck attribution cannot be resolved.');return result;};
+    raw['events']=(raw['events'] as Array<Record<string,unknown>>??[]).map(event=>{
+      if(event['kind']!=='review')return event;
+      const hasLegacy=event['studyDeckId']!==undefined||event['studyRootDeckId']!==undefined||event['studyDeckPath']!==undefined;
+      if(!hasLegacy)return event;
+      const card=cardById.get(String(event['cardId'])),ownerId=String(event['studyDeckId']??card?.deckId??''),owner=deckById.get(ownerId);
+      if(!owner)throw new Error('Invalid HoloRecall data: legacy review deck attribution cannot be resolved.');
+      const derived=pathFrom(ownerId),sourcePath=event['studyDeckPath'];
+      if(sourcePath!==undefined&&(!Array.isArray(sourcePath)||sourcePath.length!==derived.length||sourcePath.some((id,index)=>id!==derived[index]?.id)))throw new Error('Invalid HoloRecall data: legacy review deck attribution is inconsistent.');
+      const rootDeckId=String(event['studyRootDeckId']??ownerId);if(!derived.some(deck=>deck.id===rootDeckId))throw new Error('Invalid HoloRecall data: legacy review study root is inconsistent.');
+      const migrated:Record<string,unknown>={...event,studyDeckSnapshot:{deck:{id:owner.id,name:owner.name},path:derived.map(deck=>({id:deck.id,name:deck.name})),rootDeckId}};
+      delete migrated['studyDeckId'];delete migrated['studyRootDeckId'];delete migrated['studyDeckPath'];return migrated;
+    });
+    raw['schemaVersion']=9;
+  }
   if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true,studyMode:'mastery', ...(raw['preferences'] as Record<string, unknown>) };
   validateState(raw);
   return raw;

@@ -85,7 +85,7 @@ function validateCardState(value: unknown): asserts value is CardState {
 /** Validate before trusting restored or previously persisted browser data. */
 export function validateState(value: unknown): asserts value is State {
   const data = object(value);
-  if (data['schemaVersion'] !== 8 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
+  if (data['schemaVersion'] !== 9 || !integer(data['version']) || data['userId'] !== 'local-learner') fail('unsupported schema or learner.');
   validateExtensions(data);
   const scheduler = object(data['scheduler']);
   if (scheduler['version'] !== SCHEDULER_VERSION || scheduler['configVersion'] !== CONFIG_VERSION || JSON.stringify(scheduler['parameters']) !== JSON.stringify(SCHEDULER_PARAMETERS)) fail('unsupported scheduler configuration; migration is required.');
@@ -129,9 +129,7 @@ export function validateState(value: unknown): asserts value is State {
       if (event['activeMs'] !== undefined && (!integer(event['activeMs']) || event['activeMs'] > 120000)) fail('invalid active study time.');
       if (event['recallMs'] !== undefined && (!integer(event['recallMs']) || event['recallMs'] > 120000)) fail('invalid recall time.');
       if(event['studyPresetId']!==undefined&&!id(event['studyPresetId']))fail('invalid review study preset.');
-      if(event['studyRootDeckId']!==undefined&&(!id(event['studyRootDeckId'])||!deckIds.has(event['studyRootDeckId'])))fail('invalid review study root.');
-      if(event['studyDeckId']!==undefined&&(!id(event['studyDeckId'])||!deckIds.has(event['studyDeckId'])))fail('invalid review study deck.');
-      if(event['studyDeckPath']!==undefined){if(!Array.isArray(event['studyDeckPath'])||!event['studyDeckPath'].length||event['studyDeckPath'].length>100||event['studyDeckPath'].some(item=>!id(item)||!deckIds.has(item))||new Set(event['studyDeckPath']).size!==event['studyDeckPath'].length||event['studyDeckId']!==undefined&&event['studyDeckPath'][0]!==event['studyDeckId']||event['studyRootDeckId']!==undefined&&!event['studyDeckPath'].includes(event['studyRootDeckId'])||event['studyDeckPath'].some((item,index,path)=>index<path.length-1&&deckById.get(item)?.parentId!==path[index+1]))fail('invalid review deck path.');}
+      if(event['studyDeckSnapshot']!==undefined){const snapshot=object(event['studyDeckSnapshot']),owner=object(snapshot['deck']),path=snapshot['path'];if(!id(owner['id'])||!text(owner['name'],160)||!Array.isArray(path)||!path.length||path.length>100)fail('invalid historical review deck snapshot.');const entries=path.map(item=>object(item));if(entries.some(item=>!id(item['id'])||!text(item['name'],160))||new Set(entries.map(item=>item['id'])).size!==entries.length||entries[0]?.['id']!==owner['id']||entries[0]?.['name']!==owner['name']||!id(snapshot['rootDeckId'])||!entries.some(item=>item['id']===snapshot['rootDeckId']))fail('invalid historical review deck snapshot.');}
       if(event['studyDay']!==undefined&&(!text(event['studyDay'],10)||!/^\d{4}-\d{2}-\d{2}$/.test(event['studyDay'])))fail('invalid review study day.');
       if(event['studyTimeZone']!==undefined){if(!text(event['studyTimeZone'],100))fail('invalid review time zone.');try{new Intl.DateTimeFormat('en',{timeZone:event['studyTimeZone']}).format();}catch{fail('invalid review time zone.');}}
       validateCardState(event['previousState']);

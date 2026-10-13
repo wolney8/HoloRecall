@@ -209,6 +209,16 @@ export type CardState = Omit<FsrsCard, 'due' | 'last_review'> & {
   version: number;
 };
 
+export interface HistoricalDeckRef { id:string;name:string }
+/** Immutable review-time hierarchy. It deliberately has no foreign-key relationship to live decks. */
+export interface StudyDeckSnapshot {
+  deck:HistoricalDeckRef;
+  /** Owning deck first, followed by its review-time ancestors. */
+  path:HistoricalDeckRef[];
+  /** Selected study branch at acceptance; identifies one member of path without duplicating its label. */
+  rootDeckId:string;
+}
+
 export interface ReviewEvent {
   kind: 'review';
   id: string;
@@ -230,11 +240,8 @@ export interface ReviewEvent {
   activeMs?: number;
   /** Focused, non-idle time from question display to reveal. */
   recallMs?: number;
-  /** Selected deck branch for the session that accepted this review. */
-  studyRootDeckId?: string;
-  /** Owning deck and ancestry at acceptance time, retained across later moves. */
-  studyDeckId?: string;
-  studyDeckPath?: string[];
+  /** Owning deck and ancestry at acceptance time. Independent from the mutable live hierarchy. */
+  studyDeckSnapshot?:StudyDeckSnapshot;
   studyDay?: string;
   studyTimeZone?: string;
   studyPresetId?:string;
@@ -316,7 +323,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 8;
+  schemaVersion: 9;
   version: number;
   userId: string;
   decks: Deck[];

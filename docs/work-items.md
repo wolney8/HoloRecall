@@ -1,12 +1,31 @@
 # Canonical work-item tracker
 
-Updated: 12 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 13 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Active milestone — HR-DECK-MANAGEMENT-01
+
+Authorised 12 October 2026 and resumed 13 October 2026 after the historical-attribution decision. This bounded milestone adds safe permanent deck deletion and repairs the Deck management layout without beginning Collection Desk or unrelated features.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-DECK-MANAGEMENT-01A | Separate permanent Delete action | VERIFY | A Material 3 Danger Zone distinguishes irreversible deletion from Pause and reversible Archive. |
+| HR-DECK-MANAGEMENT-01B | Delete this deck only | VERIFY | Delete directly owned cards/state, preserve descendants and promote direct children to the deleted deck's parent or root. |
+| HR-DECK-MANAGEMENT-01C | Delete deck branch | VERIFY | Delete the selected deck, descendants and branch-owned learner/presentation/source state without affecting unrelated content. |
+| HR-DECK-MANAGEMENT-01D | Scoped confirmation | VERIFY | Dialog reports actual deck/subdeck/card/review scope, offers Archive context and keeps destructive confirmation from initial focus. |
+| HR-DECK-MANAGEMENT-01E | Imported-source cleanup | VERIFY | HoloRecall deletion never mutates the APKG; retained sources/assets are removed only when no surviving reference exists. |
+| HR-DECK-MANAGEMENT-01F | Responsive Deck management layout | VERIFY | Form/action area and subordinate preview use responsive grid/flex tracks with no overlap or horizontal overflow. |
+| HR-DECK-MANAGEMENT-01G | Bounded Design Preview | VERIFY | Preview retains aspect/design accuracy with screen-local size bounds and does not change Study/Collection sizing. |
+| HR-DECK-MANAGEMENT-01H | Action hierarchy and accessibility | VERIFY | Save is primary, Pause/Archive secondary and Delete isolated; keyboard order and dialog focus follow Material/WCAG patterns. |
+| HR-DECK-HISTORY-01 | Immutable historical deck attribution snapshot | VERIFY | Review-time deck IDs/names/path validate independently of live hierarchy; legacy state migrates safely and reporting separates history from current inventory. |
+| HR-GOV-04 | Durable Operating stance handover | VERIFY | `AGENTS.md` contains the single concise canonical stance and future-Codex-prompt prefix rule. |
+
+Evidence: state schema 9 stores each attributed review's immutable deck ID/name/path snapshot and migrates consistent schema-8 references without changing review, scheduler or reward evidence. Domain tests cover parent-only promotion, recursive deletion, full-backup restore, rename/move history stability and reference-safe media/source cleanup. Progress separates current live inventory from historical review paths, including deleted ancestors. The Deck editor uses responsive form/preview tracks, bounded preview sizing and a lazy scoped confirmation dialog. Unit/domain passes 234/234; milestone and migration acceptance passes 9/9 across Chromium, desktop WebKit and compact WebKit; final packaged iPhone 17 Pro / iOS 26.5 dialog smoke passes 1/1 in 24.103 s. Production is 875.17 kB raw / 211.50 kB estimated transfer with the 27.11 kB dialog lazy. The complete matrix reports 235 passes, 2 skips and 15 failures; its two stale schema-assertion instances are corrected and pass in isolation, while 13 observed Exchange/page-reveal/mobile-overflow failures remain outside this scope.
 
 ## Completed milestone — HR-EXCHANGE-UX-03 + HR-ANKI-IMPORT-REAL-01
 

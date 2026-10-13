@@ -138,7 +138,7 @@ test('real IndexedDB v1 upgrade preserves its original snapshot and review histo
   }), legacy);
   await page.reload(); await expect(page.getByTestId('today-count')).toContainText('1');
   const upgraded = await snapshot(page);
-  expect(upgraded.schemaVersion).toBe(8); expect(upgraded.ankiMappings).toEqual([]); expect(upgraded.ankiSources).toEqual([]); expect(upgraded.practiceEvents).toEqual([]); expect(upgraded.focusPresets).toEqual([]); expect(upgraded.events).toEqual(reviewed.events); expect(upgraded.states).toEqual(reviewed.states);
+  expect(upgraded.schemaVersion).toBe(9); expect(upgraded.ankiMappings).toEqual([]); expect(upgraded.ankiSources).toEqual([]); expect(upgraded.practiceEvents).toEqual([]); expect(upgraded.focusPresets).toEqual([]); expect(upgraded.events).toEqual(reviewed.events); expect(upgraded.states).toEqual(reviewed.states);
   expect(upgraded.rewardEvents).toEqual([]); expect(upgraded.cards.every(card => card.image?.startsWith('/art/'))).toBe(true);
   expect(upgraded.cards.every(card => card.revision === 1)).toBe(true);
   const preserved = await page.evaluate(() => new Promise<unknown>((resolve, reject) => {

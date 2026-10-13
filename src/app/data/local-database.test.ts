@@ -93,7 +93,7 @@ describe('v2 persistence migration and session recovery', () => {
     const raw = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(legacy, 'snapshot'); transaction.oncomplete = () => resolve(); });
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(8);
+    expect(restored.schemaVersion).toBe(9);
     expect(restored.events).toEqual(legacy['events']);
     expect(restored.states).toEqual(legacy['states']);
     expect(restored.rewardEvents).toEqual([]);
@@ -110,7 +110,7 @@ describe('v2 persistence migration and session recovery', () => {
     await new Promise<void>(resolve => { const transaction = raw.transaction('local-study', 'readwrite'); transaction.objectStore('local-study').put(versionTwo, 'snapshot'); transaction.oncomplete = () => resolve(); });
     raw.close();
     const restored = await database.load(initial());
-    expect(restored.schemaVersion).toBe(8); expect(restored.ankiMappings).toEqual([]); expect(restored.ankiSources).toEqual([]);
+    expect(restored.schemaVersion).toBe(9); expect(restored.ankiMappings).toEqual([]); expect(restored.ankiSources).toEqual([]);
     const migrated = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open(name, 2); request.onsuccess = () => resolve(request.result); });
     const backup = await new Promise<unknown>(resolve => { const request = migrated.transaction('local-study').objectStore('local-study').get('migration-v2-original'); request.onsuccess = () => resolve(request.result); });
     expect(backup).toEqual(versionTwo); migrated.close(); await database.close();
