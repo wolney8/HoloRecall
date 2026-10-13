@@ -67,6 +67,11 @@ Possible prestige rewards:
 
 ## Confirmed card content hierarchy
 
+### Source semantics and card title
+- A source-visible title/category may appear above the recall target when template evidence supports it; deck Topic/Lesson metadata is not promoted merely because it exists.
+- Source learning semantics override decoration. Text-first cards use material, frame, typography, rarity and restrained motifs without repeating their prompt as generated artwork.
+- Design Sets style learning content; they do not invent learning meaning. Native Image Occlusion uses its masked/revealed image as the task and may have no textual answer.
+
 ### Recall face
 - Primary question / prompt / recall target is dominant.
 - Artwork or visual panel supports the prompt rather than replacing it.
@@ -79,8 +84,8 @@ Possible prestige rewards:
 - Short interpretation/meaning may remain on-card when useful.
 - Longer supporting material should normally move outside the card into progressive disclosure.
 
-### Answer Support outside the card
-The collectible Answer face remains concise: primary answer first, then an optional subject-neutral secondary cue, concise example or short interpretation. Meaningful extended source material lives outside the physical card in a lazy Answer Support surface.
+### Card Details outside the card
+The collectible Answer face remains concise: primary answer first, then an optional subject-neutral secondary cue, concise example or short interpretation. Meaningful extended source material lives outside the physical card in a lazy Card Details surface.
 
 Potential sections:
 - Natural English / interpretation
@@ -93,6 +98,16 @@ Potential sections:
 - Additional or original card detail
 
 Structured headings, paragraphs, lists, tables and code remain semantically structured. Unknown but safe meaningful source material is retained under a collapsed `Original card details` fallback rather than discarded. The support layer appears only after reveal and must not move/recentre the card, move desktop rating controls, or break the compact rating dock.
+
+## Confirmed later interaction and Collection decisions
+
+These decisions are recorded for later bounded milestones and are not implemented by the Conversion Profile work:
+- user-facing supporting content is named **Card Details**;
+- Study will use **Check answer**, with desktop-only `Space or Enter to flip and recall` before reveal and `1–5 rate your recall` after reveal;
+- imported non-empty clues are presumed useful; a later clue control is a delayed folded-corner **Need a clue?** flag and never changes review state;
+- redundant Recall/Answer and front/back chrome will become subtle surface language, with capability indicators for Image Occlusion, Cloze, Clue, Audio and Choices where useful;
+- the browsable Collection contains unlocked cards; its default prioritises unlocked and near-unlock progress, while deck/set views may show locked silhouette slots;
+- Collection progress is collectible-only: unlocked/total, rarity distribution and Prestige, without due/FSRS scheduling data. The near-unlock threshold remains undecided.
 
 ## Confirmed uploaded-art integration direction
 
@@ -315,9 +330,9 @@ Effects Off and Reduced Motion retain the crest, numeral and static material bor
 
 ## 14. Subject presentation and Study artwork — implemented 12 October 2026
 
-The generic learning card remains subject-neutral. A presentation profile may interpret retained source content for a subject without replacing the authoritative prompt or answer. The first profile is `language`: its recall face prioritises the concrete retrieval task, then a natural-language cue and concise grammatical/situational guidance. Its answer face keeps the target answer dominant, pronunciation secondary and a short meaning/interpretation on-card; long labelled sections stay in Answer Support.
+The generic learning card remains subject-neutral. A presentation profile may interpret retained source content for a subject without replacing the authoritative prompt or answer. The first profile is `language`: its recall face prioritises the concrete retrieval task, then a natural-language cue and concise grammatical/situational guidance. Its answer face keeps the target answer dominant, pronunciation secondary and a short meaning/interpretation on-card; long labelled sections stay in Card Details.
 
-In wide Study, Answer Support belongs to the complete revealed-answer stage: card and rating controls form the first row and support spans beneath both. Compact Study orders card, rating controls, then support. This keeps ratings immediately reachable while giving reference prose, lists and tables a readable width outside the collectible object.
+In wide Study, Card Details belongs to the complete revealed-answer stage: card and rating controls form the first row and support spans beneath both. Compact Study orders card, rating controls, then support. This keeps ratings immediately reachable while giving reference prose, lists and tables a readable width outside the collectible object.
 
 Inspectable Collection cards use the shared card interaction contract. They start on Recall, toggle through click/tap or focused Enter/Space, and treat pointer movement past the shared gesture threshold as tilt rather than a flip. Turning a card is presentation state only and never writes reviews, scheduling, mastery, Prestige, rarity or content. Accessible names expose Recall versus Answer even when redundant visible side labels are omitted.
 
@@ -325,11 +340,11 @@ Artwork has a non-destructive Study role: `instructional`, `supportive`, `decora
 
 ## 15. Revealed Study and Results inspection — implemented 12 October 2026
 
-Answer Support is the reference layer for the whole revealed Study stage. On wide layouts the collectible answer and rating controls share row one, with support close beneath both; compact layouts stack card, ratings and support. Recognised term/role pairs and tables retain their semantic relationships, readable line structure and local overflow instead of becoming a text dump. Pronunciation or another semantic secondary line inside a table cell renders beneath the primary term with the same subordinate accent treatment used by the Answer face. Section spacing and grouped row surfaces provide rhythm; rules are reserved for meaningful major boundaries rather than every source block.
+Card Details is the reference layer for the whole revealed Study stage. On wide layouts the collectible answer and rating controls share row one, with support close beneath both; compact layouts stack card, ratings and support. Recognised term/role pairs and tables retain their semantic relationships, readable line structure and local overflow instead of becoming a text dump. Pronunciation or another semantic secondary line inside a table cell renders beneath the primary term with the same subordinate accent treatment used by the Answer face. Section spacing and grouped row surfaces provide rhythm; rules are reserved for meaningful major boundaries rather than every source block.
 
 Once Answer is revealed, activating the card may show Recall for approximately 2.5 seconds before returning to Answer. This Recall Peek is presentation-only: rating controls remain available and the session never becomes unrevealed. Results collectibles follow the same pure inspection contract as Collection—Recall by default, click/tap/Enter/Space to toggle—and retain real Design Set, rarity and Prestige treatment. Animation-only replay is not part of Results navigation.
 
 
 ## Image Occlusion presentation
 
-Image Occlusion is a specialist learning composition within the same Design Set family. Header and the masked source image dominate Recall; Answer reveals the active target according to the source mode, with concise Back Extra on-card only when it remains readable and extended material in Answer Support. Rarity, finish, frame and Prestige may surround the task, but they must not cover or visually compete with masks. Mask state is communicated with contrast plus accessible authored text, never animation or colour alone. Collection and Results flips are pure presentation and use the same masked/revealed renderer.
+Image Occlusion is a specialist learning composition within the same Design Set family. Header and the masked source image dominate Recall; Answer reveals the active target according to the source mode, with concise Back Extra on-card only when it remains readable and extended material in Card Details. Rarity, finish, frame and Prestige may surround the task, but they must not cover or visually compete with masks. Mask state is communicated with contrast plus accessible authored text, never animation or colour alone. Collection and Results flips are pure presentation and use the same masked/revealed renderer.

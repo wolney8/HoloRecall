@@ -114,7 +114,7 @@ test('HR-PRESENTATION-01 Study support owns a full stage row', async ({ page }, 
   expect(supportBox!.x).toBeLessThanOrEqual(card!.x + 1);
   expect(supportBox!.x + supportBox!.width).toBeGreaterThanOrEqual(ratings!.x + ratings!.width - 1);
   expect(supportBox!.y).toBeGreaterThanOrEqual(Math.max(card!.y + card!.height, ratings!.y + ratings!.height) - 1);
-  await support.getByText('Answer Support', { exact: true }).click();
+  await support.getByText('Card Details', { exact: true }).click();
   await expect(support.getByRole('heading', { name: 'Pattern / sound' })).toBeVisible();
   await expect(support.getByRole('table')).toBeVisible();
   await expectNoOverflow(page);

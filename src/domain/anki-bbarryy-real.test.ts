@@ -13,6 +13,9 @@ describe.skipIf(!packagePath||!existsSync(packagePath))('bBarryy anatomy thorax 
     const analysis=await analyseAnkiPackage(new Uint8Array(bytes),'bBarryy_anatomy_thorax_pt_1.apkg');
     expect(analysis).toMatchObject({sourceNotes:29,generatedCards:61,compatibility:{tierA:58,tierB:0,tierC:0,tierD:3}});
     expect(analysis.cards).toHaveLength(58);expect(analysis.cards.filter(card=>card.imageOcclusion)).toHaveLength(26);
+    const basic=analysis.cards.find(card=>card.front.toLocaleLowerCase()==='what is the accessory reproductive organ?');expect(basic).toMatchObject({answer:'breast'});expect(basic?.art?.kind==='generated-text-art'&&basic.art.title.toLocaleLowerCase().includes(basic.front.toLocaleLowerCase())).toBe(false);
+    expect(analysis.cards.filter(card=>card.imageOcclusion).every(card=>card.answer===''&&card.image===card.backImage)).toBe(true);
+    expect(analysis.conversionProfiles.some(profile=>profile.behaviour==='image-occlusion'&&profile.presentationPolicy==='image-occlusion-task-first')).toBe(true);
     const assets=new Set(analysis.assets.map(asset=>`asset:${asset.id}`));const unresolved=analysis.cards.flatMap(card=>[card.image,card.backImage,...card.frontAudio??[],...card.backAudio??[]]).filter((ref):ref is string=>!!ref&&!assets.has(ref));expect(unresolved).toEqual([]);
     const preview=previewAnkiImport(analysis,createInitialState([],[]));const bundled=new Set(preview.bundle.assets.map(asset=>asset.id));expect(analysis.sourceSnapshot.media.every(media=>bundled.has(media.assetId))).toBe(true);
     expect(analysis.issues).toEqual(expect.arrayContaining([

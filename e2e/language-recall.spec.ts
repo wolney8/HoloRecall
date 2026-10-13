@@ -37,7 +37,7 @@ test('HR-LANGUAGE-RECALL-01 uses a clear text-first language cue without leaking
   await expect(collectible.getByRole('heading',{name:'Tu ti chiami…',exact:true})).toBeVisible();
   await expect(collectible).toContainText('too tee KYAH-mee');
   await expect(collectible).not.toContainText('You are called / named… — informal');
-  const support=page.getByText('Answer Support',{exact:true});await expect(support).toBeVisible();await support.click();await expect(page.getByText('You are called / named… — informal',{exact:true})).toBeVisible();await expect(page.getByText('tu + reflexive pronoun + chiamarsi',{exact:true})).toBeVisible();
+  const support=page.getByText('Card Details',{exact:true});await expect(support).toBeVisible();await support.click();await expect(page.getByText('You are called / named… — informal',{exact:true})).toBeVisible();await expect(page.getByText('tu + reflexive pronoun + chiamarsi',{exact:true})).toBeVisible();
 });
 
 test('HR-LANGUAGE-RECALL-01 @ios-compact retains a collectible text-first hierarchy at enlarged text',async({page},testInfo)=>{

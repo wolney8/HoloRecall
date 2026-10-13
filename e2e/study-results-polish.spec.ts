@@ -34,7 +34,7 @@ test('HR-STUDY-RESULTS stable viewport, close support and structured legacy sour
   const support=page.locator('.study-answer-support');await expect(support).toBeVisible();
   const [card,controls,supportBox]=await Promise.all([page.locator('.study-card-area').boundingBox(),page.locator('.study-controls').boundingBox(),support.boundingBox()]);
   const gap=supportBox!.y-Math.max(card!.y+card!.height,controls!.y+controls!.height);expect(gap).toBeGreaterThanOrEqual(10);expect(gap).toBeLessThanOrEqual(18);
-  await support.getByText('Answer Support',{exact:true}).click();
+  await support.getByText('Card Details',{exact:true}).click();
   await expect(support.locator('.support-pairs dt')).toHaveText(['lui','è']);await expect(support.locator('.support-pairs dd')).toHaveText(['subject pronoun','verb']);
   const table=support.getByRole('table');await expect(table).toBeVisible();await expect(table.getByRole('columnheader')).toHaveText(['Italian + pronunciation','English']);const termCell=table.getByRole('cell').first();await expect(termCell.locator('.semantic-primary')).toHaveText('io sono');await expect(termCell.locator('.semantic-secondary')).toHaveText('EE-oh SOH-noh');await expect(termCell.locator('.semantic-secondary')).toHaveCSS('display','block');
   expect(await geometry(page)).toEqual(before);await expectNoOverflow(page);await page.screenshot({path:testInfo.outputPath('structured-support-stable-study.png'),fullPage:true});
@@ -52,7 +52,7 @@ test('HR-STUDY-RESULTS revealed card supports temporary Recall Peek without lear
 test('HR-STUDY-RESULTS structured support and Recall Peek reflow @ios-compact @ios-landscape',async({page})=>{
   await openApp(page);await installStructuredLegacyCase(page);await page.reload();await startFixturePractice(page);
   const motion=page.locator('.study-card-area .card-motion');await motion.click({position:{x:60,y:60}});await expect(motion).toHaveAttribute('aria-label','Show card front');
-  const support=page.locator('.study-answer-support');await support.getByText('Answer Support',{exact:true}).click();await expect(support.getByRole('table')).toBeVisible();
+  const support=page.locator('.study-answer-support');await support.getByText('Card Details',{exact:true}).click();await expect(support.getByRole('table')).toBeVisible();
   const order=await Promise.all([page.locator('.study-card-area').boundingBox(),page.locator('.study-controls').boundingBox(),support.boundingBox()]);if(page.viewportSize()!.width<=580)expect(order[1]!.y).toBeGreaterThanOrEqual(order[0]!.y+order[0]!.height-1);expect(order[2]!.y).toBeGreaterThanOrEqual(Math.max(order[0]!.y+order[0]!.height,order[1]!.y+order[1]!.height)-1);
   await expectNoOverflow(page);await page.addStyleTag({content:'html{font-size:200%}'});await expectNoOverflow(page);await motion.focus();await motion.press('Enter');await expect(motion).toHaveAttribute('aria-label','Show card answer');await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible();
 });

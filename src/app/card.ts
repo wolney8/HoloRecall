@@ -41,10 +41,11 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
           <div #copy class="card-copy protected" [class.answer]="displayedRevealed()" [class.prompt]="!displayedRevealed()" [attr.tabindex]="scrollable() ? 0 : null" [attr.role]="scrollable() ? 'region' : null" [attr.aria-label]="scrollable() ? 'Card content. Scroll to read all text.' : null">
             @if (displayedRevealed()) {
               @if(card.answerLabel){<span class="answer-label">{{card.answerLabel}}</span>}
-              <h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>
+              @if(resolvedPresentation.title){<p class="card-title">{{resolvedPresentation.title}}</p>}
+              @if(card.answer){<h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>}
               @if (card.secondary || card.pronunciation) { <p class="secondary">{{ card.secondary || card.pronunciation }}</p> }
               @if (resolvedPresentation.answerInterpretation && !compact) { <p class="interpretation">{{ resolvedPresentation.answerInterpretation }}</p> }
-            } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(resolvedPresentation.hint){<p class="recall-hint">{{resolvedPresentation.hint}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
+            } @else { @if(resolvedPresentation.title){<p class="card-title">{{resolvedPresentation.title}}</p>}<h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(resolvedPresentation.hint){<p class="recall-hint">{{resolvedPresentation.hint}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
           </div>
           @if (missingDesignAsset) { <span class="fallback-note protected"><span>Design asset missing · default frame shown</span></span> }
           <footer class="protected"><span>{{ demo ? 'SAMPLE · NOT EARNED' : (displayedRevealed() ? 'Answer side' : 'Front side') }}</span>@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="tier-marks" aria-hidden="true">{{ raritySymbol }}</span></footer>
@@ -68,6 +69,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
     .audio-button:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:2px}
     .audio-error{position:absolute;z-index:6;left:20px;right:20px;bottom:84px;margin:0;padding:6px 8px;border-radius:8px;background:var(--mat-sys-error-container);color:var(--mat-sys-on-error-container);font-size:12px;text-align:start}
     .answer-label{align-self:center;padding:.15rem .5rem;border:1px solid color-mix(in srgb,var(--frame-color) 36%,transparent);border-radius:999px;background:color-mix(in srgb,var(--card-surface) 78%,var(--design-primary,var(--frame-color)));color:var(--card-ink);font-size:.68rem;box-shadow:inset 0 1px color-mix(in srgb,#fff 34%,transparent)}
+    .card-title{margin:0 0 .45rem;color:var(--card-muted);font:700 .72rem/1.2 Roboto,Arial,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:center}
   `],
 })
 export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
@@ -132,7 +134,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get prestigeBand():string{return this.prestigeLevel>=10?'capstone':this.prestigeLevel>=8?'radiant':this.prestigeLevel>=5?'midpoint':this.prestigeLevel>=3?'foil':this.prestigeLevel>=1?'edge':'none';}
   get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',primary:this.card?.front??'',artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
   get hideStudyArt():boolean{return this.resolvedPresentation.artRole==='hidden'||!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first';}
-  get presentationCard():CardContent{if(this.card?.art||this.card?.image||this.card?.backImage)return this.card;return{...this.card,art:{kind:'generated-text-art',title:this.generatedArtTitle,subtitle:this.generatedArtSubtitle,seed:this.artSeed}};}
+  get presentationCard():CardContent{if(this.resolvedPresentation.effectiveArtPolicy==='text-first'||this.card?.art||this.card?.image||this.card?.backImage)return this.card;return{...this.card,art:{kind:'generated-text-art',title:this.generatedArtTitle,subtitle:this.generatedArtSubtitle,seed:this.artSeed}};}
   get hasNativeArt():boolean{return !this.card?.image&&!this.card?.backImage||this.card?.art?.kind==='source-visual-panel'||this.card?.art?.kind==='generated-text-art';}
   private get generatedArtTitle():string{const source=(this.card?.front||this.card?.answer||'Recall').trim();const formula=source.match(/[\dA-Za-z]+\s*[=+×÷−]\s*[\dA-Za-z+×÷− ]+/)?.[0];return(formula||source.split(/\s+/).slice(0,3).join(' ')).slice(0,34);}
   private get generatedArtSubtitle():string{const tag=this.card?.tags?.[0];return(tag||this.card?.answer||'HoloRecall').trim().slice(0,48);}

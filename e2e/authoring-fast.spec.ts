@@ -4,8 +4,13 @@ test('HR-AUTH-01 creates cards quickly, retains safe defaults and protects draft
   await openApp(page);
   await navigate(page, 'Decks');
   const journey=page.locator('.deck-journey').first();await journey.getByRole('button',{name:'More deck actions'}).click();await journey.getByRole('menuitem',{name:'Add card',exact:true}).click();
-  await expect(page.getByRole('heading', { name: 'Create card' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Create learning card' })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Deck', exact: true })).toContainText('Italian essentials');
+  await page.getByLabel('Title / category · optional').fill('EVENING GREETING');
+  await page.getByLabel('Recall context').fill('Meeting someone after sunset');
+  await page.getByLabel('Recall guidance').fill('Give the Italian phrase');
+  await page.getByLabel('Clue / hint').fill('Begins with buona');
+  await page.getByLabel('Choices · one per line').fill('la sera\nbuonasera');
   await page.getByLabel('Front text / library prompt').fill('la sera');
   await page.getByLabel('Back text / answer').fill('the evening');
   await page.getByLabel('Approximate pronunciation').fill('lah SEH-rah');
@@ -13,11 +18,15 @@ test('HR-AUTH-01 creates cards quickly, retains safe defaults and protects draft
   await expect(page.locator('.author-preview .memory-card')).not.toHaveClass(/revealed/);
   await page.getByRole('button', { name: 'Answer', exact: true }).click();
   await expect(page.locator('.author-preview .memory-card')).toHaveClass(/revealed/);
+  await page.getByRole('button',{name:'Add detail section'}).click();
+  await page.getByLabel('Section label').fill('Usage');
+  await page.getByLabel('Usage').fill('Used as an evening greeting.');
   await page.getByRole('button', { name: 'Save and add another' }).click();
   await expect(page.getByLabel('Front text / library prompt')).toHaveValue('');
   await expect(page.getByLabel('Back text / answer')).toHaveValue('');
   await expect(page.getByRole('combobox', { name: 'Deck', exact: true })).toContainText('Italian essentials');
-  expect((await snapshot(page)).cards.some(card => card.front === 'la sera')).toBe(true);
+  const created=(await snapshot(page)).cards.find(card => card.front === 'la sera');
+  expect(created).toMatchObject({presentation:{title:'EVENING GREETING',situationContext:'Meeting someone after sunset',taskGuidance:'Give the Italian phrase',hint:'Begins with buona'},choices:['la sera','buonasera'],details:[{label:'Usage',content:'Used as an evening greeting.'}]});
 
   await page.getByLabel('Front text / library prompt').fill('unsaved prompt');
   page.once('dialog', dialog => dialog.dismiss());

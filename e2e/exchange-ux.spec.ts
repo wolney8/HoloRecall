@@ -1,11 +1,20 @@
 import {existsSync} from 'node:fs';
 import {expect,navigate,openApp,snapshot,test} from './helpers';
+import initSqlJs from 'sql.js';
+import JSZip from 'jszip';
 
 const bBarryyPackage=process.env['HOLORECALL_BBARRYY_PACKAGE'];
 
 async function openExchange(page:Parameters<typeof openApp>[0]):Promise<void>{
   await openApp(page);await navigate(page,'Exchange');
   await expect(page.getByRole('heading',{name:'Exchange',exact:true})).toBeVisible();
+}
+
+async function suspiciousTemplatePackage():Promise<Buffer>{
+  const SQL=await initSqlJs(),db=new SQL.Database();db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models={1:{name:'Ambiguous custom',type:0,flds:[{name:'Cue'}],tmpls:[{name:'Same face',qfmt:'{{Cue}}',afmt:'{{Cue}}'}]}};db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Review fixture'}})]);
+  for(let index=0;index<2;index++){db.run('insert into notes values (?,?,?,?,?)',[100+index,`ambiguous-${index}`,1,'',`Same ${index}`]);db.run('insert into cards values (?,?,?,?)',[200+index,100+index,10,0]);}
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
 test('HR-EXCHANGE-03 separates Import, Export and Templates into reload-safe views',async({page})=>{
@@ -41,6 +50,14 @@ test('HR-ANKI-REAL-01 reports and imports the safe bBarryy subset with reconcile
   await page.getByRole('checkbox',{name:/Import 58 ready cards/}).check();await expect(apply).toBeEnabled();await apply.click();
   await expect(page.locator('.completion-panel')).toContainText('IMPORT COMPLETE',{timeout:20_000});
   const state=await snapshot(page);expect(state.cards.filter(card=>card.ankiSource?.kind==='anki')).toHaveLength(58);expect(state.cards.filter(card=>card.imageOcclusion)).toHaveLength(26);
+});
+
+test('Conversion Profile blocks and accepts one suspicious template decision for all matching cards',async({page})=>{
+  await openExchange(page);await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'ambiguous.apkg',mimeType:'application/zip',buffer:await suspiciousTemplatePackage()});
+  const result=page.getByLabel('Anki import result');await expect(result).toContainText('0Ready');await expect(result).toContainText('2Needs review');
+  const profile=page.locator('.conversion-profile').filter({hasText:'Ambiguous custom · Same face'});await expect(profile).toContainText('2 cards');await expect(profile).toContainText('equivalent-recall-answer');
+  const apply=page.getByRole('button',{name:'Import 2 supported cards'});await expect(apply).toBeDisabled();await profile.getByRole('button',{name:'Approve this template conversion'}).click();await expect(result).toContainText('2Ready');await expect(result).toContainText('0Needs review');await expect(apply).toBeEnabled();
+  await apply.click();await expect(page.locator('.completion-panel')).toContainText('IMPORT COMPLETE');const state=await snapshot(page);expect(state.ankiConversionProfiles).toEqual([expect.objectContaining({modelName:'Ambiguous custom',templateName:'Same face',status:'user-approved',origin:'user-confirmed'})]);expect(state.cards.filter(card=>card.ankiSource?.modelName==='Ambiguous custom')).toHaveLength(2);
 });
 
 test('HR-EXCHANGE-03 navigation reflows on compact WebKit @ios-compact',async({page})=>{

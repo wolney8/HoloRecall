@@ -3,7 +3,7 @@ import type { CardContent, CardDetail, SafeContentBlock } from '../domain/models
 import { plainSafeContentText, safeContentBlocks } from '../domain/safe-content';
 import { LocalStudyStore } from './data/study-store';
 
-@Component({selector:'hr-answer-support',standalone:true,template:`<details class="answer-support"><summary>Answer Support</summary><div class="support-body">
+@Component({selector:'hr-answer-support',standalone:true,template:`<details class="answer-support"><summary>Card Details</summary><div class="support-body">
 @if(showMeaning){<section><h3>Natural English / interpretation</h3><p>{{card.meaning||card.interpretation}}</p></section>}
 @for(detail of card.details??[];track $index){<section><h3>{{detail.label}}</h3>@for(block of blocks(detail);track $index){@switch(block.type){@case('heading'){<h4>{{block.text}}</h4>}@case('paragraph'){<p>{{block.text}}</p>}@case('pairs'){<dl class="support-pairs">@for(row of block.rows;track $index){<div><dt>{{row.term}}</dt><dd>{{row.description}}</dd></div>}</dl>}@case('list'){@if(block.ordered){<ol>@for(item of block.items;track $index){<li>{{item}}</li>}</ol>}@else{<ul>@for(item of block.items;track $index){<li>{{item}}</li>}</ul>}}@case('table'){<div class="support-table"><table>@if(block.headers.length){<thead><tr>@for(cell of block.headers;track $index){<th scope="col">{{cell}}</th>}</tr></thead>}<tbody>@for(row of block.rows;track $index){<tr>@for(cell of row;track $index){<td>@for(line of cellLines(cell);track $index){<span [class.semantic-primary]="$index===0" [class.semantic-secondary]="$index>0">{{line}}</span>}</td>}</tr>}</tbody></table></div>}@case('code'){<pre><code>{{block.text}}</code></pre>}}}</section>}
 @if(localNotes){<section><h3>Local notes</h3><p>{{localNotes}}</p></section>}

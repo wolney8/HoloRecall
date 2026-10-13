@@ -58,7 +58,7 @@ test('HR-NAV-01 uses one semantic context trail on wide layouts', async ({ page 
   expect(Math.max(...centres)-Math.min(...centres)).toBeLessThan(2);
   await trail.getByRole('button', { name: 'Decks', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Decks', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Create card' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Create learning card' })).toBeHidden();
 });
 
 test('HR-IOS-UX-11 keeps compact navigation aligned at enlarged text @ios-compact @ios-large @ios-landscape', async ({ page }) => {

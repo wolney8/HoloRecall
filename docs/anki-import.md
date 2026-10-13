@@ -6,6 +6,7 @@ HoloRecall treats an `.apkg` as a content source. The primary conversion path is
 Anki deck + note type + note + card template
 → safe template rendering
 → native HoloRecall question and answer
+→ template-scoped Conversion Profile
 → optional semantic enrichment
 → HoloRecall Study preset and five-confidence FSRS workflow
 ```
@@ -56,6 +57,14 @@ The `.apkg` archive and its database are not stored wholesale. Media bytes live 
 
 Cards retain their Anki note GUID plus template ordinal identity for compatibility with existing imports, alongside the normalized source snapshot and template IDs. Source fingerprints use note GUID, model signature, template content/ordinal, ordered source values, tags, deck identity, and referenced media. Filename and displayed answer are never identity.
 
+## Conversion Profiles
+
+A versioned Conversion Profile is the template-level acceptance contract. It is keyed by exact note-type signature plus card-template identity and composes the existing semantic Mapping Profile with one supported behaviour adapter (`basic`, `reversed`, `rich-template`, `cloze`, or `image-occlusion`) and one presentation policy (`text-first`, `image-first`, `choices`, or `image-occlusion-task-first`). It references the retained source snapshot rather than copying it. User-confirmed profiles survive later analysis and outrank automatic inference.
+
+Review is grouped by Conversion Profile, with one representative Recall, Answer and Card Details projection plus the affected-card count. Clean profiles remain automatic. Equivalent faces, placeholder answers, duplicate prompt art, unaccounted meaningful front/back blocks, inconsistent projections or unsupported behaviour block only that profile until it is corrected or explicitly accepted. The default correction scope remains the exact note type and template.
+
+Source learning semantics override decorative presentation. Basic cards without instructional media use text-first composition; genuine instructional media may use image-first; native Image Occlusion is task-first. Generated text art cannot repeat the prompt as a second learning surface. Native Image Occlusion may have an empty textual `answer`: the revealed target image is the answer, while ordinary cards still require a non-empty safe answer.
+
 ## Semantic enrichment
 
 Once a template has produced a safe question and answer, HoloRecall may populate Pronunciation, Meaning, Notes, Language metadata, examples, and side-specific media from conservative name/template evidence or a saved user-confirmed enrichment mapping. Enrichment failure never replaces or blocks a valid template answer. Unmapped fields remain inert in the source snapshot instead of being concatenated into Notes.
@@ -64,7 +73,7 @@ Advanced field enrichment is collapsed by default. It uses one compact row per s
 
 ## Simple compatibility review and conversion templates
 
-The default compatibility experience is summary-first. After analysis it names the deck and friendly conversion family, reports **Ready** or the precise number of cards needing attention, shows representative Recall/Answer/Answer Support, and offers one primary Import/Update/Repair action. The automatic families are Basic Front / Back, Basic + Reversed, Language learning, Rich HTML / Reference, Cloze, Image Occlusion, and Custom / Advanced. They are a learner-facing layer over the existing Mapping Profile and template analysis; they do not replace semantic fidelity or provenance.
+The default compatibility experience is summary-first. After analysis it names the deck and friendly conversion family, reports **Ready** or the precise number of cards needing attention, shows representative Recall/Answer/Card Details, and offers one primary Import/Update/Repair action. The automatic families are Basic Front / Back, Basic + Reversed, Language learning, Rich HTML / Reference, Cloze, Image Occlusion, and Custom / Advanced. They are a learner-facing layer over the existing Mapping Profile and template analysis; they do not replace semantic fidelity or provenance.
 
 High-confidence packages never open Mapping Studio automatically. A small uncertain subset receives a focused **Review N** action. **Advanced mapping** progressively discloses the full source/sample/role editor, scope, reset and provenance tools. Update uses Analyse → conditional Review → Apply with exactly one current state; retained-source repair omits package-selection theatre. Native Image Occlusion appears as **Image Occlusion · Native support** with a representative preview.
 
@@ -82,7 +91,7 @@ HoloRecall uses one versioned, subject-neutral semantic role contract for projec
 
 Analysis creates a Mapping Profile for each stable note-type and card-template identity. Each source field retains its destination, confidence and evidence. Confirmed exact-template profiles outrank confirmed model profiles and automatic inference; a later automatic analysis cannot silently replace a learner-confirmed profile. Automatic inference uses template-side references and conservative semantic evidence after template rendering, so optional mapping never decides whether an otherwise valid card has a front or answer.
 
-New imports include an **Import Review** with representative Recall, Answer and Answer Support previews. High-confidence packages remain a short Review → Import flow. **Review semantic mapping** opens the lazy Mapping Studio only on request or when meaningful content needs review. Its compact source/sample/role rows update the same import preview and can be reset to current automatic inference. The default mapping scope is the exact note type + card template and therefore applies to every matching card rather than one card at a time. Existing imported decks expose the same action under Manage Anki source; Apply reprojects the retained snapshot in place through the ordinary atomic transaction, preserving IDs and every learner/cosmetic state.
+New imports include an **Import Review** with representative Recall, Answer and Card Details previews. High-confidence packages remain a short Review → Import flow. **Review semantic mapping** opens the lazy Mapping Studio only on request or when meaningful content needs review. Its compact source/sample/role rows update the same import preview and can be reset to current automatic inference. The default mapping scope is the exact note type + card template and therefore applies to every matching card rather than one card at a time. Existing imported decks expose the same action under Manage Anki source; Apply reprojects the retained snapshot in place through the ordinary atomic transaction, preserving IDs and every learner/cosmetic state.
 
 Standard cloze deletions in generated source cards remain supported within the documented filter subset. Advanced add-on cloze behavior remains a safe simplification or review result.
 
@@ -96,6 +105,21 @@ Two versioned profiles are available as a preview and Anki-compatible UTF-8 text
 - **HoloRecall Extended v1** emits stable Identity and Deck plus Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, ImageOcclusion, Source and Tags. Blank optional fields are valid. Its predictable templates use conditional sections and an explicit `{{FrontSide}}<hr id="answer">` boundary.
 
 Image Occlusion exports always warn that TSV cannot faithfully create native masks; Extended retains the declarative payload while Basic reports the loss. The file includes documented Anki text-import headers for separator, HTML, note type, deck, tags and columns. It is an interoperable intermediate, not an `.apkg`. Production APKG database/media creation remains `HR-ANKI-EXPORT-APKG-01`; HoloRecall will not emit an undocumented SQLite archive merely to claim package support. Imported cards derive export identity from source model/note/template identity. Native cards use their stable HoloRecall card ID, so repeated exports have deterministic identities. Source provenance remains authoritative for later Anki package updates; export does not detach or rewrite it.
+
+## Anki feature capability matrix
+
+| Feature | Classification | Current boundary |
+| --- | --- | --- |
+| Basic, reversed, FrontSide, conditionals, standard cloze | Supported natively | Safe template rendering and generated-card identity drive Recall/Answer. |
+| Native Anki Image Occlusion | Supported natively | Rectangle, ellipse, polygon, groups, both mask modes and visual answers use the shared imported/Creator renderer. |
+| Local images, MP3/WAV audio, headings, lists, tables and code | Supported natively | Media is registry-backed; rich content becomes inert native blocks. |
+| Typed answers and Anki TTS | Supported with safe adaptation | Learning text is retained; source typing/TTS execution is omitted and reported. |
+| Hint, furigana, kana and kanji filters | Supported with safe adaptation | Safe text is retained; Anki-specific interaction/formatting may be simplified. |
+| RTL source content | Supported with safe adaptation | Unicode text is retained; source CSS and arbitrary direction styling are not imported. |
+| LaTeX/MathJax | Review required | Source text is preserved; full Anki math rendering is not claimed. |
+| Unknown filters or add-on-specific occlusion/cloze behaviour | Review required | Source snapshot is preserved and affected templates cannot fast-path. |
+| Remote dependencies | Unsupported but source preserved | They are never fetched; a card must have another safe usable cue/answer. |
+| JavaScript, event handlers, active SVG and executable add-ons | Unsupported but source preserved | Executable behavior never crosses the import boundary. |
 
 ## Compatibility tiers
 
@@ -128,7 +152,7 @@ The safe template projection applies a coverage contract to both faces. Every me
 
 On Recall, the subject-neutral presentation model separates `situationContext`, `primaryPrompt`, `taskGuidance`, `hint`, choices and instructional artwork. A material situation remains visible when a Question/Focus is also present. For example, the retained Lesson 1 note `26af5d2f4845d6d5` renders Prompt `A formal interaction with an unfamiliar adult`, Focus `Which “you”?`, and Task `Say it in Italian`; all three are represented, while the target `Lei` remains absent until reveal.
 
-On Answer, `FrontSide` is classified as duplicate Recall content rather than repeated. An explicit `<hr id="answer">` establishes the ordinary answer boundary, but unlabelled/internal `<hr>` elements remain structural evidence and are never a universal split algorithm. Primary answer, optional secondary cue and a genuinely concise interpretation remain on the collectible face. Other meaningful content becomes labelled Answer Support outside the card. Safe headings, paragraphs, lists, tables and code/preformatted blocks use an inert declarative model; scripts, handlers, active SVG, remote execution and source CSS remain excluded. Meaningful safe content that cannot be classified without guessing is retained once under collapsed **Original card details**.
+On Answer, `FrontSide` is classified as duplicate Recall content rather than repeated. An explicit `<hr id="answer">` establishes the ordinary answer boundary, but unlabelled/internal `<hr>` elements remain structural evidence and are never a universal split algorithm. Primary answer, optional secondary cue and a genuinely concise interpretation remain on the collectible face. Other meaningful content becomes labelled Card Details outside the card. Safe headings, paragraphs, lists, tables and code/preformatted blocks use an inert declarative model; scripts, handlers, active SVG, remote execution and source CSS remain excluded. Meaningful safe content that cannot be classified without guessing is retained once under collapsed **Original card details**.
 
 Imported cards retain block-level provenance sufficient to trace source field/block → classification → Recall, Answer or support destination. This is internal evidence, not learner-facing Study chrome. Repair and update derive this projection from the retained source snapshot and preserve explicit local presentation overrides plus all learner state.
 
@@ -148,11 +172,11 @@ Imported cards retain block-level provenance sufficient to trace source field/bl
 
 The importer has bounded archive, database, note/card, cell, media count, byte, MIME, signature, and image-dimension checks. Parsing, template rendering, and media analysis stay in the lazy Worker; no main-thread parser fallback exists.
 
-## Structured Answer Support contract
+## Structured Card Details contract
 
 Safe source structure remains declarative after import. Headings, paragraphs, lists, tables, code/preformatted content and term/description or key/value pairs have distinct block types; table-cell line breaks stay associated with their row and column. The Study renderer may recover those blocks from a retained normalized source snapshot when an older native projection stored only a flattened `CardDetail.content`. Recovery matches the accepted source-derived text, executes no source behavior and does not mutate the card, accepted baseline or learner state. If no source structure can be matched safely, the content remains one inert readable paragraph rather than being guessed into language-specific columns.
 
-Answer Support is outside the collectible card and belongs to the whole revealed Study stage. Small useful sections render directly; longer reference sections may use progressive disclosure. Wide tables scroll within their own region and cannot widen the page.
+Card Details is outside the collectible card and belongs to the whole revealed Study stage. Small useful sections render directly; longer reference sections may use progressive disclosure. Wide tables scroll within their own region and cannot widen the page.
 
 ## Verification and remaining acceptance
 

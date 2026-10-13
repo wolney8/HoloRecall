@@ -8,7 +8,27 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active milestone — HR-UI-IDENTITY-01
+## Active milestone — HR-ANKI-CONVERSION-PROFILES-01 + HR-CREATOR-SEMANTICS-01
+
+Authorised 13 October 2026. This bounded milestone adds template-scoped conversion behaviour/presentation above existing Mapping Profiles, visual-only native Image Occlusion answers, subject-neutral Creator Studio semantics and template-level suspicious-conversion review. Card chrome, clue animation, Collection redesign/Desk and APKG output remain excluded.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-CONVERSION-PROFILES-01A | Add title/category semantic and Card Details copy | VERIFY | Optional presentation title derives only from template-visible evidence; rich support remains outside the collectible face under Card Details. |
+| HR-ANKI-CONVERSION-PROFILES-01B | Versioned template Conversion Profiles | VERIFY | Each model/template composes its Mapping Profile, supported behaviour adapter, presentation policy and review status without duplicating source snapshots. |
+| HR-ANKI-CONVERSION-PROFILES-01C | Source semantics override decoration | VERIFY | Text/basic cards default text-first, instructional media may be image-first, occlusion is task-first, and generated art cannot duplicate learning text. |
+| HR-ANKI-CONVERSION-PROFILES-01D | Visual-only Image Occlusion answer | VERIFY | Imported and creator occlusion use one declarative masked/revealed renderer without a fabricated textual answer; Basic still requires an answer. |
+| HR-ANKI-CONVERSION-PROFILES-01E | Derived capabilities | VERIFY | One derived model reports occlusion, cloze, clue, audio and choices for review/Creator/debug use without persisted booleans. |
+| HR-ANKI-CONVERSION-PROFILES-01F | Template-level review and suspicious blocking | VERIFY | Review groups exact model/template cards, shows representative Recall/Answer/Card Details, and blocks affected profiles until material sanity issues are approved/corrected. |
+| HR-ANKI-CONVERSION-PROFILES-01G | Real-package and compatibility matrix | VERIFY | bBarryy safe Basic/occlusion projections and configured Italian package pass; supported/adapted/review/unsupported feature classes remain explicit. |
+| HR-CREATOR-SEMANTICS-01A | Creator Studio semantic parity | VERIFY | Existing authoring exposes title, Recall, Answer, Card Details and supported feature semantics without Anki-first language. |
+| HR-CREATOR-SEMANTICS-01B | Additive persistence and migration | VERIFY | Existing state/mappings/snapshots/learning data remain readable; any schema bump migrates atomically and portable v10 remains readable. |
+| HR-CREATOR-SEMANTICS-01C | Settled later decisions documented only | VERIFY | Card interaction/clue/chrome and Collection decisions are recorded without implementing those later milestones. |
+| HR-ANKI-CONVERSION-PROFILES-01H | Verification and publication | VERIFY | Unit, package, browser, production and relevant native gates pass before clean preflight and normal non-force push. |
+
+Evidence: state schema 10 additively stores template-scoped Conversion Profiles while retaining Mapping Profiles, source snapshots and portable v10 compatibility. The exact bBarryy package produces 58 safe cards, including 26 visual-answer Image Occlusion cards, while the configured 254-card Italian package retains automatic profiles. Unit/domain passes **241/241**; the complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **268/268**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 smokes each pass **1/1**. Production is **886.11 kB raw / 214.34 kB estimated transfer** (+5.12 kB / +0.98 kB from 880.99/213.36); Exchange (**90.36 kB**) and the Anki Worker (**60.18 kB**) remain lazy. Physical-device touch, VoiceOver, Dynamic Type and real-device large-package performance remain unverified.
+
+## Previous milestone — HR-UI-IDENTITY-01
 
 Authorised 13 October 2026. This bounded corrective milestone scopes primary-navigation CSS, standardises the Exchange destination name and replaces the casino-adjacent mark with one cross-platform Knowledge Stack source.
 

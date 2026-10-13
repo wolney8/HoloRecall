@@ -1,7 +1,7 @@
 import { Inject, Injectable, computed, signal } from '@angular/core';
-import type { AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyExperienceMode, StudyPreset, TodayStudyOverride } from '../../domain/models';
+import type { AnkiConversionProfile, AnkiMappingPreset, CardContent, ConfidenceRating, ContentImport, Deck, DesignSet, FocusPreset, FocusSessionRequest, LocalAsset, Preferences, Rarity, State, StudyExperienceMode, StudyPreset, TodayStudyOverride } from '../../domain/models';
 import { applyScheduledReview, createInitialState, dayKey, dueCards, undoLatestReview } from '../../domain/study';
-import { exportBackup, parseBackup, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
+import { exportBackup, parseBackup, validateAnkiConversionProfile, validateAnkiMapping, validateCard, validateDeck, validatePreferences, validateAsset, validateDesign, validateRewardConfig } from '../../domain/backup';
 import { SEED_CARDS, SEED_DECKS } from '../seed';
 import { LocalDatabase } from './local-database';
 import { STUDY_PERSISTENCE, type StudyPersistence } from './study-persistence';
@@ -286,9 +286,9 @@ export class LocalStudyStore {
       return { ...data, version: data.version + 1, rewardConfig };
     });
   }
-  async applyContentImport(bundle: ContentImport, expectedVersion: number,studyPresetId=BALANCED_PRESET_ID,preserveLearnerFields=false,mappingUpdates:AnkiMappingPreset[]=[]): Promise<void> {
+  async applyContentImport(bundle: ContentImport, expectedVersion: number,studyPresetId=BALANCED_PRESET_ID,preserveLearnerFields=false,mappingUpdates:AnkiMappingPreset[]=[],conversionProfileUpdates:AnkiConversionProfile[]=[]): Promise<void> {
     const current=this.data();if(!current)throw new Error('Local study data is not ready.');
-    const prepared=await deduplicateContent(current,bundle);bundle=prepared.bundle;mappingUpdates.forEach(validateAnkiMapping);
+    const prepared=await deduplicateContent(current,bundle);bundle=prepared.bundle;mappingUpdates.forEach(validateAnkiMapping);conversionProfileUpdates.forEach(validateAnkiConversionProfile);
     await this.change(data => {
       if (data.version !== expectedVersion) throw new Error('Local content changed after this preview. Preview the import again.');
       const merge = <T extends { id: string }>(current: T[], incoming: T[]): T[] => {
@@ -306,8 +306,8 @@ export class LocalStudyStore {
         const previous = data.cards.find(item => item.id === card.id);
         return { ...card,suspended:preserveLearnerFields?(previous?.suspended??card.suspended):card.suspended,archived:preserveLearnerFields?(previous?.archived??card.archived):card.archived,rarity:preserveLearnerFields?(previous?.rarity??card.rarity):card.rarity,designSetId:preserveLearnerFields?(previous?.designSetId??card.designSetId):card.designSetId,finish:preserveLearnerFields?(previous?.finish??card.finish):card.finish, tags: canonicalTags(card.tags), createdAt: previous?.createdAt ?? card.createdAt ?? new Date().toISOString(), revision: previous ? previous.revision + (sameCardContent(previous, card) ? 0 : 1) : 1 };
       });
-      const mappingSignatures=new Set(mappingUpdates.map(ankiMappingKey)),ankiMappings=[...data.ankiMappings.filter(mapping=>!mappingSignatures.has(ankiMappingKey(mapping))),...mappingUpdates.map(mapping=>structuredClone(mapping))];
-      return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)),ankiMappings,ankiSources:merge(data.ankiSources,bundle.ankiSources??[]) }, data);
+      const mappingSignatures=new Set(mappingUpdates.map(ankiMappingKey)),ankiMappings=[...data.ankiMappings.filter(mapping=>!mappingSignatures.has(ankiMappingKey(mapping))),...mappingUpdates.map(mapping=>structuredClone(mapping))];const profileKeys=new Set(conversionProfileUpdates.map(profile=>`${profile.sourceSignature}::${profile.templateId}`)),ankiConversionProfiles=[...data.ankiConversionProfiles.filter(profile=>!profileKeys.has(`${profile.sourceSignature}::${profile.templateId}`)),...conversionProfileUpdates.map(profile=>structuredClone(profile))];
+      return reconcileSession({ ...data, version: data.version + 1, decks: merge(data.decks, decks), cards: merge(data.cards, cards), designs: merge(data.designs, bundle.designs), assets: merge(data.assets, bundle.assets.map(asset => data.assets.find(existing => existing.id === asset.id) ?? asset)),ankiMappings,ankiConversionProfiles,ankiSources:merge(data.ankiSources,bundle.ankiSources??[]) }, data);
     });
   }
 
@@ -334,7 +334,7 @@ export class LocalStudyStore {
 
 
 function sameCardContent(a: CardContent, b: CardContent): boolean {
-  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,secondary:card.secondary,interpretation:card.interpretation,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId,art:card.art,choices:card.choices,answerLabel:card.answerLabel,details:card.details}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
+  const normalized = (card: CardContent) => JSON.stringify(Object.entries({deckId:card.deckId,kind:card.kind,front:card.front,answer:card.answer,pronunciation:card.pronunciation,meaning:card.meaning,secondary:card.secondary,interpretation:card.interpretation,notes:card.notes,tags:card.tags,image:card.image,backImage:card.backImage,imageDescription:card.imageDescription,frontAudio:card.frontAudio,backAudio:card.backAudio,siblingGroupId:card.siblingGroupId,art:card.art,choices:card.choices,answerLabel:card.answerLabel,details:card.details,presentation:card.presentation,imageOcclusion:card.imageOcclusion}).filter(([, value]) => value !== undefined).sort(([a], [b]) => a.localeCompare(b)));
   return normalized(a) === normalized(b);
 }
 

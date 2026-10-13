@@ -2,6 +2,7 @@ import type { AnkiSourceSnapshot, ArtworkRole, CardContent, CardPresentation, De
 
 export interface ResolvedCardPresentation {
   profile: 'general' | 'language';
+  title?:string;
   primary: string;
   cue?: string;
   situationContext?: string;
@@ -76,5 +77,5 @@ export function resolveCardPresentation(card: CardContent, snapshots: AnkiSource
   const artRole = presentation.artRole ?? (card.image || card.art ? 'supportive' : 'hidden');
   const effectiveArtPolicy = requestedArtPolicy === 'auto' ? (artRole === 'instructional' || presentation.profile !== 'language' && !!(card.image || card.art) ? 'image-first' : 'text-first') : requestedArtPolicy;
   const situationContext=clean(presentation.situationContext)||undefined,taskGuidance=clean(presentation.taskGuidance)||undefined,hint=clean(presentation.hint)||undefined;
-  return { profile: presentation.profile ?? 'general', primary: clean(presentation.recallTask) || clean(card.front), cue: clean(presentation.recallCue) || undefined, situationContext,taskGuidance,hint,answerInterpretation:card.details?.length?undefined:clean(card.interpretation||card.meaning)||undefined, artRole, requestedArtPolicy, effectiveArtPolicy };
+  return { profile: presentation.profile ?? 'general', title:clean(presentation.title)||undefined, primary: clean(presentation.recallTask) || clean(card.front), cue: clean(presentation.recallCue) || undefined, situationContext,taskGuidance,hint,answerInterpretation:card.details?.length?undefined:clean(card.interpretation||card.meaning)||undefined, artRole, requestedArtPolicy, effectiveArtPolicy };
 }

@@ -116,7 +116,7 @@ test('HR-DESIGN-07/12 previews curated composition and rarity finish settings an
   const preview = page.locator('hr-design-studio .memory-card'); await expect(preview).toHaveAttribute('data-composition', 'illustration-window');
   await page.getByLabel('Suggest per card').check();
   await page.getByLabel('Preview content').click(); await page.getByRole('option', { name: 'Text only' }).click();
-  await expect(preview).toHaveAttribute('data-composition', 'typographic-showcase'); await expect(preview.locator('[aria-label="Generated text artwork"]')).toBeVisible();
+  await expect(preview).toHaveAttribute('data-composition', 'typographic-showcase'); await expect(preview.locator('[aria-label="Generated text artwork"]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Show recall face' }).click(); await expect(preview.getByText('Why does spaced recall work?')).toBeVisible();
   await page.getByRole('button', { name: 'Show answer face' }).click(); await expect(preview.getByRole('heading', { name: 'Retrieval strengthens memory' })).toBeVisible();
   await page.getByLabel('Preview content').click(); await page.getByRole('option', { name: 'Generated art' }).click(); await expect(preview).toHaveAttribute('data-composition', 'illustration-window'); await expect(preview.locator('.missing-image')).toHaveCount(0); await expect(preview.locator('[aria-label="Generated text artwork"]')).toBeVisible();

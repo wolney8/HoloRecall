@@ -10,6 +10,7 @@ describe.skipIf(!packagePath||!existsSync(packagePath))('real Anki interoperabil
     const bytes=new Uint8Array(readFileSync(packagePath!)),analysis=await analyseAnkiPackage(bytes,'Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg');
     expect(analysis.sourceNotes).toBe(254);expect(analysis.generatedCards).toBe(254);expect(analysis.compatibility.tierC).toBe(0);expect(analysis.compatibility.tierD).toBe(0);
     expect(analysis.effectiveMappings.length).toBeGreaterThan(0);expect(analysis.effectiveMappings.every(mapping=>!!mapping.templateId&&mapping.scope==='template')).toBe(true);
+    expect(analysis.conversionProfiles.every(profile=>profile.status==='automatic')).toBe(true);
     expect(analysis.cards.every(card=>!!card.front.trim()&&!!card.answer.trim()&&card.answer!=='it')).toBe(true);
     expect(analysis.cards.some(card=>card.details?.some(detail=>detail.blocks?.some(block=>block.type==='table')))).toBe(true);
     expect(analysis.cards.some(card=>card.choices?.length)).toBe(true);

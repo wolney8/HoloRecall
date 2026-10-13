@@ -9,7 +9,7 @@ test('HR-ORG-01 search covers accents and navigates to a card editor',async({pag
   const search=page.getByRole('combobox',{name:'Search decks and cards'});await search.fill('caffe');
   await expect(page.getByText('1 matching cards')).toBeVisible();
   const result=page.getByRole('option').filter({hasText:'il caffè'});await expect(result).toContainText('card');await expect(result).toContainText('coffee');
-  await result.click();await expect(page.getByRole('heading',{name:'Edit card'})).toBeVisible();await expect(page.getByLabel('Back text / answer')).toHaveValue('il caffè');
+  await result.click();await expect(page.getByRole('heading',{name:'Edit learning content'})).toBeVisible();await expect(page.getByLabel('Back text / answer')).toHaveValue('il caffè');
 });
 
 test('HR-ORG-02 combined filters are visible, clearable and retained through Collection navigation',async({page})=>{

@@ -1,0 +1,13 @@
+import {describe,expect,it} from 'vitest';
+import {approveConversionProfile,deriveConversionProfiles} from './anki-conversion-profile';
+import {cardCapabilities} from './card-capabilities';
+import type {AnkiSourceSnapshot,CardContent} from './models';
+
+const snapshot:AnkiSourceSnapshot={id:'source',version:2,packageVariant:'legacy-anki2',sourceDecks:[{id:'deck',path:'Science'}],noteTypes:[{id:'model',name:'Basic',cloze:false,signature:'anki-model-v1-science',fields:[{id:'0',name:'Front',ordinal:0},{id:'1',name:'Back',ordinal:1}],templates:[{id:'model:0',name:'Card 1',ordinal:0,question:'{{Front}}',answer:'{{FrontSide}}<hr id="answer">{{Back}}'}]}],notes:[{id:'note',guid:'guid',noteTypeId:'model',fields:{Front:'What is ATP?',Back:'Adenosine triphosphate'},tags:[]}],cards:[{id:'source-card',noteId:'note',templateId:'model:0',templateOrdinal:0,sourceDeckId:'deck'}],media:[],contentHash:'anki-source-snapshot-v2-deadbeef'};
+const card=(patch:Partial<CardContent>={}):CardContent=>({id:'card',deckId:'deck',kind:'text',front:'What is ATP?',answer:'Adenosine triphosphate',pronunciation:'',meaning:'',notes:'',tags:[],revision:1,suspended:false,ankiSource:{kind:'anki',noteGuid:'guid',noteId:'note',templateOrdinal:0,modelName:'Basic',templateName:'Card 1',modelSignature:'anki-model-v1-science',sourceTemplateId:'model:0',importedContentHash:'deadbeef',contentProvenance:{front:'template',answer:'template',frontFields:['Front'],answerFields:['Back'],blocks:[{side:'front',source:'Front',classification:'primary-prompt',destination:'Recall'},{side:'back',source:'Back',classification:'primary-answer',destination:'Answer'}]}},...patch});
+
+describe('Anki Conversion Profiles',()=>{
+  it('creates one clean template profile and reuses a confirmed decision',()=>{const [automatic]=deriveConversionProfiles(snapshot,[card()],[]);expect(automatic).toMatchObject({behaviour:'basic',presentationPolicy:'text-first',status:'automatic'});const confirmed=approveConversionProfile(automatic!,new Date('2026-10-13T10:00:00Z'));expect(deriveConversionProfiles(snapshot,[card()],[],[confirmed])[0]).toEqual(confirmed);});
+  it('blocks suspicious equivalent faces and duplicate prompt art at the template level',()=>{const [profile]=deriveConversionProfiles(snapshot,[card({answer:'What is ATP?',art:{kind:'generated-text-art',title:'What is ATP?',seed:'x'}})],[]);expect(profile?.status).toBe('review-required');expect(profile?.concerns).toEqual(expect.arrayContaining(['equivalent-recall-answer','duplicate-prompt-art']));});
+  it('derives capabilities without persisted flags',()=>{expect(cardCapabilities(card({choices:['One'],frontAudio:['asset:audio'],presentation:{hint:'Think energy'}}))).toEqual(['clue','audio','choices']);});
+});

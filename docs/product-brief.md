@@ -164,6 +164,10 @@ The next unfinished canonical phase is Dogfood Phase 3: full-fidelity HoloRecall
 
 Exchange separates Import, Export and Templates. Ordinary Anki import shows one concise, reconciled Ready / Needs review / Cannot import result and keeps compatibility internals under Advanced details. Safe partial import requires explicit omission consent and retains excluded source identities/issues for repair. The real bBarryy thorax package imports 58 safe cards, including 26 native Image Occlusion cards, while honestly excluding two answerless Basic cards and one occlusion note whose source image is absent.
 
+### Template conversion and Creator semantics
+
+Anki acceptance is owned by a Conversion Profile for the exact note type and card template. It composes the existing Mapping Profile, supported behavior and presentation policy, and applies one decision to every matching generated card. Suspicious projections require template-level review; clean templates retain the fast path. Creator Studio authors the same subject-neutral title, Recall, Answer, Card Details and capability model. Source semantics override decorative art, and native Image Occlusion uses a visual revealed answer without fabricated answer text.
+
 ### Native Image Occlusion and simple Anki review (implemented)
 
 Anki compatibility is summary-first: Auto selects a friendly Basic, reversed, language, rich-reference, cloze, native Image Occlusion or custom family, shows confidence and representative native previews, and keeps the full Mapping Studio behind Advanced mapping. Native Anki 23.10+ Image Occlusion supports normalized rectangle, ellipse and polygon groups, both standard modes, Header/Back Extra/Comments preservation, shared Study/Collection presentation, local authoring/editing and portable v10 round-trip. Unsupported add-on variants remain retained review items. TSV cannot reproduce native masks and warns; production APKG writing remains deferred.

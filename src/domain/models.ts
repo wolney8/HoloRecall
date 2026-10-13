@@ -9,6 +9,8 @@ export type StudyArtPolicy = 'auto' | 'image-first' | 'text-first';
 
 /** Presentation-only learning hierarchy. It never owns the answer or scheduler state. */
 export interface CardPresentation {
+  /** Source-visible headline/category. It is learning presentation, not deck metadata. */
+  title?: string;
   profile?: SubjectPresentationProfile;
   recallTask?: string;
   recallCue?: string;
@@ -142,7 +144,7 @@ export interface AnkiCardSource {
     blocks?: Array<{
       side: 'front' | 'back';
       source: string;
-      classification: 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-art' | 'primary-answer' | 'secondary-cue' | 'concise-interpretation' | 'support' | 'duplicate-frontside' | 'decorative' | 'metadata' | 'fallback';
+      classification: 'card-title' | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-art' | 'primary-answer' | 'secondary-cue' | 'concise-interpretation' | 'support' | 'duplicate-frontside' | 'decorative' | 'metadata' | 'fallback';
       destination: string;
     }>;
   };
@@ -323,7 +325,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 9;
+  schemaVersion: 10;
   version: number;
   userId: string;
   decks: Deck[];
@@ -338,6 +340,7 @@ export interface State {
   preferences: Preferences;
   scheduler: { version: string; configVersion: string; parameters: FSRSParameters };
   ankiMappings: AnkiMappingPreset[];
+  ankiConversionProfiles: AnkiConversionProfile[];
   ankiSources: AnkiSourceSnapshot[];
   studyPresets:StudyPreset[];
   todayOverrides:TodayStudyOverride[];
@@ -425,7 +428,7 @@ export interface LocalAsset {
 /** Subject-neutral semantic destination for one Anki source field/block. Legacy
  * aliases remain readable so existing backups can be reviewed and upgraded. */
 export type AnkiFieldTarget =
-  | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-artwork'
+  | 'card-title' | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-artwork'
   | 'primary-answer' | 'secondary-cue' | 'concise-example' | 'concise-interpretation'
   | 'explanation' | 'rule-pattern' | 'method' | 'worked-steps' | 'reference-table' | 'usage-examples' | 'memory-aid' | 'source-reference' | 'additional-detail' | 'safe-original-details'
   | 'media' | 'decorative' | 'duplicate-frontside' | 'hidden' | 'ignored'
@@ -445,6 +448,27 @@ export interface AnkiMappingPreset {
   evidence?: Record<string,{ confidence: AnkiMappingConfidence; reason: string }>;
   policyVersion?: number;
   origin?: 'auto-inferred' | 'user-confirmed' | 'legacy-unclassified';
+}
+
+export type AnkiBehaviourAdapter='basic'|'reversed'|'rich-template'|'cloze'|'image-occlusion';
+export type AnkiPresentationPolicy='text-first'|'image-first'|'image-occlusion-task-first'|'choices';
+export type AnkiConversionStatus='automatic'|'user-approved'|'review-required'|'unsupported-source-preserved';
+export type AnkiConversionConcern='equivalent-recall-answer'|'placeholder-answer'|'duplicate-prompt-art'|'unaccounted-front'|'unaccounted-back'|'inconsistent-template'|'unsupported-behaviour';
+/** One durable behaviour/presentation decision for an exact Anki note type + card template. */
+export interface AnkiConversionProfile {
+  id:string;
+  version:1;
+  sourceSignature:string;
+  modelName:string;
+  templateId:string;
+  templateName:string;
+  mappingProfileId?:string;
+  behaviour:AnkiBehaviourAdapter;
+  presentationPolicy:AnkiPresentationPolicy;
+  status:AnkiConversionStatus;
+  concerns:AnkiConversionConcern[];
+  origin:'auto-inferred'|'user-confirmed';
+  acceptedAt?:string;
 }
 
 export interface StudySession {
