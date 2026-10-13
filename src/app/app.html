@@ -4,7 +4,7 @@
   <aside class="sidebar">
     <a class="brand" href="#dashboard" (click)="$event.preventDefault();go('dashboard')" aria-label="HoloRecall dashboard"><img src="favicon.svg" alt=""><span>HoloRecall<span class="brand-dot">.</span></span></a>
     <nav aria-label="Main navigation">
-      @for(item of navigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span>{{item.label}}</button>}
+      @for(item of navigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span>{{item.label}}</button>}
     </nav>
     <div class="sidebar-footer"><span class="status-chip"><span class="status-dot"></span> Local prototype</span><p>Saved in this browser.<br>No cloud account or sync.</p></div>
   </aside>
@@ -38,6 +38,7 @@
           }
           @case('library'){
             <div class="page-heading" hrReveal><div><p class="eyebrow">CONTENT AND AUTHORING</p><h1>Decks</h1><p>Create, edit and organise your cards.</p></div><div class="actions"><mat-form-field appearance="outline" class="study-mode-control compact"><mat-label>Study mode</mat-label><mat-select [ngModel]="selectedStudyMode()" (ngModelChange)="chooseStudyMode($event)"><mat-option value="mastery">Mastery</mat-option><mat-option value="anki">Anki</mat-option><mat-option value="free-revision">Free revision</mat-option></mat-select></mat-form-field><button mat-stroked-button (click)="newDeck()">New deck</button><button mat-flat-button (click)="edit()">＋ Create a card</button></div></div>
+            @if(!deckEditor&&!editor){<hr-subview-navigation [items]="librarySubviews" [current]="librarySubview()" ariaLabel="Deck sections" (currentChange)="selectLibrarySubview($event)"/>}
             @if(deckEditor){
               <section class="panel deck-editor-panel" hrReveal>
                 <div class="section-heading"><div><h2>Deck details</h2><p>Manage this deck’s identity, placement and study presentation.</p></div><button mat-button type="button" (click)="deckEditor=null">Cancel</button></div>
@@ -86,7 +87,8 @@
                 </form><aside class="author-preview"><span class="status-chip">Content preview · not earned</span><div class="preview-face-control" role="group" aria-label="Preview card face"><button mat-button type="button" [class.active]="!authorPreviewRevealed" (click)="authorPreviewRevealed=false">Front</button><button mat-button type="button" [class.active]="authorPreviewRevealed" (click)="authorPreviewRevealed=true">Answer</button></div>@defer(on immediate){<hr-card [card]="editor" [presentation]="presentationFor(editor)" [revealed]="authorPreviewRevealed" [rarity]="editor.rarity || 'common'" [demo]="true" [effects]="false" [imageUrl]="store.mediaUrl(editor.image)" [backImageUrl]="store.mediaUrl(editor.backImage || editor.image)" [design]="designFor(editor)" [backgroundUrl]="store.mediaUrl(designFor(editor)?.background)" [frameUrl]="store.mediaUrl(designFor(editor)?.frames?.[editor.rarity || 'common'] || designFor(editor)?.frame)"/>}</aside></div>
               </section>
             }
-            <div class="deck-grid">@for(deck of topDecks();track deck.id;let index=$index){
+            @if(librarySubview()==='decks'){
+            <div id="library-decks-panel" role="tabpanel" aria-label="Decks" class="deck-grid">@for(deck of topDecks();track deck.id;let index=$index){
               <article class="panel deck-details deck-journey" [id]="'deck-'+deck.id" hrReveal [hrRevealDelay]="index * 55">
                 <div class="section-heading"><div><span class="eyebrow">LEARNING JOURNEY</span><h2>{{deck.name}}</h2></div><span class="status-chip">{{deck.archived?'Archived':deck.suspended?'Paused':'Active'}}</span></div>
                 <p>{{deck.description}}</p>
@@ -97,6 +99,8 @@
                 @if(expandedDecks.has(deck.id)){<div class="subdeck-list" [id]="'subdecks-'+deck.id">@for(row of deckRows(deck.id);track row.deck.id){@defer(on immediate){<hr-subdeck-row [deck]="row.deck" [cardCount]="deckCards(row.deck.id).length" [readyCount]="deckReady(row.deck.id)" [subdeckCount]="deckSubdeckCount(row.deck.id)" [depth]="row.depth" [busy]="busy()" (study)="study(row.deck.id)" (focus)="openFocus({deckId:row.deck.id,sourceLabel:row.deck.name})" (manage)="manageDeck($event,row.deck)"/>}}</div>}
               </article>
             }</div>
+            }@else{
+            <div id="library-search-panel" role="tabpanel" aria-label="Search cards">
             <section class="library-tools panel" hrReveal aria-label="Search and organise cards">
               <div class="library-search"><mat-form-field appearance="outline"><mat-label>Search decks and cards</mat-label><input matInput [ngModel]="search" (ngModelChange)="setLibrarySearch($event)" (keydown)="onSearchKey($event)" autocomplete="off" aria-describedby="library-search-status" role="combobox" aria-controls="library-search-results" [attr.aria-expanded]="!!(search && library.page().results.length)" [attr.aria-activedescendant]="search && library.page().results.length ? 'library-result-'+searchResultIndex() : null"><span matTextPrefix aria-hidden="true">⌕&nbsp;</span></mat-form-field><span id="library-search-status" class="hint" aria-live="polite">{{library.status()==='building'?'Updating local index…':library.page().total+' matching cards'}}</span></div>
               @if(search && library.page().results.length){<div id="library-search-results" class="search-results" role="listbox" aria-label="Search results">@for(result of library.page().results.slice(0,8);track result.kind+result.id;let index=$index){<button [id]="'library-result-'+index" type="button" role="option" [class.active]="searchResultIndex()===index" [attr.aria-selected]="searchResultIndex()===index" (click)="chooseSearchResult(result)"><span class="result-kind">{{result.kind}}</span><strong>{{result.label}}</strong><small>{{result.context}}</small></button>}</div>}
@@ -110,6 +114,8 @@
               @for(card of filteredCards();track card.id;let index=$index){@defer(on immediate){<hr-card-list-row [card]="card" [selected]="selectedCardIds.has(card.id)" [introduced]="(data()!.states[card.id]?.reps||0)>0" [rarity]="rarityLabel(card.rarity)" [prestigeLevel]="prestige(card).level" [delay]="index*45" (selection)="toggleCardSelection(card.id,$event)" (edit)="edit(card)" (duplicate)="duplicateCard(card)" (suspend)="suspend(card)"/>}@placeholder{<div class="card-list-row" aria-hidden="true"></div>}}@empty{<p class="empty-state">No results.</p>}
             </div>
             @if(library.page().nextOffset){<div class="load-more"><span>Showing {{filteredCards().length}} of {{library.page().total}}</span><button mat-stroked-button (click)="library.more()">Load 60 more</button></div>}
+            </div>
+            }
           }
           @case('focus'){@defer(on immediate){<hr-focus [launch]="focusLaunch()" (startSession)="startFocus($event)" (close)="go('library')"/>}@placeholder{<p role="status">Loading Focus…</p>}}
           @case('study'){
@@ -147,6 +153,6 @@
       @if(message() && message()!==store.error() && (screen()!=='study' || messageError())){<div class="toast" [class.error]="messageError()" [attr.role]="messageError()?'alert':'status'"><span>{{message()}}</span><button mat-button aria-label="Dismiss notification" (click)="message.set('');messageError.set(false)">Dismiss</button></div>}
     </main>
   </div>
-  <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" (click)="item.id==='more'?toggleMobileMore():go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
+  <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" (click)="item.id==='more'?toggleMobileMore():go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
   @if(confidenceFeedback();as rating){<div class="confidence-feedback rating-{{rating}}" [style.--feedback-x.px]="feedbackPosition().x" [style.--feedback-y.px]="feedbackPosition().y" [attr.data-rating]="rating" aria-hidden="true"><span class="feedback-core"></span><span class="feedback-ring"></span><span class="feedback-glints">✦ · ✧</span></div>}
 </div>

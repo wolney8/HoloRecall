@@ -48,7 +48,7 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
   await openApp(page);
   const coverage: Array<[string, string, number]> = [
     ['Dashboard', '.page-heading.hr-reveal,.study-summary.hr-reveal,.metrics.hr-reveal,.deck-tile.hr-reveal', 4],
-    ['Decks', '.card-list-row.hr-reveal', 10],
+    ['Decks', '.deck-journey.hr-reveal', 1],
     ['Collection', 'hr-collection .hr-reveal', 5],
     ['Design Studio', 'hr-design-studio .hr-reveal', 3],
     ['Progress', 'hr-progress .hr-reveal', 10],
@@ -82,6 +82,7 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
 test('HR-UX-12 stable filtering, focus, theme changes and backgrounding do not replay or hide content', async ({ page }) => {
   await openApp(page);
   await navigate(page, 'Decks');
+  await page.getByRole('tab',{name:'Search cards'}).click();
   const firstRow = page.locator('.card-list-row').first();
   await firstRow.scrollIntoViewIfNeeded();
   await expect(firstRow).toHaveAttribute('data-reveal-state', /active|settled/);

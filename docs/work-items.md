@@ -8,7 +8,23 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active milestone — HR-REGRESSION-STABILITY-01
+## Active milestone — HR-NAVIGATION-01
+
+Authorised 13 October 2026. This bounded navigation milestone gives the Decks/Card search and Exchange peer views one shared, platform-adaptive subview control without changing primary navigation or unrelated screens.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-NAVIGATION-01A | Shared peer-subview control | VERIFY | One small shared control owns items, current selection, change events, accessible labelling and keyboard behaviour. |
+| HR-NAVIGATION-01B | Web compact tabs | VERIFY | Browser peer views use left-aligned, content-width Material tabs with one selected state and meaningful URL/history where supported. |
+| HR-NAVIGATION-01C | Native iOS segments | VERIFY | Capacitor iOS uses the segmented presentation on iPhone and iPad at every width and orientation, without viewport inference. |
+| HR-NAVIGATION-01D | Decks / Search cards | VERIFY | Deck hierarchy and the existing search/filter/result tools become peer views; Decks is default and search state survives temporary navigation. |
+| HR-NAVIGATION-01E | Import / Export / Templates | VERIFY | The settled Exchange routes retain their state and content while replacing the wide local controls with shared subview navigation. |
+| HR-NAVIGATION-01F | Accessibility and responsive gate | VERIFY | Keyboard/ARIA selection, focus, 200% text, safe areas and overflow pass the requested browser/native viewport matrix. |
+| HR-NAVIGATION-01G | Publication gate | VERIFY | Verification, tracked-content preflight and non-force publication of clean `main` must succeed before push. |
+
+Evidence: one semantic tablist implementation renders compact content-width tabs on web and segmented controls only when the official Capacitor runtime reports native iOS. Decks/Search retain hash history and search state; Exchange retains its established child routes. Unit/domain passes **237/237**; the complete browser/profile matrix passes **264/264**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 navigation smokes each pass **1/1**, including landscape. Production is **880.95 kB raw / 213.39 kB estimated transfer** (+5.78 kB / +1.86 kB from 875.17/211.53). Physical-device VoiceOver, Dynamic Type and touch remain unverified.
+
+## Previous milestone — HR-REGRESSION-STABILITY-01
 
 Authorised 13 October 2026. This bounded stabilization milestone resolves the complete browser-matrix regressions after the Exchange and deck-deletion changes without adding product scope.
 

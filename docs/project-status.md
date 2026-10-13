@@ -1,5 +1,12 @@
 # Current restart point
 
+## 13 October 2026 — Shared subview navigation implemented and verified locally
+
+- **Shared pattern:** one semantic, keyboard-operable tablist now presents peer feature views. Browser uses compact content-width Material tabs; the packaged Capacitor iOS runtime uses a segmented treatment on iPhone and iPad regardless of width/orientation. Detection uses `Capacitor.isNativePlatform()` plus `getPlatform() === 'ios'`, loaded behind the platform adapter rather than inferred from viewport size.
+- **Applied scope:** Decks/Search cards are reload/back-safe peers under `#library/decks` and `#library/search`; Decks remains the primary-entry default and the existing search service retains query/filter state. Exchange reuses the control for its existing Import/Export/Templates routes without changing that information architecture.
+- **Evidence:** unit/domain **237/237**; complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix **264/264**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 shared-navigation smokes each **1/1**, including landscape. Production is **880.95 kB raw / 213.39 kB transfer**, +5.78 kB / +1.86 kB from the prior 875.17/211.53 baseline. Physical-device VoiceOver, Dynamic Type, touch quality and older supported iOS versions remain unverified.
+- **Restart point:** complete repository preflight and publish only if `main` remains clean and all safety checks pass. Do not broaden the navigation refactor.
+
 ## 13 October 2026 — Browser regression stabilization verified locally
 
 - **Triage and corrections:** the unchanged baseline was **236 passed, 2 skipped, 14 failed**: two real compact-width defects, eleven assertions superseded by the agreed Exchange IA, one WebKit smooth-scroll interaction race and no decision blockers. The Exchange file input now shrinks within its route container; tests follow Import → Anki and Advanced details → Advanced mapping, page-reveal coverage matches one mounted Exchange view, and Collection sample checks assert keyboard-selected state rather than a moving pointer target.

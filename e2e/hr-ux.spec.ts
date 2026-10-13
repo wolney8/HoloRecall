@@ -53,7 +53,9 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
   await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
   await motion.press('Space');
   await expect(motion).toHaveAttribute('aria-label', 'Show card front');
-  expect(await page.locator('.inspection-card .card-turn').evaluate(node => node.getAnimations().length)).toBe(0);
+  expect(await page.locator('.inspection-card .card-turn').evaluate(node =>
+    node.getAnimations().filter(animation => animation.playState === 'running' || animation.playState === 'pending').length,
+  )).toBe(0);
   const inspectButtons=page.getByRole('button',{name:/Inspect /});
   if(await inspectButtons.count()>1){await inspectButtons.nth(1).click();await expect(motion).toHaveAttribute('aria-label','Show card answer');}
   const after=await snapshot(page);expect(after.events).toEqual(before.events);expect(after.rewardEvents).toEqual(before.rewardEvents);

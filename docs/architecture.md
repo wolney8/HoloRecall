@@ -1,5 +1,9 @@
 # Architecture
 
+## Decision 019: one platform-adaptive pattern for peer subviews
+
+Peer views within one feature share one semantic tablist, route/history state and selection model. Browser presentation is a compact left-aligned, content-width Material tab row. The packaged native iOS shell uses an iOS segmented presentation on iPhone and iPad at every width and orientation. Platform identity comes from the official Capacitor native-runtime signal through the platform adapter; viewport size remains a responsive-layout input and never identifies iPad. Primary app navigation remains separate. The pattern currently applies only to Decks/Search cards and Import/Export/Templates.
+
 ## Decision 018: task-oriented Exchange and explicit partial Anki imports
 
 Exchange is a lazy task surface with three independent URL states: Import, Export and Templates. Provider parsers, Mapping Studio and export previews open inside their relevant journey rather than sharing one permanently expanded page. Anki analysis exposes a reconciled generated-card partition—Ready, Needs review and Cannot import—while retaining the detailed compatibility taxonomy behind progressive disclosure.

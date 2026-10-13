@@ -41,10 +41,12 @@ test('HR-AUTH-01 reversible preset, duplicate and explicit bulk presentation pre
   expect(paired.cards.filter(card => card.front === 'buongiorno' || card.front === 'good morning')).toHaveLength(2);
   expect(paired.events).toEqual(before.events); expect(paired.states).toEqual(before.states); expect(paired.rewardEvents).toEqual(before.rewardEvents);
 
+  await page.getByRole('tab',{name:'Search cards'}).click();
   await page.locator('.card-list-row').filter({has:page.getByRole('heading',{name:'il limone',exact:true})}).getByRole('button',{name:'Duplicate il limone',exact:true}).click();
   await expect(page.getByLabel('Front text / library prompt')).toHaveValue('Name what you see, with its Italian article.');
   await page.getByLabel('Front text / library prompt').fill('il limone · copy');
   await page.getByRole('button', { name: 'Save card', exact: true }).click();
+  await page.getByRole('tab',{name:'Search cards'}).click();
   await page.locator('.card-list-row[data-card-id="it-limone"]').getByRole('checkbox',{name:'Select il limone',exact:true}).check();
   await expect(page.getByRole('region', { name: 'Bulk card changes' })).toBeVisible();
   await selectMaterial(page, 'Authored rarity', 'Rare');

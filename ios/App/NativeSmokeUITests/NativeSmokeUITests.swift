@@ -132,6 +132,32 @@ final class NativeSmokeUITests: XCTestCase {
         tapButton("Cancel")
     }
 
+    func testSharedSubviewNavigation() throws {
+        tapButton("Decks")
+        let searchCards = app.buttons["Search cards"]
+        XCTAssertTrue(searchCards.waitForExistence(timeout: 8))
+        searchCards.tap()
+        XCTAssertTrue(app.textFields["Search decks and cards"].waitForExistence(timeout: 8))
+        let deckButtons = app.buttons.matching(identifier: "Decks")
+        XCTAssertGreaterThanOrEqual(deckButtons.count, 2)
+        deckButtons.element(boundBy: 1).tap()
+        XCTAssertTrue(app.staticTexts["Italian essentials"].waitForExistence(timeout: 8))
+
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.buttons["Search cards"].waitForExistence(timeout: 8))
+        attachScreenshot("native-deck-subviews-landscape")
+        XCUIDevice.shared.orientation = .portrait
+
+        openMore("Import / export")
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Import"].exists)
+        XCTAssertTrue(app.buttons["Export"].exists)
+        XCTAssertTrue(app.buttons["Templates"].exists)
+        app.buttons["Export"].tap()
+        XCTAssertTrue(app.staticTexts["EXPORT HOLORECALL CONTENT"].waitForExistence(timeout: 8))
+        attachScreenshot("native-exchange-segments")
+    }
+
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")

@@ -40,13 +40,15 @@ import { AnswerSupportComponent } from './answer-support';
 import { ImageOcclusionEditorComponent } from './authoring/image-occlusion-editor';
 import { occlusionGroupIds } from '../domain/image-occlusion';
 import type { DeckDeleteDialogResult } from './authoring/deck-delete-dialog';
+import { SubviewNavigationComponent, type SubviewNavigationItem } from './navigation/subview-navigation';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
+type LibrarySubview = 'decks' | 'search';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -59,6 +61,8 @@ export class AppComponent {
   private readonly injector=inject(Injector);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
+  readonly librarySubview=signal<LibrarySubview>(this.initialLibrarySubview());
+  readonly librarySubviews:readonly SubviewNavigationItem<LibrarySubview>[]=[{id:'decks',label:'Decks',panelId:'library-decks-panel'},{id:'search',label:'Search cards',panelId:'library-search-panel'}];
   readonly now=signal(new Date());
   readonly busy=signal(false);
   readonly message=signal('');
@@ -161,6 +165,7 @@ export class AppComponent {
   private answerDwellResolve:(()=>void)|null=null;
   private recallPeekTimer=0;
   private ankiSourceDeckId='';
+  private readonly appPopState=()=>this.syncNavigationFromLocation();
   readonly expandedDecks=new Set<string>();
   constructor(){
     void this.store.init();
@@ -186,9 +191,12 @@ export class AppComponent {
       if(this.ticks%30===0)this.now.set(new Date());
     },1000);
     document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);
-    inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);unsubscribeLifecycle();});
+    window.addEventListener('popstate',this.appPopState);
+    inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);window.removeEventListener('popstate',this.appPopState);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1).split('/')[0];return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
+  private initialLibrarySubview():LibrarySubview{return location.hash.match(/^#library\/(search)(?:\/|$)/)?.[1]==='search'?'search':'decks';}
+  private syncNavigationFromLocation():void{this.screen.set(this.initialScreen());if(this.screen()==='library')this.librarySubview.set(this.initialLibrarySubview());}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
   timeZone():string{return this.data()?.preferences.timeZone??'Europe/London';}
   predictedInterval(rating:1|2|3|4|5):string{const data=this.data(),card=this.displayedCard(),preset=this.currentPreset();if(!data||!card||!preset)return'';const previous=data.states[card.id]?hydrateCard(data.states[card.id]!):createEmptyCard(new Date());const result=fsrs(fsrsParameters(preset)).next(previous,new Date(),mapRating(rating)).card,days=result.scheduled_days;return days<1?'Soon':days===1?'1 day':`${days} days`;}
@@ -214,7 +222,8 @@ export class AppComponent {
   toggleAutoAdvance():void{void (this.autoAdvancePaused()?this.resumeAutoAdvance():this.pauseAutoAdvance());}
   onCardAudioPlaying(playing:boolean):void{this.cardAudioPlaying.set(playing);}
   private async waitForAnswerDwell(run:number):Promise<void>{const seconds=this.currentPreset()?.autoAdvanceEnabled?this.currentPreset()?.autoAnswerSeconds??0:0;if(!seconds||!this.answerRevealedAt)return;const remaining=Math.max(0,seconds*1000-(performance.now()-this.answerRevealedAt));if(!remaining)return;this.settleAnswerDwell();await new Promise<void>(resolve=>{this.answerDwellResolve=resolve;this.answerDwellTimer=window.setTimeout(()=>this.settleAnswerDwell(),Math.min(120000,remaining));});if(run!==this.studyPresentationRun)return;}
-  go(screen:Screen):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.clearRecallPeek();this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');if(screen==='collection'){this.collectionDeckId.set('');this.collectionLabel.set('');}if(screen==='exchange'&&this.screen()!=='library')this.selectedDeck='';this.mobileMoreOpen.set(false);this.screen.set(screen);history.replaceState(null,'',`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  go(screen:Screen,primary=false):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.clearRecallPeek();this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');if(screen==='collection'){this.collectionDeckId.set('');this.collectionLabel.set('');}if(screen==='exchange'&&this.screen()!=='library')this.selectedDeck='';if(screen==='library'&&(primary||this.screen()!=='library'))this.librarySubview.set('decks');this.mobileMoreOpen.set(false);this.screen.set(screen);history.replaceState(null,'',screen==='library'?`#library/${this.librarySubview()}`:`#${screen}`);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  selectLibrarySubview(view:LibrarySubview):void{if(view===this.librarySubview())return;this.librarySubview.set(view);history.pushState(null,'',`#library/${view}`);}
   navigationContext():NavigationContext[]{
     const screen=this.screen(),deckId=this.editor?.deckId||this.deckEditor?.id||this.settingsDeckId()||(screen==='collection'?this.collectionDeckId():'')||(screen==='study'||screen==='results'?this.current()?.deckId||this.session()?.scopeDeckId:'')||(screen==='exchange'?this.selectedDeck:'');
     const decks=deckId?this.deckContext(deckId):[];

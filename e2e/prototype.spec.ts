@@ -43,6 +43,7 @@ test('create and edit a basic card persist its content and revision', async ({ p
   await page.getByLabel(/Tags/).fill('courtesy, everyday');
   await page.getByRole('button', { name: 'Save card', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Card saved.');
+  await page.getByRole('tab',{name:'Search cards'}).click();
   await page.getByRole('button', { name: 'Edit grazie', exact: true }).click();
   await page.getByLabel('Front text / library prompt').fill('Say “thank you very much” in Italian.');
   await page.getByLabel('Back text / answer', { exact: true }).fill('grazie mille');
@@ -51,6 +52,7 @@ test('create and edit a basic card persist its content and revision', async ({ p
   await expect(page.getByRole('heading', { name: 'grazie mille', exact: true })).toBeVisible();
   await page.reload();
   await navigate(page, 'Decks');
+  await page.getByRole('tab',{name:'Search cards'}).click();
   await expect(page.getByRole('heading', { name: 'grazie mille', exact: true })).toBeVisible();
   const saved = await snapshot(page);
   const card = saved.cards.find(item => item.answer === 'grazie mille');
@@ -151,6 +153,7 @@ test('keyboard reveal and rating use the same persisted review path', async ({ p
 test('converting a visual card to text removes its image and restores the text prompt', async ({ page }) => {
   await openApp(page);
   await navigate(page, 'Decks');
+  await page.getByRole('tab',{name:'Search cards'}).click();
   await page.getByRole('button', { name: 'Edit il limone', exact: true }).click();
   await selectMaterial(page, 'Card type', 'Text prompt with optional image');
   await page.getByText('Advanced presentation and media', { exact: true }).click();

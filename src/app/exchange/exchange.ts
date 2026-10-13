@@ -17,13 +17,14 @@ import { AnkiWorkerClient } from './anki-worker-client';
 import { CAPABILITY_POLICY } from '../platform/capability-policy';
 import { BALANCED_PRESET_ID } from '../../domain/study-settings';
 import { automaticMappingProfile, previewAnkiExport, SEMANTIC_ROLES, writeAnkiTextExport, type AnkiExportPreview, type AnkiExportProfile, type MappingProfileInput } from '../../domain/anki-interop';
+import { SubviewNavigationComponent, type SubviewNavigationItem } from '../navigation/subview-navigation';
 
 export interface ExchangeCompletionAction { action:'review'|'deck'|'search'|'study';deckId:string;deckIds:string[];label:string }
 type ExchangeView='import'|'export'|'templates';
 
 @Component({
   selector: 'hr-exchange', standalone: true,
-  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, PageRevealDirective],
+  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, SubviewNavigationComponent, PageRevealDirective],
   templateUrl: './exchange.html',
   styleUrl: './exchange.css',
   styles: [`
@@ -73,7 +74,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   ankiExportProfile:AnkiExportProfile='extended-v1';readonly ankiExportPreview=signal<AnkiExportPreview|null>(null);
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
   readonly completion=signal<{deckId:string;deckIds:string[];label:string;kind:'IMPORT'|'UPDATE'|'REPAIR'}|null>(null);
-  readonly exchangeViews:{id:ExchangeView;label:string}[]=[{id:'import',label:'Import'},{id:'export',label:'Export'},{id:'templates',label:'Templates'}];
+  readonly exchangeViews:readonly SubviewNavigationItem<ExchangeView>[]=[{id:'import',label:'Import',panelId:'exchange-import-panel'},{id:'export',label:'Export',panelId:'exchange-export-panel'},{id:'templates',label:'Templates',panelId:'exchange-templates-panel'}];
   readonly exchangeView=signal<ExchangeView>('import');
   readonly ankiJourneyOpen=signal(false);readonly ankiExportOpen=signal(false);
   readonly showAdvancedDetails=signal(false);readonly showAdvancedIssueIds=signal(false);
