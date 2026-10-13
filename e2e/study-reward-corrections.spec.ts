@@ -27,8 +27,9 @@ test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with acces
   await expect(page.locator('.mat-mdc-tooltip')).toContainText('Correct and confident.');
   await page.mouse.move(20, 20);
   await info.focus();
-  await expect(page.locator('.mat-mdc-tooltip')).toContainText('Correct and confident.');
+  await expect(info).toHaveAttribute('aria-description','Correct and confident.');
   await info.click();
+  await expect(page.locator('.mat-mdc-tooltip')).toContainText('Correct and confident.');
   expect((await snapshot(page)).events).toHaveLength(0);
   await page.keyboard.press('Escape');
   await expect(page.locator('.mat-mdc-tooltip')).toBeHidden();

@@ -9,6 +9,7 @@ import { visibleOcclusionShapes } from '../domain/image-occlusion';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
+export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
 
 @Component({
   selector: 'hr-card',
@@ -21,7 +22,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
@@ -33,6 +34,7 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
             @if (illustration && !failedImage()) {
               <img [src]="illustration" [style.object-fit]="card.imageOcclusion ? 'contain' : (design?.artwork?.fit || 'contain')" [style.object-position]="card.imageOcclusion ? '50% 50%' : ((design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%')" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
               @if(card.imageOcclusion){<svg class="image-occlusion-overlay" [attr.viewBox]="occlusionViewBox" preserveAspectRatio="xMidYMid meet" aria-hidden="true">@for(shape of occlusionMasks;track shape.id){@switch(shape.type){@case('rect'){<rect [attr.x]="shape.x*occlusionWidth" [attr.y]="shape.y*occlusionHeight" [attr.width]="shape.width*occlusionWidth" [attr.height]="shape.height*occlusionHeight" rx="8"/>}@case('ellipse'){<ellipse [attr.cx]="shape.cx*occlusionWidth" [attr.cy]="shape.cy*occlusionHeight" [attr.rx]="shape.rx*occlusionWidth" [attr.ry]="shape.ry*occlusionHeight"/>}@case('polygon'){<polygon [attr.points]="polygonPoints(shape.points)"/>}}}</svg><span class="visually-hidden">{{occlusionAccessibleState}}</span>}
+              @if(card.imageOcclusion&&(card.imageOcclusion.header||!displayedRevealed())){<span class="occlusion-prompt">{{card.imageOcclusion.header||'Identify the hidden region'}}</span>}
             } @else if (illustrationMissing) {
               <span class="missing-image"><span aria-hidden="true">▧</span> Illustration unavailable</span>
             }
@@ -52,6 +54,9 @@ export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
         </article>
       </div>
     </div>
+    @if (illustration && !failedImage() && !hideStudyArt) {
+      <button class="expand-image" type="button" (pointerdown)="$event.stopPropagation()" (click)="requestInspection($event)" [attr.aria-label]="'Expand '+(displayedRevealed()?'Answer':'Recall')+' image'"><span aria-hidden="true">⌕</span></button>
+    }
     @if (audioRefs.length) {
       <div class="audio-controls" [attr.aria-label]="displayedRevealed() ? 'Answer audio' : 'Front audio'" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
         @for (ref of audioRefs; track ref; let index = $index) {
@@ -83,6 +88,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() dragTilt = false;
   @Input() flippable = false;
   @Output() flipped = new EventEmitter<boolean>();
+  @Output() inspectImage = new EventEmitter<CardInspectionRequest>();
   @Output() audioPlayingChange = new EventEmitter<boolean>();
   @Input() demo = false;
   @Input() design?: DesignSet;
@@ -164,6 +170,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const expectsBinaryImage = !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl)) || this.card?.art?.kind === 'imported-media');
     return expectsBinaryImage && (!this.illustration || this.failedImage());
   }
+  requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
   get occlusionWidth():number{return this.card?.imageOcclusion?.imageWidth??1000;}
   get occlusionHeight():number{return this.card?.imageOcclusion?.imageHeight??1000;}
   get occlusionViewBox():string{return`0 0 ${this.occlusionWidth} ${this.occlusionHeight}`;}

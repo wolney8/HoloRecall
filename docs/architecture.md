@@ -262,6 +262,8 @@ Portable content format 9 carries deck/Design Set policy and card presentation J
 
 ## Decision 016: stable revealed Study stage and presentation-only inspection
 
+Image-bearing cards publish an inspection request from the shared card renderer; Study, Collection/review and Creator preview open the same lazy Material dialog. The request snapshots the displayed face and source image, while Image Occlusion masks are re-derived from the same normalized geometry used on-card. Zoom and pan transform the image and overlay together. The dialog owns no domain store and cannot create learning mutations; the Study host alone pauses and resumes its existing Auto Advance lifecycle around the modal.
+
 **Status: implemented.**
 
 The authoritative revealed state remains in the Study session. A separate ephemeral Recall Peek signal controls only the shared card face for 2.5 seconds; it never re-enters the reveal command or changes rating availability. Manual return, rating, card/session transition, navigation and lifecycle loss cancel its owned timer. Results and Collection reuse the same renderer flip contract, but their face state is local presentation state and cannot call the scheduler or reward writer.

@@ -64,6 +64,7 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
 test('HR-COLLECTION-DETAIL-01 stays top-aligned without page overflow at 1280×720',async({page},testInfo)=>{
   await page.setViewportSize({width:1280,height:720});await openApp(page);await navigate(page,'Collection');
   const showcase=page.locator('#collection-inspection'),card=showcase.locator('.inspection-card'),details=showcase.locator('.inspection-details');
+  await expect(showcase).toHaveAttribute('data-reveal-state','settled');
   const [cardBox,detailsBox]=await Promise.all([card.boundingBox(),details.boundingBox()]);expect(cardBox).toBeTruthy();expect(detailsBox).toBeTruthy();expect(Math.abs(cardBox!.y-detailsBox!.y)).toBeLessThanOrEqual(2);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);
   await page.screenshot({path:testInfo.outputPath('collection-detail-1280x720.png'),fullPage:true});

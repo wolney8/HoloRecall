@@ -13,7 +13,8 @@ import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '../domain/rewards';
 import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode } from '../domain/models';
-import { FlashcardComponent } from './card';
+import { FlashcardComponent, type CardInspectionRequest } from './card';
+import { CardInspectionService } from './card-inspection';
 import { DesignStudioComponent } from './design-studio/design-studio';
 import { CollectionComponent } from './collection/collection';
 import { ProgressComponent } from './progress/progress';
@@ -59,6 +60,7 @@ export class AppComponent {
   private readonly viewportCoordinator=inject(VisualViewportCoordinator);
   private readonly viewportReveal=inject(ViewportRevealService);
   private readonly injector=inject(Injector);
+  private readonly cardInspection=inject(CardInspectionService);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
   readonly librarySubview=signal<LibrarySubview>(this.initialLibrarySubview());
@@ -274,6 +276,14 @@ export class AppComponent {
   designFor(card:CardContent):DesignSet|undefined{return this.store.designFor(card);}
   presentationFor(card:CardContent){return this.store.presentationFor(card);}
   studyAnnouncement(card:CardContent):string{if(!this.displayedRevealed())return'New card. Attempt recall, then reveal.';if(card.imageOcclusion){const description=card.imageOcclusion.targetDescription?.trim();return`Image Occlusion answer revealed.${description?` ${description}`:''}`;}return`Answer: ${card.answer}.${card.meaning?` ${card.meaning}`:''}`;}
+  async openCardInspection(card:CardContent,request:CardInspectionRequest):Promise<void>{
+    const imageRef=request.revealed?(card.backImage||card.image):card.image,imageUrl=this.store.mediaUrl(imageRef);if(!imageUrl)return;
+    const studyCard=this.screen()==='study'&&this.current()?.id===card.id,resumeAuto=studyCard&&!!this.currentPreset()?.autoAdvanceEnabled&&!this.autoAdvancePaused();
+    if(resumeAuto)await this.pauseAutoAdvance(true);
+    try{await this.cardInspection.open(card,request,imageUrl);}
+    catch(error){this.fail(error);}
+    finally{if(resumeAuto&&this.screen()==='study'&&this.current()?.id===card.id)await this.resumeAutoAdvance();}
+  }
   hasAnswerSupport(card:CardContent):boolean{return !!card.details?.length||!!card.notes.replace(/^Imported source\s*·[^\n]*(?:\n\n)?/i,'').trim()||!this.presentationFor(card).answerInterpretation&&!!(card.meaning||card.interpretation);}
   designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
   deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}
@@ -425,7 +435,7 @@ export class AppComponent {
   private blankCard(deckId?:string,designSetId?:string):CardContent{return{id:crypto.randomUUID(),deckId:deckId||this.selectedDeck||this.data()?.decks[0]?.id||'',kind:'text',front:'',answer:'',pronunciation:'',meaning:'',notes:'',tags:[],revision:0,suspended:false,rarity:'common',presentation:{profile:'general',artRole:'hidden'},...(designSetId?{designSetId}:{})};}
   private editorSnapshot():string{return JSON.stringify({editor:this.editor,tags:this.tagInput,choices:this.creatorChoices});}
   private hasUnsavedCard():boolean{return !!this.editor&&this.editorSnapshot()!==this.editorBaseline;}
-  async uploadCard(event:Event,back=false):Promise<void>{const input=event.target as HTMLInputElement;const file=input.files?.[0];if(!file||!this.editor)return;this.busy.set(true);try{const {readArtwork}=await import('./upload'),asset=await this.store.saveAsset(await readArtwork(file));if(back)this.editor.backImage=`asset:${asset.id}`;else{this.editor.image=`asset:${asset.id}`;if(this.editor.imageOcclusion)this.editor.imageOcclusion={...this.editor.imageOcclusion,imageWidth:asset.width,imageHeight:asset.height};}this.editor={...this.editor};this.message.set('Image uploaded locally. Save the card to use it.');}catch(e){this.message.set(String(e));}finally{this.busy.set(false);input.value='';}}
+  async uploadCard(event:Event,back=false):Promise<void>{const input=event.target as HTMLInputElement;const file=input.files?.[0];if(!file||!this.editor)return;this.busy.set(true);try{const {readArtwork}=await import('./upload'),asset=await this.store.saveAsset(await readArtwork(file));if(back)this.editor.backImage=`asset:${asset.id}`;else{const firstFrontImage=!this.editor.image;this.editor.image=`asset:${asset.id}`;if(firstFrontImage&&this.editor.presentation?.artRole==='hidden')this.editor.presentation={...this.editor.presentation,artRole:'supportive',studyArtPolicy:'image-first'};if(this.editor.imageOcclusion)this.editor.imageOcclusion={...this.editor.imageOcclusion,imageWidth:asset.width,imageHeight:asset.height};}this.editor={...this.editor};this.message.set('Image uploaded locally. Save the card to use it.');}catch(e){this.message.set(String(e));}finally{this.busy.set(false);input.value='';}}
   async uploadCardAudio(event:Event,back=false):Promise<void>{const input=event.target as HTMLInputElement,file=input.files?.[0];if(!file||!this.editor)return;this.busy.set(true);try{const {readAudio}=await import('./upload'),asset=await this.store.saveAsset(await readAudio(file));const key=back?'backAudio':'frontAudio';this.editor={...this.editor,[key]:[...(this.editor[key]??[]),`asset:${asset.id}`]};this.message.set('Audio uploaded locally. Save the card to use it.');}catch(e){this.fail(e);}finally{this.busy.set(false);input.value='';}}
   async uploadDeckCover(event:Event):Promise<void>{const input=event.target as HTMLInputElement,file=input.files?.[0];if(!file||!this.deckEditor)return;this.busy.set(true);try{const {readArtwork}=await import('./upload'),asset=await this.store.saveAsset(await readArtwork(file));this.deckEditor={...this.deckEditor,coverImage:`asset:${asset.id}`};this.message.set('Cover uploaded locally. Save the deck to use it.');}catch(e){this.fail(e);}finally{this.busy.set(false);input.value='';}}
   removeCardAudio(ref:string,back=false):void{if(!this.editor)return;const key=back?'backAudio':'frontAudio';this.editor={...this.editor,[key]:(this.editor[key]??[]).filter(item=>item!==ref)};}

@@ -158,6 +158,33 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-exchange-segments")
     }
 
+    func testExpandedImageInspection() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let start = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'study' AND label CONTAINS '→'")).firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        start.tap()
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
+
+        let expand = app.buttons["Expand Recall image"]
+        XCTAssertTrue(expand.waitForExistence(timeout: 8))
+        expand.tap()
+        XCTAssertTrue(app.staticTexts["Expanded Recall image"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Recall image inspection'" )).firstMatch.exists)
+
+        let zoomIn = app.buttons["Zoom in"]
+        XCTAssertTrue(zoomIn.isHittable)
+        attachScreenshot("native-expanded-image")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.staticTexts["Expanded Recall image"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Zoom in"].isHittable)
+        attachScreenshot("native-expanded-image-landscape")
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(app.staticTexts["Expanded Recall image"].waitForExistence(timeout: 8))
+        tapButton("Close")
+        XCTAssertTrue(expand.waitForExistence(timeout: 8))
+        XCTAssertTrue(revealableCard().exists)
+    }
+
     private func tapButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")

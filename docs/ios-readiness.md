@@ -1,4 +1,5 @@
 
+- Card inspection gate (13 October 2026): the production shared renderer and lazy expanded-image dialog sync into Capacitor. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 modal smokes each pass **1/1** in portrait and landscape, including the explicit Expand/Close path and reachable zoom controls. Browser WebKit proves explicit zoom, shared pan geometry and two-pointer pinch state; physical-device pinch/pan quality, VoiceOver and large-diagram memory pressure remain unverified. Evidence: `.runtime/evidence/hr-card-inspection-01/`.
 - Anki interoperability gate (12 October 2026): Mapping Studio and Basic/Extended-v1 preview stay in the lazy Exchange route; production assets at **849.99 kB** sync into Capacitor. The packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 44.650 s**. This verifies the shared packaged build and existing Study/navigation journey, not native system-picker `.apkg` analysis, physical-device accessibility or tactile quality. Evidence: `.runtime/evidence/hr-anki-interop-20261012/`.
 # Web and native-platform readiness
 

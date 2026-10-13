@@ -1,5 +1,13 @@
 # Current restart point
 
+## 13 October 2026 — Task-first Image Occlusion and expanded inspection verified locally
+
+- **Occlusion finding:** bBarryy import/conversion was already correct and was not changed. Its 26 safe native occlusion cards comprise 4 Hide All and 22 Hide One cards; Recall and Answer retain the same source image while the active target's mask state changes according to the source mode.
+- **Presentation:** Image Occlusion now gives the contained source diagram the card's main usable area, suppresses the generic copy panel and never creates an empty Answer panel. One lazy Material inspection dialog serves Study, Collection/review and Creator preview; it preserves the opening face, mask state and focus, and supplies 1×–5× zoom, reset, shared image/mask pan and two-pointer pinch handling.
+- **State safety:** Study inspection pauses Auto Advance with remaining time retained, then resumes on close. Opening, zooming, panning and closing do not reveal, rate, write reviews, change FSRS/rewards or advance the queue. Compact landscape reduces the image viewport so controls remain reachable.
+- **Evidence:** unit/domain **244/244** with both real packages; complete browser/profile matrix **283/283**, final cross-profile inspection regression **22/22**, and post-refactor exact-package Chromium/WebKit inspection **18/18**; production build **888.73 kB raw / 214.97 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) modal smokes pass **1/1** each in portrait and landscape. Physical-device pinch/pan, VoiceOver and large-image memory pressure remain unverified.
+- **Restart point:** tracked-content secret/artifact preflight is clean; physical-device pinch/pan, VoiceOver and large-image memory pressure remain the outstanding verification gaps. Do not begin clue/card-chrome, Collection/Collection Desk or APKG work.
+
 ## 13 October 2026 — Static Anki template semantics and visual-answer accessibility verified locally
 
 - **Static semantic coverage:** safe literal qfmt/afmt blocks now retain `template-static` provenance and enter the same front/back coverage contract as field-derived content. One strong concise `h1`–`h3` heading can become `presentation.title`; multiple plausible headings block the exact Conversion Profile for review. Context/guidance class evidence is projected, decorative noise is accounted for, and meaningful unclassified back copy remains in Card Details.

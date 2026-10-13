@@ -8,7 +8,22 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active milestone — HR-ANKI-CONVERSION-PROFILES-01 + HR-CREATOR-SEMANTICS-01
+## Active corrective milestone — HR-CARD-INSPECTION-01
+
+Authorised 13 October 2026. This bounded milestone preserves verified Anki projection while improving task-first Image Occlusion composition and adding one shared, state-safe expanded inspection surface for meaningful card images.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-CARD-INSPECTION-01A | Verify real occlusion semantics | VERIFY | Real bBarryy and controlled fixtures prove Recall/Answer mask state for both native modes before importer changes are considered. |
+| HR-CARD-INSPECTION-01B | Task-first occlusion composition | VERIFY | Source image uses the collectible card's available study area without cropping; generic fallback copy does not displace the task or create an empty answer panel. |
+| HR-CARD-INSPECTION-01C | Shared expanded inspection | VERIFY | Study, Collection/review and Creator preview reuse one accessible Material dialog preserving the opening face and focus. |
+| HR-CARD-INSPECTION-01D | Zoom, pan and responsive input | VERIFY | Bounded explicit zoom/reset and pointer/touch pan preserve image/mask geometry; pinch support uses native pointer gestures without a new dependency. |
+| HR-CARD-INSPECTION-01E | Study-state safety | VERIFY | Inspection pauses/resumes Auto Advance without reveal, rating, FSRS, review, reward, queue or face mutation. |
+| HR-CARD-INSPECTION-01F | Accessibility and platform verification | VERIFY | Dialog/face/mask/zoom semantics, keyboard/focus, compact WebKit and packaged iPhone/iPad smokes pass before publication. |
+
+Evidence: the unchanged real-package projector produces **26** safe visual-answer cards: **4 Hide All, Guess One** and **22 Hide One, Guess One**, with the expected masked Recall/revealed Answer shape sets. Unit/domain passes **244/244** with both real-package paths configured; the complete browser/profile matrix passes **283/283**, the cross-profile inspection rerun passes **22/22**, and the final shared-service exact-package Chromium/WebKit rerun passes **18/18**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 modal smokes pass **1/1** each in portrait and landscape. Physical-device pinch/pan, VoiceOver and large-diagram memory pressure remain unverified.
+
+## Previous milestone — HR-ANKI-CONVERSION-PROFILES-01 + HR-CREATOR-SEMANTICS-01
 
 Authorised 13 October 2026. This bounded milestone adds template-scoped conversion behaviour/presentation above existing Mapping Profiles, visual-only native Image Occlusion answers, subject-neutral Creator Studio semantics and template-level suspicious-conversion review. Card chrome, clue animation, Collection redesign/Desk and APKG output remain excluded.
 

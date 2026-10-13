@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { analyseAnkiPackage,previewAnkiImport } from './anki';
 import {createInitialState} from './study';
+import {visibleOcclusionShapes} from './image-occlusion';
 
 const packagePath=process.env['HOLORECALL_BBARRYY_PACKAGE'];
 beforeAll(()=>{const wasm=readFileSync('node_modules/sql.js/dist/sql-wasm-browser.wasm'),original=globalThis.fetch;globalThis.fetch=((input:RequestInfo|URL,init?:RequestInit)=>String(input).endsWith('/runtime/sql-wasm-browser.wasm')?Promise.resolve(new Response(wasm,{headers:{'content-type':'application/wasm'}})):original(input,init)) as typeof fetch;});
@@ -13,6 +14,8 @@ describe.skipIf(!packagePath||!existsSync(packagePath))('bBarryy anatomy thorax 
     const analysis=await analyseAnkiPackage(new Uint8Array(bytes),'bBarryy_anatomy_thorax_pt_1.apkg');
     expect(analysis).toMatchObject({sourceNotes:29,generatedCards:61,compatibility:{tierA:58,tierB:0,tierC:0,tierD:3}});
     expect(analysis.cards).toHaveLength(58);expect(analysis.cards.filter(card=>card.imageOcclusion)).toHaveLength(26);
+    const occlusionCards=analysis.cards.filter(card=>card.imageOcclusion);expect(occlusionCards.filter(card=>card.imageOcclusion?.mode==='hide-all-guess-one')).toHaveLength(4);expect(occlusionCards.filter(card=>card.imageOcclusion?.mode==='hide-one-guess-one')).toHaveLength(22);
+    expect(occlusionCards.every(card=>{const content=card.imageOcclusion!,active=content.shapes.filter(shape=>shape.groupId===content.activeGroupId).length,recall=visibleOcclusionShapes(content,false),answer=visibleOcclusionShapes(content,true);return content.mode==='hide-all-guess-one'?recall.length===content.shapes.length&&answer.length===content.shapes.length-active:recall.length===active&&answer.length===0;})).toBe(true);
     const basic=analysis.cards.find(card=>card.front.toLocaleLowerCase()==='what is the accessory reproductive organ?');expect(basic).toMatchObject({answer:'breast'});expect(basic?.art?.kind==='generated-text-art'&&basic.art.title.toLocaleLowerCase().includes(basic.front.toLocaleLowerCase())).toBe(false);
     expect(analysis.cards.filter(card=>card.imageOcclusion).every(card=>card.answer===''&&card.image===card.backImage)).toBe(true);
     expect(analysis.conversionProfiles.some(profile=>profile.behaviour==='image-occlusion'&&profile.presentationPolicy==='image-occlusion-task-first')).toBe(true);
