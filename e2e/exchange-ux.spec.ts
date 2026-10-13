@@ -48,3 +48,9 @@ test('HR-EXCHANGE-03 navigation reflows on compact WebKit @ios-compact',async({p
   await page.getByRole('tab',{name:'Templates'}).click();await expect(page.getByText('Exact format specification')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
+
+test('HR-REGRESSION-STABILITY-01 Exchange remains contained at 1024px and 200% text',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});await page.goto('/#exchange/import/anki');
+  await expect(page.locator('#anki-import')).toBeVisible();await page.evaluate(()=>document.documentElement.style.fontSize='200%');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1024);
+});

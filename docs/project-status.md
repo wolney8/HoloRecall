@@ -1,5 +1,11 @@
 # Current restart point
 
+## 13 October 2026 — Browser regression stabilization verified locally
+
+- **Triage and corrections:** the unchanged baseline was **236 passed, 2 skipped, 14 failed**: two real compact-width defects, eleven assertions superseded by the agreed Exchange IA, one WebKit smooth-scroll interaction race and no decision blockers. The Exchange file input now shrinks within its route container; tests follow Import → Anki and Advanced details → Advanced mapping, page-reveal coverage matches one mounted Exchange view, and Collection sample checks assert keyboard-selected state rather than a moving pointer target.
+- **Evidence:** unit/domain **236/236** with the Italian and bBarryy package gates enabled; complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix **254/254** with no skips; deck deletion/migration **9/9**; production **875.17 kB raw / 211.53 kB transfer**. The synced iPhone 17 Pro / iOS 26.5 Deck-management and Exchange/orientation/file-surface smoke passes **2/2 in 57.268 s**. Exchange (**86.52 kB**), Anki Worker (**57.06 kB**) and deck-delete dialog (**27.11 kB**) remain lazy. Physical-device touch and VoiceOver remain unverified.
+- **Restart point:** complete tracked-content preflight, commit and publish local `main` only while local verification and repository hygiene remain clean. No product milestone should begin in this run.
+
 ## 13 October 2026 — Deck deletion and immutable review attribution awaiting final verification
 
 - **Historical attribution:** state schema 9 gives attributed review events a self-contained review-time deck snapshot containing owner and ancestry IDs/names plus root identity. Schema-8 live-reference attribution migrates only when its hierarchy is internally consistent; malformed legacy attribution fails rather than inventing history. Historical reporting uses the snapshot while current inventory, due and hierarchy views use live decks. Rename, move, reparent and deletion never rewrite accepted review events.

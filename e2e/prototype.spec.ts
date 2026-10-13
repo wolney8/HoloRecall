@@ -84,7 +84,8 @@ test('collection explicitly previews seven tiers and effects preference persists
   await expect(page.getByRole('heading', { name: 'Design samples', exact: true })).toBeVisible();
   await expect(page.locator('.sample-button')).toHaveCount(7);
   for (const rarity of ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic']) {
-    await page.locator(`.sample-button[data-rarity="${rarity}"]`).click();
+    const sample=page.locator(`.sample-button[data-rarity="${rarity}"]`);
+    await sample.focus(); await sample.press('Enter'); await expect(sample).toHaveClass(/selected/);
     await expect(page.locator('.inspection-card .memory-card')).toHaveAttribute('data-rarity', rarity);
     await expect(page.getByText('Design sample · not earned', { exact: true })).toBeVisible();
   }

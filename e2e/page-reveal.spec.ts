@@ -52,7 +52,8 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
     ['Collection', 'hr-collection .hr-reveal', 5],
     ['Design Studio', 'hr-design-studio .hr-reveal', 3],
     ['Progress', 'hr-progress .hr-reveal', 10],
-    ['Import / export', 'hr-exchange .hr-reveal', 3],
+    // Exchange renders one heading and one focused active view; inactive Import/Export/Templates views are not mounted together.
+    ['Import / export', 'hr-exchange .hr-reveal', 2],
     ['Settings', '.settings-grid .hr-reveal', 2],
   ];
   const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Suite', Progress: 'Progress', 'Import / export': 'Exchange', Settings: 'Settings' };

@@ -8,7 +8,24 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active milestone — HR-DECK-MANAGEMENT-01
+## Active milestone — HR-REGRESSION-STABILITY-01
+
+Authorised 13 October 2026. This bounded stabilization milestone resolves the complete browser-matrix regressions after the Exchange and deck-deletion changes without adding product scope.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-REGRESSION-STABILITY-01A | Full-matrix triage | VERIFY | Classify every baseline failure as product regression, settled-UX assertion, harness/environment issue or decision blocker before changing code. |
+| HR-REGRESSION-STABILITY-01B | Exchange regression alignment | VERIFY | Preserve Import / Export / Templates and progressive Advanced mapping while replacing assertions tied to the former combined page. |
+| HR-REGRESSION-STABILITY-01C | Compact-width containment | VERIFY | Remove whole-page overflow at 1024 px, compact WebKit, phone portrait/landscape and 200% text using intrinsic sizing/wrapping rules. |
+| HR-REGRESSION-STABILITY-01D | Deterministic page/reveal coverage | VERIFY | Assert settled reveal ownership and current page structure without depending on superseded block counts or transient animation samples. |
+| HR-REGRESSION-STABILITY-01E | Deck-delete regression gate | VERIFY | Reprove deletion scopes, immutable historical attribution, backup/reference integrity, responsive layout and dialog accessibility. |
+| HR-REGRESSION-STABILITY-01F | Publication gate | VERIFY | Run the complete verification matrix, scan tracked content, and push `main` only if no unexplained failures remain. |
+
+Baseline: **236 passed, 2 skipped, 14 failed**. Classification: 2 real compact-width product defects (Exchange file-input intrinsic width), 11 obsolete assertions after the settled Exchange IA change (9 journey assertions and 2 reveal-inventory counts), 1 WebKit harness/timing failure caused by rapid sample selection during smooth inspection scrolling, and 0 product-decision blockers.
+
+Evidence: the native file control now has explicit shrink containment; the current summary-first Anki journey, nested Advanced mapping and focused Exchange reveal inventory have direct assertions. Collection rarity sampling uses keyboard activation and confirms selected state, removing its scroll-position race without changing timeouts. Unit/domain passes **236/236** with both real-package gates enabled; the complete browser/profile matrix passes **254/254** with no skips; deck deletion/migration passes **9/9**; packaged iPhone 17 Pro / iOS 26.5 Deck and Exchange smoke passes **2/2**. Production remains **875.17 kB raw / 211.53 kB transfer** (change: 0.00 kB raw, +0.03 kB estimated transfer from the prior rounded report); Exchange is **86.52 kB**, the Anki Worker **57.06 kB**, and the deck dialog **27.11 kB**, all lazy. Physical-device touch/VoiceOver remains unverified.
+
+## Previous milestone — HR-DECK-MANAGEMENT-01
 
 Authorised 12 October 2026 and resumed 13 October 2026 after the historical-attribution decision. This bounded milestone adds safe permanent deck deletion and repairs the Deck management layout without beginning Collection Desk or unrelated features.
 
