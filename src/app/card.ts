@@ -169,7 +169,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get occlusionViewBox():string{return`0 0 ${this.occlusionWidth} ${this.occlusionHeight}`;}
   get occlusionMasks(){return this.card?.imageOcclusion?visibleOcclusionShapes(this.card.imageOcclusion,this.displayedRevealed()):[];}
   polygonPoints(points:Array<{x:number;y:number}>):string{return points.map(point=>`${point.x*this.occlusionWidth},${point.y*this.occlusionHeight}`).join(' ');}
-  get occlusionAccessibleState():string{const value=this.card?.imageOcclusion;if(!value)return'';return this.displayedRevealed()?`Image Occlusion answer. Target region revealed.${value.targetDescription?' '+value.targetDescription:''}`:`Image Occlusion question. Target region hidden.${value.imageDescription?' '+value.imageDescription:''}${value.header?' '+value.header:''}`;}
+  get occlusionAccessibleState():string{const value=this.card?.imageOcclusion;if(!value)return'';return this.displayedRevealed()?`Image Occlusion answer revealed.${value.targetDescription?' '+value.targetDescription:''}`:`Image Occlusion question. Target region hidden.${value.imageDescription?' '+value.imageDescription:''}${value.header?' '+value.header:''}`;}
   get missingDesignAsset(): boolean { return this.failedBackground() || this.failedFrame() || !!(this.design?.background && !this.backgroundUrl) || !!((this.design?.frames?.[this.shownRarity] || this.design?.frame) && !this.frameUrl); }
   get audioRefs(): string[] { return this.displayedRevealed() ? this.card?.backAudio ?? [] : this.card?.frontAudio ?? []; }
 

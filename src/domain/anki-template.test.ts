@@ -8,7 +8,15 @@ describe('safe Anki template rendering',()=>{
     expect(rendered.markup).toContain('Informal — Ciao!');
     expect(rendered.markup).toContain('ready');
     expect(rendered.referencedFields).toEqual(['Prompt','Italian','Usage','Missing']);
+    expect(rendered.staticBlocks).toEqual(expect.arrayContaining([expect.objectContaining({tag:'p',text:'Prompt:'})]));
     expect(rendered.unsupported).toEqual([]);
+  });
+  it('accounts for meaningful literal template blocks without treating layout noise as content',()=>{
+    const rendered=renderAnkiTemplate('<section><h2 class="category">DAY <em>OF THE</em> WEEK</h2><div class="accent">✦</div><p class="guidance">Say the answer aloud.</p><div>{{Prompt}}</div></section>',{fields:{Prompt:'Thursday'},answerSide:false});
+    expect(rendered.staticBlocks).toEqual([
+      {tag:'h2',text:'DAY OF THE WEEK',classes:['category']},
+      {tag:'p',text:'Say the answer aloud.',classes:['guidance']},
+    ]);
   });
   it('uses FrontSide and the answer boundary without duplicating the question',()=>{
     const template='{{FrontSide}}<hr id="answer"><b>Answer:</b> {{Italian}}<div>{{English}}</div>';

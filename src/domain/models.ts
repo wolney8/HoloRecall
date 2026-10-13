@@ -144,6 +144,8 @@ export interface AnkiCardSource {
     blocks?: Array<{
       side: 'front' | 'back';
       source: string;
+      sourceKind?: 'field' | 'template-static';
+      sourceText?: string;
       classification: 'card-title' | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-art' | 'primary-answer' | 'secondary-cue' | 'concise-interpretation' | 'support' | 'duplicate-frontside' | 'decorative' | 'metadata' | 'fallback';
       destination: string;
     }>;

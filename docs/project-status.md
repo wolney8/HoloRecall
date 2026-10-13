@@ -1,5 +1,13 @@
 # Current restart point
 
+## 13 October 2026 — Static Anki template semantics and visual-answer accessibility verified locally
+
+- **Static semantic coverage:** safe literal qfmt/afmt blocks now retain `template-static` provenance and enter the same front/back coverage contract as field-derived content. One strong concise `h1`–`h3` heading can become `presentation.title`; multiple plausible headings block the exact Conversion Profile for review. Context/guidance class evidence is projected, decorative noise is accounted for, and meaningful unclassified back copy remains in Card Details.
+- **Real source result:** the exact 254-card Italian package contains no `DAY OF THE WEEK`, `Thursday` or `giovedì` in its notes or templates. Its qfmt uses field-derived Lesson/Topic, Picture, Options, Prompt, Question and Context plus static review guidance. No day-of-week title was fabricated; a valid static-heading fixture proves the generic title path.
+- **Visual-answer accessibility:** native Image Occlusion retains an empty textual answer and announces `Image Occlusion answer revealed`, optionally followed by an authored target description. The bBarryy package remains 58 safe cards, including 26 native visual-answer cards.
+- **Evidence:** unit/domain **244/244** with both real-package paths configured; relevant Chromium/desktop-WebKit/compact-WebKit **23/23**, plus bBarryy exact-package import **2/2**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 smokes each **1/1**. Production is **886.36 kB raw / 214.41 kB estimated transfer**, +0.25 kB / +0.07 kB from 886.11/214.34. Physical-device VoiceOver, Dynamic Type and package import through the native picker remain unverified.
+- **Restart point:** complete repository preflight and publish only if local `main` remains clean and matches the existing origin after a normal push. Do not begin clue/card-chrome, Collection, Collection Desk or APKG work.
+
 ## 13 October 2026 — Template Conversion Profiles and Creator semantics verified locally
 
 - **Conversion contract:** state schema 10 adds one versioned Conversion Profile per Anki model/template, composing the retained Mapping Profile with a supported behavior adapter, presentation policy, acceptance state and sanity concerns. Review and approval apply once to every matching generated card. Template-visible category/headline content may project to `presentation.title`; unrelated Topic/Lesson metadata does not.

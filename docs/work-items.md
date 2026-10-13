@@ -28,6 +28,18 @@ Authorised 13 October 2026. This bounded milestone adds template-scoped conversi
 
 Evidence: state schema 10 additively stores template-scoped Conversion Profiles while retaining Mapping Profiles, source snapshots and portable v10 compatibility. The exact bBarryy package produces 58 safe cards, including 26 visual-answer Image Occlusion cards, while the configured 254-card Italian package retains automatic profiles. Unit/domain passes **241/241**; the complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **268/268**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 smokes each pass **1/1**. Production is **886.11 kB raw / 214.34 kB estimated transfer** (+5.12 kB / +0.98 kB from 880.99/213.36); Exchange (**90.36 kB**) and the Anki Worker (**60.18 kB**) remain lazy. Physical-device touch, VoiceOver, Dynamic Type and real-device large-package performance remain unverified.
 
+### Corrective milestone — HR-ANKI-CONVERSION-PROFILES-01A
+
+| Requirement | Status | Acceptance boundary |
+|---|---|---|
+| Static template provenance and coverage | VERIFY | Meaningful safe literal blocks receive auditable classifications; noise is ignored and ambiguity blocks the exact template. |
+| Static heading title inference | VERIFY | Only strong semantic heading evidence becomes a subject-neutral card title; field titles remain supported. |
+| Real Italian source trace | VERIFY | The exact source contains no day-of-week/Thursday/giovedì content, so none is fabricated; a valid static-heading fixture proves the generic path. |
+| Visual-answer accessibility | VERIFY | Image Occlusion reveal has a meaningful announcement without an empty or fabricated textual answer. |
+| Regression, build and publication | VERIFY | Both real-package domain gates, relevant Chromium/WebKit and packaged iPhone/iPad smokes pass; publication remains subject to final preflight. |
+
+Evidence: unit/domain **244/244** with both exact packages configured; relevant Chromium/desktop-WebKit/compact-WebKit **23/23**, including explicit visual-answer live-region coverage, plus bBarryy exact import **2/2**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) smokes pass **1/1** each. Production is **886.36 kB raw / 214.41 kB estimated transfer** (+0.25/+0.07 kB from the preceding milestone). Physical-device VoiceOver, Dynamic Type and native-picker package import remain unverified.
+
 ## Previous milestone — HR-UI-IDENTITY-01
 
 Authorised 13 October 2026. This bounded corrective milestone scopes primary-navigation CSS, standardises the Exchange destination name and replaces the casino-adjacent mark with one cross-platform Knowledge Stack source.

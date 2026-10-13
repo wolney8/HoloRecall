@@ -273,6 +273,7 @@ export class AppComponent {
   deckName(id:string):string{return this.data()?.decks.find(d=>d.id===id)?.name??'Deck';}
   designFor(card:CardContent):DesignSet|undefined{return this.store.designFor(card);}
   presentationFor(card:CardContent){return this.store.presentationFor(card);}
+  studyAnnouncement(card:CardContent):string{if(!this.displayedRevealed())return'New card. Attempt recall, then reveal.';if(card.imageOcclusion){const description=card.imageOcclusion.targetDescription?.trim();return`Image Occlusion answer revealed.${description?` ${description}`:''}`;}return`Answer: ${card.answer}.${card.meaning?` ${card.meaning}`:''}`;}
   hasAnswerSupport(card:CardContent):boolean{return !!card.details?.length||!!card.notes.replace(/^Imported source\s*·[^\n]*(?:\n\n)?/i,'').trim()||!this.presentationFor(card).answerInterpretation&&!!(card.meaning||card.interpretation);}
   designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
   deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}

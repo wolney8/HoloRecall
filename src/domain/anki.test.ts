@@ -118,6 +118,24 @@ describe('Anki content-only import', () => {
     expect(card.ankiSource?.contentProvenance?.blocks).toEqual(expect.arrayContaining([expect.objectContaining({source:'Category',classification:'card-title'}),expect.objectContaining({source:'Question',classification:'primary-prompt'})]));
     expect(card.presentation?.title).not.toContain('Human biology');
   });
+  it('projects a strong static template heading and accounts for static guidance and support',()=>{
+    const snapshot={id:'static-title-source',version:2 as const,packageVariant:'legacy-anki2' as const,sourceDecks:[{id:'d',path:'General'}],noteTypes:[{id:'m',name:'General fact',cloze:false,fields:['Front','Back'].map((name,ordinal)=>({id:String(ordinal),name,ordinal})),templates:[{id:'m:0',name:'Fact',ordinal:0,question:'<h2 class="category">DAY OF THE WEEK</h2><div>{{Front}}</div><p class="guidance">Say the answer aloud.</p>',answer:'{{FrontSide}}<hr id="answer"><div>{{Back}}</div><p class="explanation">Use this form in ordinary conversation.</p>'}],signature:'anki-model-v1-static-title'}],notes:[{id:'n',guid:'static-title-guid',noteTypeId:'m',fields:{Front:'Thursday',Back:'giovedì'},tags:[]}],cards:[{id:'c',noteId:'n',templateId:'m:0',templateOrdinal:0,sourceDeckId:'d'}],media:[],contentHash:'static-title'};
+    const analysis=analyseAnkiSourceSnapshot(snapshot),card=analysis.cards[0]!;
+    expect(card).toMatchObject({front:'Thursday',answer:'giovedì',presentation:{title:'DAY OF THE WEEK',taskGuidance:'Say the answer aloud.'},details:[{label:'Additional details',content:'Use this form in ordinary conversation.'}]});
+    expect(card.ankiSource?.contentProvenance?.blocks).toEqual(expect.arrayContaining([
+      expect.objectContaining({source:'template-static:front:0',sourceKind:'template-static',sourceText:'DAY OF THE WEEK',classification:'card-title'}),
+      expect.objectContaining({sourceKind:'template-static',sourceText:'Say the answer aloud.',classification:'task-guidance'}),
+      expect.objectContaining({sourceKind:'template-static',sourceText:'Use this form in ordinary conversation.',classification:'support',destination:'Card Details'}),
+    ]));
+    expect(analysis.conversionProfiles[0]).toMatchObject({status:'automatic',concerns:[]});
+  });
+  it('requires template-level review for ambiguous static headings and ignores decorative static copy',()=>{
+    const analyse=(question:string,signature:string)=>analyseAnkiSourceSnapshot({id:signature,version:2 as const,packageVariant:'legacy-anki2' as const,sourceDecks:[{id:'d',path:'General'}],noteTypes:[{id:'m',name:'Custom',cloze:false,fields:['Front','Back'].map((name,ordinal)=>({id:String(ordinal),name,ordinal})),templates:[{id:'m:0',name:'Card',ordinal:0,question,answer:'{{Back}}'}],signature}],notes:[{id:'n',guid:signature,noteTypeId:'m',fields:{Front:'Prompt',Back:'Answer'},tags:[]}],cards:[{id:'c',noteId:'n',templateId:'m:0',templateOrdinal:0,sourceDeckId:'d'}],media:[],contentHash:signature});
+    const ambiguous=analyse('<h2>ANATOMY</h2><h3>THORAX</h3>{{Front}}','anki-model-v1-ambiguous-static');
+    expect(ambiguous.cards[0]?.presentation?.title).toBeUndefined();expect(ambiguous.conversionProfiles[0]).toMatchObject({status:'review-required',concerns:expect.arrayContaining(['unaccounted-front'])});
+    const decorative=analyse('<h2 class="ornament">STUDY</h2>{{Front}}','anki-model-v1-decorative-static');
+    expect(decorative.cards[0]).toMatchObject({front:'Prompt'});expect(decorative.cards[0]?.presentation?.title).toBeUndefined();expect(decorative.conversionProfiles[0]).toMatchObject({status:'automatic',concerns:[]});expect(decorative.cards[0]?.ankiSource?.contentProvenance?.blocks).toEqual(expect.arrayContaining([expect.objectContaining({sourceText:'STUDY',classification:'decorative'})]));
+  });
   it('preserves block boundaries without inventing spacing between intentional inline text', () => {
     expect(plainAnkiText('<div>Come stai?</div><div>Molto bene</div>')).toBe('Come stai?\nMolto bene');
     expect(plainAnkiText('<span>Hello</span> <strong>world</strong>')).toBe('Hello world');

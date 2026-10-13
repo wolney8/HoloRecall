@@ -14,6 +14,7 @@ describe.skipIf(!packagePath||!existsSync(packagePath))('real Anki interoperabil
     expect(analysis.cards.every(card=>!!card.front.trim()&&!!card.answer.trim()&&card.answer!=='it')).toBe(true);
     expect(analysis.cards.some(card=>card.details?.some(detail=>detail.blocks?.some(block=>block.type==='table')))).toBe(true);
     expect(analysis.cards.some(card=>card.choices?.length)).toBe(true);
+    const retainedSource=JSON.stringify(analysis.sourceSnapshot).toLocaleLowerCase();expect(retainedSource).not.toContain('day of the week');expect(retainedSource).not.toContain('thursday');expect(retainedSource).not.toContain('gioved');
     expect(JSON.stringify(analysis.cards)).not.toMatch(/onclick=|javascript:/i);
   },30_000);
 });
