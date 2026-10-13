@@ -4,6 +4,8 @@
 
 This retains the project's iOS-readiness history and is the canonical evidence matrix for Web, iOS/iPadOS, Android and Apple-silicon Mac. Intel Mac is not planned. “WebKit verified” means Playwright's patched WebKit build on this Mac. It does not mean Safari, WKWebView, an iOS Simulator, Android WebView, an emulator, a physical device or a native Mac run was tested.
 
+- UI identity gate (13 October 2026): one Knowledge Stack SVG now drives the web mark/favicon and generated iOS/Android icon rasters. Xcode accepts the opaque 1024 px AppIcon and emits iPhone/iPad icons. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 shared-navigation tests each pass **1/1**, including landscape segmented controls and the Exchange destination. Android resource structure/dimensions are static evidence only; Android runtime, physical-device icon appearance, VoiceOver, Dynamic Type and touch quality remain unverified. Evidence: `.runtime/evidence/hr-ui-identity-01/`.
+
 - Shared-subview navigation gate (13 October 2026): production assets at **880.95 kB** synced into Capacitor; the iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 packaged Decks/Search and Import/Export/Templates smokes each pass **1/1**, including landscape. The iPad control remains segmented at wide native width because presentation follows the Capacitor iOS signal. A cold iPad Simulator test launch failed before app accessibility content mounted; after explicit boot completion, the unchanged test passed. Physical-device VoiceOver, Dynamic Type and touch quality remain unverified. Evidence: `.runtime/evidence/hr-navigation-01/`.
 
 - Deck-management gate (13 October 2026): production assets at **875.17 kB** synced into Capacitor; the iPhone 17 Pro / iOS 26.5 packaged Deck editor and permanent-delete confirmation smoke passes **1/1 in 24.103 s**. It verifies native reachability, responsive scrolling, disabled destructive confirmation and cancellation. Physical-device VoiceOver, touch quality and an actual destructive native transaction remain unverified. Evidence: `.runtime/evidence/hr-deck-management-01/deck-management-final-20261013.xcresult`.
@@ -114,7 +116,7 @@ No Photos, microphone, media-library, location, tracking or analytics SDK/permis
 | Audio/media | PORTABLE NOW at model/renderer level | Native URL translation, audio interruption/session policy, relaunch and physical speaker evidence |
 | Themes and accessibility | PORTABLE NOW for web semantics and preferences | System bars, Dynamic Type/font scale, VoiceOver/TalkBack, software keyboard and device safe areas |
 | Entitlement boundary | PORTABLE NOW and non-enforcing | Future verified store adapters, restore/revocation/account decisions; never infer ownership from a client flag |
-| App chrome | NATIVE WORK REQUIRED | Replace generated icon/splash placeholders; verify status/navigation bars, edge-to-edge and orientation before release |
+| App chrome | PARTIAL NATIVE EVIDENCE | Knowledge Stack AppIcon compiles and packages for iPhone/iPad Simulator; verify physical-device icon appearance, splash/status bars, edge-to-edge and release signing |
 
 ## iOS/iPadOS adaptive information architecture evidence
 

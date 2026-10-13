@@ -19,7 +19,7 @@ async function collectibleImport():Promise<Buffer>{
 }
 
 test('HR-UX-IDR-02/03 imports into a deck-scoped collectible review flow',async({page},testInfo)=>{
-  await openApp(page);await navigate(page,'Import / export');
+  await openApp(page);await navigate(page,'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   await page.locator('#anki-import').setInputFiles({name:'collectible-review.apkg',mimeType:'application/zip',buffer:await collectibleImport()});
   await expect(page.getByText('2',{exact:true}).first()).toBeVisible();await page.getByRole('button',{name:'Import 2 supported cards'}).click();
@@ -35,13 +35,13 @@ test('HR-UX-IDR-02/03 imports into a deck-scoped collectible review flow',async(
 });
 
 test('HR-UX-IDR-02/05 exposes View cards for parent and subdeck management',async({page})=>{
-  await openApp(page);await navigate(page,'Import / export');await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'collectible-review.apkg',mimeType:'application/zip',buffer:await collectibleImport()});await page.getByRole('button',{name:'Import 2 supported cards'}).click();await page.getByRole('button',{name:'Go to deck'}).click();
+  await openApp(page);await navigate(page,'Exchange');await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'collectible-review.apkg',mimeType:'application/zip',buffer:await collectibleImport()});await page.getByRole('button',{name:'Import 2 supported cards'}).click();await page.getByRole('button',{name:'Go to deck'}).click();
   const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:'Italian Journey',exact:true})}),parentActions=parent.locator(':scope > hr-deck-journey-actions');await expect(parent).toContainText('2 cards');await parentActions.getByRole('button',{name:'More deck actions'}).click();await parentActions.getByRole('menuitem',{name:'View cards'}).click();await expect(page.getByRole('heading',{name:'Italian Journey',exact:true})).toBeVisible();await expect(page.locator('.collectible-item')).toHaveCount(2);
   await navigate(page,'Decks');const show=parent.getByRole('button',{name:/Show 1 subdecks/});if(await show.isVisible())await show.click();const child=parent.locator('.subdeck-row');await child.getByRole('button',{name:'More deck actions'}).click();await child.getByRole('menuitem',{name:'View cards'}).click();await expect(page.getByRole('heading',{name:'01 Greetings',exact:true})).toBeVisible();await expect(page.locator('.collectible-item')).toHaveCount(2);
 });
 
 test('HR-UX-IDR responsive imported review @ios-compact @ios-large @ios-landscape',async({page})=>{
-  await openApp(page);await navigate(page,'Import / export');await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'collectible-review.apkg',mimeType:'application/zip',buffer:await collectibleImport()});await page.getByRole('button',{name:'Import 2 supported cards'}).click();
+  await openApp(page);await navigate(page,'Exchange');await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'collectible-review.apkg',mimeType:'application/zip',buffer:await collectibleImport()});await page.getByRole('button',{name:'Import 2 supported cards'}).click();
   const done=page.locator('.completion-panel');await expect(done.getByRole('button',{name:'Review imported deck'})).toBeVisible();await expectNoOverflow(page);await done.getByRole('button',{name:'Review imported deck'}).click();await expect(page.locator('.collectible-item')).toHaveCount(2);await expectNoOverflow(page);
   await page.evaluate(()=>document.documentElement.style.fontSize='200%');await expectNoOverflow(page);await expect(page.getByRole('button',{name:/Inspect/}).first()).toBeVisible();
 });

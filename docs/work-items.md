@@ -8,7 +8,21 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active milestone — HR-NAVIGATION-01
+## Active milestone — HR-UI-IDENTITY-01
+
+Authorised 13 October 2026. This bounded corrective milestone scopes primary-navigation CSS, standardises the Exchange destination name and replaces the casino-adjacent mark with one cross-platform Knowledge Stack source.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-UI-IDENTITY-01A | Scope navigation CSS | VERIFY | Sidebar and mobile navigation own their layout rules; generic `nav` and `nav button` rules no longer alter peer subviews or unrelated navigation. |
+| HR-UI-IDENTITY-01B | Preserve platform subview pattern | VERIFY | Web Decks/Search and Exchange controls are compact horizontal tabs; native iPhone/iPad retain segmented presentation at every width/orientation. |
+| HR-UI-IDENTITY-01C | Canonical Exchange naming | VERIFY | Primary/mobile navigation, context, heading, placeholders and accessible labels use Exchange; explanatory prose may describe import/export actions. |
+| HR-UI-IDENTITY-01D | Canonical Knowledge Stack mark | VERIFY | One geometric SVG source defines a teal, cream three-sheet stack with a small four-point recall spark and no casino cues. |
+| HR-UI-IDENTITY-01E | Derived platform assets | VERIFY | Web/sidebar/favicon, opaque 1024 px iOS AppIcon and existing Android launcher/adaptive resources visibly derive from the same mark. |
+| HR-UI-IDENTITY-01F | Accessibility and verification | VERIFY | Decorative semantics, keyboard/ARIA, 200% containment, browser/native navigation, asset dimensions and build/bundle evidence pass without timeout inflation. |
+| HR-UI-IDENTITY-01G | Publication gate | VERIFY | Normal secret/artifact preflight found no probable credentials or runtime/build output; publish with a normal non-force push after confirming origin has not diverged. |
+
+## Previous milestone — HR-NAVIGATION-01
 
 Authorised 13 October 2026. This bounded navigation milestone gives the Decks/Card search and Exchange peer views one shared, platform-adaptive subview control without changing primary navigation or unrelated screens.
 

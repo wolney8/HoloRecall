@@ -26,7 +26,7 @@ async function largeApkg(): Promise<Buffer> {
 }
 
 test('HR-IMPORT-01 analyses, previews and atomically imports an Anki package', async ({ page }) => {
-  await openApp(page); await navigate(page, 'Import / export');
+  await openApp(page); await navigate(page, 'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByRole('heading',{name:'tiny',exact:true})).toBeVisible();await expect(page.getByText('Basic Front / Back',{exact:true})).toBeVisible(); await expect(page.getByText('1', { exact: true }).first()).toBeVisible();
@@ -36,7 +36,7 @@ test('HR-IMPORT-01 analyses, previews and atomically imports an Anki package', a
 });
 
 test('HR-IMPORT-01 worker imports official custom fields and side-specific bundled audio', async ({ page }) => {
-  await openApp(page);await navigate(page,'Settings');await page.getByRole('radio', { name: 'Dark', exact: true }).click();await navigate(page,'Import / export');
+  await openApp(page);await navigate(page,'Settings');await page.getByRole('radio', { name: 'Dark', exact: true }).click();await navigate(page,'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   const before = await snapshot(page);
   await page.locator('#anki-import').setInputFiles({
@@ -87,7 +87,7 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
 });
 
 test('HR-IMPORT-01 keeps the interface responsive and cancels background analysis without mutation', async ({ page }, testInfo) => {
-  await openApp(page); await page.getByRole('button', { name: 'Import / export' }).click(); await page.getByLabel('Anki · Import Anki .apkg decks').click(); const before = await snapshot(page);
+  await openApp(page); await page.getByRole('button', { name: 'Exchange' }).click(); await page.getByLabel('Anki · Import Anki .apkg decks').click(); const before = await snapshot(page);
   await page.evaluate(() => { document.body.dataset['heartbeats'] = '0'; window.setInterval(() => document.body.dataset['heartbeats'] = String(Number(document.body.dataset['heartbeats']) + 1), 16); });
   const fixture = await largeApkg(); await testInfo.attach('large-fixture-size.txt', { body: `${fixture.byteLength} compressed bytes; 10,000 notes/cards; 180 repeated prompt bytes per note.`, contentType: 'text/plain' });
   await page.locator('#anki-import').setInputFiles({ name: 'large.apkg', mimeType: 'application/zip', buffer: fixture });
@@ -101,7 +101,7 @@ test('HR-IMPORT-01 keeps the interface responsive and cancels background analysi
 });
 
 test('HR-IMPORT-01 advanced enrichment reflows at enlarged text on phone profiles @ios-compact @ios-large @ios-landscape', async ({ page }) => {
-  await openApp(page); await navigate(page, 'Import / export');
+  await openApp(page); await navigate(page, 'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   await page.locator('#anki-import').setInputFiles({ name: 'tiny.apkg', mimeType: 'application/zip', buffer: await tinyApkg() });
   await expect(page.getByRole('heading',{name:'tiny',exact:true})).toBeVisible();await expect(page.getByText('Basic Front / Back',{exact:true})).toBeVisible(); await page.getByRole('button',{name:/Advanced details/}).click();await page.getByRole('button',{name:'Advanced mapping'}).click();

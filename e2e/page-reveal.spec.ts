@@ -53,10 +53,10 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
     ['Design Studio', 'hr-design-studio .hr-reveal', 3],
     ['Progress', 'hr-progress .hr-reveal', 10],
     // Exchange renders one heading and one focused active view; inactive Import/Export/Templates views are not mounted together.
-    ['Import / export', 'hr-exchange .hr-reveal', 2],
+    ['Exchange', 'hr-exchange .hr-reveal', 2],
     ['Settings', '.settings-grid .hr-reveal', 2],
   ];
-  const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Suite', Progress: 'Progress', 'Import / export': 'Exchange', Settings: 'Settings' };
+  const headings: Record<string, string> = { Decks: 'Decks', Collection: 'Collection', 'Design Studio': 'Design Suite', Progress: 'Progress', 'Exchange': 'Exchange', Settings: 'Settings' };
   for (const [pageName, selector, minimum] of coverage) {
     if (pageName !== 'Dashboard') { await navigate(page, pageName); await expect(page.getByRole('heading', { name: headings[pageName], exact: true })).toBeVisible(); }
     await expect.poll(()=>page.locator(selector).count(),{message:`${pageName} shared reveal coverage`}).toBeGreaterThanOrEqual(minimum);

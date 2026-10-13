@@ -1,5 +1,12 @@
 # Current restart point
 
+## 13 October 2026 — Navigation scoping, Exchange naming and Knowledge Stack identity verified locally
+
+- **Navigation:** the root cause was unscoped `nav`, `nav button` and `nav .active` rules in `src/styles.css`, which imposed sidebar column/full-width behavior on the shared subview tablist. Sidebar rules now target `.sidebar > nav`; bottom and More navigation retain their own container rules. Decks/Search cards and Import/Export/Templates are compact horizontal web tabs while the packaged native iOS presentation remains segmented on iPhone and iPad, including landscape.
+- **Identity:** `Exchange` now names the sidebar, mobile More destination, context/title, loading state and accessibility queries. `public/brand/holorecall-mark.svg` is the canonical Knowledge Stack source used directly by the sidebar and favicon. `npm run brand:assets` deterministically derives the opaque 1024 px iOS AppIcon plus Android legacy, round and transparent adaptive-foreground resources; unused old Android robot/grid vectors and the old diamond favicon are removed.
+- **Evidence:** unit/domain **237/237**; focused navigation/Exchange **27/27**; complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix **266/266**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) / iOS 26.5 shared-navigation smokes each pass **1/1** in portrait and landscape, and both asset-catalog builds accept the new icon. Production is **880.99 kB raw / 213.36 kB transfer**, +0.04 kB raw / -0.03 kB transfer from 880.95/213.39. Android resource structure and dimensions are verified statically; Android runtime, physical-device icon rendering, VoiceOver/Dynamic Type and physical touch remain unverified.
+- **Restart point:** complete secret/artifact preflight and publish only if local `main` remains clean and matches the existing origin after a normal push. Do not broaden this milestone.
+
 ## 13 October 2026 — Shared subview navigation implemented and verified locally
 
 - **Shared pattern:** one semantic, keyboard-operable tablist now presents peer feature views. Browser uses compact content-width Material tabs; the packaged Capacitor iOS runtime uses a segmented treatment on iPhone and iPad regardless of width/orientation. Detection uses `Capacitor.isNativePlatform()` plus `getPlatform() === 'ios'`, loaded behind the platform adapter rather than inferred from viewport size.

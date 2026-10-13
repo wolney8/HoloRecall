@@ -4,7 +4,7 @@ import {expect,navigate,openApp,snapshot,test} from './helpers';
 const bBarryyPackage=process.env['HOLORECALL_BBARRYY_PACKAGE'];
 
 async function openExchange(page:Parameters<typeof openApp>[0]):Promise<void>{
-  await openApp(page);await navigate(page,'Import / export');
+  await openApp(page);await navigate(page,'Exchange');
   await expect(page.getByRole('heading',{name:'Exchange',exact:true})).toBeVisible();
 }
 

@@ -10,7 +10,7 @@ import { dayKey } from '../../domain/time';
   <h2>Full progress backup</h2><p>Includes cards, designs, uploaded images, schedules, reward events and review history. Keep it private.</p>
   <button mat-stroked-button (click)="export()">Download JSON backup ↓</button>
   <label class="upload-field">Restore full backup<input type="file" accept="application/json,.json" (change)="restore($event)"></label>
-  <p class="hint">Restore is allowed only in untouched storage. Older backups are migrated. Deck exchange in Import / export is separate and never carries learning progress.</p>
+  <p class="hint">Restore is allowed only in untouched storage. Older backups are migrated. Content exchange is separate and never carries learning progress.</p>
   @if(message()){<p class="inline-notice" [class.error]="failed()" [attr.role]="failed()?'alert':'status'">{{message()}}</p>}
 `})
 export class LocalDataSettingsComponent{

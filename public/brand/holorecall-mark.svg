@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="stack-edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9adbcf"/>
+      <stop offset="0.55" stop-color="#57a99c"/>
+      <stop offset="1" stop-color="#d2b86a"/>
+    </linearGradient>
+  </defs>
+  <rect id="brand-background" width="1024" height="1024" fill="#123d37"/>
+  <g id="knowledge-stack">
+    <rect x="236" y="196" width="456" height="542" rx="68" fill="#23685f" stroke="url(#stack-edge)" stroke-width="18"/>
+    <rect x="286" y="244" width="456" height="542" rx="68" fill="#347f74" stroke="#78bfb3" stroke-width="14"/>
+    <rect x="336" y="292" width="456" height="542" rx="68" fill="#f5ead7" stroke="#e0cfae" stroke-width="12"/>
+    <path id="recall-spark" d="M564 438c11 53 30 72 83 83-53 11-72 30-83 83-11-53-30-72-83-83 53-11 72-30 83-83Z" fill="#1d6158"/>
+  </g>
+</svg>

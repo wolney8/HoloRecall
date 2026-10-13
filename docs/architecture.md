@@ -1,5 +1,9 @@
 # Architecture
 
+## Decision 020: Exchange identity and one Knowledge Stack brand source
+
+`Exchange` is the canonical user-facing destination name for the existing import, export and template routes. HoloRecall's canonical app mark is the Knowledge Stack at `public/brand/holorecall-mark.svg`: three rounded learning sheets on dark teal with one four-point recall spark and no playing-card suit imagery. Web uses that source directly; the checked-in opaque iOS AppIcon and Android legacy/adaptive launcher rasters are generated from it with `npm run brand:assets`. The visible HoloRecall wordmark remains unchanged, and the adjacent mark stays decorative to accessibility APIs.
+
 ## Decision 019: one platform-adaptive pattern for peer subviews
 
 Peer views within one feature share one semantic tablist, route/history state and selection model. Browser presentation is a compact left-aligned, content-width Material tab row. The packaged native iOS shell uses an iOS segmented presentation on iPhone and iPad at every width and orientation. Platform identity comes from the official Capacitor native-runtime signal through the platform adapter; viewport size remains a responsive-layout input and never identifies iPad. Primary app navigation remains separate. The pattern currently applies only to Decks/Search cards and Import/Export/Templates.

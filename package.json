@@ -13,6 +13,7 @@
     "build": "ng build",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "native:version": "node scripts/sync-native-version.mjs",
     "native:sync:ios": "npm run native:version && npm run build && cap sync ios",
     "native:open:ios": "cap open ios",

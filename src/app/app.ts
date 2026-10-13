@@ -98,7 +98,7 @@ export class AppComponent {
     {id:'dashboard',label:'Dashboard',icon:'▦'},{id:'library',label:'Decks',icon:'▤'},
     {id:'study',label:'Study',icon:'◈'},{id:'focus',label:'Focus',icon:'◎'},{id:'collection',label:'Collection',icon:'✧'},
     {id:'studio',label:'Design Studio',icon:'✎'},{id:'progress',label:'Progress',icon:'▥'},
-    {id:'exchange',label:'Import / export',icon:'⇄'},{id:'settings',label:'Settings',icon:'⚙'},
+    {id:'exchange',label:'Exchange',icon:'⇄'},{id:'settings',label:'Settings',icon:'⚙'},
   ];
   readonly mobilePrimaryNavigation:{id:Screen|'more';label:string;icon:string}[]=[
     {id:'library',label:'Decks',icon:'▤'},{id:'study',label:'Study',icon:'◈'},
@@ -233,7 +233,7 @@ export class AppComponent {
     if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
     if(screen==='collection'&&this.collectionDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Cards',screen:'collection'}];
     if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='manage'?'Manage Anki source':this.ankiSourceMode()==='mapping'?'Advanced field enrichment':this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
-    const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Import & export',settings:'Settings'} satisfies Record<Screen,string>)[screen];
+    const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Exchange',settings:'Settings'} satisfies Record<Screen,string>)[screen];
     return [{label:title,screen}];
   }
   private deckContext(deckId:string):Deck[]{const state=this.data();if(!state)return[];const byId=new Map(state.decks.map(deck=>[deck.id,deck])),path:Deck[]=[];let current=byId.get(deckId),guard=0;while(current&&guard++<state.decks.length){path.unshift(current);current=current.parentId?byId.get(current.parentId):undefined;}return path;}

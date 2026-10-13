@@ -14,7 +14,7 @@ async function languageRecallPackage():Promise<Buffer>{
 }
 
 test('HR-LANGUAGE-RECALL-01 uses a clear text-first language cue without leaking the answer',async({page},testInfo)=>{
-  await openApp(page);await navigate(page,'Import / export');
+  await openApp(page);await navigate(page,'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   await page.locator('#anki-import').setInputFiles({name:'language-recall.apkg',mimeType:'application/zip',buffer:await languageRecallPackage()});
   await page.getByRole('button',{name:'Import 1 supported cards'}).click();
@@ -41,7 +41,7 @@ test('HR-LANGUAGE-RECALL-01 uses a clear text-first language cue without leaking
 });
 
 test('HR-LANGUAGE-RECALL-01 @ios-compact retains a collectible text-first hierarchy at enlarged text',async({page},testInfo)=>{
-  await openApp(page);await navigate(page,'Import / export');
+  await openApp(page);await navigate(page,'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
   await page.locator('#anki-import').setInputFiles({name:'language-recall.apkg',mimeType:'application/zip',buffer:await languageRecallPackage()});
   await page.getByRole('button',{name:'Import 1 supported cards'}).click();await page.getByRole('button',{name:'Go to deck'}).click();

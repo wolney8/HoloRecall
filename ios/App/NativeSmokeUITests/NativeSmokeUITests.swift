@@ -81,7 +81,7 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("iphone-landscape-dashboard")
         XCUIDevice.shared.orientation = .portrait
 
-        openMore("Import / export")
+        openMore("Exchange")
         XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 10))
         tapButton("Export")
         tapScrollableButton("Export XLSX")
@@ -148,7 +148,7 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-deck-subviews-landscape")
         XCUIDevice.shared.orientation = .portrait
 
-        openMore("Import / export")
+        openMore("Exchange")
         XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.buttons["Import"].exists)
         XCTAssertTrue(app.buttons["Export"].exists)
