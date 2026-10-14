@@ -144,10 +144,10 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get raritySymbol(): string { return RARITIES.find(item => item.id === this.shownRarity)?.symbol ?? '○'; }
   get prestigeRoman():string{return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][Math.max(0,Math.min(10,this.prestigeLevel))]??'';}
   get prestigeBand():string{return this.prestigeLevel>=10?'capstone':this.prestigeLevel>=8?'radiant':this.prestigeLevel>=5?'midpoint':this.prestigeLevel>=3?'foil':this.prestigeLevel>=1?'edge':'none';}
-  get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',primary:this.card?.front??'',artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
+  get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',chromeTitleSource:'none',primary:this.card?.front??'',artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
   get capabilities():CardCapability[]{return cardCapabilities(this.card,this.resolvedPresentation);}
   get inspectionUnavailable():boolean{return this.motionActive()||this.interactionBlocked;}
-  get chromeTitle():string{return this.resolvedPresentation.title?.trim()||(this.capabilities.includes('image-occlusion')?'Image Occlusion':this.capabilities.includes('cloze')?'Cloze':'');}
+  get chromeTitle():string{return this.resolvedPresentation.chromeTitle?.trim()??'';}
   capabilityLabel(capability:CardCapability):string{return({'image-occlusion':'Image Occlusion',cloze:'Cloze',clue:'Clue',audio:'Audio',choices:'Choices'} as const)[capability];}
   capabilitySymbol(capability:CardCapability):string{return({'image-occlusion':'▧',cloze:'[…]',clue:'?',audio:'♪',choices:'≡'} as const)[capability];}
   get hideStudyArt():boolean{return this.resolvedPresentation.artRole==='hidden'||!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first';}

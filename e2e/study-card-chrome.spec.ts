@@ -22,7 +22,7 @@ test('shared card chrome uses title, derived capabilities and accessible non-tex
   await openApp(page);await navigate(page,'Decks');await page.getByRole('button',{name:/Create a card/}).click();
   const preview=page.locator('.author-preview');
   await page.getByLabel('Front text / library prompt').fill('What is being recalled?');await page.getByLabel('Back text / answer').fill('A concise answer');
-  await expect(preview.locator('.card-chrome-title')).toBeEmpty();await expect(preview.locator('.capability-list')).toHaveCount(0);
+  await expect(preview.locator('.card-chrome-title')).not.toBeEmpty();await expect(preview.locator('.card-chrome-title')).not.toHaveText(/^(?:Cloze|Image Occlusion)$/);await expect(preview.locator('.capability-list')).toHaveCount(0);
   await expect(preview).not.toContainText('RECALL');await expect(preview).not.toContainText('Front side');
   await expect(preview.getByRole('img',{name:'Recall face'})).toBeVisible();
   await page.getByLabel('Title / category · optional').fill('SCIENCE');await page.getByLabel('Clue / hint').fill('Think about cells.');

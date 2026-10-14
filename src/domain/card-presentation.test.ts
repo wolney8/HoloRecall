@@ -54,3 +54,18 @@ describe('language card presentation',()=>{
     expect(resolveCardPresentation(value,[])).toMatchObject({profile:'general',primary:'Solve 7 × 8',effectiveArtPolicy:'text-first'});
   });
 });
+
+describe('card chrome title fallback',()=>{
+  const contextual=(fields:Record<string,string>,sources:string[])=>{const source=snapshot('context',fields),value=card(fields['Question']??'What is recalled?',fields['Italian']??'Answer','context');value.tags=[];value.ankiSource!.contentProvenance={front:'template',answer:'template',frontFields:sources,answerFields:['Italian'],blocks:sources.map(sourceName=>({side:'front' as const,source:sourceName,classification:'metadata' as const,destination:'Source metadata'}))};return{source,value};};
+  it('uses explicit title, then one source-backed contextual value, then the current leaf deck',()=>{
+    const first=contextual({Topic:'Cell biology',Question:'What makes ATP?',Italian:'Mitochondrion'},['Topic','Question']),deck:Deck={id:'lesson',name:'Science · Cells',description:'',suspended:false};first.value.presentation={title:'ENERGY ORGANELLES'};
+    expect(resolveCardPresentation(first.value,[first.source],deck)).toMatchObject({chromeTitle:'ENERGY ORGANELLES',chromeTitleSource:'explicit'});
+    delete first.value.presentation;expect(resolveCardPresentation(first.value,[first.source],deck)).toMatchObject({chromeTitle:'Cell biology',chromeTitleSource:'source-context'});
+    const plain=contextual({Question:'What makes ATP?',Italian:'Mitochondrion'},['Question']);expect(resolveCardPresentation(plain.value,[plain.source],deck)).toMatchObject({chromeTitle:'Science · Cells',chromeTitleSource:'deck'});
+    expect(resolveCardPresentation(plain.value,[plain.source],{...deck,name:'Cell organelles'}).chromeTitle).toBe('Cell organelles');
+  });
+  it('falls back to the deck rather than guessing between peers or leaking prompt, answer, capability or template identity',()=>{
+    const ambiguous=contextual({Topic:'Cells',Category:'Biology',Question:'What makes ATP?',Italian:'Mitochondrion'},['Topic','Category','Question']),deck:Deck={id:'lesson',name:'Science',description:'',suspended:false};expect(resolveCardPresentation(ambiguous.value,[ambiguous.source],deck).chromeTitle).toBe('Science');
+    for(const unsafe of ['Mitochondrion','What makes ATP?','Cloze','Card 1']){ambiguous.value.presentation={title:unsafe};expect(resolveCardPresentation(ambiguous.value,[ambiguous.source],deck).chromeTitle).toBe('Science');}
+  });
+});

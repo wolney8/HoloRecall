@@ -4,6 +4,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { analyseAnkiPackage,previewAnkiImport } from './anki';
 import {createInitialState} from './study';
 import {visibleOcclusionShapes} from './image-occlusion';
+import {resolveCardPresentation} from './card-presentation';
+import {cardCapabilities} from './card-capabilities';
 
 const packagePath=process.env['HOLORECALL_BBARRYY_PACKAGE'];
 beforeAll(()=>{const wasm=readFileSync('node_modules/sql.js/dist/sql-wasm-browser.wasm'),original=globalThis.fetch;globalThis.fetch=((input:RequestInfo|URL,init?:RequestInit)=>String(input).endsWith('/runtime/sql-wasm-browser.wasm')?Promise.resolve(new Response(wasm,{headers:{'content-type':'application/wasm'}})):original(input,init)) as typeof fetch;});
@@ -18,7 +20,12 @@ describe.skipIf(!packagePath||!existsSync(packagePath))('bBarryy anatomy thorax 
     expect(occlusionCards.every(card=>{const content=card.imageOcclusion!,active=content.shapes.filter(shape=>shape.groupId===content.activeGroupId).length,recall=visibleOcclusionShapes(content,false),answer=visibleOcclusionShapes(content,true);return content.mode==='hide-all-guess-one'?recall.length===content.shapes.length&&answer.length===content.shapes.length-active:recall.length===active&&answer.length===0;})).toBe(true);
     const basic=analysis.cards.find(card=>card.front.toLocaleLowerCase()==='what is the accessory reproductive organ?');expect(basic).toMatchObject({answer:'breast'});expect(basic?.art?.kind==='generated-text-art'&&basic.art.title.toLocaleLowerCase().includes(basic.front.toLocaleLowerCase())).toBe(false);
     expect(analysis.cards.filter(card=>card.imageOcclusion).every(card=>card.answer===''&&card.image===card.backImage)).toBe(true);
+    expect(analysis.cards.some(card=>card.ankiSource?.modelName==='Basic'&&!card.image&&!!card.backImage)).toBe(true);
+    expect(analysis.cards.some(card=>card.ankiSource?.modelName==='Cloze'&&!card.image&&!!card.backImage)).toBe(true);
+    expect(analysis.conversionProfiles.every(profile=>profile.status==='automatic'&&!profile.audit?.findings.length&&profile.audit?.sourceElementCount===profile.audit?.accountedElementCount)).toBe(true);
     expect(analysis.conversionProfiles.some(profile=>profile.behaviour==='image-occlusion'&&profile.presentationPolicy==='image-occlusion-task-first')).toBe(true);
+    const occlusion=occlusionCards[0]!,deck=analysis.decks.find(item=>item.id===occlusion.deckId)!;expect(resolveCardPresentation(occlusion,[analysis.sourceSnapshot],deck)).toMatchObject({chromeTitle:deck.name,chromeTitleSource:'deck'});expect(resolveCardPresentation(occlusion,[analysis.sourceSnapshot],deck).chromeTitle).not.toBe('Image Occlusion');expect(cardCapabilities(occlusion)).toContain('image-occlusion');
+    expect(analysis.cards.filter(card=>card.ankiSource?.modelName==='Cloze').every(card=>{const currentDeck=analysis.decks.find(item=>item.id===card.deckId)!;return resolveCardPresentation(card,[analysis.sourceSnapshot],currentDeck).chromeTitle!=='Cloze'&&cardCapabilities(card).includes('cloze');})).toBe(true);
     const assets=new Set(analysis.assets.map(asset=>`asset:${asset.id}`));const unresolved=analysis.cards.flatMap(card=>[card.image,card.backImage,...card.frontAudio??[],...card.backAudio??[]]).filter((ref):ref is string=>!!ref&&!assets.has(ref));expect(unresolved).toEqual([]);
     const preview=previewAnkiImport(analysis,createInitialState([],[]));const bundled=new Set(preview.bundle.assets.map(asset=>asset.id));expect(analysis.sourceSnapshot.media.every(media=>bundled.has(media.assetId))).toBe(true);
     expect(analysis.issues).toEqual(expect.arrayContaining([

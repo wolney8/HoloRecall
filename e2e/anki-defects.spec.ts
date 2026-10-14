@@ -44,11 +44,12 @@ test('HR-BUG-ANKI-01 classifies TTS simplification separately from remote media 
   await expect(page.locator('.conversion-counts')).toContainText('2Safe simplification');
   await expect(page.locator('.conversion-counts')).toContainText('1Excluded');
   await expect(page.getByText('Excluded or unsupported content')).toHaveCount(0);
-  await expect(page.getByRole('checkbox',{name:/Import 2 ready cards/})).toBeVisible();
+  await expect(page.getByRole('checkbox',{name:/Import 1 ready card/})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Anki conversion review'})).toContainText('Source media is missing from the projected card.');
   await expect(page.getByText(/TTS, answer input or advanced field filters/)).toBeVisible();
   await expect(page.getByText(/Remote media, scripts and fonts are not fetched/i)).toBeVisible();
   await expect(page.getByText(/treccani\.it/)).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Import 2 supported cards'})).toBeDisabled();await page.getByRole('checkbox',{name:/Import 2 ready cards/}).check();await expect(page.getByRole('button',{name:'Import 2 supported cards'})).toBeEnabled();
+  await expect(page.getByRole('button',{name:'Import 2 supported cards'})).toBeDisabled();await page.getByRole('button',{name:'Approve this template conversion'}).click();await page.getByRole('checkbox',{name:/Import 2 ready cards/}).check();await expect(page.getByRole('button',{name:'Import 2 supported cards'})).toBeEnabled();
   await page.getByRole('button',{name:'Import 2 supported cards'}).click();
   const data=await snapshot(page),spoken=data.cards.find(card=>card.id.includes('tts-browser'))!;
   expect(spoken.front).toContain('ciao');expect(spoken.front).toContain('Treccani');expect(spoken.front).not.toMatch(/{{|anki:tts/);expect(spoken.answer).toContain('hello');

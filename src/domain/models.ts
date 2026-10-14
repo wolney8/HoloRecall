@@ -455,11 +455,23 @@ export interface AnkiMappingPreset {
 export type AnkiBehaviourAdapter='basic'|'reversed'|'rich-template'|'cloze'|'image-occlusion';
 export type AnkiPresentationPolicy='text-first'|'image-first'|'image-occlusion-task-first'|'choices';
 export type AnkiConversionStatus='automatic'|'user-approved'|'review-required'|'unsupported-source-preserved';
-export type AnkiConversionConcern='equivalent-recall-answer'|'placeholder-answer'|'duplicate-prompt-art'|'unaccounted-front'|'unaccounted-back'|'inconsistent-template'|'unsupported-behaviour';
+export type AnkiConversionConcern='equivalent-recall-answer'|'placeholder-answer'|'duplicate-prompt-art'|'unaccounted-front'|'unaccounted-back'|'inconsistent-template'|'unsupported-behaviour'|'duplicate-semantic-coverage'|'wrong-side-content'|'answer-leak'|'missing-media'|'visual-answer-text'|'primary-answer-in-details'|'duplicated-frontside'|'unsafe-title'|'unstructured-support'|'missing-provenance';
+export interface AnkiTranslationAudit {
+  version:1;
+  fingerprint:string;
+  sourceCardCount:number;
+  projectedCardCount:number;
+  auditedCardCount:number;
+  sourceElementCount:number;
+  accountedElementCount:number;
+  findings:AnkiConversionConcern[];
+  representativeCoverage:Array<{side:'front'|'back';source:string;classification:string;destination:string;status:'accounted'|'review-required'}>;
+  media:{frontExpected:boolean;answerExpected:boolean;frontProjected:boolean;answerProjected:boolean;decorative:boolean};
+}
 /** One durable behaviour/presentation decision for an exact Anki note type + card template. */
 export interface AnkiConversionProfile {
   id:string;
-  version:1;
+  version:1|2;
   sourceSignature:string;
   modelName:string;
   templateId:string;
@@ -469,6 +481,7 @@ export interface AnkiConversionProfile {
   presentationPolicy:AnkiPresentationPolicy;
   status:AnkiConversionStatus;
   concerns:AnkiConversionConcern[];
+  audit?:AnkiTranslationAudit;
   origin:'auto-inferred'|'user-confirmed';
   acceptedAt?:string;
 }

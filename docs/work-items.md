@@ -8,7 +8,21 @@ Updated: 14 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-STUDY-CARD-CHROME-01
+## Active corrective milestone — HR-ANKI-FIDELITY-02
+
+Authorised 14 October 2026. This bounded milestone separates title fallback from capabilities and adds one deterministic note-type/template translation audit before Anki acceptance.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-FIDELITY-02A | Source-safe chrome title fallback | VERIFY | Explicit presentation title wins, followed by one unambiguous short source-backed contextual label, then the current leaf deck name; capability/model/template/answer/prompt values never substitute for a title. |
+| HR-ANKI-FIDELITY-02B | Template translation audit | VERIFY | Each exact note type and template receives a versioned deterministic audit covering semantic blocks, sides, media, behavior and projected destinations before acceptance. |
+| HR-ANKI-FIDELITY-02C | Suspicious conversion gate | VERIFY | Lost, duplicated, wrong-side, leaked, fake-art, malformed support and unsupported behavior findings block the affected template rather than individual cards. |
+| HR-ANKI-FIDELITY-02D | Summary-first review UX | VERIFY | Clean templates retain the Ready fast path; review-required templates show affected counts, representative Recall/Answer previews and concise reasons while full coverage remains advanced. |
+| HR-ANKI-FIDELITY-02E | Generic and real-package acceptance | VERIFY | Subject-neutral fixtures plus bBarryy and Italian exact-package gates cover Basic, reversed, rich, cloze and visual-answer behavior without changing learner state or importer identity. |
+
+Evidence: unit/domain **254/254** with both exact packages configured. The bBarryy source produces **58** safe cards and three clean audited template profiles (Basic, Cloze and 26 visual-answer Image Occlusion cards); its three source-incomplete cards remain excluded. The Italian **254-card** profile retains its projection but is now review-required because the safe front and projected primary answer are unexpectedly equivalent while the source Answer field contains different learning content. The complete browser/profile matrix is **286 passed with 4 package-conditional skips**; those exact bBarryy cases pass separately **4/4** in Chromium/WebKit. Production build and packaged iPhone 17 Pro / iPad Pro 13-inch (M5) smokes pass **1/1** each. Physical-device accessibility and a corrected user-confirmed mapping for the newly exposed Italian template mismatch remain unverified.
+
+## Previous milestone — HR-STUDY-CARD-CHROME-01
 
 Authorised 14 October 2026. This bounded milestone replaces redundant card-face chrome, adds a delayed state-safe clue interaction, clarifies Study controls and reuses the existing image-inspection boundary without changing learning semantics.
 

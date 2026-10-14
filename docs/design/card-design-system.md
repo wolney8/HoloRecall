@@ -69,6 +69,7 @@ Possible prestige rewards:
 
 ### Source semantics and card title
 - A source-visible title/category may appear above the recall target when template evidence supports it; deck Topic/Lesson metadata is not promoted merely because it exists.
+- Top-left chrome resolves in this order: a safe explicit title, one unambiguous short source-backed contextual value, then the current leaf deck/subdeck name. The deck fallback remains presentation-only and follows deck moves/renames. Capability, note-model/template, answer and prompt values never substitute for a title; capabilities remain in bottom chrome.
 - Source learning semantics override decoration. Text-first cards use material, frame, typography, rarity and restrained motifs without repeating their prompt as generated artwork.
 - Design Sets style learning content; they do not invent learning meaning. Native Image Occlusion uses its masked/revealed image as the task and may have no textual answer.
 
@@ -105,7 +106,7 @@ The card interaction decisions are implemented by the shared renderer and Study 
 - user-facing supporting content is named **Card Details**;
 - Study uses **Check answer**, with keyboard-capable web/desktop guidance for `Space or Enter to flip and recall`, `1–5 rate your recall` and conditional `Z to inspect image`;
 - imported non-empty clues are presumed useful. Study offers them through a folded-corner **Need a clue?** flag after ten active, settled Recall seconds; lifecycle inactivity, inspection and owned card motion pause the delay, and clue viewing never changes learning state;
-- top chrome contains a source-backed title or informative Image Occlusion/Cloze label plus rarity. Bottom chrome contains derived capability indicators and a small accessible face marker. Static open/resolved material geometry distinguishes Recall from Answer without redundant visible face words;
+- top chrome contains the resolved source/context/deck title plus rarity. Bottom chrome contains derived capability indicators and a small accessible face marker. Static open/resolved material geometry distinguishes Recall from Answer without redundant visible face words;
 - native iOS and coarse-pointer layouts omit keyboard prose. Expand/Z reuse image inspection and are unavailable during owned card motion;
 - the browsable Collection contains unlocked cards; its default prioritises unlocked and near-unlock progress, while deck/set views may show locked silhouette slots;
 - Collection progress is collectible-only: unlocked/total, rarity distribution and Prestige, without due/FSRS scheduling data. The near-unlock threshold remains undecided.
