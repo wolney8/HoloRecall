@@ -141,6 +141,8 @@ export interface AnkiCardSource {
     answer: 'mapping' | 'template' | 'cloze';
     frontFields: string[];
     answerFields: string[];
+    /** Selected template-owned conditional semantic rule, when one applies. */
+    semanticVariantId?:string;
     blocks?: Array<{
       side: 'front' | 'back';
       source: string;
@@ -456,6 +458,14 @@ export type AnkiBehaviourAdapter='basic'|'reversed'|'rich-template'|'cloze'|'ima
 export type AnkiPresentationPolicy='text-first'|'image-first'|'image-occlusion-task-first'|'choices';
 export type AnkiConversionStatus='automatic'|'user-approved'|'review-required'|'unsupported-source-preserved';
 export type AnkiConversionConcern='equivalent-recall-answer'|'placeholder-answer'|'duplicate-prompt-art'|'unaccounted-front'|'unaccounted-back'|'inconsistent-template'|'unsupported-behaviour'|'duplicate-semantic-coverage'|'wrong-side-content'|'answer-leak'|'missing-media'|'visual-answer-text'|'primary-answer-in-details'|'duplicated-frontside'|'unsafe-title'|'unstructured-support'|'missing-provenance';
+export interface AnkiSemanticVariant {
+  id:string;
+  label:string;
+  predicate:{all:Array<{field:string;operator:'non-empty'|'equals';value?:string}>};
+  overrides:{primaryAnswerField:string};
+  origin:'auto-inferred'|'user-confirmed';
+  acceptedAt?:string;
+}
 export interface AnkiTranslationAudit {
   version:1;
   fingerprint:string;
@@ -467,11 +477,12 @@ export interface AnkiTranslationAudit {
   findings:AnkiConversionConcern[];
   representativeCoverage:Array<{side:'front'|'back';source:string;classification:string;destination:string;status:'accounted'|'review-required'}>;
   media:{frontExpected:boolean;answerExpected:boolean;frontProjected:boolean;answerProjected:boolean;decorative:boolean};
+  semanticVariants?:Array<{id:string;matchedCardCount:number;findings:AnkiConversionConcern[]}>;
 }
 /** One durable behaviour/presentation decision for an exact Anki note type + card template. */
 export interface AnkiConversionProfile {
   id:string;
-  version:1|2;
+  version:1|2|3;
   sourceSignature:string;
   modelName:string;
   templateId:string;
@@ -481,6 +492,7 @@ export interface AnkiConversionProfile {
   presentationPolicy:AnkiPresentationPolicy;
   status:AnkiConversionStatus;
   concerns:AnkiConversionConcern[];
+  semanticVariants?:AnkiSemanticVariant[];
   audit?:AnkiTranslationAudit;
   origin:'auto-inferred'|'user-confirmed';
   acceptedAt?:string;

@@ -4,6 +4,7 @@ import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
 
 const bBarryyPackage=process.env['HOLORECALL_BBARRYY_PACKAGE'];
+const italianPackage=process.env['HOLORECALL_REAL_ANKI_PACKAGE'];
 
 async function openExchange(page:Parameters<typeof openApp>[0]):Promise<void>{
   await openApp(page);await navigate(page,'Exchange');
@@ -14,6 +15,15 @@ async function suspiciousTemplatePackage():Promise<Buffer>{
   const SQL=await initSqlJs(),db=new SQL.Database();db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
   const models={1:{name:'Ambiguous custom',type:0,flds:[{name:'Cue'}],tmpls:[{name:'Same face',qfmt:'{{Cue}}',afmt:'{{Cue}}'}]}};db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Review fixture'}})]);
   for(let index=0;index<2;index++){db.run('insert into notes values (?,?,?,?,?)',[100+index,`ambiguous-${index}`,1,'',`Same ${index}`]);db.run('insert into cards values (?,?,?,?)',[200+index,100+index,10,0]);}
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
+}
+
+
+async function conditionalVariantPackage():Promise<Buffer>{
+  const SQL=await initSqlJs(),db=new SQL.Database();db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const models={1:{name:'Mixed science classification',type:0,flds:[{name:'Prompt'},{name:'Stimulus'},{name:'Answer'},{name:'Back'}],tmpls:[{name:'Forward',qfmt:'<h2>SCIENCE</h2><h3>CLASSIFICATION</h3>{{Prompt}}<strong>{{Stimulus}}</strong>',afmt:'{{#Answer}}<div class="answer-tag">{{Answer}}</div>{{/Answer}}<div class="italian">{{Back}}</div>'}]}};db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify({10:{name:'Science'}})]);
+  db.run('insert into notes values (?,?,?,?,?)',[100,'classification-guid',1,'','Classify the item\x1fsodium\x1falkali metal\x1fsodium']);db.run('insert into cards values (?,?,?,?)',[200,100,10,0]);
+  db.run('insert into notes values (?,?,?,?,?)',[101,'default-guid',1,'','Name the element\x1fNa\x1f\x1fsodium']);db.run('insert into cards values (?,?,?,?)',[201,101,10,0]);
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
@@ -58,6 +68,18 @@ test('Conversion Profile blocks and accepts one suspicious template decision for
   await expect(page.getByRole('heading',{name:'1 template needs review'})).toBeVisible();const profile=page.locator('.conversion-profile').filter({hasText:'Basic · Same face'});await expect(profile).toContainText('2 affected cards');await expect(profile).toContainText('Recall and Answer unexpectedly show the same learning content.');
   const apply=page.getByRole('button',{name:'Import 2 supported cards'});await expect(apply).toBeDisabled();await profile.getByRole('button',{name:'Approve this template conversion'}).click();await expect(result).toContainText('2Ready');await expect(result).toContainText('0Needs review');await expect(apply).toBeEnabled();
   await apply.click();await expect(page.locator('.completion-panel')).toContainText('IMPORT COMPLETE');const state=await snapshot(page);expect(state.ankiConversionProfiles).toEqual([expect.objectContaining({modelName:'Ambiguous custom',templateName:'Same face',status:'user-approved',origin:'user-confirmed'})]);expect(state.cards.filter(card=>card.ankiSource?.modelName==='Ambiguous custom')).toHaveLength(2);
+});
+
+
+test('conditional semantic review is template-scoped and keeps rule internals advanced',async({page})=>{
+  await openExchange(page);await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'mixed-science.apkg',mimeType:'application/zip',buffer:await conditionalVariantPackage()});
+  const profile=page.locator('.conversion-profile').filter({hasText:'Rich template · Forward'});await expect(profile).toContainText('Explicit answer variant · 1 matching card');await expect(profile).toContainText('Classify the item');await expect(profile).toContainText('alkali metal');await expect(profile).not.toContainText('When Answer has content');
+  const approve=profile.getByRole('button',{name:'Use this conversion for matching cards'});await expect(approve).toBeVisible();await page.getByRole('button',{name:/Advanced details/}).click();await page.getByText('Template translation audit',{exact:true}).click();await expect(page.getByText('Explicit answer variant · 1 matching card · When Answer has content → Primary answer: Answer')).toBeVisible();await approve.click();await page.getByRole('button',{name:'Import 2 supported cards'}).click();await expect(page.locator('.completion-panel')).toContainText('IMPORT COMPLETE');const state=await snapshot(page);expect(state.ankiConversionProfiles[0]).toMatchObject({version:3,status:'user-approved',semanticVariants:[{origin:'user-confirmed',acceptedAt:expect.any(String),predicate:{all:[{field:'Answer',operator:'non-empty'}]},overrides:{primaryAnswerField:'Answer'}}]});expect(state.cards.find(card=>card.ankiSource?.noteGuid==='classification-guid')).toMatchObject({answer:'alkali metal'});
+});
+
+test('exact Italian package exposes the 64-card conditional projection without per-card review',async({page})=>{
+  test.skip(!italianPackage||!existsSync(italianPackage),'Set HOLORECALL_REAL_ANKI_PACKAGE to the exact Italian package path.');await openExchange(page);await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles(italianPackage!);
+  const result=page.getByLabel('Anki import result');await expect(result).toContainText('254Ready');await expect(result).toContainText('0Needs review');await page.getByRole('button',{name:/Advanced details/}).click();await page.getByText('Template translation audit',{exact:true}).click();await expect(page.getByText('Explicit answer variant · 64 matching cards · When Answer has content → Primary answer: Answer')).toBeVisible();
 });
 
 test('HR-EXCHANGE-03 navigation reflows on compact WebKit @ios-compact',async({page})=>{

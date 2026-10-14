@@ -8,7 +8,21 @@ Updated: 14 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-ANKI-FIDELITY-02
+## Active corrective milestone — HR-ANKI-FIDELITY-03
+
+Authorised 14 October 2026. This bounded correction adds source-backed conditional semantic variants within one exact Anki note type/template Conversion Profile.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-FIDELITY-03A | Trace stable real-source discriminator | VERIFY | Exact package fields/templates and neighboring cards establish a structured, source-authored discriminator before projection changes. |
+| HR-ANKI-FIDELITY-03B | Conditional semantic variants | VERIFY | One serialisable template-owned rule selects per-card semantic overrides without IDs, executable predicates or per-card mappings. |
+| HR-ANKI-FIDELITY-03C | Variant-aware translation audit | VERIFY | Every generated card is audited under its selected variant; unmatched, ambiguous or changed source structure reopens template review. |
+| HR-ANKI-FIDELITY-03D | Review and persistence | VERIFY | Normal review describes affected variants without predicate syntax; confirmed rules persist through update/repair while v1/v2 profiles remain readable. |
+| HR-ANKI-FIDELITY-03E | Exact-package and generic verification | VERIFY | The Italian classification family uses the real Answer field, default Italian answers remain unchanged, and bBarryy plus subject-neutral fixtures do not regress. |
+
+Evidence: the exact Italian template conditionally renders non-empty `Answer` before its default `Italian` answer region. Conversion Profile v3 applies that source-backed variant to **64** cards and leaves **190** on the default projection; all **254** pass the variant-aware audit. `spaghetti` remains Recall stimulus and `GHE · hard G` is the primary Answer. Subject-neutral fixtures cover selection, approval, persistence and changed-discriminator review. The exact bBarryy package remains **58** safe cards with unchanged Basic, Cloze and native Image Occlusion audits. Unit/domain passes **257/257**, focused conditional-review Chromium/WebKit **14/14**, the complete browser/profile matrix **294/294**, production build, and packaged iPhone/iPad smokes **1/1** each. Detailed limitations remain in `project-status.md`.
+
+## Previous corrective milestone — HR-ANKI-FIDELITY-02
 
 Authorised 14 October 2026. This bounded milestone separates title fallback from capabilities and adds one deterministic note-type/template translation audit before Anki acceptance.
 

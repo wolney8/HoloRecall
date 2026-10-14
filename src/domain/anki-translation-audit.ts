@@ -1,5 +1,6 @@
-import type { AnkiBehaviourAdapter, AnkiConversionConcern, AnkiSourceSnapshot, AnkiTranslationAudit, CardContent } from './models';
+import type { AnkiBehaviourAdapter, AnkiConversionConcern, AnkiSemanticVariant, AnkiSourceSnapshot, AnkiTranslationAudit, CardContent } from './models';
 import { answerOnlyMarkup, renderAnkiTemplate } from './anki-template';
+import {semanticVariantMatches} from './anki-semantic-variant';
 
 type Coverage=AnkiTranslationAudit['representativeCoverage'][number];
 const clean=(value?:string)=>value?.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().toLocaleLowerCase()??'';
@@ -11,11 +12,11 @@ const frontClasses=new Set(['card-title','situation-context','primary-prompt','t
 const backClasses=new Set(['primary-answer','secondary-cue','concise-interpretation','support','instructional-art','duplicate-frontside','decorative','metadata','fallback']);
 
 /** Audits semantic coverage for one exact note type/template without executing source code. */
-export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:AnkiSourceSnapshot['noteTypes'][number],template:AnkiSourceSnapshot['noteTypes'][number]['templates'][number],cards:CardContent[],adapter:AnkiBehaviourAdapter):AnkiTranslationAudit{
+export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:AnkiSourceSnapshot['noteTypes'][number],template:AnkiSourceSnapshot['noteTypes'][number]['templates'][number],cards:CardContent[],adapter:AnkiBehaviourAdapter,variants:AnkiSemanticVariant[]=[]):AnkiTranslationAudit{
   const sourceCards=snapshot.cards.filter(source=>source.templateId===template.id&&snapshot.notes.some(note=>note.id===source.noteId&&note.noteTypeId===model.id));
   const projected=cards.filter(card=>card.ankiSource?.modelSignature===model.signature&&card.ankiSource.sourceTemplateId===template.id),findings=new Set<AnkiConversionConcern>();
   let sourceElementCount=0,accountedElementCount=0,frontExpected=false,answerExpected=false,frontProjected=false,answerProjected=false,decorative=false;
-  let representativeCoverage:Coverage[]=[];
+  let representativeCoverage:Coverage[]=[];const variantAudits=variants.map(variant=>({id:variant.id,matchedCardCount:0,findings:[] as AnkiConversionConcern[]}));
   for(const card of projected){
     const sourceCard=sourceCards.find(item=>{const note=snapshot.notes.find(value=>value.id===item.noteId);return note&&(note.guid===card.ankiSource?.noteGuid||note.id===card.ankiSource?.noteId)&&item.templateOrdinal===card.ankiSource?.templateOrdinal;});
     const note=sourceCard&&snapshot.notes.find(item=>item.id===sourceCard.noteId),provenance=card.ankiSource?.contentProvenance,blocks=provenance?.blocks??[];
@@ -26,6 +27,8 @@ export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:A
       continue;
     }
     if(!sourceCard||!note||!provenance){findings.add('missing-provenance');continue;}
+    const matches=variants.filter(variant=>semanticVariantMatches(variant,note.fields)),selected=provenance.semanticVariantId;if(matches.length>1||matches.length===1&&selected!==matches[0]!.id||!matches.length&&selected)findings.add('inconsistent-template');
+    if(matches.length===1){const variant=matches[0]!,result=variantAudits.find(item=>item.id===variant.id)!;result.matchedCardCount++;const expected=clean(note.fields[variant.overrides.primaryAnswerField]),primary=blocks.find(block=>block.side==='back'&&block.source===variant.overrides.primaryAnswerField&&block.classification==='primary-answer');if(!same(card.answer,expected)||!primary){result.findings.push('wrong-side-content');findings.add('wrong-side-content');}}
     const sourceDeck=snapshot.sourceDecks.find(item=>item.id===sourceCard.sourceDeckId),special={Tags:note.tags.join(' '),Type:model.name,Deck:sourceDeck?.path??'',Subdeck:sourceDeck?.path.split('::').at(-1)??'',Card:template.name},clozeOrdinal=model.cloze?sourceCard.templateOrdinal+1:undefined;
     const front=renderAnkiTemplate(template.question,{fields:note.fields,clozeOrdinal,answerSide:false,special}),back=renderAnkiTemplate(answerOnlyMarkup(template.answer),{fields:note.fields,frontSide:front.markup,clozeOrdinal,answerSide:true,special});
     const expected=[...front.referencedFields.filter(name=>clean(note.fields[name])).map(source=>({side:'front' as const,source})),...back.referencedFields.filter(name=>clean(note.fields[name])).map(source=>({side:'back' as const,source})),...front.staticBlocks.map((_block,index)=>({side:'front' as const,source:`template-static:front:${index}`})),...back.staticBlocks.map((_block,index)=>({side:'back' as const,source:`template-static:back:${index}`})),...(/{{FrontSide}}/i.test(template.answer)?[{side:'back' as const,source:'FrontSide'}]:[])];
@@ -41,7 +44,7 @@ export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:A
     if(!frontHasImage&&backHasImage&&!!card.image)findings.add('answer-leak');
     if(!card.answer.trim())findings.add('placeholder-answer');
     if(same(card.front,card.answer))findings.add('equivalent-recall-answer');
-    const answer=clean(card.answer);if(answer.length>=3&&new RegExp(`(?:^|\\W)${answer.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?:$|\\W)`,'iu').test(clean(card.front)))findings.add('answer-leak');
+    const answer=clean(card.answer),sourceIntentionallyExposesAnswer=provenance.frontFields.some(field=>same(note.fields[field],card.answer));if(answer.length>=3&&!sourceIntentionallyExposesAnswer&&new RegExp(`(?:^|\\W)${answer.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?:$|\\W)`,'iu').test(clean(card.front)))findings.add('answer-leak');
     if(card.art?.kind==='generated-text-art'&&(same(card.art.title,card.front)||clean(card.front).startsWith(clean(card.art.title))))findings.add('duplicate-prompt-art');
     if(capabilityTitle(card.presentation?.title)||same(card.presentation?.title,card.answer)||same(card.presentation?.title,card.front)||same(card.presentation?.title,model.name)||same(card.presentation?.title,template.name))findings.add('unsafe-title');
     if(/{{FrontSide}}/i.test(template.answer)&&clean(card.answer).includes(clean(card.front)))findings.add('duplicated-frontside');
@@ -49,7 +52,8 @@ export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:A
     if(!representativeCoverage.length)representativeCoverage=blocks.slice(0,40).map(block=>({side:block.side,source:block.source,classification:block.classification,destination:block.destination,status:block.classification==='fallback'?'review-required':'accounted'}));
   }
   if(adapter==='image-occlusion'&&projected.some(card=>!card.imageOcclusion||!card.image))findings.add('unsupported-behaviour');
+  for(const item of variantAudits)if(!item.matchedCardCount||item.matchedCardCount===projected.length){item.findings.push('inconsistent-template');findings.add('inconsistent-template');}
   const mediaAudit={frontExpected,answerExpected,frontProjected,answerProjected,decorative},findingList=[...findings].sort();
-  const auditCore={sourceCardCount:sourceCards.length,projectedCardCount:projected.length,auditedCardCount:projected.length,sourceElementCount,accountedElementCount,findings:findingList,representativeCoverage,media:mediaAudit};
+  const semanticVariants=variantAudits.map(item=>({...item,findings:[...new Set(item.findings)].sort()})),auditCore={sourceCardCount:sourceCards.length,projectedCardCount:projected.length,auditedCardCount:projected.length,sourceElementCount,accountedElementCount,findings:findingList,representativeCoverage,media:mediaAudit,semanticVariants};
   return{version:1,fingerprint:`anki-translation-audit-v1-${hash(JSON.stringify(auditCore))}`,...auditCore};
 }
