@@ -140,7 +140,7 @@ test('active-page offline review persists through online recovery and reload', a
 test('keyboard reveal and rating use the same persisted review path', async ({ page }) => {
   await openApp(page);
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await expect(page.getByRole('button', { name: /Reveal answer/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Check answer/ })).toBeVisible();
   await page.locator('body').press('Space');
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   await page.locator('body').press('3');

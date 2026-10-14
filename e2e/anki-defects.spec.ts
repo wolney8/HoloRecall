@@ -77,7 +77,7 @@ test('HR-BUG-STUDY-01 consecutive imported cards settle visible after every deal
   const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:'HoloRecall Fixture',exact:true})});await parent.getByRole('button',{name:'Study',exact:true}).first().click();
   let previousQueue=(await snapshot(page)).session!.queue;
   for(let review=0;review<2;review++){
-    await page.getByRole('button',{name:/Reveal answer/}).click();await page.getByRole('button',{name:/4 Good Confident/}).click();
+    await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/4 Good Confident/}).click();
     await expect(page.locator('.study-layout')).toHaveAttribute('data-study-transition','feedback');
     await expect(page.locator('.study-layout')).toHaveAttribute('data-study-transition','idle',{timeout:4_000});
     const settled=await page.getByTestId('study-deck-stage').evaluate(stage=>{const style=getComputedStyle(stage);return{opacity:style.opacity,visibility:style.visibility,display:style.display,transform:style.transform,card:!!stage.querySelector('.memory-card'),stale:stage.getAnimations().some(animation=>animation.playState==='finished'&&animation.effect?.getTiming().fill==='forwards')};});
@@ -150,7 +150,7 @@ test('HR-CONTENT-LIST-01 @ios-compact @ios-large @ios-landscape card rows and de
 test('HR-BUG-STUDY-01 background interruption settles the accepted imported review visibly once',async({page})=>{
   await openApp(page);await importOfficial(page);await page.getByRole('button',{name:'Decks',exact:true}).click();
   const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:'HoloRecall Fixture',exact:true})});await parent.getByRole('button',{name:'Study',exact:true}).first().click();
-  await page.getByRole('button',{name:/Reveal answer/}).click();await page.getByRole('button',{name:/4 Good Confident/}).click();await expect(page.locator('.confidence-feedback')).toBeVisible();
+  await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/4 Good Confident/}).click();await expect(page.locator('.confidence-feedback')).toBeVisible();
   await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pagehide')));await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow')));
   await expect(page.locator('.study-layout')).toHaveAttribute('data-study-transition','idle');
   const settled=await page.getByTestId('study-deck-stage').evaluate(stage=>{const style=getComputedStyle(stage);return{opacity:style.opacity,transform:style.transform,card:!!stage.querySelector('.memory-card'),animations:stage.getAnimations().length};});expect(settled).toEqual({opacity:'1',transform:'none',card:true,animations:0});expect((await snapshot(page)).events).toHaveLength(1);

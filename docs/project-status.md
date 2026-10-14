@@ -1,5 +1,13 @@
 # Current restart point
 
+## 14 October 2026 — Study card chrome and clue interaction in verification
+
+- **Shared chrome:** the renderer uses a source-backed title/category or informative Image Occlusion/Cloze fallback at top-left, retains rarity at top-right, and replaces visible Recall/Answer plus Front/Answer wording with derived capabilities, an accessible paired face marker and low-opacity static open/resolved material geometry.
+- **Study interaction:** `Check answer` is the reveal action. A real clue appears only after ten active settled Recall seconds; lifecycle inactivity, image inspection and card motion pause the remaining delay. Revealing it stays on Recall and writes no learner state. Keyboard-capable web/desktop shows contextual Space/Enter, 1–5 and conditional Z guidance; native iOS/coarse-pointer layouts omit it.
+- **Inspection lifecycle:** the shared Expand control fades, disables and leaves tab order during owned flip/deal/settle motion, restoring only for an inspectable settled face. Z delegates to the existing inspection service and is blocked in editors, dialogs, native/coarse presentation and card motion.
+- **Verification:** unit/domain **243 passed, 2 opt-in package suites skipped**; both configured real-package domain gates **2/2**, bBarryy Chromium/WebKit acceptance **4/4**, and the complete browser/profile matrix **286 passed with 4 expected exact-package skips**. Production is **896.74 kB raw / 216.43 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) inspection smokes pass **1/1** each in portrait and landscape; the iPad check exposed and verified a coarse-pointer landscape dialog-height correction that keeps zoom controls reachable.
+- **Remaining verification:** physical-device VoiceOver, touch timing and contrast measurement across every custom Design Set remain unverified. Collection ownership/progress, Collection Desk, APKG and Anki architecture remain outside this milestone.
+
 ## 13 October 2026 — Task-first Image Occlusion and expanded inspection verified locally
 
 - **Occlusion finding:** bBarryy import/conversion was already correct and was not changed. Its 26 safe native occlusion cards comprise 4 Hide All and 22 Hide One cards; Recall and Answer retain the same source image while the active target's mask state changes according to the source mode.

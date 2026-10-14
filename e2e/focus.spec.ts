@@ -29,7 +29,7 @@ test('HR-FOCUS consecutive Practice ratings retain visible cards and never creat
   await openApp(page);await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Focus',exact:true}).click();await page.getByRole('button',{name:/Preview new cards/}).click();
   await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();
   const total=(await snapshot(page)).session!.total;
-  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Reveal answer/}).click();await page.getByRole('button',{name:/3 Good Some hesitation/}).click();await expect(page.locator('.session-bar')).toContainText(`${index+1} / ${total}`,{timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
+  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/3 Good Some hesitation/}).click();await expect(page.locator('.session-bar')).toContainText(`${index+1} / ${total}`,{timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
   const state=await snapshot(page);expect(state.practiceEvents).toHaveLength(2);expect(state.events).toHaveLength(0);expect(state.rewardEvents).toHaveLength(0);
 });
 

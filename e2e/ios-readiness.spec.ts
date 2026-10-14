@@ -16,7 +16,7 @@ test('HR-IOS lifecycle interruption checkpoints time and never duplicates an acc
   await page.waitForTimeout(1_100);
   expect((await snapshot(page)).session!.activeMs).toBe(pausedAt);
   await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: /Check answer/ }).click();
   await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible();
   const accepted = await snapshot(page);

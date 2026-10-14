@@ -79,7 +79,7 @@ test('HR-IMPORT-01 worker imports official custom fields and side-specific bundl
 
   await page.getByRole('button',{name:'Focus',exact:true}).click();await page.getByLabel('Deck or journey').click();await page.getByRole('option',{name:'All active decks'}).click();await page.getByRole('button',{name:'Build custom session'}).click();
   await page.getByLabel('Search content').fill('buonasera');await page.getByLabel('Session name').fill('Audio practice');
-  await page.getByRole('button',{name:'Start practice'}).click();await page.getByRole('button',{name:/Reveal answer/}).click();
+  await page.getByRole('button',{name:'Start practice'}).click();await page.getByRole('button',{name:/Check answer/}).click();
   await page.evaluate(()=>{(window as any).__acceptedAudioPauses=0;HTMLMediaElement.prototype.play=function(){queueMicrotask(()=>this.dispatchEvent(new Event('playing')));return Promise.resolve();};HTMLMediaElement.prototype.pause=function(){(window as any).__acceptedAudioPauses++;};});
   await page.getByRole('button',{name:'Play answer audio 1'}).click();await expect(page.getByRole('button',{name:'Pause answer audio 1'})).toBeVisible();
   await page.getByRole('button',{name:/4 Good Confident/}).click();await expect.poll(async()=>Number(await page.evaluate(()=>(window as any).__acceptedAudioPauses))).toBeGreaterThan(0);

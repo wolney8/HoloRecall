@@ -69,7 +69,7 @@ export async function confidentReview(page: Page): Promise<void> {
   await expect(page.locator('.session-bar')).toContainText('1 / 10');
 }
 export async function revealCard(page: Page): Promise<void> {
-  const visibleAction = page.getByRole('button', { name: /Reveal answer/ });
+  const visibleAction = page.getByRole('button', { name: /Check answer/ });
   if (await visibleAction.isVisible()) await visibleAction.click();
   else await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 80, y: 80 } });
 }

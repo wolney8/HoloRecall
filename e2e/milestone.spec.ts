@@ -86,7 +86,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
 
 test('revealed session and selected scheduler order recover from reload without double reviews', async ({ page }) => {
   await openApp(page); await page.getByRole('button', { name: /Start studying/ }).click();
-  const start = await snapshot(page); await page.getByRole('button', { name: /Reveal answer/ }).click();
+  const start = await snapshot(page); await page.getByRole('button', { name: /Check answer/ }).click();
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
@@ -98,7 +98,7 @@ test('revealed session and selected scheduler order recover from reload without 
   expect(graded.rewardEvents.filter(event => event.kind === 'contribution')).toHaveLength(1);
   await page.reload();
   await expect(page.locator('.study-card-area .illustration-layer img')).toHaveAttribute('src', '/art/caffe.svg');
-  await expect(page.getByRole('button', { name: /Reveal answer/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Check answer/ })).toBeVisible();
   expect((await snapshot(page)).events).toEqual(graded.events);
   expect((await snapshot(page)).session!.queue).toEqual(graded.session!.queue);
 });

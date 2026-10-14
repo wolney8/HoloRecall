@@ -169,7 +169,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
 
   conversionCardCount(profile:AnkiConversionProfile,analysis:AnkiAnalysis):number{return analysis.cards.filter(card=>card.ankiSource?.modelSignature===profile.sourceSignature&&card.ankiSource.sourceTemplateId===profile.templateId).length;}
   conversionSample(profile:AnkiConversionProfile,analysis:AnkiAnalysis):CardContent|undefined{return analysis.cards.find(card=>card.ankiSource?.modelSignature===profile.sourceSignature&&card.ankiSource.sourceTemplateId===profile.templateId);}
-  conversionCapabilities(profile:AnkiConversionProfile,analysis:AnkiAnalysis):string{return [...new Set(analysis.cards.filter(card=>card.ankiSource?.modelSignature===profile.sourceSignature&&card.ankiSource.sourceTemplateId===profile.templateId).flatMap(cardCapabilities))].join(' · ');}
+  conversionCapabilities(profile:AnkiConversionProfile,analysis:AnkiAnalysis):string{return [...new Set(analysis.cards.filter(card=>card.ankiSource?.modelSignature===profile.sourceSignature&&card.ankiSource.sourceTemplateId===profile.templateId).flatMap(card=>cardCapabilities(card)))].join(' · ');}
   approveConversion(profile:AnkiConversionProfile):void{const analysis=this.ankiAnalysis();if(!analysis)return;const approved=approveConversionProfile(profile);analysis.conversionProfiles=analysis.conversionProfiles.map(item=>item.id===profile.id?approved:item);this.ankiAnalysis.set({...analysis});this.message.set(`${profile.modelName} · ${profile.templateName} approved for all matching cards.`);}
 
   complete(action:ExchangeCompletionAction['action'],done:NonNullable<ReturnType<typeof this.completion>>):void{this.completionAction.emit({action,deckId:done.deckId,deckIds:done.deckIds,label:done.label});}

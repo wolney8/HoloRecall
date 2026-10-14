@@ -1,6 +1,6 @@
 # Canonical work-item tracker
 
-Updated: 13 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 14 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
@@ -8,7 +8,22 @@ Updated: 13 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-CARD-INSPECTION-01
+## Active corrective milestone — HR-STUDY-CARD-CHROME-01
+
+Authorised 14 October 2026. This bounded milestone replaces redundant card-face chrome, adds a delayed state-safe clue interaction, clarifies Study controls and reuses the existing image-inspection boundary without changing learning semantics.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-STUDY-CARD-CHROME-01A | Shared card chrome | VERIFY | Title or an informative behaviour label occupies the top-left; rarity remains top-right; derived capabilities and an accessible non-text face marker replace Front/Answer footer copy across shared renderer surfaces. |
+| HR-STUDY-CARD-CHROME-01B | Recall/Answer material signatures | VERIFY | Static, low-opacity open/resolved geometries distinguish faces beneath protected content with Effects Off and Reduced Motion and do not obscure Image Occlusion masks. |
+| HR-STUDY-CARD-CHROME-01C | Active-view clue interaction | VERIFY | A real non-empty clue produces an attached flag only after ten active settled Recall seconds; lifecycle, modal/inspection and motion pauses preserve elapsed time; reveal is presentation-only and clears on answer/card change. |
+| HR-STUDY-CARD-CHROME-01D | Study control copy and contextual shortcuts | VERIFY | `Check answer` replaces Reveal answer; desktop guidance reflects the active face and optional Z inspection while native iOS/coarse-pointer presentations omit keyboard copy. |
+| HR-STUDY-CARD-CHROME-01E | Motion-safe image inspection | VERIFY | Z and the Expand control preserve the settled face; the control is non-interactive during owned deal/flip/settle animation and nested actions cannot also flip, reveal or rate. |
+| HR-STUDY-CARD-CHROME-01F | Accessibility and verification | VERIFY | Face/capability/clue state remains announced, focus is predictable, 200% and representative rarity/Design Set contrast remain usable, and requested browser/native/build gates pass before publication. |
+
+Evidence: unit/domain **243 passed, 2 opt-in package suites skipped**; both configured exact-package domain gates **2/2** and bBarryy Chromium/WebKit acceptance **4/4**; complete browser/profile matrix **286 passed, 4 expected exact-package skips**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) inspection smokes **1/1** each in portrait and landscape. Production is **896.74 kB raw / 216.43 kB estimated transfer**. Physical-device VoiceOver, touch timing and contrast measurement across every custom Design Set remain unverified.
+
+## Previous milestone — HR-CARD-INSPECTION-01
 
 Authorised 13 October 2026. This bounded milestone preserves verified Anki projection while improving task-first Image Occlusion composition and adding one shared, state-safe expanded inspection surface for meaningful card images.
 

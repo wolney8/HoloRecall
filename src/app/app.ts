@@ -42,6 +42,7 @@ import { ImageOcclusionEditorComponent } from './authoring/image-occlusion-edito
 import { occlusionGroupIds } from '../domain/image-occlusion';
 import type { DeckDeleteDialogResult } from './authoring/deck-delete-dialog';
 import { SubviewNavigationComponent, type SubviewNavigationItem } from './navigation/subview-navigation';
+import { PlatformPresentation } from './platform/platform-presentation';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 type LibrarySubview = 'decks' | 'search';
@@ -61,6 +62,7 @@ export class AppComponent {
   private readonly viewportReveal=inject(ViewportRevealService);
   private readonly injector=inject(Injector);
   private readonly cardInspection=inject(CardInspectionService);
+  readonly platform=inject(PlatformPresentation);
   readonly data=this.store.data;
   readonly screen=signal<Screen>(this.initialScreen());
   readonly librarySubview=signal<LibrarySubview>(this.initialLibrarySubview());
@@ -80,6 +82,9 @@ export class AppComponent {
   readonly studyPresentationRating=signal<1|2|3|4|5|null>(null);
   readonly studyTransition=signal<'idle'|'feedback'|'deal'>('idle');
   readonly studyRecallPeek=signal(false);
+  readonly studyCardMotionActive=signal(false);
+  readonly clueFlagVisible=signal(false);
+  readonly clueRevealed=signal(false);
   readonly resultCardSide=signal('');
   readonly autoAdvancePaused=signal(false);
   readonly cardAudioPlaying=signal(false);
@@ -125,6 +130,9 @@ export class AppComponent {
   readonly revealed=computed(()=>this.session()?.revealed??false);
   readonly displayedRevealed=computed(()=>this.studyPresentationCard()?true:this.revealed());
   readonly studyCardFaceRevealed=computed(()=>this.displayedRevealed()&&!this.studyRecallPeek());
+  readonly currentClue=computed(()=>this.current()?this.presentationFor(this.current()!).hint?.trim()??'':'');
+  readonly desktopStudyGuidance=computed(()=>!this.platform.nativeIos()&&!this.platform.coarsePointer());
+  readonly currentFaceHasInspectableImage=computed(()=>{const card=this.displayedCard();if(!card)return false;const presentation=this.presentationFor(card);if(presentation.artRole==='hidden'||(!this.studyCardFaceRevealed()&&presentation.effectiveArtPolicy==='text-first'))return false;const ref=this.studyCardFaceRevealed()?(card.backImage||card.image):card.image;return !!this.store.mediaUrl(ref);});
   readonly earnedCount=computed(()=>this.data()?.cards.filter(c=>rewardProgress(this.data()!,c.id).earned).length??0);
   readonly dateLabel=computed(()=>new Intl.DateTimeFormat('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:this.timeZone()}).format(this.now()));
   readonly sessionReviews=computed(()=>{const state=this.data(),session=this.session();return state&&session?activeReviews(state).filter(event=>event.sessionId===session.id):[];});
@@ -166,6 +174,10 @@ export class AppComponent {
   private answerDwellTimer=0;
   private answerDwellResolve:(()=>void)|null=null;
   private recallPeekTimer=0;
+  private clueTimer=0;
+  private clueDeadline=0;
+  private clueRemainingMs=10_000;
+  private clueCardKey='';
   private ankiSourceDeckId='';
   private readonly appPopState=()=>this.syncNavigationFromLocation();
   readonly expandedDecks=new Set<string>();
@@ -181,6 +193,11 @@ export class AppComponent {
       const autoKey=`${this.screen()}:${state?.session?.id??''}:${this.current()?.id??''}:${this.revealed()}:${this.studyTransition()}:${this.busy()}:${this.lifecycle.active()}:${this.lifecycle.focused()}:${this.cardAudioPlaying()}:${this.autoAdvancePaused()}:${this.currentPreset()?.autoAdvanceEnabled??false}:${this.currentPreset()?.autoRevealSeconds??0}`;
       queueMicrotask(()=>this.syncAutoAdvance(autoKey));
     });
+    effect(()=>{
+      const card=this.current(),key=card?`${card.id}:${card.revision}`:'';
+      this.screen();this.revealed();this.studyTransition();this.busy();this.lifecycle.active();this.lifecycle.focused();this.studyCardMotionActive();this.cardInspection.active();this.currentClue();
+      queueMicrotask(()=>this.syncClueDelay(key));
+    });
     const activity=()=>{this.lastActivity=performance.now();};
     const unsubscribeLifecycle=this.lifecycle.subscribe(active=>{if(!active||!this.lifecycle.focused()){void this.pauseAutoAdvance(true);this.cancelStudyDealAnimation();this.settleConfidenceFeedback();this.settleAnswerDwell();this.clearRecallPeek();if(!active){void this.checkpoint();if(this.screen()==='results')this.skipResults();else this.clearResultMotion();}}else{this.lastTick=performance.now();void this.store.refresh().catch(()=>undefined);}});
     let destroyed=false,nativeBackCleanup:(()=>Promise<void>)|undefined;
@@ -194,7 +211,7 @@ export class AppComponent {
     },1000);
     document.addEventListener('pointerdown',activity);document.addEventListener('keydown',activity);
     window.addEventListener('popstate',this.appPopState);
-    inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);window.removeEventListener('popstate',this.appPopState);unsubscribeLifecycle();});
+    inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearClueDelay(true);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);window.removeEventListener('popstate',this.appPopState);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1).split('/')[0];return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private initialLibrarySubview():LibrarySubview{return location.hash.match(/^#library\/(search)(?:\/|$)/)?.[1]==='search'?'search':'decks';}
@@ -284,6 +301,8 @@ export class AppComponent {
     catch(error){this.fail(error);}
     finally{if(resumeAuto&&this.screen()==='study'&&this.current()?.id===card.id)await this.resumeAutoAdvance();}
   }
+  onStudyCardMotion(active:boolean):void{this.studyCardMotionActive.set(active);}
+  revealClue(event:Event):void{event.preventDefault();event.stopPropagation();if(!this.currentClue()||this.revealed())return;this.clearClueDelay(false);this.clueFlagVisible.set(false);this.clueRevealed.set(true);}
   hasAnswerSupport(card:CardContent):boolean{return !!card.details?.length||!!card.notes.replace(/^Imported source\s*·[^\n]*(?:\n\n)?/i,'').trim()||!this.presentationFor(card).answerInterpretation&&!!(card.meaning||card.interpretation);}
   designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
   deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}
@@ -306,7 +325,7 @@ export class AppComponent {
   practiceMissedAgain():void{const cards=this.practiceLowCards();if(!cards.length)return;this.openFocus({explicitCardIds:cards.map(card=>card.id),sourceLabel:'Low-confidence cards'});}
   viewPracticeCards():void{this.go('collection');}
   returnFromPractice():void{this.go('library');}
-  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearRecallPeek();this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.feedback('cardReveal');this.answerRevealedAt=performance.now();setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearRecallPeek();this.clearClueDelay(true);this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.feedback('cardReveal');this.answerRevealedAt=performance.now();setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   async rate(rating:1|2|3|4|5):Promise<void>{
     const card=this.current(),session=this.session();if(!card||!session||!this.revealed()||this.busy())return;this.clearRecallPeek();this.clearAutoAdvanceTimer(false);
     this.settleAnswerDwell();const run=++this.studyPresentationRun;this.busy.set(true);this.studyPresentationCard.set(card);
@@ -400,6 +419,17 @@ export class AppComponent {
   resultCardRevealed(id:string):boolean{return this.resultCardSide()===id;}
   setResultCardRevealed(id:string,revealed:boolean):void{this.resultCardSide.set(revealed?id:'');}
   private clearRecallPeek():void{if(this.recallPeekTimer)window.clearTimeout(this.recallPeekTimer);this.recallPeekTimer=0;this.studyRecallPeek.set(false);}
+  private syncClueDelay(cardKey:string):void{
+    if(cardKey!==this.clueCardKey){this.clearClueDelay(true);this.clueCardKey=cardKey;}
+    const eligible=!!cardKey&&this.screen()==='study'&&!this.revealed()&&!!this.currentClue()&&this.studyTransition()==='idle'&&!this.busy()&&!this.studyCardMotionActive()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.cardInspection.active();
+    if(!eligible){this.pauseClueDelay();if(!cardKey||this.revealed()||!this.currentClue()){this.clueFlagVisible.set(false);this.clueRevealed.set(false);}return;}
+    if(this.clueFlagVisible()||this.clueRevealed()||this.clueTimer)return;
+    if(this.clueRemainingMs<=0){this.clueFlagVisible.set(true);return;}
+    this.clueDeadline=performance.now()+this.clueRemainingMs;
+    this.clueTimer=window.setTimeout(()=>{this.clueTimer=0;this.clueRemainingMs=0;if(this.current()&&`${this.current()!.id}:${this.current()!.revision}`===this.clueCardKey&&!this.revealed()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.cardInspection.active()&&!this.studyCardMotionActive())this.clueFlagVisible.set(true);},this.clueRemainingMs);
+  }
+  private pauseClueDelay():void{if(!this.clueTimer)return;window.clearTimeout(this.clueTimer);this.clueTimer=0;this.clueRemainingMs=Math.max(0,this.clueDeadline-performance.now());this.clueDeadline=0;}
+  private clearClueDelay(reset:boolean):void{if(this.clueTimer)window.clearTimeout(this.clueTimer);this.clueTimer=0;this.clueDeadline=0;if(reset){this.clueRemainingMs=10_000;this.clueFlagVisible.set(false);this.clueRevealed.set(false);}}
   private settleConfidenceFeedback():void{window.clearTimeout(this.confidenceTimer);this.confidenceTimer=0;this.confidenceFeedback.set(null);const resolve=this.feedbackResolve;this.feedbackResolve=null;resolve?.();}
   private settleAnswerDwell():void{window.clearTimeout(this.answerDwellTimer);this.answerDwellTimer=0;const resolve=this.answerDwellResolve;this.answerDwellResolve=null;resolve?.();}
   private cancelStudyDealAnimation():void{this.studyDealAnimation?.cancel();this.studyDealAnimation=null;}
@@ -410,7 +440,7 @@ export class AppComponent {
   private feedback(cue:'cardReveal'|'ratingAccepted'|'cardDeal'|'sessionComplete'|'cosmeticUnlock'|'error',rating?:1|2|3|4|5):void{this.feedbackService??=import('./platform/interaction-feedback').then(module=>this.injector.get(module.InteractionFeedback));void this.feedbackService.then(service=>cue==='ratingAccepted'?service.ratingAccepted(rating!):service[cue]()).catch(()=>undefined);}
   private handleNativeBack():boolean{if(this.editor){this.cancelCardEditor();return true;}if(this.deckEditor){this.cancelDeckEditor();return true;}if(this.screen()==='dashboard')return false;if(this.screen()==='study'){this.go('library');return true;}this.go('dashboard');return true;}
   @HostListener('document:pointerdown',['$event']) dismissRatingHelp(event:PointerEvent):void{if(!(event.target as HTMLElement).closest('.rating-info')){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));}}
-  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.mobileMoreOpen.set(false);this.ratingTips?.forEach(tip=>tip.hide(0));return;}const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[role="button"],[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if((event.code==='Space'||event.key==='Enter')&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
+  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.mobileMoreOpen.set(false);this.ratingTips?.forEach(tip=>tip.hide(0));return;}const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="button"],[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='z'){if(!this.desktopStudyGuidance()||!this.currentFaceHasInspectableImage()||this.busy()||this.studyTransition()!=='idle'||this.studyCardMotionActive()||this.cardInspection.active()||document.querySelector('[role="dialog"]'))return;const card=this.displayedCard(),opener=document.querySelector<HTMLElement>('.study-card-area .expand-image.available:not(:disabled)');if(card&&opener){event.preventDefault();void this.openCardInspection(card,{revealed:this.studyCardFaceRevealed(),opener});}return;}if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if((event.code==='Space'||event.key==='Enter')&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
   edit(card?:CardContent,deckId?:string):void{this.go('library');if(this.screen()!=='library')return;this.tagInput=card?.tags.join(', ')??'';this.creatorChoices=card?.choices?.join('\n')??'';this.authorPreset=card?.imageOcclusion?'image-occlusion':card?.kind==='visual'?'image-first':'basic';this.authorPreviewRevealed=false;if(card){const resolved=this.presentationFor(card);this.editor=structuredClone({...card,presentation:{...card.presentation,profile:card.presentation?.profile??resolved.profile,artRole:card.presentation?.artRole??resolved.artRole}});}else this.editor=this.blankCard(deckId);this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}
   duplicateCard(card:CardContent):void{this.edit({...structuredClone(card),id:crypto.randomUUID(),revision:0},card.deckId);this.message.set('Duplicate draft created. Review it before saving.');}
   setAuthorPreset(preset:'basic'|'image-first'|'reversible'|'image-occlusion'):void{if(!this.editor)return;this.authorPreset=preset;this.editor.kind=preset==='image-first'||preset==='image-occlusion'?'visual':'text';if(preset==='image-occlusion'&&!this.editor.imageOcclusion)this.editor.imageOcclusion={version:1,source:'holorecall-native',mode:'hide-all-guess-one',activeGroupId:'mask-1',shapes:[],header:this.editor.front||undefined,imageDescription:this.editor.imageDescription};if(preset!=='image-occlusion'&&this.editor.imageOcclusion)delete this.editor.imageOcclusion;this.editor={...this.editor};}

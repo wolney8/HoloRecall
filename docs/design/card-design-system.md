@@ -99,13 +99,14 @@ Potential sections:
 
 Structured headings, paragraphs, lists, tables and code remain semantically structured. Unknown but safe meaningful source material is retained under a collapsed `Original card details` fallback rather than discarded. The support layer appears only after reveal and must not move/recentre the card, move desktop rating controls, or break the compact rating dock.
 
-## Confirmed later interaction and Collection decisions
+## Card interaction and confirmed later Collection decisions
 
-These decisions are recorded for later bounded milestones and are not implemented by the Conversion Profile work:
+The card interaction decisions are implemented by the shared renderer and Study host; Collection ownership/progress remains deferred:
 - user-facing supporting content is named **Card Details**;
-- Study will use **Check answer**, with desktop-only `Space or Enter to flip and recall` before reveal and `1–5 rate your recall` after reveal;
-- imported non-empty clues are presumed useful; a later clue control is a delayed folded-corner **Need a clue?** flag and never changes review state;
-- redundant Recall/Answer and front/back chrome will become subtle surface language, with capability indicators for Image Occlusion, Cloze, Clue, Audio and Choices where useful;
+- Study uses **Check answer**, with keyboard-capable web/desktop guidance for `Space or Enter to flip and recall`, `1–5 rate your recall` and conditional `Z to inspect image`;
+- imported non-empty clues are presumed useful. Study offers them through a folded-corner **Need a clue?** flag after ten active, settled Recall seconds; lifecycle inactivity, inspection and owned card motion pause the delay, and clue viewing never changes learning state;
+- top chrome contains a source-backed title or informative Image Occlusion/Cloze label plus rarity. Bottom chrome contains derived capability indicators and a small accessible face marker. Static open/resolved material geometry distinguishes Recall from Answer without redundant visible face words;
+- native iOS and coarse-pointer layouts omit keyboard prose. Expand/Z reuse image inspection and are unavailable during owned card motion;
 - the browsable Collection contains unlocked cards; its default prioritises unlocked and near-unlock progress, while deck/set views may show locked silhouette slots;
 - Collection progress is collectible-only: unlocked/total, rarity distribution and Prestige, without due/FSRS scheduling data. The near-unlock threshold remains undecided.
 

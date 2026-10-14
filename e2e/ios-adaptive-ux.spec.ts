@@ -29,7 +29,7 @@ test('HR-IOS-UX phone navigation and tap-to-reveal keep Study stable @ios-large'
   const after = await stage.boundingBox();
   expect(after).toEqual(before);
   expect(await page.evaluate(() => scrollY)).toBe(scrollBefore);
-  await expect(page.getByRole('button', { name: /Reveal answer/ })).toBeHidden();
+  await expect(page.getByRole('button', { name: /Check answer/ })).toBeHidden();
   for (const rating of [1, 2, 3, 4, 5]) {
     const choice = page.getByRole('button', { name: new RegExp(`^${rating} `) });
     await expect(choice).toBeVisible();
@@ -80,8 +80,7 @@ test('HR-IOS-UX wide Study retains the right-hand controls and keyboard reveal',
   await page.setViewportSize({ width: 1280, height: 820 });
   await openApp(page);
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await expect(page.getByText('Keyboard shortcuts')).toBeVisible();
-  await expect(page.getByText(/Space.*Enter.*reveals/)).toBeAttached();
+  await expect(page.getByLabel('Keyboard shortcuts')).toContainText('Space or Enter to flip and recall.');
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'Rate your recall' })).toBeVisible();
   const stage = (await page.getByTestId('study-deck-stage').boundingBox())!;

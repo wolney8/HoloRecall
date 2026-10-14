@@ -164,6 +164,7 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         start.tap()
         XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Space or Enter' OR label CONTAINS 'Z to inspect'" )).firstMatch.exists)
 
         let expand = app.buttons["Expand Recall image"]
         XCTAssertTrue(expand.waitForExistence(timeout: 8))
@@ -176,7 +177,9 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-expanded-image")
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.staticTexts["Expanded Recall image"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["Zoom in"].isHittable)
+        let landscapeZoomIn = app.buttons["Zoom in"]
+        let landscapeZoomReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: landscapeZoomIn)
+        XCTAssertEqual(XCTWaiter.wait(for: [landscapeZoomReady], timeout: 5), .completed)
         attachScreenshot("native-expanded-image-landscape")
         XCUIDevice.shared.orientation = .portrait
         XCTAssertTrue(app.staticTexts["Expanded Recall image"].waitForExistence(timeout: 8))

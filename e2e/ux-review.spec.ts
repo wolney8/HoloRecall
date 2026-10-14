@@ -13,7 +13,7 @@ for (const size of [{ name: 'desktop', width: 1280, height: 820 }, { name: 'mobi
     await openApp(page);
     await page.getByRole('button', { name: /Start studying/ }).click();
     const stage = page.getByTestId('study-deck-stage');
-    const reveal = size.name === 'mobile' ? stage.locator('[role="button"]') : page.getByRole('button', { name: /Reveal answer/ });
+    const reveal = size.name === 'mobile' ? stage.locator('[role="button"]') : page.getByRole('button', { name: /Check answer/ });
     await reveal.scrollIntoViewIfNeeded();
     const before = await stage.boundingBox();
     const scrollBefore = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
@@ -52,7 +52,7 @@ test('HR-UX-09 all five accepted ratings show distinct save-gated feedback once'
   });
   const signatures = new Set<string>();
   for (const rating of [1, 2, 3, 4, 5] as const) {
-    await page.getByRole('button', { name: /Reveal answer/ }).click();
+    await page.getByRole('button', { name: /Check answer/ }).click();
     await page.getByRole('button', { name: new RegExp(`^${rating} `) }).click();
     const feedback = page.locator(`.confidence-feedback[data-rating="${rating}"]`);
     await expect(feedback).toBeVisible();
@@ -77,7 +77,7 @@ test('HR-UX-09 rapid and failed review attempts do not duplicate feedback or rev
   await openApp(stale);
   try {
     await page.getByRole('button', { name: /Start studying/ }).click();
-    await page.getByRole('button', { name: /Reveal answer/ }).click();
+    await page.getByRole('button', { name: /Check answer/ }).click();
     await page.evaluate(() => new Promise<void>((resolve, reject) => {
       const open = indexedDB.open('holorecall-local-v1', 2);
       open.onerror = () => reject(open.error);
@@ -101,7 +101,7 @@ test('HR-UX-10 and 11 intro, scroll progress, zero glow and Skip are real and pe
   await setNewLimit(page, 1);
   await page.getByRole('button', { name: /Start studying/ }).click();
   const stage = page.getByTestId('study-deck-stage');
-  const reveal = page.getByRole('button', { name: /Reveal answer/ });
+  const reveal = page.getByRole('button', { name: /Check answer/ });
   await reveal.scrollIntoViewIfNeeded();
   const before = await stage.boundingBox();
   await reveal.click();
@@ -152,7 +152,7 @@ test('HR-UX-10 positive cosmetic gain visibly grows from its real starting balan
   await openApp(page);
   await setNewLimit(page, 1);
   await page.getByRole('button', { name: /Start studying/ }).click();
-  const reveal = page.getByRole('button', { name: /Reveal answer/ });
+  const reveal = page.getByRole('button', { name: /Check answer/ });
   await reveal.scrollIntoViewIfNeeded();
   const stage = page.getByTestId('study-deck-stage');
   const before = await stage.boundingBox();
@@ -181,7 +181,7 @@ test('HR-UX-11 reduced motion is static and never offers a misleading Skip contr
   await openApp(page);
   await setNewLimit(page, 1);
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: /Check answer/ }).click();
   await page.getByRole('button', { name: /1 Again Forgot/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Skip animation' })).toHaveCount(0);

@@ -6,6 +6,7 @@ import { AppLifecycle } from './platform/app-lifecycle';
 import { LocalStudyStore } from './data/study-store';
 import {ImportedCardContentComponent} from './imported-card-content';
 import { visibleOcclusionShapes } from '../domain/image-occlusion';
+import { cardCapabilities, type CardCapability } from '../domain/card-capabilities';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -16,20 +17,21 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
   standalone: true,
   imports:[ImportedCardContentComponent],
   template: `
-    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable"
-      [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? 0 : null" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
+    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable" [class.face-motion-active]="inspectionUnavailable"
+      [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? (inspectionUnavailable ? -1 : 0) : (inspectionUnavailable ? -1 : null)" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
       [attr.aria-label]="flippable ? (displayedRevealed() ? 'Show card front' : 'Show card answer') : null"
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
       (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
+        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [attr.data-face]="displayedRevealed() ? 'answer' : 'recall'" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="(displayedRevealed() ? 'Answer face, ' : 'Recall face, ') + rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
           <div class="frame-layer" aria-hidden="true">@if (frameUrl && !failedFrame()) { <img [src]="frameUrl" [style.object-fit]="design?.frameFit || 'contain'" alt="" (error)="failedFrame.set(true)"> }</div>
           <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="card-gleam"></i><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
+          <div class="face-signature" aria-hidden="true"></div>
           @if(prestigeLevel){<span class="prestige-crest" [attr.aria-label]="'Prestige '+prestigeRoman">P {{prestigeRoman}}</span>}
-          <header class="card-heading protected"><span>{{ demo ? 'DESIGN PREVIEW' : (displayedRevealed() ? 'ANSWER' : 'RECALL') }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
+          <header class="card-heading protected"><span class="card-chrome-title">{{ chromeTitle }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
           <div class="illustration-layer" [class.no-illustration]="hideStudyArt || (!hasIllustrationReference && card.kind !== 'visual')" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
               <img [src]="illustration" [style.object-fit]="card.imageOcclusion ? 'contain' : (design?.artwork?.fit || 'contain')" [style.object-position]="card.imageOcclusion ? '50% 50%' : ((design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%')" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
@@ -43,19 +45,18 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
           <div #copy class="card-copy protected" [class.answer]="displayedRevealed()" [class.prompt]="!displayedRevealed()" [attr.tabindex]="scrollable() ? 0 : null" [attr.role]="scrollable() ? 'region' : null" [attr.aria-label]="scrollable() ? 'Card content. Scroll to read all text.' : null">
             @if (displayedRevealed()) {
               @if(card.answerLabel){<span class="answer-label">{{card.answerLabel}}</span>}
-              @if(resolvedPresentation.title){<p class="card-title">{{resolvedPresentation.title}}</p>}
               @if(card.answer){<h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>}
               @if (card.secondary || card.pronunciation) { <p class="secondary">{{ card.secondary || card.pronunciation }}</p> }
               @if (resolvedPresentation.answerInterpretation && !compact) { <p class="interpretation">{{ resolvedPresentation.answerInterpretation }}</p> }
-            } @else { @if(resolvedPresentation.title){<p class="card-title">{{resolvedPresentation.title}}</p>}<h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(resolvedPresentation.hint){<p class="recall-hint">{{resolvedPresentation.hint}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
+            } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
           </div>
           @if (missingDesignAsset) { <span class="fallback-note protected"><span>Design asset missing · default frame shown</span></span> }
-          <footer class="protected"><span>{{ demo ? 'SAMPLE · NOT EARNED' : (displayedRevealed() ? 'Answer side' : 'Front side') }}</span>@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="tier-marks" aria-hidden="true">{{ raritySymbol }}</span></footer>
+          <footer class="protected">@if(capabilities.length){<ul class="capability-list" aria-label="Card capabilities">@for(capability of capabilities;track capability){<li [attr.aria-label]="capabilityLabel(capability)"><span aria-hidden="true">{{capabilitySymbol(capability)}}</span><span class="capability-text">{{capabilityLabel(capability)}}</span></li>}</ul>}@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="face-marker" role="img" [attr.aria-label]="displayedRevealed() ? 'Answer face' : 'Recall face'"><i aria-hidden="true"></i><i aria-hidden="true"></i></span></footer>
         </article>
       </div>
     </div>
     @if (illustration && !failedImage() && !hideStudyArt) {
-      <button class="expand-image" type="button" (pointerdown)="$event.stopPropagation()" (click)="requestInspection($event)" [attr.aria-label]="'Expand '+(displayedRevealed()?'Answer':'Recall')+' image'"><span aria-hidden="true">⌕</span></button>
+      <button class="expand-image" [class.available]="!inspectionUnavailable" type="button" (pointerdown)="$event.stopPropagation()" (click)="requestInspection($event)" [disabled]="inspectionUnavailable" [attr.tabindex]="inspectionUnavailable ? -1 : null" [attr.aria-hidden]="inspectionUnavailable ? 'true' : null" [attr.aria-label]="'Expand '+(displayedRevealed()?'Answer':'Recall')+' image'"><span aria-hidden="true">⌕</span></button>
     }
     @if (audioRefs.length) {
       <div class="audio-controls" [attr.aria-label]="displayedRevealed() ? 'Answer audio' : 'Front audio'" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
@@ -89,6 +90,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() flippable = false;
   @Output() flipped = new EventEmitter<boolean>();
   @Output() inspectImage = new EventEmitter<CardInspectionRequest>();
+  @Output() motionChange = new EventEmitter<boolean>();
   @Output() audioPlayingChange = new EventEmitter<boolean>();
   @Input() demo = false;
   @Input() design?: DesignSet;
@@ -101,6 +103,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() presentation?: ResolvedCardPresentation;
   @Input() audioAutoplay=false;
   @Input() stopAudioOnAction=true;
+  @Input() interactionBlocked=false;
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
   @ViewChild('turn') private turn?: ElementRef<HTMLElement>;
   @ViewChild('copy') private copy?: ElementRef<HTMLElement>;
@@ -109,6 +112,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private copyResize?: ResizeObserver;
   private copyMutation?: MutationObserver;
   readonly animated = signal(false);
+  readonly motionActive = signal(false);
   readonly failedImage = signal(false);
   readonly failedBackground = signal(false);
   readonly failedFrame = signal(false);
@@ -124,8 +128,10 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private suppressFlipClick = false;
   private pointerStart?: { x: number; y: number };
   private flipSequence = 0;
+  private motionSequence = 0;
   private readonly lifecycle = inject(AppLifecycle);
   private readonly store = inject(LocalStudyStore);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private unsubscribeLifecycle?: () => void;
   private audio?: HTMLAudioElement;
   private readonly motionChanged = () => { this.updateMotion(); this.settle(); };
@@ -139,6 +145,11 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get prestigeRoman():string{return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][Math.max(0,Math.min(10,this.prestigeLevel))]??'';}
   get prestigeBand():string{return this.prestigeLevel>=10?'capstone':this.prestigeLevel>=8?'radiant':this.prestigeLevel>=5?'midpoint':this.prestigeLevel>=3?'foil':this.prestigeLevel>=1?'edge':'none';}
   get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',primary:this.card?.front??'',artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
+  get capabilities():CardCapability[]{return cardCapabilities(this.card,this.resolvedPresentation);}
+  get inspectionUnavailable():boolean{return this.motionActive()||this.interactionBlocked;}
+  get chromeTitle():string{return this.resolvedPresentation.title?.trim()||(this.capabilities.includes('image-occlusion')?'Image Occlusion':this.capabilities.includes('cloze')?'Cloze':'');}
+  capabilityLabel(capability:CardCapability):string{return({'image-occlusion':'Image Occlusion',cloze:'Cloze',clue:'Clue',audio:'Audio',choices:'Choices'} as const)[capability];}
+  capabilitySymbol(capability:CardCapability):string{return({'image-occlusion':'▧',cloze:'[…]',clue:'?',audio:'♪',choices:'≡'} as const)[capability];}
   get hideStudyArt():boolean{return this.resolvedPresentation.artRole==='hidden'||!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first';}
   get presentationCard():CardContent{if(this.resolvedPresentation.effectiveArtPolicy==='text-first'||this.card?.art||this.card?.image||this.card?.backImage)return this.card;return{...this.card,art:{kind:'generated-text-art',title:this.generatedArtTitle,subtitle:this.generatedArtSubtitle,seed:this.artSeed}};}
   get hasNativeArt():boolean{return !this.card?.image&&!this.card?.backImage||this.card?.art?.kind==='source-visual-panel'||this.card?.art?.kind==='generated-text-art';}
@@ -170,7 +181,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const expectsBinaryImage = !!(this.card?.image || this.imageUrl || (this.displayedRevealed() && (this.card?.backImage || this.backImageUrl)) || this.card?.art?.kind === 'imported-media');
     return expectsBinaryImage && (!this.illustration || this.failedImage());
   }
-  requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
+  requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();if(this.inspectionUnavailable)return;this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
   get occlusionWidth():number{return this.card?.imageOcclusion?.imageWidth??1000;}
   get occlusionHeight():number{return this.card?.imageOcclusion?.imageHeight??1000;}
   get occlusionViewBox():string{return`0 0 ${this.occlusionWidth} ${this.occlusionHeight}`;}
@@ -194,9 +205,11 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.copyResize.observe(content);
       this.copyMutation.observe(content, { childList: true, subtree: true, characterData: true });
     }
+    queueMicrotask(()=>this.motionChange.emit(false));
     this.queueAutoplay();
   }
   ngOnChanges(changes: SimpleChanges): void {
+    if(changes['interactionBlocked']?.currentValue&&this.host.nativeElement.querySelector('.expand-image:focus')&&this.motion)this.motion.nativeElement.focus({preventScroll:true});
     if (changes['revealed']?.firstChange || changes['card']) this.displayedRevealed.set(this.revealed);
     const sideChanged=!!changes['revealed']&&!changes['revealed'].firstChange;
     const cardChanged=!!changes['card']&&!changes['card'].firstChange&&changes['card'].previousValue?.id!==this.card.id;
@@ -223,18 +236,21 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const enabled = this.effects && this.visible && this.lifecycle.active() && !reduced;
     this.animated.set(enabled);
-    if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.displayedRevealed.set(this.revealed); this.settle(); }
+    if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.displayedRevealed.set(this.revealed); this.finishMotion(++this.motionSequence); this.settle(); }
   }
-  private animate(type: 'deal'): void {
-    if (!this.animated() || !this.turn) return;
+  private async animate(type: 'deal'): Promise<void> {
+    if (!this.animated() || !this.turn) {this.finishMotion(++this.motionSequence);return;}
+    const sequence=this.beginMotion();
     this.animations.forEach(animation => animation.cancel());
     this.animations = [this.turn.nativeElement.animate([{ transform: 'translate(22px, 10px) rotate(2.5deg) scale(.97)', opacity: .15 }, { transform: 'translate(0, 0) rotate(0deg) scale(1)', opacity: 1 }], { duration: 440, easing: 'cubic-bezier(.16,1,.3,1)' })];
     const overlay = this.turn.nativeElement.querySelector('.effects-layer');
     if (overlay) this.animations.push(overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 650, easing: 'ease-out' }));
+    try{await Promise.allSettled(this.animations.map(animation=>animation.finished));}finally{this.finishMotion(sequence);}
   }
   private async animateFlip(target: boolean): Promise<void> {
     const sequence = ++this.flipSequence;
-    if (!this.animated() || !this.turn) { this.displayedRevealed.set(target); this.queueAutoplay(); return; }
+    if (!this.animated() || !this.turn) { this.displayedRevealed.set(target); this.queueAutoplay();this.finishMotion(++this.motionSequence); return; }
+    const motionSequence=this.beginMotion();
     this.animations.forEach(animation => animation.cancel());
     const turn = this.turn.nativeElement;
     const direction = target ? -1 : 1;
@@ -243,8 +259,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
       { transform: `rotateY(${direction * 88}deg) translateZ(18px) scale(.985)`, filter: 'brightness(.82)', opacity: .92 },
     ], { duration: 360, easing: 'cubic-bezier(.55,.05,.45,.95)', fill: 'forwards' });
     this.animations = [away];
-    try { await away.finished; } catch { return; }
-    if (sequence !== this.flipSequence) return;
+    try { await away.finished; } catch { this.finishMotion(motionSequence);return; }
+    if (sequence !== this.flipSequence){this.finishMotion(motionSequence);return;}
     this.displayedRevealed.set(target);
     this.queueAutoplay();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
@@ -255,7 +271,15 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     ], { duration: 400, easing: 'cubic-bezier(.16,.84,.28,1)', fill: 'forwards' });
     this.animations = [home];
     try { await home.finished; } catch { /* A newer face change owns the card. */ }
+    finally{this.finishMotion(motionSequence);}
   }
+  private beginMotion():number{
+    const sequence=++this.motionSequence;
+    if(this.host.nativeElement.querySelector('.expand-image:focus')&&this.motion)this.motion.nativeElement.focus({preventScroll:true});
+    if(!this.motionActive()){this.motionActive.set(true);this.motionChange.emit(true);}
+    return sequence;
+  }
+  private finishMotion(sequence:number):void{if(sequence!==this.motionSequence)return;if(this.motionActive()){this.motionActive.set(false);this.motionChange.emit(false);}}
   activateFlip(event: MouseEvent): void {
     if (!this.flippable || this.suppressFlipClick || (event.target as HTMLElement).closest('button,a,input,select,textarea')) return;
     // A successful pointer hit is stronger visibility evidence than a delayed
@@ -324,6 +348,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.preference?.removeEventListener('change', this.motionChanged);
     this.unsubscribeLifecycle?.();
     this.animations.forEach(animation => animation.cancel());
+    this.finishMotion(++this.motionSequence);
     this.stopAudio();
   }
 }

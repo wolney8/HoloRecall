@@ -38,7 +38,7 @@ test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with acces
 test('HR-UX-14 accepted feedback retains the rated card before the next deal', async ({ page }) => {
   await openApp(page);
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: /Check answer/ }).click();
   const answer = page.locator('.study-card-area .answer h3, .study-card-area .answer-text').first();
   const original = await answer.textContent();
   const rating = page.getByRole('button', { name: /4 Good Confident/ });
@@ -61,7 +61,7 @@ test('HR-UX-14 last-card feedback completes before Results and reduced motion se
   await page.getByRole('button', { name: 'Save study settings' }).click();
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click();
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: /Check answer/ }).click();
   await page.getByRole('button', { name: /5 Easy Effortless/ }).click();
   await expect(page.locator('.confidence-feedback[data-rating="5"]')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toHaveCount(0);
@@ -82,7 +82,7 @@ test('HR-UX-15 real unlock waits for completed progress and Results stay present
   await page.getByRole('button', { name: 'Save study settings' }).click();
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click();
   await page.getByRole('button', { name: /Start studying/ }).click();
-  await page.getByRole('button', { name: /Reveal answer/ }).click();
+  await page.getByRole('button', { name: /Check answer/ }).click();
   await page.getByRole('button', { name: /4 Good Confident/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible();
   const stored = await snapshot(page), eventCount = stored.events.length, rewardCount = stored.rewardEvents.length;
@@ -119,7 +119,7 @@ test('HR-UX-15 queues multiple real unlocks and Collection reuses their persiste
   await openApp(page); await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByLabel('New cards per day').fill('2'); await page.getByRole('button', { name: 'Save study settings' }).click();
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click(); await page.getByRole('button', { name: /Start studying/ }).click();
-  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Reveal answer/ }).click(); await page.getByRole('button', { name: /4 Good Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
+  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Check answer/ }).click(); await page.getByRole('button', { name: /4 Good Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible(); const before = await snapshot(page); expect(before.rewardEvents.filter(event => event.kind === 'unlock')).toHaveLength(2);
   await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 1 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
   await page.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 2 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
