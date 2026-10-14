@@ -43,4 +43,17 @@ describe('safe Anki template rendering',()=>{
     expect(rendered.unsupported).toEqual(['executable-template','filter:addon']);
     expect(rendered.markup).not.toContain('Ciao');
   });
+  it('omits a narrowly proven metadata-only presentation script without executing it',()=>{
+    const template='<div class="deck-label">{{Deck}}</div><div>{{Prompt}}</div><script>(function(){var e=document.querySelector(\'.deck-label\');if(!e)return;var p=e.textContent.split(/::|\\x1f/);if(p.length>1){var lesson=(p[0].match(/Lesson\\s+\\d+/i)||[\'Italian\'])[0];e.textContent=lesson+\' · \'+p[p.length-1];}})();</script>';
+    const rendered=renderAnkiTemplate(template,{fields:{Prompt:'Introduce yourself'},special:{Deck:'Italian Lesson 1::Introductions'},answerSide:false});
+    expect(rendered).toMatchObject({unsupported:[],simplifications:['presentation-script'],referencedFields:['Prompt']});
+    expect(rendered.markup).toContain('Italian Lesson 1::Introductions');expect(rendered.markup).toContain('Introduce yourself');expect(rendered.markup).not.toContain('<script');
+  });
+  it('keeps learning-semantic and network scripts behind template review',()=>{
+    const context={fields:{Prompt:'Question',Back:'Answer'},special:{Deck:'Science'},answerSide:false};
+    expect(renderAnkiTemplate('<div class="answer">{{Back}}</div><script>var e=document.querySelector(\'.answer\');e.textContent=\'Generated answer\';</script>',context).unsupported).toContain('executable-template');
+    expect(renderAnkiTemplate('<div class="deck-label">{{Deck}}</div>{{Prompt}}<script>fetch(\'https://example.test/answer\')</script>',context).unsupported).toContain('executable-template');
+    expect(renderAnkiTemplate('<button onclick="reveal()">{{Prompt}}</button>',context).unsupported).toContain('executable-template');
+    expect(renderAnkiTemplate('<div class="deck-label">{{Deck}}</div><script>var e=document.querySelector(\'.deck-label\');unknownFormatter(e);e.textContent=e.textContent;</script>',context).unsupported).toContain('executable-template');
+  });
 });

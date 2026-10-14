@@ -21,11 +21,42 @@ export interface AnkiTemplateStaticBlock {
 }
 
 const tokenPattern = /{{([#^/]?)([^{}]+)}}/g;
-const executablePattern = /<script\b|\bon\w+\s*=|javascript\s*:/i;
+const executablePattern = /\bon\w+\s*=|javascript\s*:/i;
+const scriptPattern=/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+const safeMetadataFields=new Set(['Tags','Type','Deck','Subdeck','Card']);
+const scriptForbidden=/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|localStorage|sessionStorage|indexedDB|setTimeout|setInterval|requestAnimationFrame|Worker|SharedWorker|importScripts)\b|\b(?:window|globalThis|self|navigator|location|document\s*\.(?!querySelector\s*\())|\.\s*(?:innerHTML|outerHTML|insertAdjacentHTML|createElement|appendChild|prepend|replaceChildren|remove|setAttribute|classList|style|hidden|addEventListener)\b|\[['"](?:innerHTML|outerHTML|style|hidden|className)['"]\]/i;
+const scriptConstructor=/\b(?:eval|Function)\s*\(/;
 
 const decode=(value:string)=>value.replace(/&nbsp;/gi,' ').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#(?:39|x27);/gi,"'").replace(/&amp;/gi,'&');
 const cleanStatic=(value:string)=>decode(value.replace(/<[^>]+>/g,' ')).replace(/\s+/g,' ').trim();
 const meaningfulStatic=(value:string)=>/[\p{L}\p{N}]/u.test(value);
+const regexEscape=(value:string)=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+
+function metadataTarget(template:string,selector:string):boolean{
+  if(!/^[.#][A-Za-z_][\w-]*$/.test(selector))return false;const name=regexEscape(selector.slice(1)),attribute=selector[0]==='.'?`class\\s*=\\s*["'][^"']*\\b${name}\\b[^"']*["']`:`id\\s*=\\s*["']${name}["']`;
+  const match=new RegExp(`<([a-z][\\w-]*)\\b(?=[^>]*${attribute})[^>]*>([\\s\\S]*?)<\\/\\1\\s*>`,'i').exec(template);if(!match)return false;const body=match[2]??'',tokens=[...body.matchAll(/{{(?:[#^/]\s*)?(?:text:)?([^{}:]+)(?:[:][^{}]+)?}}/g)].map(item=>item[1]!.trim());
+  return tokens.length>0&&tokens.every(token=>safeMetadataFields.has(token))&&!meaningfulStatic(body.replace(/{{[^{}]+}}/g,'').replace(/<[^>]+>/g,' '));
+}
+
+/**
+ * Recognises a deliberately tiny non-executed script shape: a script may read
+ * and rewrite textContent on one simple element whose source is only Anki
+ * presentation metadata. Everything else remains executable-template review.
+ */
+function presentationOnlyScript(source:string,template:string,context:AnkiTemplateContext):boolean{
+  if(!source.trim()||scriptForbidden.test(source)||scriptConstructor.test(source))return false;
+  const allowedCalls=new Set(['function','if','querySelector','split','match']);
+  const calls=[...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map(match=>match[1]!);
+  if(calls.some(call=>!allowedCalls.has(call)))return false;
+  const bindings=[...source.matchAll(/\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*document\.querySelector\(\s*(['"])([^'"]+)\2\s*\)/g)];
+  const queries=[...source.matchAll(/document\.querySelector\s*\(/g)];if(!bindings.length||bindings.length!==queries.length)return false;
+  const targets=new Map(bindings.map(match=>[match[1]!,match[3]!]));if([...targets.values()].some(selector=>!metadataTarget(template,selector)))return false;
+  const writes=[...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\.\s*([A-Za-z_$][\w$]*)\s*(?:\+|-|\*|\/)?=(?!=)/g)];if(!writes.length||writes.some(match=>!targets.has(match[1]!)||match[2]!=='textContent'))return false;
+  if(![...targets].some(([name])=>new RegExp(`\\b${regexEscape(name)}\\s*\\.\\s*textContent\\b`).test(source)))return false;
+  const selectorLiterals=new Set([...targets.values()]),metadata=Object.values(context.special??{}).join(' ').toLocaleLowerCase();
+  for(const match of source.matchAll(/(['"])(.*?)\1/g)){const value=match[2]!.trim();if(!value||selectorLiterals.has(value)||!meaningfulStatic(value))continue;const words=value.replace(/\\[a-z]/gi,' ').match(/[\p{L}\p{N}]+/gu)??[];if(words.some(word=>!metadata.includes(word.toLocaleLowerCase())))return false;}
+  return true;
+}
 
 /** Extracts visible literal template blocks without inventing field identities. */
 function staticTemplateBlocks(markup:string):AnkiTemplateStaticBlock[]{
@@ -84,6 +115,7 @@ function fieldValue(expression: string, context: AnkiTemplateContext, result: An
 /** Safe, non-executing subset of Anki/Mustache template evaluation. */
 export function renderAnkiTemplate(template: string, context: AnkiTemplateContext): AnkiTemplateRender {
   const result: AnkiTemplateRender = { markup: '', referencedFields: [], staticBlocks: [], simplifications: [], unsupported: [] };
+  const scripts=[...template.matchAll(scriptPattern)];if(scripts.length){if(scripts.every(match=>!match[1]!.trim()&&presentationOnlyScript(match[2]!,template,context)))result.simplifications.push('presentation-script');else result.unsupported.push('executable-template');template=template.replace(scriptPattern,'');}
   template=template.replace(/\[anki:tts[^\]]*]([\s\S]*?)\[\/anki:tts]/gi,(_match,body)=>{result.simplifications.push('tts');return body;}).replace(/{{tts-voices:[^}]*}}/gi,()=>{result.simplifications.push('tts');return'';});
   if (executablePattern.test(template)) result.unsupported.push('executable-template');
   const stack: Array<{ name: string; inverse: boolean; include: boolean }> = [];

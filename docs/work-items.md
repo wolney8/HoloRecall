@@ -8,7 +8,20 @@ Updated: 14 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-ANKI-FIDELITY-03
+## Active corrective milestone — HR-ANKI-SAFE-SCRIPT-01
+
+Authorised 14 October 2026. This bounded correction distinguishes provably presentation-only Anki template scripts from scripts that may alter learning semantics, without executing imported code.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-SAFE-SCRIPT-01A | Exact-package script trace | VERIFY | Trace both Lesson 1 templates through safe rendering, issue classification, template audit and Exchange counts before changing policy. |
+| HR-ANKI-SAFE-SCRIPT-01B | Conservative safe omission | VERIFY | Omit only provably presentation-only scripts; semantic, network and executable behavior remains review-required and is never run. |
+| HR-ANKI-SAFE-SCRIPT-01C | Script/media provenance | VERIFY | Record safe simplification evidence and distinguish referenced media from unreferenced package assets without filename guessing. |
+| HR-ANKI-SAFE-SCRIPT-01D | Real-package and security regression | VERIFY | Prove Lesson 1, bBarryy, prior Italian, generic executable-script, and orphan-media behavior across domain and Exchange gates. |
+
+Evidence: SHA-256 `8e8323d2f00a835f9d4d994b7480bbe807f95c7686ad1bb57514172f3cb5a81e` produces **44 Ready with simplification, 0 Needs review, 0 Cannot import** across two automatic clean Conversion Profiles. The shared script only shortens the visible Deck hierarchy label; it remains inert in retained provenance and is absent from native cards. The package has 0 referenced media and 19 ignored unreferenced PNG assets; its safe HTML `Image` panels remain instructional art with native choices. Unit/domain passes **261/261** with Lesson 1, bBarryy and the prior Italian package configured; complete browser/profile coverage passes **296/296**; production build and packaged iPhone/iPad Exchange-navigation smokes pass **1/1** each. The initial concurrent domain run exceeded two unchanged performance thresholds; both passed unchanged in isolation and in the complete rerun.
+
+## Previous corrective milestone — HR-ANKI-FIDELITY-03
 
 Authorised 14 October 2026. This bounded correction adds source-backed conditional semantic variants within one exact Anki note type/template Conversion Profile.
 

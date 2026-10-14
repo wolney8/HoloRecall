@@ -143,6 +143,8 @@ export interface AnkiCardSource {
     answerFields: string[];
     /** Selected template-owned conditional semantic rule, when one applies. */
     semanticVariantId?:string;
+    /** Non-executed template behavior omitted after conservative static proof. */
+    templateSimplifications?:Array<'presentation-script'>;
     blocks?: Array<{
       side: 'front' | 'back';
       source: string;

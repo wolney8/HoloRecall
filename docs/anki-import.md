@@ -30,7 +30,9 @@ The safe compatibility engine is a non-executing interpreter. It currently handl
 - `Tags`, `Type`, `Deck`, `Subdeck`, and `Card` special fields;
 - local image and `[sound:...]` references, including side-specific MP3/WAV audio.
 
-The engine never executes JavaScript, event handlers, `javascript:` URLs, arbitrary executable template code, imported CSS, or active SVG. Remote media, scripts, and fonts are not fetched. Unknown filters, malformed conditionals, unavailable template ordinals, and cards with no usable prompt/answer become compatibility review or unsupported results rather than entering Study corrupted.
+The engine never executes JavaScript, event handlers, `javascript:` URLs, arbitrary executable template code, imported CSS, or active SVG. Remote media, scripts, and fonts are not fetched. A deliberately narrow static classifier may strip an inline script only when it targets a template element made solely from Anki presentation metadata, writes only that element's text, uses the supported formatting operations, and the normal translation audit independently proves complete learning semantics. This is recorded as **Safe simplification**. Any script that may create, select, reveal, hide, inject, fetch, or otherwise alter learning content remains review-required. Unknown filters, malformed conditionals, unavailable template ordinals, and cards with no usable prompt/answer likewise cannot enter Study corrupted.
+
+Package media is reference-driven. Only assets referenced by source fields/templates become card media; unreferenced archive assets are counted for Advanced details, ignored, and never guessed onto cards from filenames.
 
 Anki templates determine learning content. HoloRecall continues to determine card presentation, including its renderer, design sets, finishes, rarity, motion, and accessibility behavior. Arbitrary downloaded CSS is not copied into the product shell.
 
@@ -121,7 +123,8 @@ Image Occlusion exports always warn that TSV cannot faithfully create native mas
 | LaTeX/MathJax | Review required | Source text is preserved; full Anki math rendering is not claimed. |
 | Unknown filters or add-on-specific occlusion/cloze behaviour | Review required | Source snapshot is preserved and affected templates cannot fast-path. |
 | Remote dependencies | Unsupported but source preserved | They are never fetched; a card must have another safe usable cue/answer. |
-| JavaScript, event handlers, active SVG and executable add-ons | Unsupported but source preserved | Executable behavior never crosses the import boundary. |
+| Presentation-only template scripts | Supported with safe adaptation | Never executed; a narrowly proven metadata formatter may be stripped after a clean semantic audit and is recorded as Safe simplification. |
+| Learning-semantic JavaScript, event handlers, active SVG and executable add-ons | Unsupported but source preserved | Executable behavior never crosses the import boundary; uncertain scripts require review. |
 
 ## Compatibility tiers
 

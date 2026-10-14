@@ -1,5 +1,12 @@
 # Current restart point
 
+## 14 October 2026 — Presentation-only Anki script correction verified locally
+
+- **Root cause:** both templates in the exact 44-card Lesson 1 v5.1 package contain the same inline deck-label formatter. The previous blanket script rule marked every generated card review-required even though the script only abbreviates an already-rendered Deck label and the native projection already retains all learning semantics.
+- **Correction:** imported code remains non-executable. A narrow static allowlist may omit only a metadata-only text formatter and records the omission as Safe simplification; unknown calls, learning-content writes, network/global APIs, DOM injection, handlers and active content remain review-required. The two template audits must still reconcile before fast-path import.
+- **Package result:** current domain evidence is **44 Ready with simplification, 0 Needs review, 0 Cannot import** across two automatic Conversion Profiles. The package has **0 referenced media** and **19 unreferenced PNG assets**, which are ignored rather than guessed onto cards. Its safe HTML `Image` fields remain the authoritative instructional panels and native choices.
+- **Verification:** unit/domain **261/261** passes with Lesson 1 v5.1, bBarryy and the prior 254-card Italian package configured. The complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **296/296**. Production build and packaged iPhone 17 Pro / iPad Pro 13-inch (M5) Exchange-navigation smokes pass **1/1** each. The initial concurrent unit run exceeded two unchanged library performance thresholds; both passed unchanged in isolation and in the complete rerun. Physical-device file import and arbitrary third-party presentation scripts remain unverified; uncertain scripts continue to require review.
+
 ## 14 October 2026 — Conditional Anki semantics verified locally
 
 - **Source result:** the exact Italian qfmt does not reference `Answer`; afmt conditionally renders non-empty `Answer` in its leading `answer-tag`, then renders the default `Italian` region. `Answer` is present on 64 notes and blank on 190, providing a stable source/template discriminator without prompt text, language rules or card IDs.
