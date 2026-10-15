@@ -55,7 +55,7 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
             <button #cluePennant type="button" class="clue-pennant" [class.below-expand]="hasInspectableImage" (pointerdown)="stopNested($event)" (click)="openStudyClue($event)" aria-label="Need a clue? Show the authored clue" aria-haspopup="true"><span>Need a clue?</span></button>
           }
           @if(studyClue && (studyClueState==='displayed'||studyClueState==='removing') && !displayedRevealed()){
-            <aside class="clue-sticker" [class.removing]="studyClueState==='removing'" [attr.data-safe-zone]="clueSafeZone" role="status" aria-live="polite" (animationend)="finishStudyClueRemoval($event)">
+            <aside class="clue-sticker" [class.removing]="studyClueState==='removing'" [class.long]="studyClue.length>120" [class.extended]="studyClue.length>240" [attr.data-safe-zone]="clueSafeZone" role="status" aria-live="polite" (animationend)="finishStudyClueRemoval($event)">
               <span class="clue-sticker-label">Clue</span><p>{{studyClue}}</p>
               <button type="button" class="clue-fold" (pointerdown)="stopNested($event)" (click)="removeStudyClue($event)" [disabled]="studyClueState==='removing'" aria-label="Remove clue"><span aria-hidden="true"></span></button>
             </aside>

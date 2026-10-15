@@ -1,18 +1,25 @@
 import type { Deck } from './models';
 
 const lessonPattern=/\blesson\s*([0-9]+)\b/i;
-const trailingDate=/(?:\s*[-–—|·]\s*)?(?:\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4})\s*$/i;
-const trailingSourceVersion=/(?:\s*[-–—|·]\s*)?v\d+(?:\.\d+)*(?:\s+(?:case\s+corrected|corrected|update|updated))?\s*$/i;
+const dateValue='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}[/.]\\d{1,2}[/.]\\d{2,4}|\\d{1,2}(?:st|nd|rd|th)?\\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)\\s+\\d{4})';
+const dateNoise=new RegExp(`(?:\\s*[-–—|·]\\s*)?${dateValue}(?=\\s*(?:$|::|\\x1f|\\r?\\n|\\d{1,3}\\s*(?:[-–—.:)]\\s*|\\s+)))`,'gi');
+const sourceVersionNoise=/(?:\s*[-–—|·]\s*)?v\d+(?:\.\d+)*(?:\s+(?:case\s+corrected|corrected|update|updated))?(?=\s*(?:$|::|\x1f|\r?\n|\d{1,3}\s*(?:[-–—.:)]\s*|\s+)))/gi;
+const hierarchySeparator=/\s*(?:::|\x1f|\r?\n+)\s*/;
 
-export function cleanStudyDeckTopic(value:string):string{
+function cleanSegment(value:string):string{
   return value
+    .replace(dateNoise,' ')
+    .replace(sourceVersionNoise,' ')
     .replace(/[\u0000-\u001f\u007f]/g,' ')
-    .replace(trailingDate,'')
-    .replace(trailingSourceVersion,'')
     .replace(/^\s*\d{1,3}\s*(?:[-–—.:)]\s*|\s+)/,'')
     .replace(/\s*(?:[-–—|·]\s*)+$/,'')
     .replace(/\s+/g,' ')
     .trim();
+}
+
+export function cleanStudyDeckTopic(value:string):string{
+  const parts=value.split(hierarchySeparator).filter(part=>part.trim());
+  return cleanSegment(parts.at(-1)??value);
 }
 
 function lessonSubject(value:string):string{
@@ -20,6 +27,17 @@ function lessonSubject(value:string):string{
   if(!match)return cleanStudyDeckTopic(value);
   const after=value.slice((match.index??0)+match[0].length).replace(/^\s*[-–—:|·]+\s*/,'');
   return cleanStudyDeckTopic(after);
+}
+
+function embeddedLeaf(value:string):string{
+  const parts=value.split(hierarchySeparator).filter(part=>part.trim());
+  if(parts.length>1)return cleanSegment(parts.at(-1)!);
+  const cleaned=cleanSegment(value),lesson=lessonPattern.exec(cleaned);
+  if(!lesson)return'';
+  const after=cleaned.slice((lesson.index??0)+lesson[0].length);
+  const orderedChild=/\s+\d{1,3}\s*(?:[-–—.:)]\s*|\s+)(?=[\p{L}])/gu;
+  const matches=[...after.matchAll(orderedChild)],last=matches.at(-1);
+  return last?.index===undefined?'':cleanSegment(after.slice(last.index));
 }
 
 function lineage(decks:readonly Deck[],deckId:string):Deck[]{
@@ -39,7 +57,8 @@ export function conciseStudyContext(decks:readonly Deck[],currentDeckId:string,s
   const scopeIsRelevant=!!scoped&&path.some(deck=>deck.id===scoped.id);
   const display=scopeIsRelevant&&lessonPattern.test(scoped!.name)?scoped!:current;
   const lesson=lessonDeck?.name.match(lessonPattern)?.[1];
-  let topic=display.id===lessonDeck?.id?lessonSubject(display.name):cleanStudyDeckTopic(display.name);
+  const combinedLeaf=display.id===lessonDeck?.id?embeddedLeaf(display.name):'';
+  let topic=combinedLeaf|| (display.id===lessonDeck?.id?lessonSubject(display.name):cleanStudyDeckTopic(display.name));
   if(lessonDeck&&display.id!==lessonDeck.id){
     const parentTopic=lessonSubject(lessonDeck.name);
     if(parentTopic&&topic.toLocaleLowerCase().startsWith(parentTopic.toLocaleLowerCase())){

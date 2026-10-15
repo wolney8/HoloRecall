@@ -8,7 +8,21 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-STUDY-PRESENTATION-02
+## Active corrective milestone — HR-STUDY-PRESENTATION-03
+
+Authorised 15 October 2026. This presentation-only correction replaces the geometric clue treatment with an organic HoloRecall-native object and normalises compact Study titles when imported hierarchy text is combined.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-STUDY-PRESENTATION-03A | Organic clue pennant | VERIFY | Use system typography, fabric-like asymmetric geometry and deterministic separation from image inspection while retaining the accessible control. |
+| HR-STUDY-PRESENTATION-03B | Organic clue sticker | VERIFY | Use natural paper geometry, a lifted interactive corner and readable content without nested scrolling or clipping. |
+| HR-STUDY-PRESENTATION-03C | Staged corner-first peel | VERIFY | Fold lift and adhesive separation precede body release; the reusable pennant appears only after removal settles, with a reduced-motion equivalent. |
+| HR-STUDY-PRESENTATION-03D | Study title normalisation | VERIFY | Combined and separate course hierarchies resolve to Lesson N plus the cleaned current topic without mutating stored names. |
+| HR-STUDY-PRESENTATION-03E | Regression and platform verification | VERIFY | Existing timer/state safety, answer showcase, responsive/accessibility, browser/build and available native Simulator gates remain intact. |
+
+Implementation evidence: system typography and asymmetric CSS material replace the serif/geometric clue treatment; long clues expand without a nested scrollbar; the fold and sticker body run separate corner-first removal stages before the reusable pennant returns. Combined hierarchy tests cover internal dates and numeric leaf prefixes without changing stored names. Unit/domain **271 passed, 3 opt-in suites skipped**; exact Lesson 1, Lesson 2, combined 254-card Italian and bBarryy gates **4/4**; focused Chromium/desktop-WebKit/compact-WebKit Study and answer-showcase coverage **16/16**; coarse-pointer compact/large/landscape coverage **3/3**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) smokes pass. Production build succeeds with the existing 900.49 kB warning. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
+## Previous corrective milestone — HR-STUDY-PRESENTATION-02
 
 Authorised 15 October 2026. This bounded milestone replaces Study's detached clue controls with one card-owned physical interaction and derives a concise, display-only Study context label without changing source data or learning state.
 

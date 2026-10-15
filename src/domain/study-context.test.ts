@@ -17,6 +17,14 @@ describe('concise Study context',()=>{
   it('uses the concise parent subject when the lesson parent is the Study scope',()=>expect(conciseStudyContext(decks,'gender','lesson-2')).toBe('Lesson 2 · Alphabet, C-G Sounds & Articles'));
   it('removes source-package version noise from a lesson parent scope',()=>expect(conciseStudyContext(decks,'greetings','lesson-1')).toBe('Lesson 1 · Introductions'));
   it.each([
+    ['Italian - Lesson 2 - Alphabet, C-G Sounds & Articles - 29 September 2026\n05 Gender, number & definite articles'],
+    ['Italian - Lesson 2 - Alphabet, C-G Sounds & Articles - 29 September 2026::05 - Gender, number & definite articles'],
+    ['Italian - Lesson 2 - Alphabet, C-G Sounds & Articles - 29 September 2026 05. Gender, number & definite articles'],
+  ])('prefers an embedded leaf after middle-of-hierarchy date noise: %s',name=>{
+    const combined:Deck={id:'combined',name,description:'',suspended:false};
+    expect(conciseStudyContext([combined],'combined')).toBe('Lesson 2 · Gender, number & definite articles');
+  });
+  it.each([
     ['greetings','Lesson 1 · Greetings & farewells'],
     ['people','Lesson 3 · Describing people'],
   ])('derives course context for %s without subject-specific rules',(deckId,expected)=>expect(conciseStudyContext(decks,deckId)).toBe(expected));

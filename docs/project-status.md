@@ -1,5 +1,12 @@
 # Current restart point
 
+## 15 October 2026 — Organic Study clue and combined-hierarchy title correction verified locally
+
+- **Clue material:** the pennant and attached clue sticker now use HoloRecall's Material typography. Asymmetric banner geometry, a restrained paper surface and a 48 px lifted-corner target replace the button/rectangle treatment. Long clue content expands within the card without a nested scrollbar.
+- **Removal lifecycle:** the fold lifts independently before the sticker's top/right adhesion separates and the body follows. The pennant is absent during removal and unfurls only after the sticker animation settles; repeat access still has no second timer. Reduced Motion retains the same states through short fades.
+- **Study title:** display-only normalisation now recognises an embedded child topic when parent, date and numbered leaf arrive in one hierarchy string. `Italian - Lesson 2 - Alphabet, C-G Sounds & Articles - 29 September 2026\n05 Gender, number & definite articles` displays as `Lesson 2 · Gender, number & definite articles`; stored hierarchy remains unchanged.
+- **Evidence:** unit/domain **271 passed, 3 opt-in suites skipped**; exact Lesson 1, Lesson 2, combined 254-card Italian and bBarryy gates **4/4**; focused Chromium/desktop-WebKit/compact-WebKit Study and answer-showcase coverage **16/16**; coarse-pointer compact/large/landscape coverage **3/3**; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) smokes pass. Production build succeeds with the existing 900.49 kB warning. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
 ## 15 October 2026 — Physical Study clue and concise context implemented
 
 - **Clue boundary:** Study retains the existing ten-second active Recall timer and now drives a narrow waiting/available/displayed/removing state. The shared renderer presents an edge-attached pennant and card-transform-owned sticker; image cards place the sticker before Recall copy and Image Occlusion chooses the side opposite the active target. The folded corner completes peel/removal before the pennant returns, repeat use needs no second delay, and Reduced Motion settles through an immediate rendered-frame handoff.
