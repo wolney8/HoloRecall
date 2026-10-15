@@ -1,5 +1,11 @@
 # Current restart point
 
+## 15 October 2026 — Answer-first collectible hierarchy verified locally
+
+- **Cause and correction:** the shared Answer renderer kept the complete flexible source visual panel above a fixed, small copy region, so contextual panel text dominated concise semantic answers. Eligible learner-facing text answers now use an `answer-showcase` composition: source-backed panel context moves to top chrome, only the spark/category chip remains as ornament, and the unboxed primary Answer plus optional secondary cue owns the central hierarchy. Recall and import semantics are unchanged.
+- **Scope safety:** visual answers, Image Occlusion, source images, genuinely long/multi-line answers and explicit Design Studio previews retain their specialist composition. Compact answer-size bands reduce avoidable internal scrolling. The ornament's centre rule has a deliberate gap and lower layer than the spark.
+- **Evidence:** exact Lesson 2 `cestino`, subject-neutral maths/general/science fixtures, desktop and compact 200% text pass. Unit/domain is **263/263** with Lesson 1 v5.1, Lesson 2 v5.1, bBarryy and the combined 254-card Italian Lessons 1–3 suite configured; the complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix is **303/303**. Production builds at **899.88 kB raw / 217.33 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. A standalone Lesson 3 v5.1 file was not accessible in the known package directory, so Lesson 3 regression evidence comes from the configured combined 254-card package. Physical-device contrast, VoiceOver and Dynamic Type remain unverified.
+
 ## 15 October 2026 — Lesson 2 structured Prompt and response semantics verified locally
 
 - **Source trace:** the exact 135-card Lesson 2 v5.1 package has two templates: 123 `Lesson 2 visual recall` cards and 12 `Visual recall` cards. Every Prompt field contains authored `.instruction`, `.focus` and `.clue` blocks; both templates also contain the same presentation-only deck-label script and mixed learning/source-app guidance.

@@ -8,7 +8,20 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-ANKI-FIDELITY-04
+## Active corrective milestone — HR-ANSWER-FACE-HIERARCHY-01
+
+Authorised 15 October 2026. This bounded presentation correction makes concise semantic Answers dominant while preserving specialized visual and complex compositions.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANSWER-FACE-HIERARCHY-01A | Concise Answer composition | VERIFY | Put source-backed context in top chrome, retain concise category decoration, and make primary Answer plus optional secondary cue the dominant Answer-face hierarchy. |
+| HR-ANSWER-FACE-HIERARCHY-01B | Composition safety | VERIFY | Apply the hierarchy through the shared presentation system only when semantics fit; preserve Recall, Image Occlusion, instructional-image, multi-block and long-answer compositions. |
+| HR-ANSWER-FACE-HIERARCHY-01C | Material layering and fit | VERIFY | Keep the central spark above inner rules, remove redundant revealed guidance, and avoid internal scrolling when responsive type and spacing can fit safely. |
+| HR-ANSWER-FACE-HIERARCHY-01D | Cross-subject and platform verification | VERIFY | Verify language and non-language examples, exact Lesson 1–3 and bBarryy regressions, responsive/accessibility states, production build and packaged iPhone/iPad smoke. |
+
+Implementation evidence: the exact Lesson 2 `cestino` card retains its Recall stimulus, task and CE/CI/CHE/CHI choices; its Answer now uses source panel title `C and CH sounds` in chrome, keeps only the spark and `C/CH` chip as ornament, and promotes `CE` plus `cheh-STEE-noh` to the central hierarchy. The rule is subject-neutral, omits an absent secondary slot, adapts medium/long concise answers, and leaves image, Image Occlusion and explicit Design Studio compositions unchanged. Unit/domain **263/263**, focused hierarchy **5/5**, and the complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix **303/303** pass. Production builds at **899.88 kB raw / 217.33 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. Physical-device contrast, VoiceOver and Dynamic Type remain unverified.
+
+## Previous corrective milestone — HR-ANKI-FIDELITY-04
 
 Authorised 15 October 2026. This bounded correction preserves structured semantics inside imported Prompt HTML and distinguishes choice, pronunciation/naming and visual response modes during template-level translation audit.
 

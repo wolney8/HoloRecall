@@ -84,6 +84,8 @@ Possible prestige rewards:
 - Domain-specific secondary cues may follow (for example pronunciation, formula, unit, definition, syntax cue).
 - Short interpretation/meaning may remain on-card when useful.
 - Longer supporting material should normally move outside the card into progressive disclosure.
+- Concise text answers use an answer-first showcase: source-backed context moves to the small top chrome, a decorative spark and optional category chip remain restrained, and the unboxed primary answer becomes the strongest central element with its secondary cue directly beneath in a palette-derived accent. Redundant revealed guidance and repeated panel headings are omitted. Responsive answer-size bands avoid internal scrolling where the content reasonably fits.
+- Visual answers, instructional images, Image Occlusion, genuinely long or multi-block answers, and explicit Design Studio composition previews retain their specialist compositions.
 
 ### Card Details outside the card
 The collectible Answer face remains concise: primary answer first, then an optional subject-neutral secondary cue, concise example or short interpretation. Meaningful extended source material lives outside the physical card in a lazy Card Details surface.

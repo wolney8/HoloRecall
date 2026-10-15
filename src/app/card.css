@@ -96,6 +96,26 @@
 .memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-hint{box-sizing:border-box;width:min(100%,18rem);margin-inline:auto;text-align:center}
 .memory-card[data-composition=typographic-showcase] .card-copy.prompt>.recall-context{border-inline-start:0;border-block-start:1px solid color-mix(in srgb,var(--frame-color) 68%,transparent);padding-inline:.55rem}
 
+/* Concise semantic answers use one subject-neutral hierarchy. Source artwork is
+   reduced to an ornament/category; instructional images and visual answers keep
+   their specialist compositions. */
+.memory-card[data-composition=answer-showcase] .illustration-layer{flex:0 0 clamp(7rem,25%,9rem);overflow:visible;border:0;background:transparent;box-shadow:none}
+.memory-card[data-composition=answer-showcase] .illustration-layer::after{display:none}
+.memory-card[data-composition=answer-showcase] .card-copy.answer{flex:1 1 auto;min-height:0;max-height:none;padding:clamp(1rem,5%,2rem) clamp(.75rem,4%,1.5rem);overflow-y:auto;align-items:center}
+.memory-card[data-composition=answer-showcase] .card-copy.answer::before{background:transparent;border:0;box-shadow:none;backdrop-filter:none}
+.memory-card[data-composition=answer-showcase] .card-copy.answer>h3{width:min(100%,19rem);margin:0;text-wrap:balance;font-size:clamp(2.5rem,9vw,4rem);font-weight:760;line-height:1.02;letter-spacing:-.045em}
+.memory-card[data-composition=answer-showcase][data-answer-size=medium] .card-copy.answer>h3{font-size:clamp(2rem,7vw,3.2rem);line-height:1.08}
+.memory-card[data-composition=answer-showcase][data-answer-size=long] .card-copy.answer>h3{font-size:clamp(1.55rem,5.4vw,2.5rem);line-height:1.14;letter-spacing:-.025em}
+.memory-card[data-composition=answer-showcase] .card-copy.answer>.secondary{width:min(100%,18rem);margin:.7rem auto 0;color:color-mix(in srgb,var(--card-ink) 78%,var(--design-secondary,var(--frame-color)));font-size:clamp(.9rem,2.8vw,1.15rem);font-weight:620;line-height:1.28;text-wrap:balance}
+.memory-card[data-composition=answer-showcase] .card-copy.answer>.interpretation{width:min(100%,18rem);margin:.65rem auto 0;font-size:clamp(.76rem,2vw,.9rem);line-height:1.35;text-wrap:balance}
+.compact .memory-card[data-composition=answer-showcase] .illustration-layer{flex-basis:5.8rem}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer{padding:.7rem .45rem}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer>h3{font-size:clamp(1.75rem,8vw,2.5rem)}
+.compact .memory-card[data-composition=answer-showcase][data-answer-size=medium] .illustration-layer{flex-basis:4.8rem}
+.compact .memory-card[data-composition=answer-showcase][data-answer-size=medium] .card-copy.answer>h3{font-size:clamp(1.3rem,6vw,1.55rem);line-height:1.08;letter-spacing:-.025em}
+.compact .memory-card[data-composition=answer-showcase][data-answer-size=long] .card-copy.answer>h3{font-size:clamp(1.25rem,5.5vw,1.8rem)}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer>.secondary{font-size:.78rem}
+
 /* Shared card chrome: learning title, derived capabilities and a quiet face signature. */
 .card-chrome-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.card-chrome-title:empty{display:block}
 .face-signature{position:absolute;z-index:0;inset:9%;pointer-events:none;opacity:.075;color:var(--card-ink)}
