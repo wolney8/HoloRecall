@@ -8,7 +8,22 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-ANSWER-FACE-HIERARCHY-01
+## Active corrective milestone — HR-STUDY-PRESENTATION-02
+
+Authorised 15 October 2026. This bounded milestone replaces Study's detached clue controls with one card-owned physical interaction and derives a concise, display-only Study context label without changing source data or learning state.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-STUDY-PRESENTATION-02A | Card-owned clue pennant | VERIFY | After ten active settled Recall seconds, an accessible medieval pennant unfurls from a deterministic card-edge position without colliding with image inspection. |
+| HR-STUDY-PRESENTATION-02B | Attached clue sticker and safe placement | VERIFY | Opening the pennant produces a readable card-transform-owned sticker using a content-aware safe zone; it never flips or mutates learning state. |
+| HR-STUDY-PRESENTATION-02C | Peel and immediate reavailability | VERIFY | The folded-corner removal affordance completes its peel/fade before the pennant returns, supports repeat use without another delay, and restores focus predictably. |
+| HR-STUDY-PRESENTATION-02D | Motion, lifecycle and answer safety | VERIFY | Existing active-time pauses remain authoritative; Reduced Motion preserves the sequence; Answer/card/session transitions clear clue UI and Recall Peek cannot restore it. |
+| HR-STUDY-PRESENTATION-02E | Concise Study context label | VERIFY | One pure helper derives Lesson N plus cleaned leaf/parent topic for trustworthy course hierarchies and a cleaned current-deck fallback otherwise. |
+| HR-STUDY-PRESENTATION-02F | Regression and platform verification | VERIFY | Answer showcase, imported package presentation, responsive layouts, accessibility, browser/build and available native Simulator gates are verified before publication. |
+
+Implementation evidence: the clue lifecycle is card-owned and presentation-only, with timer/modal/lifecycle pauses, deterministic image-control separation, content-aware sticker placement, folded-corner removal, immediate repeat availability, Reduced Motion and keyboard/focus coverage. Unit/domain **268/268** pass; exact Lesson 1, Lesson 2, combined 254-card Italian and bBarryy gates pass **4/4**; the full Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **295** with **10** exact-package conditionals separately exercised. Production builds at **899.87 kB raw / 217.79 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
+## Previous corrective milestone — HR-ANSWER-FACE-HIERARCHY-01
 
 Authorised 15 October 2026. This bounded presentation correction makes concise semantic Answers dominant while preserving specialized visual and complex compositions.
 

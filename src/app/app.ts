@@ -43,6 +43,7 @@ import { occlusionGroupIds } from '../domain/image-occlusion';
 import type { DeckDeleteDialogResult } from './authoring/deck-delete-dialog';
 import { SubviewNavigationComponent, type SubviewNavigationItem } from './navigation/subview-navigation';
 import { PlatformPresentation } from './platform/platform-presentation';
+import { conciseStudyContext } from '../domain/study-context';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
 type LibrarySubview = 'decks' | 'search';
@@ -83,8 +84,10 @@ export class AppComponent {
   readonly studyTransition=signal<'idle'|'feedback'|'deal'>('idle');
   readonly studyRecallPeek=signal(false);
   readonly studyCardMotionActive=signal(false);
-  readonly clueFlagVisible=signal(false);
-  readonly clueRevealed=signal(false);
+  readonly clueState=signal<'waiting'|'available'|'displayed'|'removing'>('waiting');
+  readonly clueAnnouncement=signal('');
+  readonly clueFlagVisible=computed(()=>this.clueState()==='available');
+  readonly clueRevealed=computed(()=>this.clueState()==='displayed'||this.clueState()==='removing');
   readonly resultCardSide=signal('');
   readonly autoAdvancePaused=signal(false);
   readonly cardAudioPlaying=signal(false);
@@ -290,6 +293,7 @@ export class AppComponent {
   toggleFilter(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'finishes'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key,value as never);}
   chooseSearchResult(result:SearchResult):void{this.library.selectResult(result);if(result.kind==='card'){const card=this.data()?.cards.find(item=>item.id===result.cardId);if(card)this.edit(card);}else this.go('library');}
   deckName(id:string):string{return this.data()?.decks.find(d=>d.id===id)?.name??'Deck';}
+  studyContextTitle(deckId:string):string{return conciseStudyContext(this.data()?.decks??[],deckId,this.session()?.scopeDeckId);}
   designFor(card:CardContent):DesignSet|undefined{return this.store.designFor(card);}
   presentationFor(card:CardContent){return this.store.presentationFor(card);}
   studyAnnouncement(card:CardContent):string{if(!this.displayedRevealed())return'New card. Attempt recall, then reveal.';if(card.imageOcclusion){const description=card.imageOcclusion.targetDescription?.trim();return`Image Occlusion answer revealed.${description?` ${description}`:''}`;}return`Answer: ${card.answer}.${card.meaning?` ${card.meaning}`:''}`;}
@@ -302,7 +306,9 @@ export class AppComponent {
     finally{if(resumeAuto&&this.screen()==='study'&&this.current()?.id===card.id)await this.resumeAutoAdvance();}
   }
   onStudyCardMotion(active:boolean):void{this.studyCardMotionActive.set(active);}
-  revealClue(event:Event):void{event.preventDefault();event.stopPropagation();if(!this.currentClue()||this.revealed())return;this.clearClueDelay(false);this.clueFlagVisible.set(false);this.clueRevealed.set(true);}
+  revealClue():void{if(!this.currentClue()||this.revealed()||this.clueState()!=='available')return;this.clearClueDelay(false);this.clueState.set('displayed');this.clueAnnouncement.set('Clue displayed.');}
+  removeClue():void{if(this.clueState()!=='displayed')return;this.clueState.set('removing');this.clueAnnouncement.set('Removing clue.');}
+  finishClueRemoval():void{if(this.clueState()!=='removing'||this.revealed()||!this.currentClue())return;this.clueState.set('available');this.clueAnnouncement.set('Clue removed. Clue available again.');}
   hasAnswerSupport(card:CardContent):boolean{return !!card.details?.length||!!card.notes.replace(/^Imported source\s*·[^\n]*(?:\n\n)?/i,'').trim()||!this.presentationFor(card).answerInterpretation&&!!(card.meaning||card.interpretation);}
   designSourceLabel(card:CardContent):string{const resolved=this.store.resolvedDesignFor(card);return resolved.source==='card-override'?`Override · ${resolved.design.name}`:`Inherited · ${resolved.design.name}`;}
   deckEditorDesign():DesignSet{const state=this.data(),id=this.deckEditor?.designSetId;return state?.designs.find(design=>design.id===id)??this.store.resolvedDesignFor(this.deckDesignSample()??this.blankCard(this.deckEditor?.id)).design;}
@@ -422,14 +428,14 @@ export class AppComponent {
   private syncClueDelay(cardKey:string):void{
     if(cardKey!==this.clueCardKey){this.clearClueDelay(true);this.clueCardKey=cardKey;}
     const eligible=!!cardKey&&this.screen()==='study'&&!this.revealed()&&!!this.currentClue()&&this.studyTransition()==='idle'&&!this.busy()&&!this.studyCardMotionActive()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.cardInspection.active();
-    if(!eligible){this.pauseClueDelay();if(!cardKey||this.revealed()||!this.currentClue()){this.clueFlagVisible.set(false);this.clueRevealed.set(false);}return;}
+    if(!eligible){this.pauseClueDelay();if(!cardKey||this.revealed()||!this.currentClue()){this.clueState.set('waiting');this.clueAnnouncement.set('');}return;}
     if(this.clueFlagVisible()||this.clueRevealed()||this.clueTimer)return;
-    if(this.clueRemainingMs<=0){this.clueFlagVisible.set(true);return;}
+    if(this.clueRemainingMs<=0){this.clueState.set('available');if(!this.clueAnnouncement())this.clueAnnouncement.set('Clue available.');return;}
     this.clueDeadline=performance.now()+this.clueRemainingMs;
-    this.clueTimer=window.setTimeout(()=>{this.clueTimer=0;this.clueRemainingMs=0;if(this.current()&&`${this.current()!.id}:${this.current()!.revision}`===this.clueCardKey&&!this.revealed()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.cardInspection.active()&&!this.studyCardMotionActive())this.clueFlagVisible.set(true);},this.clueRemainingMs);
+    this.clueTimer=window.setTimeout(()=>{this.clueTimer=0;this.clueRemainingMs=0;if(this.current()&&`${this.current()!.id}:${this.current()!.revision}`===this.clueCardKey&&!this.revealed()&&this.lifecycle.active()&&this.lifecycle.focused()&&!this.cardInspection.active()&&!this.studyCardMotionActive()){this.clueState.set('available');this.clueAnnouncement.set('Clue available.');}},this.clueRemainingMs);
   }
   private pauseClueDelay():void{if(!this.clueTimer)return;window.clearTimeout(this.clueTimer);this.clueTimer=0;this.clueRemainingMs=Math.max(0,this.clueDeadline-performance.now());this.clueDeadline=0;}
-  private clearClueDelay(reset:boolean):void{if(this.clueTimer)window.clearTimeout(this.clueTimer);this.clueTimer=0;this.clueDeadline=0;if(reset){this.clueRemainingMs=10_000;this.clueFlagVisible.set(false);this.clueRevealed.set(false);}}
+  private clearClueDelay(reset:boolean):void{if(this.clueTimer)window.clearTimeout(this.clueTimer);this.clueTimer=0;this.clueDeadline=0;if(reset){this.clueRemainingMs=10_000;this.clueState.set('waiting');this.clueAnnouncement.set('');}}
   private settleConfidenceFeedback():void{window.clearTimeout(this.confidenceTimer);this.confidenceTimer=0;this.confidenceFeedback.set(null);const resolve=this.feedbackResolve;this.feedbackResolve=null;resolve?.();}
   private settleAnswerDwell():void{window.clearTimeout(this.answerDwellTimer);this.answerDwellTimer=0;const resolve=this.answerDwellResolve;this.answerDwellResolve=null;resolve?.();}
   private cancelStudyDealAnimation():void{this.studyDealAnimation?.cancel();this.studyDealAnimation=null;}

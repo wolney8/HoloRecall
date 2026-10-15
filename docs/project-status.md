@@ -1,5 +1,11 @@
 # Current restart point
 
+## 15 October 2026 — Physical Study clue and concise context implemented
+
+- **Clue boundary:** Study retains the existing ten-second active Recall timer and now drives a narrow waiting/available/displayed/removing state. The shared renderer presents an edge-attached pennant and card-transform-owned sticker; image cards place the sticker before Recall copy and Image Occlusion chooses the side opposite the active target. The folded corner completes peel/removal before the pennant returns, repeat use needs no second delay, and Reduced Motion settles through an immediate rendered-frame handoff.
+- **Study context:** one pure helper derives `Lesson N · cleaned leaf topic`, uses the lesson subject when that parent is the active scope, and otherwise cleans the current deck name. It removes ordering/date/control noise without writing deck names or Anki hierarchy.
+- **Evidence:** unit/domain **268/268**; exact Lesson 1, Lesson 2, combined 254-card Italian and bBarryy gates **4/4**; the full Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **295** with **10** exact-package conditionals separately exercised. A first rerun exposed an empty clue live-region regression; conditional rendering removed the redundant accessibility node and the final matrix is clean. Production builds at **899.87 kB raw / 217.79 kB estimated transfer**. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
 ## 15 October 2026 — Answer-first collectible hierarchy verified locally
 
 - **Cause and correction:** the shared Answer renderer kept the complete flexible source visual panel above a fixed, small copy region, so contextual panel text dominated concise semantic answers. Eligible learner-facing text answers now use an `answer-showcase` composition: source-backed panel context moves to top chrome, only the spark/category chip remains as ornament, and the unboxed primary Answer plus optional secondary cue owns the central hierarchy. Recall and import semantics are unchanged.

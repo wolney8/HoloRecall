@@ -51,6 +51,15 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
             } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
           </div>
           @if (missingDesignAsset) { <span class="fallback-note protected"><span>Design asset missing · default frame shown</span></span> }
+          @if(studyClue && studyClueState==='available' && !displayedRevealed()){
+            <button #cluePennant type="button" class="clue-pennant" [class.below-expand]="hasInspectableImage" (pointerdown)="stopNested($event)" (click)="openStudyClue($event)" aria-label="Need a clue? Show the authored clue" aria-haspopup="true"><span>Need a clue?</span></button>
+          }
+          @if(studyClue && (studyClueState==='displayed'||studyClueState==='removing') && !displayedRevealed()){
+            <aside class="clue-sticker" [class.removing]="studyClueState==='removing'" [attr.data-safe-zone]="clueSafeZone" role="status" aria-live="polite" (animationend)="finishStudyClueRemoval($event)">
+              <span class="clue-sticker-label">Clue</span><p>{{studyClue}}</p>
+              <button type="button" class="clue-fold" (pointerdown)="stopNested($event)" (click)="removeStudyClue($event)" [disabled]="studyClueState==='removing'" aria-label="Remove clue"><span aria-hidden="true"></span></button>
+            </aside>
+          }
           <footer class="protected">@if(capabilities.length){<ul class="capability-list" aria-label="Card capabilities">@for(capability of capabilities;track capability){<li [attr.aria-label]="capabilityLabel(capability)"><span aria-hidden="true">{{capabilitySymbol(capability)}}</span><span class="capability-text">{{capabilityLabel(capability)}}</span></li>}</ul>}@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="face-marker" role="img" [attr.aria-label]="displayedRevealed() ? 'Answer face' : 'Recall face'"><i aria-hidden="true"></i><i aria-hidden="true"></i></span></footer>
         </article>
       </div>
@@ -92,6 +101,9 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Output() inspectImage = new EventEmitter<CardInspectionRequest>();
   @Output() motionChange = new EventEmitter<boolean>();
   @Output() audioPlayingChange = new EventEmitter<boolean>();
+  @Output() studyClueOpen = new EventEmitter<void>();
+  @Output() studyClueRemove = new EventEmitter<void>();
+  @Output() studyClueRemovalSettled = new EventEmitter<void>();
   @Input() demo = false;
   @Input() design?: DesignSet;
   @Input() imageUrl?: string;
@@ -104,6 +116,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() audioAutoplay=false;
   @Input() stopAudioOnAction=true;
   @Input() interactionBlocked=false;
+  @Input() studyClue='';
+  @Input() studyClueState:'waiting'|'available'|'displayed'|'removing'='waiting';
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
   @ViewChild('turn') private turn?: ElementRef<HTMLElement>;
   @ViewChild('copy') private copy?: ElementRef<HTMLElement>;
@@ -147,6 +161,13 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get resolvedPresentation():ResolvedCardPresentation{return this.presentation??{profile:'general',chromeTitleSource:'none',primary:this.card?.front??'',artRole:this.card?.image||this.card?.art?'supportive':'hidden',requestedArtPolicy:'auto',effectiveArtPolicy:this.card?.kind==='visual'?'image-first':'text-first'};}
   get capabilities():CardCapability[]{return cardCapabilities(this.card,this.resolvedPresentation);}
   get inspectionUnavailable():boolean{return this.motionActive()||this.interactionBlocked;}
+  get hasInspectableImage():boolean{return !!this.illustration&&!this.failedImage()&&!this.hideStudyArt;}
+  get clueSafeZone():'image-left'|'image-right'|'choices'|'text'{
+    const occlusion=this.card?.imageOcclusion;
+    if(occlusion){const targets=occlusion.shapes.filter(shape=>shape.groupId===occlusion.activeGroupId);const centres=targets.flatMap(shape=>shape.type==='rect'?[shape.x+shape.width/2]:shape.type==='ellipse'?[shape.cx]:shape.points.map(point=>point.x));const centre=centres.length?centres.reduce((sum,value)=>sum+value,0)/centres.length:.5;return centre<.5?'image-right':'image-left';}
+    if(this.card?.image||this.card?.backImage)return'image-left';
+    return this.card?.choices?.length?'choices':'text';
+  }
   get chromeTitle():string{return this.resolvedPresentation.chromeTitle?.trim()??'';}
   get answerFirstHierarchy():boolean{const answer=this.card?.answer?.trim()??'',lines=answer.split(/\n+/).filter(Boolean);return!this.demo&&!!answer&&!this.card?.imageOcclusion&&!this.card?.image&&!this.card?.backImage&&answer.length<=160&&lines.length<=4;}
   get displayedChromeTitle():string{if(this.displayedRevealed()&&this.answerFirstHierarchy&&this.card?.art?.kind==='source-visual-panel'){const title=this.card.art.title.trim();if(title&&title.length<=64&&title.localeCompare(this.card.answer.trim(),undefined,{sensitivity:'base'})!==0&&title.localeCompare(this.card.front.trim(),undefined,{sensitivity:'base'})!==0)return title;}return this.chromeTitle;}
@@ -185,6 +206,11 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     return expectsBinaryImage && (!this.illustration || this.failedImage());
   }
   requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();if(this.inspectionUnavailable)return;this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
+  stopNested(event:Event):void{event.stopPropagation();}
+  openStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='available'||this.displayedRevealed())return;this.studyClueOpen.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-fold')?.focus({preventScroll:true}));}
+  removeStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='displayed')return;this.studyClueRemove.emit();if(matchMedia('(prefers-reduced-motion: reduce)').matches||!!this.host.nativeElement.closest('.effects-off'))requestAnimationFrame(()=>{if(this.studyClueState==='removing')this.completeStudyClueRemoval();});}
+  finishStudyClueRemoval(event:AnimationEvent):void{if(this.studyClueState!=='removing'||event.target!==event.currentTarget)return;this.completeStudyClueRemoval();}
+  private completeStudyClueRemoval():void{this.studyClueRemovalSettled.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-pennant')?.focus({preventScroll:true}));}
   get occlusionWidth():number{return this.card?.imageOcclusion?.imageWidth??1000;}
   get occlusionHeight():number{return this.card?.imageOcclusion?.imageHeight??1000;}
   get occlusionViewBox():string{return`0 0 ${this.occlusionWidth} ${this.occlusionHeight}`;}
