@@ -8,7 +8,22 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-01
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-02
+
+Authorised 15 October 2026. This developer-only expansion completes the proposed collectible interaction language for manual approval without integrating any prototype into learner journeys.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-02A | Complete clue sequence | VERIFY | Retain the approved layered peel at a smaller size and add hidden/rolled, unfurled pennant, sticker, peel and automatic pennant-return states with a magnifier coexistence sample. |
+| HR-VISUAL-EFFECTS-LAB-02B | Theme-aware surface lighting | VERIFY | Compare Light, Dark and System contexts plus Common, Holo Rare and Ultra Rare using continuously surface-linked reflections and the approved face signatures. |
+| HR-VISUAL-EFFECTS-LAB-02C | Physical card press | VERIFY | Demonstrate rigid-card press/release and press-to-flip without arcade bounce or learner state. |
+| HR-VISUAL-EFFECTS-LAB-02D | Earned reveal and Prestige | VERIFY | Demonstrate deterministic material-led rarity reveal and a separate compact Prestige promotion sequence. |
+| HR-VISUAL-EFFECTS-LAB-02E | Rating and motion policy | VERIFY | Compare screen-generic and card-local feedback while previewing future System/Full/Reduced motion independently from Effects On/Off. |
+| HR-VISUAL-EFFECTS-LAB-02F | Prototype isolation and verification | VERIFY | Keep every production interaction unchanged; verify responsive Chromium/WebKit behavior, lifecycle cleanup and production build. |
+
+Implementation evidence: the lazy, unlinked lab now presents the full pennant → sticker → peel → pennant sequence with the approved 18% resting peel on a 268 × 148 sheet, theme-aware surface lighting, rigid-card press, deterministic authored-rarity reveal, separate Prestige promotion, card-local rating feedback and semantic secondary-cue samples. Future Motion `System / Full / Reduced` is previewed independently from Effects On/Off. Unit/domain passes **271** with three opt-in package suites skipped; focused Chromium/WebKit passes **22/22**, including 1024 px and 390 px overflow checks; production builds. Production learner interactions and settings remain unchanged. Manual visual approval is pending.
+
+## Previous prototype milestone — HR-VISUAL-EFFECTS-LAB-01
 
 Authorised 15 October 2026. This isolated developer lab evaluates a GSAP-driven peel model and surface-linked card lighting before any production integration.
 

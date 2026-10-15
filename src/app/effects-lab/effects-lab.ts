@@ -1,358 +1,76 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { gsap } from 'gsap';
 
-type LabFace = 'recall' | 'answer';
-type LabRarity = 'common' | 'holo-rare' | 'ultra-rare';
-type Point = { x: number; y: number };
+type Face='recall'|'answer'; type Rarity='common'|'rare'|'holo-rare'|'ultra-rare'; type SurfaceRarity=Exclude<Rarity,'rare'>;
+type Theme='light'|'dark'|'system'; type Motion='system'|'full'|'reduced'; type ClueState='hidden'|'rolled'|'visible'|'sticker'|'peeling';
+type PressState='rest'|'pressed'|'releasing'|'flipping'; type UnlockPhase='idle'|'rise'|'edge'|'flip'|'bloom'|'settled'; type Point={x:number;y:number};
+const PEEL_REST=.18,PEEL_SECONDS=.52,SHEET_WIDTH=268,SHEET_HEIGHT=148;
 
-const PEEL_REST = 0.18;
-const PEEL_DURATION_SECONDS = 0.52;
-const SHEET_WIDTH = 320;
-const SHEET_HEIGHT = 176;
+@Component({selector:'hr-effects-lab',standalone:true,changeDetection:ChangeDetectionStrategy.OnPush,templateUrl:'./effects-lab.html',styleUrl:'./effects-lab.css'})
+export class EffectsLabComponent implements AfterViewInit{
+  @ViewChild('peelObject',{read:ElementRef})private peelObject?:ElementRef<HTMLElement>;
+  @ViewChild('peelFront',{read:ElementRef})private peelFront?:ElementRef<HTMLElement>;
+  @ViewChild('peelUnderside',{read:ElementRef})private peelUnderside?:ElementRef<SVGPolygonElement>;
+  @ViewChild('peelShadow',{read:ElementRef})private peelShadow?:ElementRef<SVGPolygonElement>;
+  @ViewChild('peelBoundary',{read:ElementRef})private peelBoundary?:ElementRef<SVGPathElement>;
+  @ViewChild('pennant',{read:ElementRef})private pennant?:ElementRef<HTMLElement>;
+  @ViewChild('surfaceCard',{read:ElementRef})private surfaceCard?:ElementRef<HTMLElement>;
+  @ViewChild('pressCard',{read:ElementRef})private pressCard?:ElementRef<HTMLElement>;
+  @ViewChild('unlockCard',{read:ElementRef})private unlockCard?:ElementRef<HTMLElement>;
+  @ViewChild('prestigeCrest',{read:ElementRef})private prestigeCrest?:ElementRef<HTMLElement>;
+  @ViewChild('genericFeedback',{read:ElementRef})private genericFeedback?:ElementRef<HTMLElement>;
+  @ViewChild('localFeedback',{read:ElementRef})private localFeedback?:ElementRef<HTMLElement>;
 
-@Component({
-  selector: 'hr-effects-lab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="lab-heading">
-      <div>
-        <p class="eyebrow">DEVELOPER PREVIEW · NO LEARNER STATE</p>
-        <h1>Visual Effects Lab</h1>
-        <p>Isolated material and lighting prototypes for manual review. These controls do not alter production cards.</p>
-      </div>
-    </div>
+  readonly restingPercent=18;readonly peelDurationMs=520;
+  readonly peelProgress=signal(PEEL_REST);readonly geometricFrames=signal(0);readonly clueState=signal<ClueState>('hidden');
+  readonly face=signal<Face>('recall');readonly rarity=signal<SurfaceRarity>('common');readonly effectsOn=signal(true);readonly themeChoice=signal<Theme>('system');
+  readonly motionChoice=signal<Motion>('system');readonly systemReduced=signal(false);readonly reducedMotion=computed(()=>this.motionChoice()==='reduced'||this.motionChoice()==='system'&&this.systemReduced());
+  readonly pressState=signal<PressState>('rest');readonly pressFace=signal<Face>('recall');
+  readonly unlockRarity=signal<Rarity>('common');readonly unlockPhase=signal<UnlockPhase>('idle');readonly unlockTrace=signal<UnlockPhase[]>(['idle']);readonly unlockRevealed=signal(false);
+  readonly prestigePhase=signal<'idle'|'stamp'|'settled'>('idle');readonly rating=signal<1|2|3|4|5>(4);readonly ratingPhase=signal<'idle'|'active'|'settled'>('idle');
 
-    <section class="lab-section" aria-labelledby="peel-title">
-      <div class="section-copy">
-        <p class="eyebrow">PROTOTYPE A</p>
-        <h2 id="peel-title">Layered clue peel</h2>
-        <p>A single normalized progress value moves the peel boundary, underside and separation shadow. The resting object starts partly lifted.</p>
-        <div class="lab-controls" aria-label="Clue peel controls">
-          <button type="button" class="lab-primary" (click)="peel()" [disabled]="peelRemoved()">Peel</button>
-          <button type="button" (click)="resetPeel()">Reset</button>
-          <label class="toggle"><input type="checkbox" [checked]="reducedMotion()" (change)="setReducedMotion($event)"> Reduced Motion</label>
-        </div>
-        <dl class="lab-readout">
-          <div><dt>Resting peel</dt><dd>{{restingPercent}}%</dd></div>
-          <div><dt>Duration</dt><dd>{{peelDurationMs}} ms</dd></div>
-          <div><dt>Driver</dt><dd>GSAP core</dd></div>
-        </dl>
-      </div>
+  private readonly destroyRef=inject(DestroyRef);private readonly peelProxy={value:PEEL_REST};private readonly surfaceProxy={x:0,y:0};private readonly pressSurfaceProxy={x:0,y:0};
+  private peelTween?:gsap.core.Tween;private pennantTween?:gsap.core.Tween;private surfaceTween?:gsap.core.Tween;private pressTimeline?:gsap.core.Timeline;private unlockTimeline?:gsap.core.Timeline;private prestigeTimeline?:gsap.core.Timeline;private ratingTimeline?:gsap.core.Timeline;
+  private surfaceRect?:DOMRect;private pressRect?:DOMRect;private surfaceFrame=0;private pendingSurface?:{target:'surface'|'press';x:number;y:number};private resizeObserver?:ResizeObserver;
+  private pressReleaseTimer=0;
+  private readonly motionMedia=matchMedia('(prefers-reduced-motion: reduce)');private readonly motionListener=(event:MediaQueryListEvent)=>this.systemReduced.set(event.matches);
 
-      <div class="peel-stage" aria-label="Clue peel material preview">
-        <article class="prototype-card peel-card">
-          <div class="prototype-card-chrome"><span>ITALIAN SOUNDS</span><span>Holo Rare</span></div>
-          <div class="card-star" aria-hidden="true">✦</div>
-          <p class="card-prompt">Which written-sound group does this word belong to?</p>
-          <strong class="card-stimulus">cestino</strong>
-          <div class="choice-row" aria-hidden="true"><span>CE</span><span>CI</span><span>CHE</span><span>CHI</span></div>
+  constructor(){this.systemReduced.set(this.motionMedia.matches);this.motionMedia.addEventListener('change',this.motionListener);this.destroyRef.onDestroy(()=>{this.killAnimations();if(this.surfaceFrame)cancelAnimationFrame(this.surfaceFrame);if(this.pressReleaseTimer)clearTimeout(this.pressReleaseTimer);this.resizeObserver?.disconnect();this.motionMedia.removeEventListener('change',this.motionListener);gsap.killTweensOf([this.peelProxy,this.surfaceProxy,this.pressSurfaceProxy]);});}
+  ngAfterViewInit():void{this.renderPeel(PEEL_REST,false);this.renderSurface(this.surfaceCard?.nativeElement,this.surfaceProxy,'surface');this.renderSurface(this.pressCard?.nativeElement,this.pressSurfaceProxy,'press');if(typeof ResizeObserver!=='undefined'){this.resizeObserver=new ResizeObserver(()=>this.cacheRects());if(this.surfaceCard)this.resizeObserver.observe(this.surfaceCard.nativeElement);if(this.pressCard)this.resizeObserver.observe(this.pressCard.nativeElement);}}
 
-          <button #peelObject type="button" class="peel-object" (click)="peel()" [disabled]="peelRemoved()"
-            [attr.aria-label]="peelRemoved() ? 'Clue sticker removed' : 'Clue: Choose from the visual forms above. Peel sticker'"
-            [attr.data-peel-progress]="peelProgress().toFixed(3)" [attr.data-reduced-motion]="reducedMotion()"
-            [attr.data-geometric-frames]="geometricFrames()">
-            <span class="exposed-surface" aria-hidden="true"></span>
-            <span #peelFront class="peel-front" aria-hidden="true">
-              <span class="clue-label">CLUE</span>
-              <span class="clue-copy">Choose from the visual forms above.</span>
-            </span>
-            <svg class="peel-geometry" viewBox="0 0 320 176" preserveAspectRatio="none" aria-hidden="true">
-              <defs><filter id="lab-peel-shadow" x="-30%" y="-30%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter></defs>
-              <polygon #peelShadow class="peel-shadow"></polygon>
-              <polygon #peelUnderside class="peel-underside"></polygon>
-              <path #peelBoundary class="peel-boundary"></path>
-            </svg>
-          </button>
-        </article>
-      </div>
-    </section>
+  setMotion(choice:Motion):void{this.motionChoice.set(choice);this.resetSequence();this.resetSurface();this.resetPress();this.resetUnlock();this.resetPrestige();this.resetRating();}
+  setReducedMotion(event:Event):void{this.setMotion((event.target as HTMLInputElement).checked?'reduced':'full');} setTheme(choice:Theme):void{this.themeChoice.set(choice);}
 
-    <section class="lab-section surface-section" aria-labelledby="surface-title">
-      <div class="section-copy">
-        <p class="eyebrow">PROTOTYPE B</p>
-        <h2 id="surface-title">Surface-linked reflection</h2>
-        <p>The highlight is derived from the same normalized surface state as tilt. It offsets against the surface normal and rests without a centre glare.</p>
-        <div class="lab-controls grouped" aria-label="Surface preview controls">
-          <div class="segmented" aria-label="Card face">
-            <button type="button" [attr.aria-pressed]="face()==='recall'" (click)="setFace('recall')">Recall</button>
-            <button type="button" [attr.aria-pressed]="face()==='answer'" (click)="setFace('answer')">Answer</button>
-          </div>
-          <div class="segmented rarity-controls" aria-label="Rarity">
-            <button type="button" [attr.aria-pressed]="rarity()==='common'" (click)="setRarity('common')">Common</button>
-            <button type="button" [attr.aria-pressed]="rarity()==='holo-rare'" (click)="setRarity('holo-rare')">Holo Rare</button>
-            <button type="button" [attr.aria-pressed]="rarity()==='ultra-rare'" (click)="setRarity('ultra-rare')">Ultra Rare</button>
-          </div>
-          <div class="segmented" aria-label="Effects state">
-            <button type="button" [attr.aria-pressed]="effectsOn()" (click)="setEffects(true)">Effects On</button>
-            <button type="button" [attr.aria-pressed]="!effectsOn()" (click)="setEffects(false)">Effects Off</button>
-          </div>
-          <button type="button" (click)="resetSurface()">Reset</button>
-        </div>
-      </div>
+  showPennant():void{if(this.clueState()==='hidden')this.clueState.set('rolled');}
+  unfurlPennant():void{if(!['hidden','rolled'].includes(this.clueState()))return;if(this.clueState()==='hidden')this.clueState.set('rolled');requestAnimationFrame(()=>this.animatePennant(false));}
+  openClue():void{if(this.clueState()!=='visible')return;this.peelProxy.value=PEEL_REST;this.peelProgress.set(PEEL_REST);this.clueState.set('sticker');requestAnimationFrame(()=>{if(this.peelObject)gsap.set(this.peelObject.nativeElement,{opacity:1,clearProps:'transform'});this.renderPeel(PEEL_REST,false);});}
+  peel():void{if(this.clueState()!=='sticker'||this.peelTween?.isActive())return;this.clueState.set('peeling');const element=this.peelObject?.nativeElement;if(!element)return;if(this.reducedMotion())this.peelTween=gsap.to(element,{opacity:0,duration:.14,ease:'power1.out',onComplete:()=>{this.peelProxy.value=1;this.peelProgress.set(1);this.returnPennant();}});else this.peelTween=gsap.to(this.peelProxy,{value:1,duration:PEEL_SECONDS,ease:'power2.inOut',onUpdate:()=>this.renderPeel(this.peelProxy.value,true),onComplete:()=>{this.renderPeel(1,true);this.returnPennant();}});}
+  resetSequence():void{this.peelTween?.kill();this.pennantTween?.kill();this.peelProxy.value=PEEL_REST;this.peelProgress.set(PEEL_REST);this.clueState.set('hidden');if(this.peelObject)gsap.set(this.peelObject.nativeElement,{opacity:1,clearProps:'transform'});this.renderPeel(PEEL_REST,false);}
+  private returnPennant():void{this.clueState.set('rolled');requestAnimationFrame(()=>this.animatePennant(true));}
+  private animatePennant(returning:boolean):void{const element=this.pennant?.nativeElement;if(!element){this.clueState.set('visible');return;}this.pennantTween?.kill();this.clueState.set('visible');this.pennantTween=this.reducedMotion()?gsap.fromTo(element,{opacity:0},{opacity:1,duration:.14,clearProps:'opacity'}):gsap.fromTo(element,{scaleX:.12,skewX:-7,opacity:returning?.35:.65},{scaleX:1,skewX:0,opacity:1,duration:.32,ease:'back.out(1.35)',clearProps:'transform,opacity'});}
 
-      <div class="surface-stage">
-        <article #surfaceCard class="prototype-card surface-card" tabindex="0"
-          [attr.data-face]="face()" [attr.data-rarity]="rarity()" [attr.data-effects]="effectsOn()"
-          [attr.data-signature]="face()==='answer'?'answer-halo':'recall-echo'"
-          (pointerenter)="surfaceEnter()" (pointermove)="surfaceMove($event)" (pointerleave)="surfaceLeave()">
-          <div class="surface-background" aria-hidden="true"></div>
-          <div class="surface-signature recall-signature" aria-hidden="true"></div>
-          <div class="surface-signature answer-halo" aria-hidden="true"><span></span></div>
-          <div class="surface-specular" aria-hidden="true"></div>
-          <div class="surface-interference" aria-hidden="true"></div>
-          <div class="prototype-card-chrome"><span>ITALIAN FOUNDATIONS</span><span>{{rarityLabel()}}</span></div>
-          <div class="surface-learning">
-            <span class="card-star" aria-hidden="true">✦</span>
-            @if(face()==='recall'){
-              <p>Choose the correct article.</p><strong>L’</strong>
-            }@else{
-              <p class="category-chip">ARTICLE</p><strong>L’</strong><span class="answer-secondary">“l”</span>
-            }
-          </div>
-          <div class="prototype-footer"><span>{{face()==='recall'?'Recall':'Answer'}}</span><span>Clue</span></div>
-        </article>
-        <p class="surface-hint">Move the pointer across the card. The reflection opposes the surface tilt rather than following the cursor directly.</p>
-      </div>
-    </section>
+  setFace(face:Face):void{this.face.set(face);}setRarity(rarity:SurfaceRarity):void{this.rarity.set(rarity);this.renderSurface(this.surfaceCard?.nativeElement,this.surfaceProxy,'surface');}setEffects(enabled:boolean):void{this.effectsOn.set(enabled);this.renderSurface(this.surfaceCard?.nativeElement,this.surfaceProxy,'surface');}
+  rarityLabel(rarity:Rarity=this.rarity()):string{return rarity==='holo-rare'?'Holo Rare':rarity==='ultra-rare'?'Ultra Rare':rarity==='rare'?'Rare':'Common';}
+  surfaceEnter(target:'surface'|'press'):void{this.surfaceTween?.kill();this.cacheRect(target);}surfaceMove(event:PointerEvent,target:'surface'|'press'):void{if(!this.effectsOn())return;const rect=target==='surface'?this.surfaceRect??this.cacheRect(target):this.pressRect??this.cacheRect(target);if(!rect?.width||!rect.height)return;this.pendingSurface={target,x:Math.max(-1,Math.min(1,(event.clientX-rect.left)/rect.width*2-1)),y:Math.max(-1,Math.min(1,(event.clientY-rect.top)/rect.height*2-1))};if(!this.surfaceFrame)this.surfaceFrame=requestAnimationFrame(()=>{this.surfaceFrame=0;const pending=this.pendingSurface;this.pendingSurface=undefined;if(!pending)return;const proxy=pending.target==='surface'?this.surfaceProxy:this.pressSurfaceProxy;proxy.x=pending.x;proxy.y=pending.y;this.renderSurface(pending.target==='surface'?this.surfaceCard?.nativeElement:this.pressCard?.nativeElement,proxy,pending.target);});}
+  surfaceLeave(target:'surface'|'press'):void{this.settleSurface(target);}resetSurface():void{this.settleSurface('surface',true);}private cacheRects():void{this.cacheRect('surface');this.cacheRect('press');}private cacheRect(target:'surface'|'press'):DOMRect|undefined{const rect=(target==='surface'?this.surfaceCard:this.pressCard)?.nativeElement.getBoundingClientRect();if(target==='surface')this.surfaceRect=rect;else this.pressRect=rect;return rect;}
+  private settleSurface(target:'surface'|'press',immediate=false):void{const proxy=target==='surface'?this.surfaceProxy:this.pressSurfaceProxy,element=target==='surface'?this.surfaceCard?.nativeElement:this.pressCard?.nativeElement;this.surfaceTween?.kill();if(immediate||this.reducedMotion()||!this.effectsOn()){proxy.x=0;proxy.y=0;this.renderSurface(element,proxy,target);return;}this.surfaceTween=gsap.to(proxy,{x:0,y:0,duration:.42,ease:'power2.out',onUpdate:()=>this.renderSurface(element,proxy,target)});}
+  private renderSurface(card:HTMLElement|undefined,proxy:{x:number;y:number},target:'surface'|'press'):void{if(!card)return;const{x,y}=proxy,enabled=this.effectsOn(),magnitude=Math.min(1,Math.hypot(x,y)/Math.SQRT2),rarityFactor=target==='press'?.38:this.rarity()==='common'?.18:this.rarity()==='holo-rare'?.5:.7,pressed=target==='press'&&this.pressState()==='pressed',intensity=enabled?magnitude*rarityFactor+(pressed?.08:0):0,tiltX=enabled&&!this.reducedMotion()?-y*7:0,tiltY=enabled&&!this.reducedMotion()?x*8:0;card.style.setProperty('--lab-tilt-x',`${tiltX.toFixed(2)}deg`);card.style.setProperty('--lab-tilt-y',`${tiltY.toFixed(2)}deg`);card.style.setProperty('--lab-spec-x',`${(50-x*30).toFixed(2)}%`);card.style.setProperty('--lab-spec-y',`${(48-y*24).toFixed(2)}%`);card.style.setProperty('--lab-graze-x',`${(50+x*34).toFixed(2)}%`);card.style.setProperty('--lab-graze-y',`${(52+y*28).toFixed(2)}%`);card.style.setProperty('--lab-spec-strength',intensity.toFixed(3));card.style.setProperty('--lab-spec-size',`${(86-magnitude*24-(pressed?8:0)).toFixed(2)}%`);card.style.setProperty('--lab-hue-angle',`${(x*48-y*28).toFixed(2)}deg`);}
 
-    <section class="lab-section samples" aria-labelledby="samples-title">
-      <div class="section-copy"><p class="eyebrow">STATIC SEMANTIC SAMPLE</p><h2 id="samples-title">Secondary-cue presentation</h2><p>Quotation marks are added only for semantic pronunciation and never mutate the stored value.</p></div>
-      <div class="sample-grid">
-        <article class="answer-sample" data-secondary-kind="pronunciation"><span class="sample-label">Pronunciation</span><strong>L’</strong><span class="sample-secondary">“l”</span></article>
-        <article class="answer-sample" data-secondary-kind="generic"><span class="sample-label">Generic secondary cue</span><strong>L’</strong><span class="sample-secondary">Used before a vowel</span></article>
-      </div>
-    </section>
-  `,
-  styleUrl: './effects-lab.css',
-})
-export class EffectsLabComponent implements AfterViewInit {
-  @ViewChild('peelObject', { read: ElementRef }) private peelObject?: ElementRef<HTMLElement>;
-  @ViewChild('peelFront', { read: ElementRef }) private peelFront?: ElementRef<HTMLElement>;
-  @ViewChild('peelUnderside', { read: ElementRef }) private peelUnderside?: ElementRef<SVGPolygonElement>;
-  @ViewChild('peelShadow', { read: ElementRef }) private peelShadow?: ElementRef<SVGPolygonElement>;
-  @ViewChild('peelBoundary', { read: ElementRef }) private peelBoundary?: ElementRef<SVGPathElement>;
-  @ViewChild('surfaceCard', { read: ElementRef }) private surfaceCard?: ElementRef<HTMLElement>;
+  pressDown():void{if(this.pressState()!=='rest')return;this.pressTimeline?.kill();this.pressState.set('pressed');this.renderSurface(this.pressCard?.nativeElement,this.pressSurfaceProxy,'press');if(!this.reducedMotion()&&this.pressCard)gsap.to(this.pressCard.nativeElement,{y:2,scale:.994,duration:.09,ease:'power1.out'});}
+  pressRelease(flip=false):void{if(!['pressed','rest'].includes(this.pressState()))return;const card=this.pressCard?.nativeElement;if(!card)return;this.pressTimeline?.kill();if(this.reducedMotion()){if(flip)this.pressFace.update(face=>face==='recall'?'answer':'recall');gsap.set(card,{clearProps:'transform'});this.pressState.set('rest');return;}this.pressState.set(flip?'flipping':'releasing');const timeline=gsap.timeline({onComplete:()=>{this.pressState.set('rest');this.renderSurface(card,this.pressSurfaceProxy,'press');}});if(flip)timeline.to(card,{y:1,scale:.992,rotateY:88,duration:.2,ease:'power2.in'}).call(()=>this.pressFace.update(face=>face==='recall'?'answer':'recall')).to(card,{y:0,scale:1,rotateY:0,duration:.28,ease:'back.out(1.25)'});else timeline.to(card,{y:0,scale:1,duration:.26,ease:'back.out(1.35)'});this.pressTimeline=timeline;}
+  demonstratePress(flip=false):void{this.resetPress();this.pressDown();this.pressReleaseTimer=window.setTimeout(()=>{this.pressReleaseTimer=0;this.pressRelease(flip);},120);}resetPress():void{if(this.pressReleaseTimer)clearTimeout(this.pressReleaseTimer);this.pressReleaseTimer=0;this.pressTimeline?.kill();this.pressState.set('rest');this.pressFace.set('recall');if(this.pressCard)gsap.set(this.pressCard.nativeElement,{clearProps:'transform'});}
 
-  readonly restingPercent = Math.round(PEEL_REST * 100);
-  readonly peelDurationMs = Math.round(PEEL_DURATION_SECONDS * 1000);
-  readonly peelProgress = signal(PEEL_REST);
-  readonly geometricFrames = signal(0);
-  readonly peelRemoved = signal(false);
-  readonly reducedMotion = signal(false);
-  readonly face = signal<LabFace>('recall');
-  readonly rarity = signal<LabRarity>('common');
-  readonly effectsOn = signal(true);
+  setUnlockRarity(rarity:Rarity):void{this.unlockRarity.set(rarity);this.resetUnlock();}
+  playUnlock():void{const card=this.unlockCard?.nativeElement;if(!card||this.unlockPhase()!=='idle')return;this.unlockTimeline?.kill();this.unlockTrace.set(['idle']);this.unlockRevealed.set(false);const phase=(value:UnlockPhase)=>{this.unlockPhase.set(value);this.unlockTrace.update(trace=>[...trace,value]);};if(this.reducedMotion()){phase('rise');gsap.set(card,{opacity:0});this.unlockTimeline=gsap.timeline().to(card,{opacity:1,duration:.16}).call(()=>phase('edge')).call(()=>phase('flip')).call(()=>{this.unlockRevealed.set(true);phase('bloom');}).call(()=>phase('settled'));return;}const anticipation=this.unlockRarity()==='common'?.18:this.unlockRarity()==='rare'?.23:this.unlockRarity()==='holo-rare'?.28:.34;gsap.set(card,{opacity:0,y:44,scale:.94,rotateY:178});this.unlockTimeline=gsap.timeline().call(()=>phase('rise')).to(card,{opacity:1,y:0,duration:anticipation,ease:'power2.out'}).call(()=>phase('edge')).to(card,{scale:.98,duration:.13}).call(()=>phase('flip')).to(card,{rotateY:0,duration:.36,ease:'power2.inOut'},'<').call(()=>{this.unlockRevealed.set(true);phase('bloom');}).to(card,{scale:1.025,duration:.14,ease:'power1.out'}).to(card,{scale:1,duration:.26,ease:'power2.out'}).call(()=>phase('settled'));}
+  resetUnlock():void{this.unlockTimeline?.kill();this.unlockPhase.set('idle');this.unlockTrace.set(['idle']);this.unlockRevealed.set(false);if(this.unlockCard)gsap.set(this.unlockCard.nativeElement,{clearProps:'all'});}
 
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly peelProxy = { value: PEEL_REST };
-  private readonly surfaceProxy = { x: 0, y: 0 };
-  private peelTween?: gsap.core.Tween;
-  private surfaceTween?: gsap.core.Tween;
-  private surfaceRect?: DOMRect;
-  private surfaceFrame = 0;
-  private pendingSurface?: Point;
-  private resizeObserver?: ResizeObserver;
+  playPrestige():void{if(this.prestigePhase()!=='idle')return;this.prestigeTimeline?.kill();this.prestigePhase.set('stamp');requestAnimationFrame(()=>{const crest=this.prestigeCrest?.nativeElement;if(!crest){this.prestigePhase.set('idle');return;}this.prestigeTimeline=this.reducedMotion()?gsap.timeline().fromTo(crest,{opacity:0},{opacity:1,duration:.16}).call(()=>this.prestigePhase.set('settled')):gsap.timeline().fromTo(crest,{opacity:0,scale:1.6,rotate:-8},{opacity:1,scale:.94,rotate:1,duration:.3,ease:'power2.in'}).to(crest,{scale:1,rotate:0,duration:.28,ease:'back.out(1.4)'}).call(()=>this.prestigePhase.set('settled'));});}
+  resetPrestige():void{this.prestigeTimeline?.kill();this.prestigePhase.set('idle');if(this.prestigeCrest)gsap.set(this.prestigeCrest.nativeElement,{clearProps:'all'});}
+  playRating(value:1|2|3|4|5):void{this.rating.set(value);this.ratingTimeline?.kill();this.ratingPhase.set('active');const generic=this.genericFeedback?.nativeElement,local=this.localFeedback?.nativeElement;if(!generic||!local)return;if(this.reducedMotion()){this.ratingTimeline=gsap.timeline().fromTo([generic,local],{opacity:0},{opacity:1,duration:.12}).to([generic,local],{opacity:.22,duration:.18}).call(()=>this.ratingPhase.set('settled'));return;}const strength=value===5?1:value===4?.8:value>=2?.5:.28;this.ratingTimeline=gsap.timeline().fromTo(generic,{opacity:0,scale:.7},{opacity:strength,scale:1.22,duration:.24,ease:'power2.out'}).to(generic,{opacity:0,scale:1.55,duration:.28}).fromTo(local,{opacity:0,scale:.98},{opacity:strength,scale:1,duration:.18},0).to(local,{opacity:.18,duration:.34}).call(()=>this.ratingPhase.set('settled'));}
+  resetRating():void{this.ratingTimeline?.kill();this.ratingPhase.set('idle');for(const ref of[this.genericFeedback,this.localFeedback])if(ref)gsap.set(ref.nativeElement,{clearProps:'all'});}
+  private killAnimations():void{for(const animation of[this.peelTween,this.pennantTween,this.surfaceTween,this.pressTimeline,this.unlockTimeline,this.prestigeTimeline,this.ratingTimeline])animation?.kill();}
 
-  constructor() {
-    this.destroyRef.onDestroy(() => {
-      this.peelTween?.kill();
-      this.surfaceTween?.kill();
-      if (this.surfaceFrame) cancelAnimationFrame(this.surfaceFrame);
-      this.resizeObserver?.disconnect();
-      gsap.killTweensOf(this.peelProxy);
-      gsap.killTweensOf(this.surfaceProxy);
-    });
-  }
-
-  ngAfterViewInit(): void {
-    this.renderPeel(PEEL_REST, false);
-    this.renderSurface(0, 0);
-    if (typeof ResizeObserver !== 'undefined' && this.surfaceCard) {
-      this.resizeObserver = new ResizeObserver(() => this.cacheSurfaceRect());
-      this.resizeObserver.observe(this.surfaceCard.nativeElement);
-    }
-  }
-
-  peel(): void {
-    if (this.peelRemoved() || this.peelTween?.isActive()) return;
-    this.peelTween?.kill();
-    if (this.reducedMotion()) {
-      const element = this.peelObject?.nativeElement;
-      if (!element) return;
-      this.peelTween = gsap.to(element, {
-        opacity: 0,
-        duration: 0.14,
-        ease: 'power1.out',
-        onComplete: () => {
-          this.peelProxy.value = 1;
-          this.peelProgress.set(1);
-          this.peelRemoved.set(true);
-        },
-      });
-      return;
-    }
-    this.peelTween = gsap.to(this.peelProxy, {
-      value: 1,
-      duration: PEEL_DURATION_SECONDS,
-      ease: 'power2.inOut',
-      onUpdate: () => this.renderPeel(this.peelProxy.value, true),
-      onComplete: () => {
-        this.renderPeel(1, true);
-        this.peelRemoved.set(true);
-      },
-    });
-  }
-
-  resetPeel(): void {
-    this.peelTween?.kill();
-    this.peelProxy.value = PEEL_REST;
-    this.peelRemoved.set(false);
-    const element = this.peelObject?.nativeElement;
-    if (element) gsap.set(element, { opacity: 1 });
-    this.renderPeel(PEEL_REST, false);
-  }
-
-  setReducedMotion(event: Event): void {
-    this.reducedMotion.set((event.target as HTMLInputElement).checked);
-    this.resetPeel();
-  }
-
-  setFace(face: LabFace): void { this.face.set(face); }
-  setRarity(rarity: LabRarity): void { this.rarity.set(rarity); this.renderSurface(this.surfaceProxy.x, this.surfaceProxy.y); }
-  setEffects(enabled: boolean): void { this.effectsOn.set(enabled); this.renderSurface(this.surfaceProxy.x, this.surfaceProxy.y); }
-  rarityLabel(): string { return this.rarity() === 'holo-rare' ? 'Holo Rare' : this.rarity() === 'ultra-rare' ? 'Ultra Rare' : 'Common'; }
-
-  surfaceEnter(): void { this.surfaceTween?.kill(); this.cacheSurfaceRect(); }
-  surfaceMove(event: PointerEvent): void {
-    if (!this.effectsOn()) return;
-    const rect = this.surfaceRect ?? this.cacheSurfaceRect();
-    if (!rect?.width || !rect.height) return;
-    this.pendingSurface = {
-      x: Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1)),
-      y: Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1)),
-    };
-    if (!this.surfaceFrame) this.surfaceFrame = requestAnimationFrame(() => {
-      this.surfaceFrame = 0;
-      if (!this.pendingSurface) return;
-      this.surfaceProxy.x = this.pendingSurface.x;
-      this.surfaceProxy.y = this.pendingSurface.y;
-      this.renderSurface(this.surfaceProxy.x, this.surfaceProxy.y);
-      this.pendingSurface = undefined;
-    });
-  }
-  surfaceLeave(): void { this.settleSurface(); }
-  resetSurface(): void { this.settleSurface(true); }
-
-  private cacheSurfaceRect(): DOMRect | undefined {
-    this.surfaceRect = this.surfaceCard?.nativeElement.getBoundingClientRect();
-    return this.surfaceRect;
-  }
-
-  private settleSurface(immediate = false): void {
-    this.surfaceTween?.kill();
-    if (immediate || this.reducedMotion() || !this.effectsOn()) {
-      this.surfaceProxy.x = 0; this.surfaceProxy.y = 0; this.renderSurface(0, 0); return;
-    }
-    this.surfaceTween = gsap.to(this.surfaceProxy, { x: 0, y: 0, duration: 0.42, ease: 'power2.out', onUpdate: () => this.renderSurface(this.surfaceProxy.x, this.surfaceProxy.y) });
-  }
-
-  private renderSurface(x: number, y: number): void {
-    const card = this.surfaceCard?.nativeElement;
-    if (!card) return;
-    const enabled = this.effectsOn();
-    const magnitude = Math.min(1, Math.hypot(x, y) / Math.SQRT2);
-    const rarityFactor = this.rarity() === 'common' ? 0.16 : this.rarity() === 'holo-rare' ? 0.48 : 0.68;
-    const intensity = enabled ? magnitude * rarityFactor : 0;
-    const tiltX = enabled && !this.reducedMotion() ? -y * 7 : 0;
-    const tiltY = enabled && !this.reducedMotion() ? x * 8 : 0;
-    card.style.setProperty('--lab-tilt-x', `${tiltX.toFixed(2)}deg`);
-    card.style.setProperty('--lab-tilt-y', `${tiltY.toFixed(2)}deg`);
-    card.style.setProperty('--lab-spec-x', `${(50 - x * 30).toFixed(2)}%`);
-    card.style.setProperty('--lab-spec-y', `${(48 - y * 24).toFixed(2)}%`);
-    card.style.setProperty('--lab-spec-strength', intensity.toFixed(3));
-    card.style.setProperty('--lab-spec-size', `${(86 - magnitude * 24).toFixed(2)}%`);
-    card.style.setProperty('--lab-hue-angle', `${(x * 48 - y * 28).toFixed(2)}deg`);
-  }
-
-  private renderPeel(progress: number, countFrame: boolean): void {
-    const value = Math.max(0, Math.min(1, progress));
-    this.peelProxy.value = value;
-    this.peelProgress.set(value);
-    if (countFrame) this.geometricFrames.update(count => count + 1);
-    const travel = value * (SHEET_WIDTH + SHEET_HEIGHT);
-    const boundary = SHEET_WIDTH - travel;
-    const attached = this.clipRectangle(boundary, false);
-    const detached = this.clipRectangle(boundary, true);
-    const attachedCss = attached.map(point => `${(point.x / SHEET_WIDTH * 100).toFixed(2)}% ${(point.y / SHEET_HEIGHT * 100).toFixed(2)}%`).join(',');
-    const detachedSvg = detached.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
-    const intersections = this.boundaryIntersections(boundary);
-    const depth = 8 + value * 34;
-    const turn = 4 + value * 17;
-    if (this.peelFront) {
-      this.peelFront.nativeElement.style.clipPath = attached.length >= 3 ? `polygon(${attachedCss})` : 'polygon(0 0,0 0,0 0)';
-      this.peelFront.nativeElement.style.opacity = value >= 0.985 ? '0' : '1';
-    }
-    if (this.peelUnderside) {
-      const underside = this.peelUnderside.nativeElement;
-      underside.setAttribute('points', detachedSvg);
-      underside.style.transformOrigin = '100% 0%';
-      underside.style.transform = `translate(${-depth * .24}px, ${depth * .32}px) rotate(${turn}deg) scale(${(1 - value * .08).toFixed(3)})`;
-      underside.style.opacity = String(value >= 0.96 ? Math.max(0, (1 - value) / .04) : Math.min(1, .45 + value * 2));
-    }
-    if (intersections.length === 2) {
-      const [a, b] = intersections;
-      const shadowWidth = 7 + value * 18;
-      const boundaryPath = this.peelBoundary?.nativeElement;
-      boundaryPath?.setAttribute('d', `M ${a!.x.toFixed(1)} ${a!.y.toFixed(1)} L ${b!.x.toFixed(1)} ${b!.y.toFixed(1)}`);
-      if (boundaryPath) boundaryPath.style.strokeWidth = `${shadowWidth}`;
-      if (this.peelShadow) {
-        const normal = { x: -depth * .2, y: depth * .22 };
-        this.peelShadow.nativeElement.setAttribute('points', `${a!.x},${a!.y} ${b!.x},${b!.y} ${b!.x + normal.x},${b!.y + normal.y} ${a!.x + normal.x},${a!.y + normal.y}`);
-        this.peelShadow.nativeElement.style.opacity = String(Math.min(.38, .1 + value * .34));
-      }
-    } else {
-      this.peelBoundary?.nativeElement.setAttribute('d', '');
-      this.peelShadow?.nativeElement.setAttribute('points', '');
-    }
-    const object = this.peelObject?.nativeElement;
-    if (object && !this.reducedMotion()) {
-      const release = Math.max(0, (value - .78) / .22);
-      object.style.transform = `perspective(700px) translate3d(${(release * 45).toFixed(1)}px,${(-release * 36).toFixed(1)}px,${(release * 58).toFixed(1)}px) rotate(${(-1.4 + release * 8).toFixed(2)}deg) rotateY(${(release * 12).toFixed(2)}deg)`;
-      object.style.opacity = String(1 - Math.max(0, (value - .9) / .1));
-    }
-  }
-
-  private clipRectangle(boundary: number, inverse: boolean): Point[] {
-    const input: Point[] = [{ x: 0, y: 0 }, { x: SHEET_WIDTH, y: 0 }, { x: SHEET_WIDTH, y: SHEET_HEIGHT }, { x: 0, y: SHEET_HEIGHT }];
-    const inside = (point: Point) => inverse ? point.x - point.y >= boundary : point.x - point.y <= boundary;
-    const output: Point[] = [];
-    for (let index = 0; index < input.length; index++) {
-      const current = input[index]!;
-      const previous = input[(index + input.length - 1) % input.length]!;
-      const currentInside = inside(current), previousInside = inside(previous);
-      if (currentInside !== previousInside) {
-        const dx = current.x - previous.x, dy = current.y - previous.y;
-        const denominator = dx - dy;
-        if (Math.abs(denominator) > .0001) {
-          const t = (boundary - (previous.x - previous.y)) / denominator;
-          output.push({ x: previous.x + dx * t, y: previous.y + dy * t });
-        }
-      }
-      if (currentInside) output.push(current);
-    }
-    return output;
-  }
-
-  private boundaryIntersections(boundary: number): Point[] {
-    const points: Point[] = [];
-    if (boundary >= 0 && boundary <= SHEET_WIDTH) points.push({ x: boundary, y: 0 });
-    const rightY = SHEET_WIDTH - boundary;
-    if (rightY >= 0 && rightY <= SHEET_HEIGHT) points.push({ x: SHEET_WIDTH, y: rightY });
-    const bottomX = boundary + SHEET_HEIGHT;
-    if (bottomX >= 0 && bottomX <= SHEET_WIDTH) points.push({ x: bottomX, y: SHEET_HEIGHT });
-    const leftY = -boundary;
-    if (leftY >= 0 && leftY <= SHEET_HEIGHT) points.push({ x: 0, y: leftY });
-    return points.filter((point, index, all) => all.findIndex(other => Math.abs(other.x - point.x) < .01 && Math.abs(other.y - point.y) < .01) === index).slice(0, 2);
-  }
+  private renderPeel(progress:number,countFrame:boolean):void{const value=Math.max(0,Math.min(1,progress));this.peelProxy.value=value;this.peelProgress.set(value);if(countFrame)this.geometricFrames.update(count=>count+1);const boundary=SHEET_WIDTH-value*(SHEET_WIDTH+SHEET_HEIGHT),attached=this.clipRectangle(boundary,false),detached=this.clipRectangle(boundary,true),attachedCss=attached.map(point=>`${(point.x/SHEET_WIDTH*100).toFixed(2)}% ${(point.y/SHEET_HEIGHT*100).toFixed(2)}%`).join(','),detachedSvg=detached.map(point=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' '),intersections=this.boundaryIntersections(boundary),depth=7+value*29,turn=4+value*17;if(this.peelFront){this.peelFront.nativeElement.style.clipPath=attached.length>=3?`polygon(${attachedCss})`:'polygon(0 0,0 0,0 0)';this.peelFront.nativeElement.style.opacity=value>=.985?'0':'1';}if(this.peelUnderside){const underside=this.peelUnderside.nativeElement;underside.setAttribute('points',detachedSvg);underside.style.transformOrigin='100% 0%';underside.style.transform=`translate(${-depth*.24}px, ${depth*.32}px) rotate(${turn}deg) scale(${(1-value*.08).toFixed(3)})`;underside.style.opacity=String(value>=.96?Math.max(0,(1-value)/.04):Math.min(1,.45+value*2));}if(intersections.length===2){const[a,b]=intersections,shadowWidth=6+value*16,boundaryPath=this.peelBoundary?.nativeElement;boundaryPath?.setAttribute('d',`M ${a!.x.toFixed(1)} ${a!.y.toFixed(1)} L ${b!.x.toFixed(1)} ${b!.y.toFixed(1)}`);if(boundaryPath)boundaryPath.style.strokeWidth=`${shadowWidth}`;if(this.peelShadow){const normal={x:-depth*.2,y:depth*.22};this.peelShadow.nativeElement.setAttribute('points',`${a!.x},${a!.y} ${b!.x},${b!.y} ${b!.x+normal.x},${b!.y+normal.y} ${a!.x+normal.x},${a!.y+normal.y}`);this.peelShadow.nativeElement.style.opacity=String(Math.min(.38,.1+value*.34));}}else{this.peelBoundary?.nativeElement.setAttribute('d','');this.peelShadow?.nativeElement.setAttribute('points','');}const object=this.peelObject?.nativeElement;if(object&&!this.reducedMotion()){const release=Math.max(0,(value-.78)/.22);object.style.transform=`perspective(700px) translate3d(${(release*40).toFixed(1)}px,${(-release*32).toFixed(1)}px,${(release*52).toFixed(1)}px) rotate(${(-1.4+release*8).toFixed(2)}deg) rotateY(${(release*12).toFixed(2)}deg)`;object.style.opacity=String(1-Math.max(0,(value-.9)/.1));}}
+  private clipRectangle(boundary:number,inverse:boolean):Point[]{const input:Point[]=[{x:0,y:0},{x:SHEET_WIDTH,y:0},{x:SHEET_WIDTH,y:SHEET_HEIGHT},{x:0,y:SHEET_HEIGHT}],inside=(point:Point)=>inverse?point.x-point.y>=boundary:point.x-point.y<=boundary,output:Point[]=[];for(let index=0;index<input.length;index++){const current=input[index]!,previous=input[(index+input.length-1)%input.length]!,currentInside=inside(current),previousInside=inside(previous);if(currentInside!==previousInside){const dx=current.x-previous.x,dy=current.y-previous.y,denominator=dx-dy;if(Math.abs(denominator)>.0001){const t=(boundary-(previous.x-previous.y))/denominator;output.push({x:previous.x+dx*t,y:previous.y+dy*t});}}if(currentInside)output.push(current);}return output;}
+  private boundaryIntersections(boundary:number):Point[]{const points:Point[]=[];if(boundary>=0&&boundary<=SHEET_WIDTH)points.push({x:boundary,y:0});const rightY=SHEET_WIDTH-boundary;if(rightY>=0&&rightY<=SHEET_HEIGHT)points.push({x:SHEET_WIDTH,y:rightY});const bottomX=boundary+SHEET_HEIGHT;if(bottomX>=0&&bottomX<=SHEET_WIDTH)points.push({x:bottomX,y:SHEET_HEIGHT});const leftY=-boundary;if(leftY>=0&&leftY<=SHEET_HEIGHT)points.push({x:0,y:leftY});return points.filter((point,index,all)=>all.findIndex(other=>Math.abs(other.x-point.x)<.01&&Math.abs(other.y-point.y)<.01)===index).slice(0,2);}
 }

@@ -1,11 +1,11 @@
 # Current restart point
 
-## 15 October 2026 — Visual Effects Lab prototype awaiting approval
+## 15 October 2026 — Visual Effects Lab v2 awaiting approval
 
-- **Developer surface:** the unlinked development hash `#effects-lab` hosts isolated prototypes and owns no learner-state service. Production builds reject that hash to Dashboard, while the lab remains a separate lazy chunk.
-- **Peel:** GSAP core 3.15.0 drives one 0–1 progress value through attached-sheet clipping, reverse-face geometry, exposed card surface and moving separation shadow. Rest is 18% peeled; the full transition is 520 ms. Reduced Motion keeps the lifted rest state and dissolves on removal.
-- **Surface and samples:** shared normalized x/y state drives both tilt and an opposing specular response for Common, Holo Rare and Ultra Rare. The lab also previews a quiet Answer halo/four-point bloom without the production X and presentation-only quotes for semantic pronunciation.
-- **Evidence:** unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium and WebKit **12/12**; production build passes with GSAP and the lab in a **97.38 kB lazy chunk**. Production Study clue, shimmer, face signature and secondary-cue rendering remain unchanged. Manual visual review, physical touch quality and final production integration decisions remain pending.
+- **Complete clue sequence:** the isolated lab preserves the approved GSAP boundary peel, reduces the sheet to 268 × 148 px without reducing 17 px clue type, and adds a fabric pennant, explicit sequence controls, automatic pennant return and magnifier coexistence. Rest remains 18% peeled; full travel is 520 ms; Reduced Motion dissolves.
+- **Collectible interaction language:** Light, Dark and System contexts preview continuously surface-linked Common/Holo Rare/Ultra Rare lighting and the no-X Answer halo. Separate sections demonstrate rigid-card press/flip, deterministic material-led rarity unlocks, a distinct Prestige stamp, and generic versus card-local rating feedback. Approved pronunciation quotation remains presentation-only.
+- **Motion policy:** the lab records the future `System / Full / Reduced` model independently from Effects On/Off. It does not add a production setting.
+- **Evidence and boundary:** unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/WebKit **22/22**, including 1024 px and 390 px overflow checks; production build passes. Production Study clue, effects, face signatures, pronunciation, rating, unlock/results and Appearance Settings remain unchanged. Manual visual approval and physical touch/material judgement remain pending.
 
 ## 15 October 2026 — Partially peeled whole-sticker clue verified locally
 
