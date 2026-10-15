@@ -8,7 +8,21 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-STUDY-PRESENTATION-03
+## Active corrective milestone — HR-STUDY-CLUE-MATERIAL-04
+
+Authorised 15 October 2026. This presentation-only correction makes the existing card-owned clue a smaller, content-driven adhesive sticker with an already-peeled corner and one whole-sticker removal surface.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-STUDY-CLUE-MATERIAL-04A | Content-driven sticker sizing | VERIFY | Short clues occupy less card area while long clues expand without clipping, nested scrolling or an inaccessible type reduction. |
+| HR-STUDY-CLUE-MATERIAL-04B | Partially peeled resting construction | VERIFY | A cut-away sheet exposes card surface beneath a separately lifted reverse-face flap with local adhesion shadow. |
+| HR-STUDY-CLUE-MATERIAL-04C | Whole-sticker removal | VERIFY | The sticker is one keyboard/touch/pointer removal control with no nested fold-only action and no card flip propagation. |
+| HR-STUDY-CLUE-MATERIAL-04D | Layered peel and return | VERIFY | The lifted region advances before the sheet/body follows; the pennant returns only after removal settles and remains immediately reusable. |
+| HR-STUDY-CLUE-MATERIAL-04E | Responsive/accessibility verification | VERIFY | Reduced Motion, 200% text, browser and available native Simulator gates preserve clue readability, focus and Study-state safety. |
+
+Implementation evidence: the transparent whole-sticker button owns a clipped sheet, separate resting peel and readable clue copy without nested controls. Short clues use fit-content bounds; long clues expand without nested scrolling. Pointer activation on the centre or clue text and Enter/Space all start the same layered removal without flipping or learning mutation; the pennant waits for settlement and returns immediately. Unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/desktop-WebKit/compact-WebKit Study and answer-showcase coverage **16/16**; coarse-pointer compact/large/landscape coverage **3/3**; production and packaged iPhone 17 Pro / iPad Pro 11-inch (M5) smokes pass. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
+## Previous corrective milestone — HR-STUDY-PRESENTATION-03
 
 Authorised 15 October 2026. This presentation-only correction replaces the geometric clue treatment with an organic HoloRecall-native object and normalises compact Study titles when imported hierarchy text is combined.
 

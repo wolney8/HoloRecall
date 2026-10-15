@@ -1,5 +1,11 @@
 # Current restart point
 
+## 15 October 2026 — Partially peeled whole-sticker clue verified locally
+
+- **Resting material:** the card-owned clue is now a smaller fit-content sticker. Its transparent interaction surface contains an irregular clipped sheet and a separate lifted reverse-face flap, leaving the card visible through the missing top-right base corner. Short clues stay compact; long clues expand without a nested scrollbar.
+- **Interaction:** the sticker itself is the single removal button, with clue content and removal purpose in its accessible name. Centre, text, touch/click and Enter/Space activation share one path and cannot bubble into card flip. The resting flap leads the peel, the sheet/body follows, and the pennant remains absent until removal settlement before returning immediately. Reduced Motion keeps the resting peel and substitutes a short fade.
+- **Evidence:** unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/desktop-WebKit/compact-WebKit Study and answer-showcase coverage **16/16**; coarse-pointer compact/large/landscape coverage **3/3**; production and packaged iPhone 17 Pro / iPad Pro 11-inch (M5) smokes pass. Physical-device touch, VoiceOver and Dynamic Type remain unverified.
+
 ## 15 October 2026 — Organic Study clue and combined-hierarchy title correction verified locally
 
 - **Clue material:** the pennant and attached clue sticker now use HoloRecall's Material typography. Asymmetric banner geometry, a restrained paper surface and a 48 px lifted-corner target replace the button/rectangle treatment. Long clue content expands within the card without a nested scrollbar.

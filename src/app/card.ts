@@ -55,10 +55,10 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
             <button #cluePennant type="button" class="clue-pennant" [class.below-expand]="hasInspectableImage" (pointerdown)="stopNested($event)" (click)="openStudyClue($event)" aria-label="Need a clue? Show the authored clue" aria-haspopup="true"><span>Need a clue?</span></button>
           }
           @if(studyClue && (studyClueState==='displayed'||studyClueState==='removing') && !displayedRevealed()){
-            <aside class="clue-sticker" [class.removing]="studyClueState==='removing'" [class.long]="studyClue.length>120" [class.extended]="studyClue.length>240" [attr.data-safe-zone]="clueSafeZone" role="status" aria-live="polite" (animationend)="finishStudyClueRemoval($event)">
-              <span class="clue-sticker-label">Clue</span><p>{{studyClue}}</p>
-              <button type="button" class="clue-fold" (pointerdown)="stopNested($event)" (click)="removeStudyClue($event)" [disabled]="studyClueState==='removing'" aria-label="Remove clue"><span aria-hidden="true"></span></button>
-            </aside>
+            <button type="button" class="clue-sticker" [class.removing]="studyClueState==='removing'" [class.long]="studyClue.length>120" [class.extended]="studyClue.length>240" [attr.data-safe-zone]="clueSafeZone" [disabled]="studyClueState==='removing'" [attr.aria-label]="'Clue: '+studyClue+' Remove clue.'" (pointerdown)="stopNested($event)" (keydown)="stopNested($event)" (click)="removeStudyClue($event)" (animationend)="finishStudyClueRemoval($event)">
+              <span class="clue-sheet" aria-hidden="true"></span><span class="clue-peel" aria-hidden="true"></span>
+              <span class="clue-sticker-copy" aria-hidden="true"><span class="clue-sticker-label">Clue</span><span class="clue-sticker-text">{{studyClue}}</span></span>
+            </button>
           }
           <footer class="protected">@if(capabilities.length){<ul class="capability-list" aria-label="Card capabilities">@for(capability of capabilities;track capability){<li [attr.aria-label]="capabilityLabel(capability)"><span aria-hidden="true">{{capabilitySymbol(capability)}}</span><span class="capability-text">{{capabilityLabel(capability)}}</span></li>}</ul>}@if (scrollable()) { <span class="scroll-hint">Scroll text ↕</span> }<span class="face-marker" role="img" [attr.aria-label]="displayedRevealed() ? 'Answer face' : 'Recall face'"><i aria-hidden="true"></i><i aria-hidden="true"></i></span></footer>
         </article>
@@ -207,7 +207,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
   requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();if(this.inspectionUnavailable)return;this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
   stopNested(event:Event):void{event.stopPropagation();}
-  openStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='available'||this.displayedRevealed())return;this.studyClueOpen.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-fold')?.focus({preventScroll:true}));}
+  openStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='available'||this.displayedRevealed())return;this.studyClueOpen.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-sticker')?.focus({preventScroll:true}));}
   removeStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='displayed')return;this.studyClueRemove.emit();if(matchMedia('(prefers-reduced-motion: reduce)').matches||!!this.host.nativeElement.closest('.effects-off'))requestAnimationFrame(()=>{if(this.studyClueState==='removing')this.completeStudyClueRemoval();});}
   finishStudyClueRemoval(event:AnimationEvent):void{if(this.studyClueState!=='removing'||event.target!==event.currentTarget)return;this.completeStudyClueRemoval();}
   private completeStudyClueRemoval():void{this.studyClueRemovalSettled.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-pennant')?.focus({preventScroll:true}));}
