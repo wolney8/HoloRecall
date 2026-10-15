@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, QueryList, signal, ViewChildren } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, isDevMode, QueryList, signal, ViewChildren } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -44,14 +44,15 @@ import type { DeckDeleteDialogResult } from './authoring/deck-delete-dialog';
 import { SubviewNavigationComponent, type SubviewNavigationItem } from './navigation/subview-navigation';
 import { PlatformPresentation } from './platform/platform-presentation';
 import { conciseStudyContext } from '../domain/study-context';
+import { EffectsLabComponent } from './effects-lab/effects-lab';
 
-type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings';
+type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings' | 'effects-lab';
 type LibrarySubview = 'decks' | 'search';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -216,7 +217,7 @@ export class AppComponent {
     window.addEventListener('popstate',this.appPopState);
     inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearClueDelay(true);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);window.removeEventListener('popstate',this.appPopState);unsubscribeLifecycle();});
   }
-  private initialScreen():Screen{const value=location.hash.slice(1).split('/')[0];return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
+  private initialScreen():Screen{const value=location.hash.slice(1).split('/')[0];if(value==='effects-lab')return isDevMode()?'effects-lab':'dashboard';return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
   private initialLibrarySubview():LibrarySubview{return location.hash.match(/^#library\/(search)(?:\/|$)/)?.[1]==='search'?'search':'decks';}
   private syncNavigationFromLocation():void{this.screen.set(this.initialScreen());if(this.screen()==='library')this.librarySubview.set(this.initialLibrarySubview());}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
@@ -255,7 +256,7 @@ export class AppComponent {
     if(screen==='settings'&&this.settingsDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Study settings',screen:'settings'}];
     if(screen==='collection'&&this.collectionDeckId())return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:'Cards',screen:'collection'}];
     if(screen==='exchange'&&this.selectedDeck)return [{label:'Decks',screen:'library'},...decks.map(deck=>({label:deck.name,screen:'library' as const,deckId:deck.id})),{label:this.ankiSourceMode()==='manage'?'Manage Anki source':this.ankiSourceMode()==='mapping'?'Advanced field enrichment':this.ankiSourceMode()==='repair'?'Repair imported content':'Update from Anki',screen:'exchange'}];
-    const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Exchange',settings:'Settings'} satisfies Record<Screen,string>)[screen];
+    const title=({dashboard:'Dashboard',library:'Decks',focus:'Focus',study:'Study',results:'Session complete',collection:'Collection',studio:'Design Studio',progress:'Progress',exchange:'Exchange',settings:'Settings','effects-lab':'Visual Effects Lab'} satisfies Record<Screen,string>)[screen];
     return [{label:title,screen}];
   }
   private deckContext(deckId:string):Deck[]{const state=this.data();if(!state)return[];const byId=new Map(state.decks.map(deck=>[deck.id,deck])),path:Deck[]=[];let current=byId.get(deckId),guard=0;while(current&&guard++<state.decks.length){path.unshift(current);current=current.parentId?byId.get(current.parentId):undefined;}return path;}

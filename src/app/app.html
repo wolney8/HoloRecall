@@ -141,6 +141,7 @@
           @case('studio'){@defer(on immediate){<hr-design-studio/>}@placeholder{<p role="status">Loading Design Studio…</p>}}
           @case('progress'){@defer(on immediate){<hr-progress (practiceCards)="startSelection('practice',$event,'Needs attention')"/>}@placeholder{<p role="status">Loading Progress…</p>}}
           @case('exchange'){@defer(on immediate){<hr-exchange [updateDeckId]="selectedDeck" [sourceMode]="ankiSourceMode()" [initialAnkiFile]="ankiUpdateFile()" (sourceAction)="openAnkiSource(selectedDeck,$event)" (detachSource)="detachAnkiDeckSource()" (cancelUpdate)="cancelAnkiUpdate()" (updateComplete)="finishAnkiUpdate($event)" (completionAction)="handleExchangeCompletion($event)"/>}@placeholder{<p role="status">Loading Exchange…</p>}}
+          @case('effects-lab'){@defer(on immediate){<hr-effects-lab/>}@placeholder{<p role="status">Loading Visual Effects Lab…</p>}}
           @case('settings'){
             <div class="page-heading" hrReveal><div><p class="eyebrow">LOCAL PREFERENCES</p><h1>Settings</h1></div></div>
             @defer(on immediate){<hr-study-settings [deckId]="settingsDeckId()"/>}

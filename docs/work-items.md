@@ -8,7 +8,21 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-STUDY-CLUE-MATERIAL-04
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-01
+
+Authorised 15 October 2026. This isolated developer lab evaluates a GSAP-driven peel model and surface-linked card lighting before any production integration.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-01A | Unlinked developer effects view | VERIFY | `#effects-lab` opens a clearly labelled, state-free local preview without appearing in normal navigation. |
+| HR-VISUAL-EFFECTS-LAB-01B | Layered GSAP clue peel | VERIFY | One normalized progress value drives attached sheet, underside, exposed card and moving shadow from an already-peeled resting state. |
+| HR-VISUAL-EFFECTS-LAB-01C | Surface-linked reflection prototypes | VERIFY | Shared tilt state continuously drives restrained Common, Holo Rare and Ultra Rare reflections with Effects Off and reduced-motion handling. |
+| HR-VISUAL-EFFECTS-LAB-01D | Face and secondary-cue samples | VERIFY | The lab previews a resolved Answer halo without an X and distinguishes quoted pronunciation from an unquoted generic secondary cue. |
+| HR-VISUAL-EFFECTS-LAB-01E | Isolation and verification | VERIFY | Production clue, shimmer, face signature and pronunciation remain unchanged; focused browser tests and production build pass before publication. |
+
+Implementation evidence: the development-only hash screen remains absent from primary and secondary navigation and owns no learner-state service. GSAP core 3.15.0 drives a 520 ms boundary peel from an 18% resting lift; Reduced Motion dissolves without geometric travel. The same normalized surface input controls tilt and opposing specular position for three rarity samples. Focused Chromium/WebKit coverage passes **12/12**, unit/domain passes **271** with three opt-in package suites skipped, and production builds with the lab in a **97.38 kB lazy chunk**. Production Study/card rendering files remain unchanged. Manual visual approval is pending.
+
+## Previous corrective milestone — HR-STUDY-CLUE-MATERIAL-04
 
 Authorised 15 October 2026. This presentation-only correction makes the existing card-owned clue a smaller, content-driven adhesive sticker with an already-peeled corner and one whole-sticker removal surface.
 

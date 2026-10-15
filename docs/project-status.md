@@ -1,5 +1,12 @@
 # Current restart point
 
+## 15 October 2026 — Visual Effects Lab prototype awaiting approval
+
+- **Developer surface:** the unlinked development hash `#effects-lab` hosts isolated prototypes and owns no learner-state service. Production builds reject that hash to Dashboard, while the lab remains a separate lazy chunk.
+- **Peel:** GSAP core 3.15.0 drives one 0–1 progress value through attached-sheet clipping, reverse-face geometry, exposed card surface and moving separation shadow. Rest is 18% peeled; the full transition is 520 ms. Reduced Motion keeps the lifted rest state and dissolves on removal.
+- **Surface and samples:** shared normalized x/y state drives both tilt and an opposing specular response for Common, Holo Rare and Ultra Rare. The lab also previews a quiet Answer halo/four-point bloom without the production X and presentation-only quotes for semantic pronunciation.
+- **Evidence:** unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium and WebKit **12/12**; production build passes with GSAP and the lab in a **97.38 kB lazy chunk**. Production Study clue, shimmer, face signature and secondary-cue rendering remain unchanged. Manual visual review, physical touch quality and final production integration decisions remain pending.
+
 ## 15 October 2026 — Partially peeled whole-sticker clue verified locally
 
 - **Resting material:** the card-owned clue is now a smaller fit-content sticker. Its transparent interaction surface contains an irregular clipped sheet and a separate lifted reverse-face flap, leaving the card visible through the missing top-right base corner. Short clues stay compact; long clues expand without a nested scrollbar.
