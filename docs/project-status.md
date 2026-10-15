@@ -1,5 +1,13 @@
 # Current restart point
 
+## 15 October 2026 — Lesson 2 structured Prompt and response semantics verified locally
+
+- **Source trace:** the exact 135-card Lesson 2 v5.1 package has two templates: 123 `Lesson 2 visual recall` cards and 12 `Visual recall` cards. Every Prompt field contains authored `.instruction`, `.focus` and `.clue` blocks; both templates also contain the same presentation-only deck-label script and mixed learning/source-app guidance.
+- **Projection:** structured Prompt blocks now become task guidance, primary Recall stimulus and delayed clue provenance rather than one flattened prompt. Source-app directions are omitted while `Say the answer aloud.` remains. Response audit distinguishes free recall, explicit choice/classification, pronunciation/naming and visual answers.
+- **Conditional semantics:** four extended-template notes use stable IDs beginning `review_sound_`; their template-owned variant promotes `Pronunciation` to primary Answer while eight sibling cards retain `Italian`. The main-template agreement answer formerly visible in Focus is retained only as a delayed clue.
+- **Exact-package result:** both profiles audit clean with **135 Ready, 0 Needs review, 0 Cannot import**. The 123-card profile preserves structured visual/choice content; the 12-card profile applies a source-backed `ID starts-with review_sound_` variant to four pronunciation-response cards and leaves eight on its default answer mapping. The agreement recap's answer-bearing Focus is retained only as a delayed clue.
+- **Verification:** unit/domain **263/263**, complete Chromium/desktop-WebKit/compact-large-landscape-WebKit **298/298**, production build, and packaged iPhone 17 Pro / iPad Pro 11-inch (M5) Exchange-navigation smokes **1/1** each pass. Lesson 1 remains **44/44** importable; bBarryy remains **58** safe cards plus three source-incomplete exclusions; the configured 254-card Italian regression remains unchanged. Physical-device import, touch and assistive-technology behavior remain unverified.
+
 ## 14 October 2026 — Presentation-only Anki script correction verified locally
 
 - **Root cause:** both templates in the exact 44-card Lesson 1 v5.1 package contain the same inline deck-label formatter. The previous blanket script rule marked every generated card review-required even though the script only abbreviates an already-rendered Deck label and the native projection already retains all learning semantics.

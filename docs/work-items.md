@@ -1,6 +1,6 @@
 # Canonical work-item tracker
 
-Updated: 14 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 15 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
@@ -8,7 +8,21 @@ Updated: 14 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-ANKI-SAFE-SCRIPT-01
+## Active corrective milestone — HR-ANKI-FIDELITY-04
+
+Authorised 15 October 2026. This bounded correction preserves structured semantics inside imported Prompt HTML and distinguishes choice, pronunciation/naming and visual response modes during template-level translation audit.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANKI-FIDELITY-04A | Structured Prompt subroles | VERIFY | Safely map source `.instruction`, `.focus` and `.clue` blocks to guidance, Recall stimulus/context and the delayed clue system without flattening or executing source code. |
+| HR-ANKI-FIDELITY-04B | Source-app guidance filtering | VERIFY | Retain learning instructions while classifying Anki UI directions as non-learning metadata. |
+| HR-ANKI-FIDELITY-04C | Response-aware translation audit | VERIFY | Treat explicit multi-choice and source-backed pronunciation/naming stimuli correctly while continuing to block real answer leakage and lost choice structure. |
+| HR-ANKI-FIDELITY-04D | Conditional sound-review semantics | VERIFY | One template-owned declarative `review_sound_` variant promotes the source Pronunciation response for matching cards; ordinary cards remain on the default mapping. |
+| HR-ANKI-FIDELITY-04E | Exact-package and regression verification | VERIFY | Audit all 135 Lesson 2 cards plus Lesson 1, bBarryy and configured Italian regressions before publication. |
+
+Evidence: exact package SHA-256 `b2f3d0f09338442c850d4beacae0ebb392f8ef45c9859bf592d2788ec3df1e13` produces **135 Ready with simplification, 0 Needs review, 0 Cannot import**. The 123-card main profile and 12-card extended profile reconcile all source blocks; the latter applies one `ID starts-with review_sound_` pronunciation-response variant to **4** cards and leaves **8** on its default answer mapping. Lesson 1 remains **44/44** importable and bBarryy remains **58** safe cards plus three source-incomplete exclusions. Unit/domain passes **263/263**; the complete Chromium/desktop-WebKit/compact-large-landscape-WebKit matrix passes **298/298**; production build and packaged iPhone 17 Pro / iPad Pro 11-inch (M5) Exchange-navigation smokes pass **1/1** each. Physical-device file import, touch and assistive-technology behavior remain unverified.
+
+## Previous corrective milestone — HR-ANKI-SAFE-SCRIPT-01
 
 Authorised 14 October 2026. This bounded correction distinguishes provably presentation-only Anki template scripts from scripts that may alter learning semantics, without executing imported code.
 

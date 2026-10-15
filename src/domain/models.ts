@@ -143,12 +143,15 @@ export interface AnkiCardSource {
     answerFields: string[];
     /** Selected template-owned conditional semantic rule, when one applies. */
     semanticVariantId?:string;
+    /** Source-backed response contract used by translation audit. */
+    responseMode?:'free-recall'|'choice-classification'|'pronunciation-naming'|'visual-answer';
     /** Non-executed template behavior omitted after conservative static proof. */
-    templateSimplifications?:Array<'presentation-script'>;
+    templateSimplifications?:Array<'presentation-script'|'source-app-guidance'>;
     blocks?: Array<{
       side: 'front' | 'back';
       source: string;
-      sourceKind?: 'field' | 'template-static';
+      sourceKind?: 'field' | 'field-subrole' | 'template-static';
+      sourceField?:string;
       sourceText?: string;
       classification: 'card-title' | 'situation-context' | 'primary-prompt' | 'task-guidance' | 'hint' | 'choices' | 'instructional-art' | 'primary-answer' | 'secondary-cue' | 'concise-interpretation' | 'support' | 'duplicate-frontside' | 'decorative' | 'metadata' | 'fallback';
       destination: string;
@@ -463,7 +466,7 @@ export type AnkiConversionConcern='equivalent-recall-answer'|'placeholder-answer
 export interface AnkiSemanticVariant {
   id:string;
   label:string;
-  predicate:{all:Array<{field:string;operator:'non-empty'|'equals';value?:string}>};
+  predicate:{all:Array<{field:string;operator:'non-empty'|'equals'|'starts-with';value?:string}>};
   overrides:{primaryAnswerField:string};
   origin:'auto-inferred'|'user-confirmed';
   acceptedAt?:string;

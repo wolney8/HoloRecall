@@ -6,6 +6,7 @@ import JSZip from 'jszip';
 const bBarryyPackage=process.env['HOLORECALL_BBARRYY_PACKAGE'];
 const italianPackage=process.env['HOLORECALL_REAL_ANKI_PACKAGE'];
 const lesson1V51Package=process.env['HOLORECALL_LESSON1_V51_PACKAGE'];
+const lesson2V51Package=process.env['HOLORECALL_LESSON2_V51_PACKAGE'];
 
 async function openExchange(page:Parameters<typeof openApp>[0]):Promise<void>{
   await openApp(page);await navigate(page,'Exchange');
@@ -87,6 +88,13 @@ test('presentation-only Lesson 1 scripts import as a disclosed safe simplificati
   test.skip(!lesson1V51Package||!existsSync(lesson1V51Package),'Set HOLORECALL_LESSON1_V51_PACKAGE to the exact Lesson 1 v5.1 package path.');await openExchange(page);await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles(lesson1V51Package!);
   const result=page.getByLabel('Anki import result');await expect(result).toContainText('44Ready');await expect(result).toContainText('0Needs review');await expect(result).toContainText('0Cannot import');await expect(page.getByRole('button',{name:'Import 44 supported cards'})).toBeEnabled();
   await expect(page.getByText('Technical compatibility tiers')).toHaveCount(0);await page.getByRole('button',{name:/Advanced details/}).click();await expect(page.getByText(/0 referenced media/)).toBeVisible();await expect(page.getByText(/19 unreferenced package assets ignored/)).toBeVisible();await expect(page.getByText('Presentation-only Anki template script was omitted safely; learning content remains fully represented by native projection.')).toBeVisible();
+});
+
+test('structured Lesson 2 templates import without per-card review and retain the pronunciation variant',async({page})=>{
+  test.skip(!lesson2V51Package||!existsSync(lesson2V51Package),'Set HOLORECALL_LESSON2_V51_PACKAGE to the exact Lesson 2 v5.1 package path.');await openExchange(page);await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles(lesson2V51Package!);
+  const result=page.getByLabel('Anki import result');await expect(result).toContainText('135Ready');await expect(result).toContainText('0Needs review');await expect(result).toContainText('0Cannot import');await expect(page.getByRole('button',{name:'Import 135 supported cards'})).toBeEnabled();
+  await page.getByRole('button',{name:/Advanced details/}).click();await page.getByText('Template translation audit',{exact:true}).click();await expect(page.getByText('Pronunciation response variant · 4 matching cards · When ID starts with “review_sound_” → Primary answer: Pronunciation')).toBeVisible();
+  await page.getByRole('button',{name:'Import 135 supported cards'}).click();await expect(page.locator('.completion-panel')).toContainText('IMPORT COMPLETE',{timeout:20_000});const state=await snapshot(page),sound=state.cards.find(card=>card.ankiSource?.contentProvenance?.semanticVariantId?.includes('pronunciation-response')),agreement=state.cards.find(card=>card.answer==='The related words agree in gender and number.');expect(sound).toMatchObject({front:expect.stringMatching(/GI|GE|CI|CE/),answer:expect.any(String),ankiSource:{contentProvenance:{responseMode:'pronunciation-naming'}}});expect(sound?.answer).not.toBe(sound?.front);expect(agreement?.front).not.toContain(agreement?.answer??'');expect(agreement?.presentation?.hint).toContain(agreement?.answer);
 });
 
 test('HR-EXCHANGE-03 navigation reflows on compact WebKit @ios-compact',async({page})=>{
