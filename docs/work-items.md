@@ -8,7 +8,22 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-02
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-03
+
+Authorised 15 October 2026. This final prototype pass refines the approved interaction language before any production integration.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-03A | Timer-complete clue sequence and continuous peel | VERIFY | Simulate timer completion as a visible pennant unfurl and preserve the pennant → sticker → peel → immediate pennant-return cycle without a fold seam. |
+| HR-VISUAL-EFFECTS-LAB-03B | Ambient glare and live shimmer | VERIFY | Separate broad environmental glare from rarity material interference while both respond continuously to Light/Dark/System surface orientation. |
+| HR-VISUAL-EFFECTS-LAB-03C | Shared rigid-card handling | VERIFY | Use one tilt, reflection, press and turn model for the surface, handling and settled earned-card samples. |
+| HR-VISUAL-EFFECTS-LAB-03D | Deterministic earned reveal | VERIFY | Replace staged/clunky reward motion with one overlapping rise, edge, anticipation, turn, bloom, digital-accent and settle timeline without pack imagery. |
+| HR-VISUAL-EFFECTS-LAB-03E | Card-local rating texture | VERIFY | Scale short-lived digital facets and material response by rating while suppressing excess under Reduced Motion or Effects Off. |
+| HR-VISUAL-EFFECTS-LAB-03F | Prototype isolation and verification | VERIFY | Keep production learner surfaces unchanged; verify lifecycle cleanup, responsive Chromium/WebKit behavior, unit/domain and production build. |
+
+Implementation evidence: the peel now uses a two-pixel front/underside bleed in one coordinate system with its separation shadow below both material layers. The shared surface state drives broad ambient reflection, narrower rarity shimmer, press and settled earned-card handling. The coordinated earned reveal records `rise → edge → tilt → flip → bloom → digital → settled`; Prestige remains unchanged. Unit/domain passes **271** with three opt-in package suites skipped; focused Chromium/WebKit passes **26/26**; production builds. Effects Lab v3 awaits manual approval before `HR-VISUAL-EFFECTS-INTEGRATION-01` may begin.
+
+## Previous prototype milestone — HR-VISUAL-EFFECTS-LAB-02
 
 Authorised 15 October 2026. This developer-only expansion completes the proposed collectible interaction language for manual approval without integrating any prototype into learner journeys.
 

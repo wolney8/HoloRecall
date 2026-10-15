@@ -1,5 +1,12 @@
 # Current restart point
 
+## 15 October 2026 — Visual Effects Lab v3 awaiting approval
+
+- **Clue material:** simulated timer completion visibly unfurls the approved pennant. The full pennant → sticker → peel → immediate pennant-return cycle remains available. A two-pixel front/underside geometry bleed, common coordinate system and shadow-below-material order remove the dark fold seam without removing depth.
+- **Surface and handling:** broad low-opacity ambient glare and narrower rarity shimmer now respond independently to the same cached, frame-sampled surface normal in Light, Dark and System. The press sample shares those variables, retains rigid material, and combines tilt, slight depth compression and a continuous turn.
+- **Earned feedback:** the deterministic reveal is one overlapping rise, edge trace, anticipation tilt, 3D turn, material bloom, digital-facet and settlement timeline, with no pack/wrapper metaphor. Common through Ultra Rare differ through material intensity. Rating feedback adds brief card-local facets scaled from none at ratings 1–2 to six at rating 5. Prestige remains the approved separate stamp.
+- **Policy and evidence:** System/Full/Reduced motion remains independent from Effects On/Off. Unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/WebKit **26/26**; production build passes. Production Study, shared card effects, Results, Settings and learner state remain unchanged. Manual visual approval and physical touch/material judgement remain pending before `HR-VISUAL-EFFECTS-INTEGRATION-01`.
+
 ## 15 October 2026 — Visual Effects Lab v2 awaiting approval
 
 - **Complete clue sequence:** the isolated lab preserves the approved GSAP boundary peel, reduces the sheet to 268 × 148 px without reducing 17 px clue type, and adds a fabric pennant, explicit sequence controls, automatic pennant return and magnifier coexistence. Rest remains 18% peeled; full travel is 520 ms; Reduced Motion dissolves.
