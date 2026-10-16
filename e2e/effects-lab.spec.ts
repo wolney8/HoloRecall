@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Visual Effects Lab v5', () => {
+test.describe('Visual Effects Lab v6', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/#effects-lab');
     await expect(page.getByRole('heading', { name: 'Visual Effects Lab' })).toBeVisible();
@@ -317,17 +317,47 @@ test.describe('Visual Effects Lab v5', () => {
     await expect(grid).toHaveAttribute('data-fragment-count', '0');
   });
 
-  test('classifies Unicode micro answers and retains approved pronunciation semantics', async ({ page }) => {
-    const section = page.locator('.micro-section');
+  test('fits Unicode adaptive short answers from actual glyph width and keeps secondary cues stable', async ({ page }) => {
+    const section = page.locator('.adaptive-section');
     await expect(section).toHaveAttribute('data-unicode-grapheme-probe', '1');
-    for (const [answer, count] of [['L’', '2'], ['CE', '2'], ['x=4', '3']] as const) {
-      const card = page.locator('.micro-answer-card').filter({ has: page.locator('strong', { hasText: answer }) });
-      await expect(card).toHaveAttribute('data-answer-band', 'micro');
+    const cardFor = (answer: string) => page.locator(`.adaptive-answer-card[data-answer="${answer}"]`);
+    for (const [answer, count] of [['L’', '2'], ['CE', '2'], ['x=4', '3'], ['WWW', '3'], ['iii', '3']] as const) {
+      const card = cardFor(answer);
+      await expect(card).toHaveAttribute('data-answer-band', 'adaptive-short');
       await expect(card).toHaveAttribute('data-graphemes', count);
-      expect(parseFloat(await card.locator('strong').evaluate(element => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(62);
+      await expect(card).toHaveAttribute('data-fit-algorithm', 'bounded-binary-search');
+      expect(Number(await card.getAttribute('data-fit-size'))).toBeGreaterThanOrEqual(44);
+      expect(Number(await card.getAttribute('data-fit-size'))).toBeLessThanOrEqual(92);
+      expect(Number(await card.getAttribute('data-measured-width'))).toBeLessThanOrEqual(Number(await card.getAttribute('data-safe-width')) + .02);
     }
+    expect(Number(await cardFor('WWW').getAttribute('data-fit-size'))).toBeLessThan(Number(await cardFor('iii').getAttribute('data-fit-size')));
+    await expect(cardFor('🧬🧬🧬🧬')).toHaveAttribute('data-answer-band', 'short-fallback');
     await expect(page.locator('[data-secondary-kind="pronunciation"] .sample-secondary')).toHaveText('“l”');
     await expect(page.locator('[data-secondary-kind="generic"] .sample-secondary')).toHaveText('Used before a vowel');
+    const secondarySize = await page.locator('[data-secondary-kind="pronunciation"] .sample-secondary').evaluate(element => getComputedStyle(element).fontSize);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(cardFor('L’')).toHaveAttribute('data-fit-runs', /[2-9]|[1-9]\d+/);
+    expect(await page.locator('[data-secondary-kind="pronunciation"] .sample-secondary').evaluate(element => getComputedStyle(element).fontSize)).toBe(secondarySize);
+  });
+
+  test('does not rerun text fitting during surface animation and preserves one-line safe bounds', async ({ page }) => {
+    const cards = page.locator('.adaptive-answer-card[data-answer="x=4"], .adaptive-answer-card[data-answer="WWW"]');
+    const before = await cards.evaluateAll(elements => elements.map(element => element.getAttribute('data-fit-runs')));
+    const surface = page.locator('.surface-card');
+    const box = await surface.boundingBox();
+    await surface.hover({ position: { x: box!.width * .8, y: box!.height * .2 } });
+    await surface.hover({ position: { x: box!.width * .2, y: box!.height * .8 } });
+    await page.getByRole('button', { name: 'Press + release' }).click();
+    expect(await cards.evaluateAll(elements => elements.map(element => element.getAttribute('data-fit-runs')))).toEqual(before);
+    for (const card of await cards.all()) {
+      const geometry = await card.evaluate(element => {
+        const safe = element.querySelector('.adaptive-answer-safe')!.getBoundingClientRect();
+        const answer = element.querySelector('.adaptive-answer-primary')!.getBoundingClientRect();
+        return { safeWidth: safe.width, answerWidth: answer.width, lines: getComputedStyle(element.querySelector('.adaptive-answer-primary')!).whiteSpace };
+      });
+      expect(geometry.answerWidth).toBeLessThanOrEqual(geometry.safeWidth + .5);
+      expect(geometry.lines).toBe('nowrap');
+    }
   });
 
   test('cleans GSAP activity up when the lab is destroyed', async ({ page }) => {
@@ -347,7 +377,9 @@ test.describe('Visual Effects Lab v5', () => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
       await expect(page.getByRole('heading', { name: 'Pennant, sticker and layered peel' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Potential micro-answer scale' })).toBeAttached();
+      await expect(page.getByRole('heading', { name: 'Adaptive short-answer fit' })).toBeAttached();
     }
+    await page.addStyleTag({ content: 'html{-webkit-text-size-adjust:200%;text-size-adjust:200%}' });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   });
 });

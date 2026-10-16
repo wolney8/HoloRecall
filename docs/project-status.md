@@ -1,5 +1,12 @@
 # Current restart point
 
+## 16 October 2026 — Visual Effects Lab v6 awaiting manual approval
+
+- **Adaptive sizing:** the former `micro` preview used one fixed scale for every answer with at most four grapheme clusters, so rendered glyph width was ignored. The lab now treats grapheme count only as adaptive-short eligibility and measures the actual Roboto glyph run before assigning its size.
+- **Fit contract:** each answer fits a 74%-width, 92–104 px-high primary-answer region through a bounded nine-step search from 44 to 92 px. A candidate that cannot fit at the floor uses the ordinary 38 px short-answer composition without clipping or horizontal scrolling. The secondary cue remains fixed at 24 px.
+- **Responsive/performance boundary:** fitting runs after font readiness and coalesced `ResizeObserver` card-size changes. Surface tilt, shimmer, press, turn and unlock frames do not invoke it; observers and pending animation frames are removed with the lazy lab component.
+- **Evidence and boundary:** desktop `L’ / CE / x=4 / WWW / iii` sizes are **92 / 92 / 92 / 56.93 / 92 px**. Unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/WebKit **36/36**; tablet, compact and 200% text have no page overflow; production builds. All production answer sizing and effects remain unchanged. Manual visual and physical-device judgement remain pending.
+
 ## 16 October 2026 — Visual Effects Lab v5 awaiting manual approval
 
 - **Light material:** Light-mode Common retains the clean card and broad glare only. Holo Rare now has a visible 0.31 saturated interference film plus stronger angle-linked shimmer; Ultra Rare has an explicit 0.44 multilayer film and deeper live refraction. All three retain the same card structure and content.

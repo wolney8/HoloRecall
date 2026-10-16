@@ -8,7 +8,20 @@ Updated: 16 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-05
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-06
+
+Authorised 16 October 2026. This lab-only correction replaces the fixed micro-answer scale with measured, responsive short-answer fitting before production integration is considered.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-06A | Adaptive-short eligibility | VERIFY | Use normalized Unicode grapheme segmentation only to nominate single-line textual candidates; visual answers remain outside this composition. |
+| HR-VISUAL-EFFECTS-LAB-06B | Rendered-glyph fitting | VERIFY | Fit the real rendered font within a 74% card-width safe region through a bounded 44–92 px search, with an ordinary 38 px short-answer fallback rather than clipping. |
+| HR-VISUAL-EFFECTS-LAB-06C | Responsive and stable hierarchy | VERIFY | Refit only after fonts or observed card size changes; retain a fixed subordinate cue and perform no fitting during surface or motion frames. |
+| HR-VISUAL-EFFECTS-LAB-06D | Prototype isolation and verification | VERIFY | Keep production and all other approved lab prototypes unchanged; verify unit/domain, focused Chromium/WebKit, 200% text, responsive overflow and production build. |
+
+Implementation evidence: `Intl.Segmenter` nominates one-line answers of at most four grapheme clusters, while an offscreen real-font measure and nine-step bounded binary search select the final size. The visible primary-answer safe box is 74% of card width and 92–104 px high, with a 92 px cap, 44 px adaptive floor and non-clipping 38 px ordinary-short fallback. At the desktop review width, `L’`, `CE`, `x=4`, `WWW` and `iii` resolve to **92 / 92 / 92 / 56.93 / 92 px**; `WWW` and `iii` prove equal grapheme counts can fit differently. Unit/domain passes **271** with three opt-in package suites skipped; focused Chromium/WebKit passes **36/36**; responsive and 200% text checks have no page overflow; production builds. Effects Lab v6 awaits manual approval; production remains unchanged.
+
+## Previous prototype milestone — HR-VISUAL-EFFECTS-LAB-05
 
 Authorised 16 October 2026. This lab-only correction strengthens Light-mode rarity material and removes the discrete press-state visual transition before production integration is considered.
 
