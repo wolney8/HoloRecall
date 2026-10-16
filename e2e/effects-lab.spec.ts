@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Visual Effects Lab v4', () => {
+test.describe('Visual Effects Lab v5', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/#effects-lab');
     await expect(page.getByRole('heading', { name: 'Visual Effects Lab' })).toBeVisible();
@@ -133,38 +133,130 @@ test.describe('Visual Effects Lab v4', () => {
     await appearance.getByRole('button', { name: 'Light' }).click();
     const light = await Promise.all([common, holo, ultra].map(layer => layer.evaluate(element => Number(getComputedStyle(element).opacity))));
     expect(light[0]).toBe(0);
-    expect(light[1]).toBeGreaterThan(0);
+    expect(light[1]).toBeGreaterThanOrEqual(.3);
+    expect(light[2]).toBeGreaterThanOrEqual(.43);
     expect(light[2]).toBeGreaterThan(light[1]!);
     expect(await holo.evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('multiply');
+    const card = page.locator('.surface-card');
+    const shimmer = card.locator('.surface-shimmer');
+    const box = await card.boundingBox();
+    await page.locator('[aria-label="Rarity"]').getByRole('button', { name: 'Common', exact: true }).click();
+    await card.hover({ position: { x: box!.width * .8, y: box!.height * .25 } });
+    await expect.poll(() => card.evaluate(element => Number(getComputedStyle(element).getPropertyValue('--lab-shimmer-strength')))).toBeGreaterThan(0);
+    const commonShimmer = Number(await shimmer.evaluate(element => getComputedStyle(element).opacity));
+    await page.locator('[aria-label="Rarity"]').getByRole('button', { name: 'Holo Rare', exact: true }).click();
+    await card.hover({ position: { x: box!.width * .8, y: box!.height * .25 } });
+    const holoShimmer = Number(await shimmer.evaluate(element => getComputedStyle(element).opacity));
+    await page.locator('[aria-label="Rarity"]').getByRole('button', { name: 'Ultra Rare', exact: true }).click();
+    await card.hover({ position: { x: box!.width * .8, y: box!.height * .25 } });
+    const ultraShimmer = Number(await shimmer.evaluate(element => getComputedStyle(element).opacity));
+    expect(holoShimmer).toBeGreaterThan(commonShimmer * 4);
+    expect(ultraShimmer).toBeGreaterThan(holoShimmer);
     await appearance.getByRole('button', { name: 'Dark' }).click();
     await expect(page.locator('.theme-stage')).toHaveAttribute('data-preview-theme', 'dark');
     await expect.poll(() => holo.evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('screen');
     expect(Number(await holo.evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0);
   });
 
-  test('preserves surface orientation through damped press release and pressure-to-flip', async ({ page }) => {
+  test('interpolates pressure material and depth continuously without resetting tilt', async ({ page }) => {
+    await page.locator('[aria-label="Motion policy"]').getByRole('button', { name: 'Full' }).click();
     const card = page.locator('.press-card');
     await expect(card).toHaveAttribute('data-surface-model', 'shared');
+    await expect(card).toHaveAttribute('data-press-model', 'continuous-progress');
     await expect(card).toHaveAttribute('data-release-model', 'critically-damped');
     await card.scrollIntoViewIfNeeded();
     const box = await card.boundingBox();
     await page.mouse.move(box!.x + box!.width * .8, box!.y + box!.height * .3);
     await expect.poll(() => card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-shimmer-strength').trim())).not.toBe('0.000');
-    const orientation = await card.evaluate(element => ({
-      x: getComputedStyle(element).getPropertyValue('--lab-tilt-x').trim(),
-      y: getComputedStyle(element).getPropertyValue('--lab-tilt-y').trim(),
-    }));
+    const read = () => card.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        progress: Number((element as HTMLElement).dataset['pressProgress']),
+        shimmer: Number(style.getPropertyValue('--lab-shimmer-strength')),
+        shadow: Number.parseFloat(style.getPropertyValue('--lab-shadow-depth')),
+        y: Number.parseFloat(style.getPropertyValue('--lab-press-y')),
+        scale: Number(style.getPropertyValue('--lab-press-scale')),
+        tiltX: style.getPropertyValue('--lab-tilt-x').trim(),
+        tiltY: style.getPropertyValue('--lab-tilt-y').trim(),
+      };
+    });
+    const rest = await read();
     await page.mouse.down();
     await expect(card).toHaveAttribute('data-press-state', 'pressed');
+    await expect.poll(async () => (await read()).progress).toBeGreaterThanOrEqual(.999);
+    const held = await read();
+    const downTrace = (await card.getAttribute('data-press-down-trace'))!.split(',').map(Number);
+    expect(downTrace[0]).toBe(0);
+    expect(downTrace.at(-1)).toBe(1);
+    expect(downTrace.some(value => value > 0 && value < 1)).toBe(true);
+    expect(downTrace.every((value, index) => index === 0 || value >= downTrace[index - 1]!)).toBe(true);
+    expect(held.shadow).toBeLessThan(rest.shadow);
+    expect(held.scale).toBeLessThan(rest.scale);
+    expect(held.y).toBeGreaterThan(rest.y);
+    expect(held.shimmer).toBeGreaterThan(rest.shimmer);
+    expect(held.tiltX).toBe(rest.tiltX);
+    expect(held.tiltY).toBe(rest.tiltY);
     await page.mouse.up();
     await expect(card).toHaveAttribute('data-press-state', 'rest');
-    await expect(card).toHaveCSS('--lab-press-y', '0px');
-    await expect(card).toHaveCSS('--lab-press-scale', '1');
-    expect(await card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-tilt-x').trim())).toBe(orientation.x);
-    expect(await card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-tilt-y').trim())).toBe(orientation.y);
+    const settled = await read();
+    const releaseTrace = (await card.getAttribute('data-press-release-trace'))!.split(',').map(Number);
+    expect(releaseTrace[0]).toBe(1);
+    expect(releaseTrace.at(-1)).toBe(0);
+    expect(releaseTrace.some(value => value > 0 && value < 1)).toBe(true);
+    expect(releaseTrace.every((value, index) => index === 0 || value <= releaseTrace[index - 1]!)).toBe(true);
+    expect(settled.progress).toBe(0);
+    expect(settled.shadow).toBeCloseTo(rest.shadow, 2);
+    expect(settled.shimmer).toBeCloseTo(rest.shimmer, 2);
+    expect(settled.tiltX).toBe(rest.tiltX);
+    expect(settled.tiltY).toBe(rest.tiltY);
+  });
+
+  test('handles interrupted repeated and cancelled presses from current progress', async ({ page }) => {
+    await page.locator('[aria-label="Motion policy"]').getByRole('button', { name: 'Full' }).click();
+    const card = page.locator('.press-card');
+    await card.scrollIntoViewIfNeeded();
+    const box = await card.boundingBox();
+    const progress = () => card.evaluate(element => Number((element as HTMLElement).dataset['pressProgress']));
+    await page.mouse.move(box!.x + box!.width * .7, box!.y + box!.height * .35);
+    const early = await card.evaluate(element => new Promise<number>(resolve => {
+      element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7 }));
+      window.setTimeout(() => {
+        const value = Number((element as HTMLElement).dataset['pressProgress']);
+        element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 }));
+        resolve(value);
+      }, 35);
+    }));
+    expect(early).toBeGreaterThan(0); expect(early).toBeLessThan(1);
+    const partialRelease = await card.evaluate(element => new Promise<number>(resolve => window.setTimeout(() => {
+      const value = Number((element as HTMLElement).dataset['pressProgress']);
+      element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 8 }));
+      resolve(value);
+    }, 25)));
+    expect(partialRelease).toBeGreaterThan(0); expect(partialRelease).toBeLessThan(early);
+    await expect.poll(progress).toBeGreaterThanOrEqual(.999);
+    await card.dispatchEvent('pointerup', { pointerId: 8 });
+    await expect.poll(progress).toBe(0);
+    await page.mouse.down();
+    await page.waitForTimeout(40);
+    await card.dispatchEvent('pointercancel', { pointerId: 1 });
+    await expect.poll(progress).toBe(0);
+    await page.mouse.up();
+    await card.hover({ position: { x: box!.width * .7, y: box!.height * .35 } });
+    await page.mouse.down();
+    await expect.poll(progress).toBeGreaterThan(.8);
+    await page.mouse.move(box!.x + box!.width + 80, box!.y);
+    await expect.poll(progress).toBe(0);
+    await page.mouse.up();
+  });
+
+  test('carries current pressure into flip without a neutral frame', async ({ page }) => {
+    const card = page.locator('.press-card');
     await page.getByRole('button', { name: 'Press + flip' }).click();
     await expect(card).toHaveAttribute('data-face', 'answer');
     await expect(card).toHaveAttribute('data-press-state', 'rest');
+    expect(Number(await card.getAttribute('data-flip-pressure-start'))).toBeGreaterThan(.9);
+    expect(Number(await card.getAttribute('data-face-switch-pressure'))).toBeGreaterThan(0);
+    await expect(card).toHaveAttribute('data-press-progress', '0.000');
   });
 
   test('runs deterministic rarity reveal phases with reduced alternative', async ({ page }) => {

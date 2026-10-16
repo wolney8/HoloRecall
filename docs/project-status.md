@@ -1,5 +1,12 @@
 # Current restart point
 
+## 16 October 2026 — Visual Effects Lab v5 awaiting manual approval
+
+- **Light material:** Light-mode Common retains the clean card and broad glare only. Holo Rare now has a visible 0.31 saturated interference film plus stronger angle-linked shimmer; Ultra Rare has an explicit 0.44 multilayer film and deeper live refraction. All three retain the same card structure and content.
+- **Pressure model:** the press pop came from adding/removing a boolean-state intensity boost before the separate GSAP depth/shadow animation. One continuous 0–1 pressure proxy now drives depth, scale, shadow compression, shimmer width and the small material boost through the shared surface renderer while pointer tilt remains authoritative.
+- **Interaction continuity:** press-down uses a 100–140 ms interpolation and release uses a 180–260 ms non-overshooting return from current progress. Early release, repeated press, pointer cancel/exit and press-to-turn retain current pressure; turn switches faces at the hidden edge without a neutral frame.
+- **Boundary and evidence:** clue/peel, earned reveal, Prestige, rating, Answer signature, pronunciation, micro-answer and every production surface remain unchanged. Unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/WebKit **34/34**; production build passes. Manual visual and physical-device judgement remain pending.
+
 ## 16 October 2026 — Visual Effects Lab v4 awaiting final visual approval
 
 - **Holo material:** Holo Rare and Ultra Rare now have a static, seamless, theme-aware interference film at rest. Common has no equivalent layer. The same substrate blends into the existing angle-linked shimmer, so Light and Dark change simulated environmental response without changing collectible identity.

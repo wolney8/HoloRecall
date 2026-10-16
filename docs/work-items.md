@@ -8,7 +8,20 @@ Updated: 16 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-04
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-05
+
+Authorised 16 October 2026. This lab-only correction strengthens Light-mode rarity material and removes the discrete press-state visual transition before production integration is considered.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-05A | Light-mode material identity | VERIFY | Make Common, Holo Rare and Ultra Rare immediately distinguishable through explicit resting interference and angle-linked shimmer while preserving one underlying card design. |
+| HR-VISUAL-EFFECTS-LAB-05B | Continuous pressure model | VERIFY | One normalized `pressProgress` value drives depth, scale, shadow, material strength and shimmer width without state-toggle pops or tilt reset. |
+| HR-VISUAL-EFFECTS-LAB-05C | Interrupted handling and turn | VERIFY | Animate early release, repeated press, pointer cancel/exit and press-to-turn from current progress without a neutral frame. |
+| HR-VISUAL-EFFECTS-LAB-05D | Prototype isolation and verification | VERIFY | Keep all production and other approved lab prototypes unchanged; verify unit/domain, focused Chromium/WebKit and production build. |
+
+Implementation evidence: Light-mode Holo Rare now uses a 0.31 saturated interference substrate and stronger live angle response; Ultra Rare uses an explicit 0.44 multilayer substrate and deeper live refraction, while Common retains no static film. The press path no longer reads a boolean pressed state for visual values: GSAP animates one 0–1 pressure proxy and the shared surface renderer derives depth, scale, shadow, shimmer width and intensity from it. Frame traces cover continuous down/release interpolation, early release, repeated press, cancel/exit and non-neutral press-to-turn ownership. Unit/domain passes **271** with three opt-in package suites skipped; focused Chromium/WebKit passes **34/34**; production builds. Effects Lab v5 awaits manual approval; production remains unchanged.
+
+## Previous prototype milestone — HR-VISUAL-EFFECTS-LAB-04
 
 Authorised 16 October 2026. This final lab-only pass refines rarity material, rigid handling, earned reveal and micro-answer scale before user approval.
 
