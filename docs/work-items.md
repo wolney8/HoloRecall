@@ -1,6 +1,6 @@
 # Canonical work-item tracker
 
-Updated: 15 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 16 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
@@ -8,7 +8,21 @@ Updated: 15 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-03
+## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-04
+
+Authorised 16 October 2026. This final lab-only pass refines rarity material, rigid handling, earned reveal and micro-answer scale before user approval.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-LAB-04A | Resting Holo material | VERIFY | Distinguish Common, Holo Rare and Ultra Rare in Light/Dark/System through a static theme-aware interference substrate that blends into live angle-linked shimmer. |
+| HR-VISUAL-EFFECTS-LAB-04B | Continuous rigid handling | VERIFY | Preserve surface orientation while press depth, scale and shadow compress and return through a non-overshooting settle; keep press-to-turn continuous. |
+| HR-VISUAL-EFFECTS-LAB-04C | Resolved earned reveal | VERIFY | Switch content at the hidden turn midpoint, fade the revealed surface in, then scale deterministic card-local facets by rarity. |
+| HR-VISUAL-EFFECTS-LAB-04D | Micro-answer preview | VERIFY | Preview a subject-neutral, one-line, four-grapheme-or-fewer answer band without changing production answer sizing. |
+| HR-VISUAL-EFFECTS-LAB-04E | Prototype isolation and verification | VERIFY | Keep production learner surfaces unchanged; verify unit/domain, focused Chromium/WebKit, responsive overflow, lifecycle cleanup and production build. |
+
+Implementation evidence: a CSS-only static interference film distinguishes Holo Rare and Ultra Rare at rest while the shared pointer state continues to drive ambient glare and live shimmer. Press shadow is now an animated surface variable rather than an immediate state-rule swap, and release uses a non-overshooting ease without resetting X/Y tilt. The earned reveal swaps at its hidden midpoint, resolves the face over 240 ms, then emits **2 / 5 / 9 / 14** deterministic facets for Common / Rare / Holo Rare / Ultra Rare; Reduced Motion and Effects Off suppress the fanfare. `Intl.Segmenter` classifies the `L’`, `CE` and `x=4` lab samples as micro answers. Unit/domain passes **271** with three opt-in suites skipped; focused Chromium/WebKit passes **30/30**; production builds. Effects Lab v4 awaits final manual visual approval; production remains unchanged.
+
+## Previous prototype milestone — HR-VISUAL-EFFECTS-LAB-03
 
 Authorised 15 October 2026. This final prototype pass refines the approved interaction language before any production integration.
 

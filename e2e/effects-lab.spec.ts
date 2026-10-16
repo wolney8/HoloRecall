@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.describe('Visual Effects Lab v3', () => {
+test.describe('Visual Effects Lab v4', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/#effects-lab');
     await expect(page.getByRole('heading', { name: 'Visual Effects Lab' })).toBeVisible();
@@ -120,22 +120,48 @@ test.describe('Visual Effects Lab v3', () => {
     }
     await page.locator('[aria-label="Card face"]').getByRole('button', { name: 'Answer' }).click();
     await expect(card).toHaveAttribute('data-signature', 'answer-halo');
-    const background = await page.locator('.answer-halo').evaluate(element => getComputedStyle(element).backgroundImage);
+    const background = await card.locator('.answer-halo').evaluate(element => getComputedStyle(element).backgroundImage);
     expect(background).toContain('radial-gradient');
     expect(background).not.toContain('linear-gradient');
   });
 
-  test('demonstrates press release and pressure-to-flip', async ({ page }) => {
+  test('distinguishes resting Common Holo and Ultra material in Light and Dark', async ({ page }) => {
+    const appearance = page.locator('[aria-label="Appearance"]');
+    const common = page.locator('.material-swatch[data-rarity="common"] .surface-substrate');
+    const holo = page.locator('.material-swatch[data-rarity="holo-rare"] .surface-substrate');
+    const ultra = page.locator('.material-swatch[data-rarity="ultra-rare"] .surface-substrate');
+    await appearance.getByRole('button', { name: 'Light' }).click();
+    const light = await Promise.all([common, holo, ultra].map(layer => layer.evaluate(element => Number(getComputedStyle(element).opacity))));
+    expect(light[0]).toBe(0);
+    expect(light[1]).toBeGreaterThan(0);
+    expect(light[2]).toBeGreaterThan(light[1]!);
+    expect(await holo.evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('multiply');
+    await appearance.getByRole('button', { name: 'Dark' }).click();
+    await expect(page.locator('.theme-stage')).toHaveAttribute('data-preview-theme', 'dark');
+    await expect.poll(() => holo.evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('screen');
+    expect(Number(await holo.evaluate(element => getComputedStyle(element).opacity))).toBeGreaterThan(0);
+  });
+
+  test('preserves surface orientation through damped press release and pressure-to-flip', async ({ page }) => {
     const card = page.locator('.press-card');
     await expect(card).toHaveAttribute('data-surface-model', 'shared');
+    await expect(card).toHaveAttribute('data-release-model', 'critically-damped');
     await card.scrollIntoViewIfNeeded();
     const box = await card.boundingBox();
     await page.mouse.move(box!.x + box!.width * .8, box!.y + box!.height * .3);
     await expect.poll(() => card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-shimmer-strength').trim())).not.toBe('0.000');
+    const orientation = await card.evaluate(element => ({
+      x: getComputedStyle(element).getPropertyValue('--lab-tilt-x').trim(),
+      y: getComputedStyle(element).getPropertyValue('--lab-tilt-y').trim(),
+    }));
     await page.mouse.down();
     await expect(card).toHaveAttribute('data-press-state', 'pressed');
     await page.mouse.up();
     await expect(card).toHaveAttribute('data-press-state', 'rest');
+    await expect(card).toHaveCSS('--lab-press-y', '0px');
+    await expect(card).toHaveCSS('--lab-press-scale', '1');
+    expect(await card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-tilt-x').trim())).toBe(orientation.x);
+    expect(await card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-tilt-y').trim())).toBe(orientation.y);
     await page.getByRole('button', { name: 'Press + flip' }).click();
     await expect(card).toHaveAttribute('data-face', 'answer');
     await expect(card).toHaveAttribute('data-press-state', 'rest');
@@ -143,21 +169,33 @@ test.describe('Visual Effects Lab v3', () => {
 
   test('runs deterministic rarity reveal phases with reduced alternative', async ({ page }) => {
     const card = page.locator('.unlock-card');
-    await page.locator('[aria-label="Unlock rarity"]').getByRole('button', { name: 'Ultra Rare' }).click();
-    await page.getByRole('button', { name: 'Reveal earned card' }).click();
+    const rarityControls = page.locator('[aria-label="Unlock rarity"]');
+    for (const [rarity, fragments] of [['Common', '2'], ['Rare', '5'], ['Holo Rare', '9'], ['Ultra Rare', '14']] as const) {
+      await rarityControls.getByRole('button', { name: rarity, exact: true }).click();
+      await page.getByRole('button', { name: 'Reveal earned card' }).click();
+      await expect(card).toHaveAttribute('data-fragment-count', fragments);
+      if (rarity !== 'Ultra Rare') await page.locator('.unlock-section').getByRole('button', { name: 'Reset', exact: true }).click();
+    }
     await expect(card).toHaveAttribute('data-phase', 'settled');
     await expect(card).toHaveAttribute('data-reward-metaphor', 'earned-card');
     await expect(card).toHaveAttribute('data-timeline-mode', 'coordinated');
-    await expect(card).toHaveAttribute('data-phase-trace', 'idle>rise>edge>tilt>flip>bloom>digital>settled');
+    await expect(card).toHaveAttribute('data-face-swap-angle', '90');
+    await expect(card).toHaveAttribute('data-fanfare-after-face', 'true');
+    await expect(card).toHaveAttribute('data-phase-trace', 'idle>rise>edge>tilt>flip>resolve>bloom>digital>settled');
+    await expect(card).toHaveAttribute('data-event-order', 'back>midpoint>face-resolved>fanfare>settled');
+    await expect(card).toHaveAttribute('data-face-state', 'visible');
+    await expect(card.locator('.unlock-revealed-content')).toHaveCSS('opacity', '1');
     await expect(page.locator('.unlock-stage')).not.toContainText(/pack|wrapper/i);
     await expect(page.locator('.unlock-stage [class*="pack"], .unlock-stage [class*="wrapper"]')).toHaveCount(0);
     const box = await card.boundingBox();
     await card.hover({ position: { x: box!.width * .78, y: box!.height * .25 } });
     await expect.poll(() => card.evaluate(element => getComputedStyle(element).getPropertyValue('--lab-shimmer-strength').trim())).not.toBe('0.000');
+    await page.locator('.unlock-section').getByRole('button', { name: 'Reset', exact: true }).click();
     await page.locator('[aria-label="Motion policy"]').getByRole('button', { name: 'Reduced' }).click();
     await page.getByRole('button', { name: 'Reveal earned card' }).click();
     await expect(card).toHaveAttribute('data-reduced-motion', 'true');
     await expect(card).toHaveAttribute('data-phase', 'settled');
+    await expect(card).toHaveAttribute('data-fragment-count', '0');
   });
 
   test('keeps Prestige promotion separate from unlock', async ({ page }) => {
@@ -187,9 +225,20 @@ test.describe('Visual Effects Lab v3', () => {
     await expect(grid).toHaveAttribute('data-fragment-count', '0');
   });
 
-  test('retains approved pronunciation semantics and cleans up on destroy', async ({ page }) => {
+  test('classifies Unicode micro answers and retains approved pronunciation semantics', async ({ page }) => {
+    const section = page.locator('.micro-section');
+    await expect(section).toHaveAttribute('data-unicode-grapheme-probe', '1');
+    for (const [answer, count] of [['L’', '2'], ['CE', '2'], ['x=4', '3']] as const) {
+      const card = page.locator('.micro-answer-card').filter({ has: page.locator('strong', { hasText: answer }) });
+      await expect(card).toHaveAttribute('data-answer-band', 'micro');
+      await expect(card).toHaveAttribute('data-graphemes', count);
+      expect(parseFloat(await card.locator('strong').evaluate(element => getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(62);
+    }
     await expect(page.locator('[data-secondary-kind="pronunciation"] .sample-secondary')).toHaveText('“l”');
     await expect(page.locator('[data-secondary-kind="generic"] .sample-secondary')).toHaveText('Used before a vowel');
+  });
+
+  test('cleans GSAP activity up when the lab is destroyed', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.getByRole('button', { name: 'Press + flip' }).click();
@@ -206,7 +255,7 @@ test.describe('Visual Effects Lab v3', () => {
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
       await expect(page.getByRole('heading', { name: 'Pennant, sticker and layered peel' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Approved semantic distinction' })).toBeAttached();
+      await expect(page.getByRole('heading', { name: 'Potential micro-answer scale' })).toBeAttached();
     }
   });
 });

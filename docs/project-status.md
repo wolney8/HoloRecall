@@ -1,5 +1,13 @@
 # Current restart point
 
+## 16 October 2026 — Visual Effects Lab v4 awaiting final visual approval
+
+- **Holo material:** Holo Rare and Ultra Rare now have a static, seamless, theme-aware interference film at rest. Common has no equivalent layer. The same substrate blends into the existing angle-linked shimmer, so Light and Dark change simulated environmental response without changing collectible identity.
+- **Rigid handling:** the visible release jolt came from an overshooting `back.out` tween plus an immediate pressed-state shadow-rule removal. Press depth, scale and shadow now interpolate together with a non-overshooting settle while X/Y surface orientation remains authoritative.
+- **Earned reveal:** content switches only at the hidden turn midpoint, the revealed surface resolves over 240 ms, and the main card-local fanfare follows that resolution. Deterministic fragment counts are Common 2, Rare 5, Holo Rare 9 and Ultra Rare 14; rating feedback remains smaller. Reduced Motion and Effects Off suppress decorative excess.
+- **Micro answer:** the lab previews a subject-neutral `micro` answer band for one-line answers of at most four Unicode grapheme clusters. `L’`, `CE` and `x=4` receive the enlarged preview; approved quoted pronunciation remains subordinate. Production answer sizing is unchanged.
+- **Evidence and boundary:** unit/domain **271 passed, 3 opt-in suites skipped**; focused Chromium/WebKit **30/30**; responsive overflow and GSAP cleanup checks pass; production build passes. Production Study, Results, Collection, Settings, shared effects and learner state remain unchanged. Manual visual approval and physical touch/material judgement remain pending before `HR-VISUAL-EFFECTS-INTEGRATION-01`.
+
 ## 15 October 2026 — Visual Effects Lab v3 awaiting approval
 
 - **Clue material:** simulated timer completion visibly unfurls the approved pennant. The full pennant → sticker → peel → immediate pennant-return cycle remains available. A two-pixel front/underside geometry bleed, common coordinate system and shadow-below-material order remove the dark fold seam without removing depth.
