@@ -22,7 +22,7 @@ test('HR-UX-01 overlays span the card face above surfaces and below readable con
   }
   const motion = page.locator('.inspection-card .card-motion');
   await motion.hover({ position: { x: 250, y: 220 } });
-  await expect.poll(() => motion.evaluate(node => (node as HTMLElement).style.getPropertyValue('--px'))).not.toBe('');
+  await expect.poll(() => motion.evaluate(node => (node as HTMLElement).style.getPropertyValue('--ambient-x'))).not.toBe('');
   await motion.click();
   await expect(motion).toHaveAttribute('aria-label', 'Show card front');
   await page.screenshot({ path: testInfo.outputPath('collection-system-dark-effects.png'), fullPage: true });

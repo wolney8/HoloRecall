@@ -17,7 +17,7 @@ type ObserverBucket = {
 @Injectable({ providedIn: 'root' })
 export class ViewportRevealService {
   readonly reducedMotion = signal(matchMedia('(prefers-reduced-motion: reduce)').matches);
-  readonly enabled = computed(() => this.store.data()?.preferences.effects !== false && !this.reducedMotion());
+  readonly enabled = computed(() => {const motion=this.store.data()?.preferences.motion??'system';return motion==='full'||(motion==='system'&&!this.reducedMotion());});
   private readonly buckets = new Map<Element | null, ObserverBucket>();
   private readonly active = new Map<HTMLElement, Animation>();
   private readonly registered = new Set<HTMLElement>();

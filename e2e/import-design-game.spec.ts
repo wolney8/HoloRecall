@@ -148,7 +148,10 @@ test('HR-DESIGN-16 keeps printed surfaces coherent and learning copy dominant ac
   await expect(preview.getByRole('heading',{name:'Retrieval strengthens memory'})).toBeVisible();
   await page.locator('mat-button-toggle').filter({hasText:'Dark'}).click(); await expect(preview).toHaveAttribute('data-theme-preview','dark'); await expect(preview.getByRole('heading',{name:'Retrieval strengthens memory'})).toBeVisible();
   await page.emulateMedia({reducedMotion:'reduce'});
-  await expect(preview.locator('.effects-layer')).toHaveCSS('display','none');
+  await expect(preview.locator('..').locator('..')).toHaveAttribute('data-motion','reduced');
+  await expect(preview.locator('.effects-layer')).toHaveCSS('display','block');
+  await expect(preview.locator('.surface-ambient')).toHaveCSS('display','none');
+  await expect(preview.locator('.surface-substrate')).toBeVisible();
   await page.screenshot({path:testInfo.outputPath('printed-surface-reduced-motion.png'),fullPage:true});
 });
 

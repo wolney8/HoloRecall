@@ -64,7 +64,7 @@ export function migrateState(input: unknown, bundledCards: CardContent[] = []): 
     raw['schemaVersion']=9;
   }
   if(raw['schemaVersion']===9){raw['schemaVersion']=10;raw['ankiConversionProfiles']=[];}
-  if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true,studyMode:'mastery', ...(raw['preferences'] as Record<string, unknown>) };
+  if (raw['preferences'] && typeof raw['preferences'] === 'object') raw['preferences'] = { haptics: true,motion:'system',studyMode:'mastery', ...(raw['preferences'] as Record<string, unknown>) };
   validateState(raw);
   return raw;
 }

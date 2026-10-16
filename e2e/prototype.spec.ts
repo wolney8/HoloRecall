@@ -95,7 +95,7 @@ test('collection explicitly previews seven tiers and effects preference persists
   await motion.evaluate(element => element.scrollIntoView({behavior:'instant',block:'center'}));
   await expect(motion).toHaveClass(/motion-enabled/);
   await motion.hover({ position: { x: 25, y: 30 } });
-  await expect.poll(() => motion.evaluate(element => (element as HTMLElement).style.getPropertyValue('--px'))).not.toBe('');
+  await expect.poll(() => motion.evaluate(element => (element as HTMLElement).style.getPropertyValue('--ambient-x'))).not.toBe('');
   expect((await snapshot(page)).events).toEqual([]);
   expect((await snapshot(page)).rewardEvents).toEqual([]);
   await navigate(page, 'Settings');
@@ -108,7 +108,7 @@ test('collection explicitly previews seven tiers and effects preference persists
   expect((await snapshot(page)).preferences.effects).toBe(false);
 });
 
-test('mobile layout and reduced motion suppress shimmer, reveal and pointer animations', async ({ page }) => {
+test('mobile layout and reduced motion suppress spatial motion while retaining static material identity', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 }); await page.emulateMedia({ reducedMotion: 'reduce' });
   await openApp(page); await expectNoOverflow(page);
   await page.getByRole('button', { name: /Start studying/ }).click(); await expectNoOverflow(page);
@@ -117,9 +117,10 @@ test('mobile layout and reduced motion suppress shimmer, reveal and pointer anim
   expect(await page.locator('.card-turn').evaluate(element => element.getAnimations().length)).toBe(0);
   await expectNoOverflow(page); await navigate(page, 'Collection');
   await page.locator('.sample-button[data-rarity="holo-rare"]').click();
-  await expect(page.locator('.inspection-card .memory-card')).not.toHaveClass(/effects/);
+  await expect(page.locator('.inspection-card .memory-card')).toHaveClass(/effects/);
   await page.locator('.inspection-card .card-motion').hover({ position: { x: 25, y: 30 } });
-  expect(await page.locator('.inspection-card .card-motion').evaluate(element => (element as HTMLElement).style.getPropertyValue('--px'))).toBe('');
+  const reducedSurface=await page.locator('.inspection-card .card-motion').evaluate(element=>({tiltX:getComputedStyle(element).getPropertyValue('--tilt-x').trim(),tiltY:getComputedStyle(element).getPropertyValue('--tilt-y').trim(),shimmer:getComputedStyle(element).getPropertyValue('--shimmer-strength').trim()}));
+  expect(reducedSurface.tiltX).toBe('0.00deg');expect(reducedSurface.tiltY).toBe('0.00deg');expect(Number(reducedSurface.shimmer)).toBeGreaterThanOrEqual(0);
   await expectNoOverflow(page); await navigate(page, 'Decks'); await expectNoOverflow(page);
 });
 

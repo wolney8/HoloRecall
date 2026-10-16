@@ -109,7 +109,7 @@ test('HR-UX-12 stable filtering, focus, theme changes and backgrounding do not r
   expect(await heading.evaluate(element => element.getAnimations().length)).toBe(0);
 });
 
-test('HR-UX-12 reduced motion and disabled effects settle every block immediately', async ({ page }) => {
+test('HR-UX-12 reduced Motion settles blocks independently of Card effects', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openApp(page);
   await navigate(page, 'Collection');
@@ -120,6 +120,7 @@ test('HR-UX-12 reduced motion and disabled effects settle every block immediatel
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await navigate(page, 'Settings');
   await page.getByRole('switch', { name: 'Card effects' }).click();
+  await page.locator('mat-button-toggle-group[aria-labelledby=settings-motion-label]').getByRole('radio',{name:'Reduced'}).click();
   await expect(page.locator('.hr-reveal[data-reveal-state="waiting"],.hr-reveal[data-reveal-state="active"]')).toHaveCount(0);
   await navigate(page, 'Progress');
   await expect(page.locator('hr-progress .hr-reveal[data-reveal-state="settled"]')).not.toHaveCount(0);

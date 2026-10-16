@@ -3,6 +3,7 @@ import type { Card as FsrsCard, FSRSParameters, Grade } from 'ts-fsrs';
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'holo-rare' | 'ultra-rare' | 'secret-rare' | 'relic';
 export type FinishPreset = 'matte' | 'gloss' | 'metallic' | 'holographic' | 'reverse-holo' | 'prismatic' | 'etched' | 'textured-foil' | 'starfield' | 'shattered-glass' | 'crystal' | 'gilded' | 'neon-ink' | 'obsidian' | 'aurora';
 export type ThemePreference = 'light' | 'dark' | 'system';
+export type MotionPreference = 'system' | 'full' | 'reduced';
 export type SubjectPresentationProfile = 'general' | 'language';
 export type ArtworkRole = 'instructional' | 'supportive' | 'decorative' | 'hidden';
 export type StudyArtPolicy = 'auto' | 'image-first' | 'text-first';
@@ -185,6 +186,8 @@ export interface AnkiDeckSource {
 export type ConfidenceRating = 1 | 2 | 3 | 4 | 5;
 export interface Preferences {
   effects: boolean;
+  /** Animation intensity. Omitted in older snapshots means follow the operating system. */
+  motion?: MotionPreference;
   /** Native tactile feedback. Omitted in older snapshots means enabled. */
   haptics?: boolean;
   theme?: ThemePreference;

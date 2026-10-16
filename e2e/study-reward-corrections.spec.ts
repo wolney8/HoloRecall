@@ -44,7 +44,7 @@ test('HR-UX-14 accepted feedback retains the rated card before the next deal', a
   const rating = page.getByRole('button', { name: /4 Good Confident/ });
   await rating.click();
   await expect.poll(async () => (await snapshot(page)).events.length).toBe(1);
-  await expect(page.locator('.confidence-feedback[data-rating="4"]')).toBeVisible();
+  await expect(page.locator('.study-card-area .rating-facets.rating-4 i')).toHaveCount(4);await expect(page.locator('.confidence-feedback')).toHaveCount(0);
   await expect(answer).toContainText(original!.trim());
   await expect(rating).toBeDisabled();
   await page.waitForTimeout(500);
@@ -63,7 +63,7 @@ test('HR-UX-14 last-card feedback completes before Results and reduced motion se
   await page.getByRole('button', { name: /Start studying/ }).click();
   await page.getByRole('button', { name: /Check answer/ }).click();
   await page.getByRole('button', { name: /5 Easy Effortless/ }).click();
-  await expect(page.locator('.confidence-feedback[data-rating="5"]')).toBeVisible();
+  await expect(page.locator('.study-card-area .rating-facets.rating-5 i')).toHaveCount(6);await expect(page.locator('.confidence-feedback')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible({ timeout: 4_000 });
   const persisted = await snapshot(page);
@@ -92,7 +92,7 @@ test('HR-UX-15 real unlock waits for completed progress and Results stay present
   await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'waiting');
   await expect.poll(() => page.locator('.result-bar i').first().evaluate(node => getComputedStyle(node).width), { timeout: 2_000 }).not.toBe('0px');
   await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 3_000 });
-  expect(await page.evaluate(()=>(window as unknown as {__unlockPhases:string[]}).__unlockPhases)).toEqual(expect.arrayContaining(['waiting','complete','pack','revealed']));
+  expect(await page.evaluate(()=>(window as unknown as {__unlockPhases:string[]}).__unlockPhases)).toEqual(expect.arrayContaining(['waiting','complete','rise','turn','revealed']));
   const bar = page.locator('.result-bar').first();
   const fill = page.locator('.result-bar i').first();
   expect(Math.abs((await fill.boundingBox())!.width - (await bar.boundingBox())!.width)).toBeLessThan(2);

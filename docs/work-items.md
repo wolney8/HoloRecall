@@ -1497,3 +1497,11 @@ The detailed acceptance evidence for these items remains in `docs/project-status
 | HR-IMPORT-01 / 01A–C | Bounded Anki import, worker, audio and mapping | DONE for documented compatibility subset | `anki-import.md`; implementation `52e60f7`, acceptance `3c1246b`, handoff `d5d0c89`. |
 | HR-COM-01 | Non-enforcing entitlement seam | DONE | Development policy tests and architecture decision; no payment enforcement. |
 | HR-PLAN-01 | Capability matrix | DONE | Capability matrix in `product-brief.md`; this milestone was its accepted next recommendation. |
+
+## HR-VISUAL-EFFECTS-INTEGRATION-01 — production collectible interaction system
+
+| ID | Area | Status |
+| --- | --- | --- |
+| HR-VISUAL-EFFECTS-INTEGRATION-01 | Shared material, handling, clue, answer, rating, unlock, Prestige and motion-preference integration | IMPLEMENTED — verified except explicitly unavailable exact-package and physical-device checks |
+
+Durable scope: production cards use surface-linked theme-aware material, continuous pressure, resolved Answer signature, rendered-width adaptive short answers, semantic pronunciation, layered GSAP clues, card-local rating feedback, deterministic earned-card reveal and distinct Prestige stamping. Motion System/Full/Reduced remains separate from Card Effects. Anki semantics, scheduler and reward rules are unchanged.

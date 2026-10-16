@@ -46,27 +46,20 @@ test('HR-UX-09 all five accepted ratings show distinct save-gated feedback once'
     (window as unknown as { __feedbackAdds: number }).__feedbackAdds = 0;
     new MutationObserver(records => {
       for (const record of records) for (const node of record.addedNodes) {
-        if (node instanceof HTMLElement && (node.matches('.confidence-feedback') || node.querySelector('.confidence-feedback'))) (window as unknown as { __feedbackAdds: number }).__feedbackAdds++;
+        if (node instanceof HTMLElement && (node.matches('.rating-facets') || node.querySelector('.rating-facets'))) (window as unknown as { __feedbackAdds: number }).__feedbackAdds++;
       }
     }).observe(document.querySelector('.app-shell')!, { childList: true, subtree: true });
   });
-  const signatures = new Set<string>();
+  const expectedFragments=[0,0,2,4,6];
   for (const rating of [1, 2, 3, 4, 5] as const) {
     await page.getByRole('button', { name: /Check answer/ }).click();
     await page.getByRole('button', { name: new RegExp(`^${rating} `) }).click();
-    const feedback = page.locator(`.confidence-feedback[data-rating="${rating}"]`);
+    const feedback = page.locator(`.study-card-area .rating-facets.rating-${rating}`);
     await expect(feedback).toBeVisible();
-    const signature = await page.waitForFunction(value => {
-      const node = document.querySelector(`.confidence-feedback[data-rating="${value}"]`);
-      if (!node) return false;
-      const durations = [...node.querySelectorAll<HTMLElement>('span')].flatMap(item => item.getAnimations().map(animation => (animation.effect as KeyframeEffect).getTiming().duration)).join(',');
-      return durations || false;
-    }, rating).then(handle => handle.jsonValue() as Promise<string>);
-    expect(signature).not.toBe('');
-    signatures.add(signature);
+    await expect(feedback.locator('i')).toHaveCount(expectedFragments[rating-1]!);
+    await expect(page.locator('.confidence-feedback')).toHaveCount(0);
     await page.waitForTimeout(780);
   }
-  expect(signatures.size).toBe(5);
   expect((await snapshot(page)).events.filter(event => event.kind === 'review')).toHaveLength(5);
   expect(await page.evaluate(() => (window as unknown as { __feedbackAdds: number }).__feedbackAdds)).toBe(5);
 });
@@ -163,7 +156,7 @@ test('HR-UX-10 positive cosmetic gain visibly grows from its real starting balan
   expect(Math.abs(during!.y - before!.y)).toBeLessThanOrEqual(.5);
   await page.waitForTimeout(650);
   await page.getByRole('button', { name: /4 Good Confident/ }).click();
-  await expect(page.locator('.confidence-feedback[data-rating="4"]')).toBeVisible();
+  await expect(page.locator('.study-card-area .rating-facets.rating-4 i')).toHaveCount(4);
   const progress = page.locator('[data-result-section="cosmetics"]');
   await expect(progress).toHaveClass(/motion-waiting/);
   await page.waitForTimeout(950);

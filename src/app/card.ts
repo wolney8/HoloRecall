@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, inject, signal } from '@angular/core';
-import type { CardContent, DesignSet, FinishPreset, Rarity } from '../domain/models';
+import type { CardContent, DesignSet, FinishPreset, MotionPreference, Rarity } from '../domain/models';
+import { gsap } from 'gsap';
 import type { ResolvedCardPresentation } from '../domain/card-presentation';
 import { RARITIES } from '../domain/rewards';
 import { AppLifecycle } from './platform/app-lifecycle';
@@ -7,6 +8,7 @@ import { LocalStudyStore } from './data/study-store';
 import {ImportedCardContentComponent} from './imported-card-content';
 import { visibleOcclusionShapes } from '../domain/image-occlusion';
 import { cardCapabilities, type CardCapability } from '../domain/card-capabilities';
+import { adaptiveShortCandidate, reducedMotion, surfaceVariables } from './card-effects';
 
 /** Kept only to read the first prototype's four presentation names. Content uses Rarity. */
 export type Treatment = 'matte' | 'foil' | 'holo' | 'relic';
@@ -17,18 +19,18 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
   standalone: true,
   imports:[ImportedCardContentComponent],
   template: `
-    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable" [class.face-motion-active]="inspectionUnavailable"
+    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable" [class.face-motion-active]="inspectionUnavailable" [attr.data-motion]="motionReduced?'reduced':'full'"
       [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? (inspectionUnavailable ? -1 : 0) : (inspectionUnavailable ? -1 : null)" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
       [attr.aria-label]="flippable ? (displayedRevealed() ? 'Show card front' : 'Show card answer') : null"
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
-      (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="settle()" (pointerup)="settle()" (pointercancel)="settle()">
+      (pointerenter)="cacheSurfaceBounds()" (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="leaveTilt($event)" (pointerup)="settle()" (pointercancel)="settle()">
       <div #turn class="card-turn">
-        <article class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [attr.data-face]="displayedRevealed() ? 'answer' : 'recall'" [attr.data-answer-size]="answerSize" [class.answer-first]="answerFirstHierarchy" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="animated()" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="(displayedRevealed() ? 'Answer face, ' : 'Recall face, ') + rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
+        <article #cardSurface class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [attr.data-face]="displayedRevealed() ? 'answer' : 'recall'" [attr.data-answer-size]="answerSize" [class.answer-first]="answerFirstHierarchy" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="effects" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="(displayedRevealed() ? 'Answer face, ' : 'Recall face, ') + rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
             @if (backgroundUrl && !failedBackground()) { <img [src]="backgroundUrl" [style.object-fit]="design?.backgroundFit || 'cover'" [style.object-position]="(design?.backgroundPositionX ?? 50) + '% ' + (design?.backgroundPositionY ?? 50) + '%'" alt="" (error)="failedBackground.set(true)"> }
           </div>
           <div class="frame-layer" aria-hidden="true">@if (frameUrl && !failedFrame()) { <img [src]="frameUrl" [style.object-fit]="design?.frameFit || 'contain'" alt="" (error)="failedFrame.set(true)"> }</div>
-          <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="card-gleam"></i><i class="foil-sweep"></i><i class="edge-light"></i><i class="particles">· ✧ ·</i></div>
+          <div class="effects-layer" aria-hidden="true">@if(resolvedTexture){<img class="finish-texture" [src]="resolvedTexture" alt="">}<i class="surface-substrate"></i><i class="surface-ambient"></i><i class="surface-graze"></i><i class="surface-shimmer"></i><i class="edge-light"></i>@if(feedbackRating){<span class="rating-facets rating-{{feedbackRating}}">@for(fragment of feedbackFragments;track fragment){<i></i>}</span>}</div>
           <div class="face-signature" aria-hidden="true"></div>
           @if(prestigeLevel){<span class="prestige-crest" [attr.aria-label]="'Prestige '+prestigeRoman">P {{prestigeRoman}}</span>}
           <header class="card-heading protected"><span class="card-chrome-title">{{ displayedChromeTitle }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
@@ -45,8 +47,8 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
           <div #copy class="card-copy protected" [class.answer]="displayedRevealed()" [class.prompt]="!displayedRevealed()" [attr.tabindex]="scrollable() ? 0 : null" [attr.role]="scrollable() ? 'region' : null" [attr.aria-label]="scrollable() ? 'Card content. Scroll to read all text.' : null">
             @if (displayedRevealed()) {
               @if(card.answerLabel){<span class="answer-label">{{card.answerLabel}}</span>}
-              @if(card.answer){<h3 [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3>}
-              @if (card.secondary || card.pronunciation) { <p class="secondary">{{ card.secondary || card.pronunciation }}</p> }
+              @if(card.answer){<h3 #answerText [attr.lang]="card.deckId === 'italian-essentials' ? 'it' : null" tabindex="-1">{{ card.answer }}</h3><span #answerMeasure class="answer-measure" aria-hidden="true">{{card.answer}}</span>}
+              @if (card.secondary || card.pronunciation) { <p class="secondary" [class.pronunciation]="secondaryIsPronunciation">{{ secondaryIsPronunciation ? '“'+(card.secondary || card.pronunciation)+'”' : (card.secondary || card.pronunciation) }}</p> }
               @if (resolvedPresentation.answerInterpretation && !compact) { <p class="interpretation">{{ resolvedPresentation.answerInterpretation }}</p> }
             } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
           </div>
@@ -55,8 +57,8 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
             <button #cluePennant type="button" class="clue-pennant" [class.below-expand]="hasInspectableImage" (pointerdown)="stopNested($event)" (click)="openStudyClue($event)" aria-label="Need a clue? Show the authored clue" aria-haspopup="true"><span>Need a clue?</span></button>
           }
           @if(studyClue && (studyClueState==='displayed'||studyClueState==='removing') && !displayedRevealed()){
-            <button type="button" class="clue-sticker" [class.removing]="studyClueState==='removing'" [class.long]="studyClue.length>120" [class.extended]="studyClue.length>240" [attr.data-safe-zone]="clueSafeZone" [disabled]="studyClueState==='removing'" [attr.aria-label]="'Clue: '+studyClue+' Remove clue.'" (pointerdown)="stopNested($event)" (keydown)="stopNested($event)" (click)="removeStudyClue($event)" (animationend)="finishStudyClueRemoval($event)">
-              <span class="clue-sheet" aria-hidden="true"></span><span class="clue-peel" aria-hidden="true"></span>
+            <button #clueSticker type="button" class="clue-sticker" [class.removing]="studyClueState==='removing'" [class.long]="studyClue.length>120" [class.extended]="studyClue.length>240" [attr.data-safe-zone]="clueSafeZone" [disabled]="studyClueState==='removing'" [attr.aria-label]="'Clue: '+studyClue+' Remove clue.'" (pointerdown)="stopNested($event)" (keydown)="stopNested($event)" (click)="removeStudyClue($event)">
+              <span #clueFront class="clue-sheet" aria-hidden="true"></span><svg class="clue-peel-geometry" viewBox="0 0 268 148" preserveAspectRatio="none" aria-hidden="true"><polygon #clueShadow class="clue-separation-shadow"></polygon><polygon #clueUnderside class="clue-underside"></polygon></svg>
               <span class="clue-sticker-copy" aria-hidden="true"><span class="clue-sticker-label">Clue</span><span class="clue-sticker-text">{{studyClue}}</span></span>
             </button>
           }
@@ -94,6 +96,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() prestigeLevel=0;
   @Input() treatment?: Treatment;
   @Input() effects = true;
+  @Input() motionPreference:MotionPreference='system';
+  @Input() feedbackRating:1|2|3|4|5|null=null;
   @Input() compact = false;
   @Input() dragTilt = false;
   @Input() flippable = false;
@@ -120,7 +124,15 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() studyClueState:'waiting'|'available'|'displayed'|'removing'='waiting';
   @ViewChild('motion') private motion?: ElementRef<HTMLElement>;
   @ViewChild('turn') private turn?: ElementRef<HTMLElement>;
+  @ViewChild('cardSurface') private cardSurface?:ElementRef<HTMLElement>;
   @ViewChild('copy') private copy?: ElementRef<HTMLElement>;
+  @ViewChild('answerText') private answerText?:ElementRef<HTMLElement>;
+  @ViewChild('answerMeasure') private answerMeasure?:ElementRef<HTMLElement>;
+  @ViewChild('cluePennant') private cluePennant?:ElementRef<HTMLElement>;
+  @ViewChild('clueSticker') private clueSticker?:ElementRef<HTMLElement>;
+  @ViewChild('clueFront') private clueFront?:ElementRef<HTMLElement>;
+  @ViewChild('clueUnderside') private clueUnderside?:ElementRef<SVGPolygonElement>;
+  @ViewChild('clueShadow') private clueShadow?:ElementRef<SVGPolygonElement>;
   readonly scrollable = signal(false);
   readonly displayedRevealed = signal(false);
   private copyResize?: ResizeObserver;
@@ -134,21 +146,28 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   readonly audioError = signal('');
   private observer?: IntersectionObserver;
   private preference?: MediaQueryList;
+  private readonly systemReduced=signal(matchMedia('(prefers-reduced-motion: reduce)').matches);
   private visible = false;
   private animations: Animation[] = [];
   private frame = 0;
+  private fitFrame=0;
   private dragging = false;
   private dragDistance = 0;
   private suppressFlipClick = false;
   private pointerStart?: { x: number; y: number };
   private flipSequence = 0;
   private motionSequence = 0;
+  private surfaceRect?:DOMRect;private readonly surfaceState={x:0,y:0,press:0};private surfaceTween?:gsap.core.Tween;private pressTween?:gsap.core.Tween;
+  private clueTween?:gsap.core.Tween;private pennantTween?:gsap.core.Tween;private readonly clueProxy={value:.18};
   private readonly lifecycle = inject(AppLifecycle);
   private readonly store = inject(LocalStudyStore);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private unsubscribeLifecycle?: () => void;
   private audio?: HTMLAudioElement;
-  private readonly motionChanged = () => { this.updateMotion(); this.settle(); };
+  private readonly motionChanged = () => { window.setTimeout(()=>{this.systemReduced.set(this.preference?.matches??false);this.updateMotion();this.settle();},0); };
+
+  get motionReduced():boolean{return reducedMotion(this.motionPreference,this.systemReduced());}
+  get feedbackFragments():number[]{const count=!this.effects||this.motionReduced?0:this.feedbackRating===5?6:this.feedbackRating===4?4:this.feedbackRating===3?2:0;return Array.from({length:count},(_,index)=>index);}
 
   get shownRarity(): Rarity { return this.rarity ?? (this.treatment ? ({ matte: 'common', foil: 'uncommon', holo: 'holo-rare', relic: 'relic' } as const)[this.treatment] : this.card?.rarity ?? 'common'); }
   get shownFinish(): FinishPreset { const designFinish=this.design?.rarityVariants?.[this.shownRarity]?.finish??this.design?.finishes?.[this.shownRarity]??this.design?.finish;return (this.demo?designFinish??this.card?.finish:this.card?.finish??designFinish) ?? ({ common: 'matte', uncommon: 'metallic', rare: 'etched', 'holo-rare': 'holographic', 'ultra-rare': 'prismatic', 'secret-rare': 'starfield', relic: 'gilded' } as const)[this.shownRarity]; }
@@ -171,7 +190,8 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   get chromeTitle():string{return this.resolvedPresentation.chromeTitle?.trim()??'';}
   get answerFirstHierarchy():boolean{const answer=this.card?.answer?.trim()??'',lines=answer.split(/\n+/).filter(Boolean);return!this.demo&&!!answer&&!this.card?.imageOcclusion&&!this.card?.image&&!this.card?.backImage&&answer.length<=160&&lines.length<=4;}
   get displayedChromeTitle():string{if(this.displayedRevealed()&&this.answerFirstHierarchy&&this.card?.art?.kind==='source-visual-panel'){const title=this.card.art.title.trim();if(title&&title.length<=64&&title.localeCompare(this.card.answer.trim(),undefined,{sensitivity:'base'})!==0&&title.localeCompare(this.card.front.trim(),undefined,{sensitivity:'base'})!==0)return title;}return this.chromeTitle;}
-  get answerSize():string{const length=this.card?.answer?.trim().length??0;return length<=18?'short':length<=70?'medium':'long';}
+  get answerSize():string{const answer=this.card?.answer?.trim()??'';if(!this.card?.imageOcclusion&&adaptiveShortCandidate(answer))return'adaptive-short';return answer.length<=18?'short':answer.length<=70?'medium':'long';}
+  get secondaryIsPronunciation():boolean{const cue=(this.card?.secondary||this.card?.pronunciation||'').trim(),pronunciation=this.card?.pronunciation?.trim();if(pronunciation&&cue===pronunciation)return true;return !!this.card?.ankiSource?.contentProvenance?.blocks?.some(block=>block.classification==='secondary-cue'&&/pronunciation|phonetic|sound/i.test(block.sourceField??block.source));}
   capabilityLabel(capability:CardCapability):string{return({'image-occlusion':'Image Occlusion',cloze:'Cloze',clue:'Clue',audio:'Audio',choices:'Choices'} as const)[capability];}
   capabilitySymbol(capability:CardCapability):string{return({'image-occlusion':'▧',cloze:'[…]',clue:'?',audio:'♪',choices:'≡'} as const)[capability];}
   get hideStudyArt():boolean{return this.resolvedPresentation.artRole==='hidden'||!this.displayedRevealed()&&this.resolvedPresentation.effectiveArtPolicy==='text-first';}
@@ -208,8 +228,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   requestInspection(event:Event):void{event.preventDefault();event.stopPropagation();if(this.inspectionUnavailable)return;this.inspectImage.emit({revealed:this.displayedRevealed(),opener:event.currentTarget as HTMLElement});}
   stopNested(event:Event):void{event.stopPropagation();}
   openStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='available'||this.displayedRevealed())return;this.studyClueOpen.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-sticker')?.focus({preventScroll:true}));}
-  removeStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='displayed')return;this.studyClueRemove.emit();if(matchMedia('(prefers-reduced-motion: reduce)').matches||!!this.host.nativeElement.closest('.effects-off'))requestAnimationFrame(()=>{if(this.studyClueState==='removing')this.completeStudyClueRemoval();});}
-  finishStudyClueRemoval(event:AnimationEvent):void{if(this.studyClueState!=='removing'||event.target!==event.currentTarget)return;this.completeStudyClueRemoval();}
+  removeStudyClue(event:Event):void{event.preventDefault();event.stopPropagation();if(this.studyClueState!=='displayed')return;this.studyClueRemove.emit();}
   private completeStudyClueRemoval():void{this.studyClueRemovalSettled.emit();requestAnimationFrame(()=>this.host.nativeElement.querySelector<HTMLElement>('.clue-pennant')?.focus({preventScroll:true}));}
   get occlusionWidth():number{return this.card?.imageOcclusion?.imageWidth??1000;}
   get occlusionHeight():number{return this.card?.imageOcclusion?.imageHeight??1000;}
@@ -223,18 +242,21 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngAfterViewInit(): void {
     this.preference = matchMedia('(prefers-reduced-motion: reduce)');
     this.preference.addEventListener('change', this.motionChanged);
+    if(this.preference.matches!==this.systemReduced())this.motionChanged();
     this.unsubscribeLifecycle = this.lifecycle.subscribe(active => { this.updateMotion(); if (!active) { this.settle(); this.stopAudio(); } });
     this.observer = new IntersectionObserver(entries => { this.visible = !!entries[0]?.isIntersecting; this.updateMotion(); }, { threshold: 0.1 });
     if (this.motion) this.observer.observe(this.motion.nativeElement);
     if (this.copy) {
       const content = this.copy.nativeElement;
-      const measure = () => this.scrollable.set(content.scrollHeight > content.clientHeight + 1);
+      const measure = () => {this.scrollable.set(content.scrollHeight > content.clientHeight + 1);this.scheduleAnswerFit();};
       this.copyResize = new ResizeObserver(measure);
       this.copyMutation = new MutationObserver(measure);
       this.copyResize.observe(content);
       this.copyMutation.observe(content, { childList: true, subtree: true, characterData: true });
     }
     queueMicrotask(()=>this.motionChange.emit(false));
+    this.renderSurface();this.scheduleAnswerFit();
+    void document.fonts?.ready.then(()=>this.scheduleAnswerFit());
     this.queueAutoplay();
   }
   ngOnChanges(changes: SimpleChanges): void {
@@ -257,13 +279,17 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (changes['backgroundUrl'] || changes['design']) this.failedBackground.set(false);
     if (changes['frameUrl'] || changes['design']) this.failedFrame.set(false);
     this.updateMotion();
+    if(changes['card']||changes['revealed'])queueMicrotask(()=>this.scheduleAnswerFit());
+    if(changes['studyClueState']&&!changes['studyClueState'].firstChange){const state=changes['studyClueState'].currentValue;requestAnimationFrame(()=>{if(state==='available')this.animatePennant();else if(state==='displayed'){this.clueProxy.value=.18;this.renderCluePeel(.18);}else if(state==='removing')this.animateClueRemoval();});}
     if (changes['card'] && !changes['card'].firstChange && changes['card'].previousValue?.id !== this.card.id) {
       queueMicrotask(() => this.animate('deal'));
     } else if (changes['revealed'] && !changes['revealed'].firstChange) queueMicrotask(() => void this.animateFlip(this.revealed));
   }
   private updateMotion(): void {
-    const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const enabled = this.effects && this.visible && this.lifecycle.active() && !reduced;
+    // A transformed edge can briefly cross an IntersectionObserver threshold in
+    // WebKit. An active pointer owns the surface until pointerup/cancel so that
+    // visibility sampling cannot reset tilt or pressure mid-gesture.
+    const enabled = (this.visible||!!this.pointerStart) && this.lifecycle.active() && !this.motionReduced;
     this.animated.set(enabled);
     if (!enabled) { this.animations.forEach(animation => animation.cancel()); this.animations = []; this.displayedRevealed.set(this.revealed); this.finishMotion(++this.motionSequence); this.settle(); }
   }
@@ -327,34 +353,44 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   beginTilt(event: PointerEvent): void {
     this.pointerStart = { x: event.clientX, y: event.clientY };
     this.dragDistance = 0;
+    this.surfaceRect=this.motion?.nativeElement.getBoundingClientRect();
+    if(this.animated()&&event.isPrimary){try{(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);}catch{/* Pointer capture is unavailable for synthetic/non-active pointers. */}}
+    this.pressTween?.kill();this.surfaceTween?.kill();
+    if(this.animated()){this.pressTween=gsap.to(this.surfaceState,{press:1,duration:.13,ease:'power1.out',onUpdate:()=>this.renderSurface()});}
     if (event.pointerType === 'touch' && this.dragTilt && this.animated()) this.dragging = true;
   }
+  cacheSurfaceBounds():void{this.surfaceRect=this.motion?.nativeElement.getBoundingClientRect();}
+  leaveTilt(event:PointerEvent):void{if(this.pointerStart||(event.currentTarget as HTMLElement).hasPointerCapture(event.pointerId))return;this.settle();}
   tilt(event: PointerEvent): void {
     if (this.pointerStart) this.dragDistance = Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y);
     if (!this.animated() || (event.pointerType === 'touch' && !this.dragging) || !this.motion) return;
-    const target = this.motion.nativeElement;
-    const bounds = target.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+    const bounds=this.surfaceRect??this.motion.nativeElement.getBoundingClientRect();this.surfaceRect=bounds;if(!bounds.width||!bounds.height)return;
+    const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / bounds.width*2-1));
+    const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / bounds.height*2-1));
     cancelAnimationFrame(this.frame);
     this.frame = requestAnimationFrame(() => {
-      target.style.setProperty('--tilt-x', `${(0.5 - y) * 7}deg`);
-      target.style.setProperty('--tilt-y', `${(x - 0.5) * 8}deg`);
-      target.style.setProperty('--lift', '-4px');
-      target.style.setProperty('--px', `${x * 100}%`);
-      target.style.setProperty('--py', `${y * 100}%`);
+      this.surfaceState.x=x;this.surfaceState.y=y;this.renderSurface();
     });
   }
   settle(): void {
     this.dragging = false;
     this.suppressFlipClick = this.dragDistance > 8;
-    cancelAnimationFrame(this.frame);
+    cancelAnimationFrame(this.frame);this.pressTween?.kill();this.surfaceTween?.kill();
     if (!this.motion) return;
-    for (const name of ['--tilt-x', '--tilt-y', '--lift', '--px', '--py']) this.motion.nativeElement.style.removeProperty(name);
+    if(this.motionReduced){this.surfaceState.x=0;this.surfaceState.y=0;this.surfaceState.press=0;this.renderSurface();}else this.surfaceTween=gsap.to(this.surfaceState,{x:0,y:0,press:0,duration:.24,ease:'power2.out',onUpdate:()=>this.renderSurface()});
     this.pointerStart = undefined;
+    this.surfaceRect=undefined;
     this.dragDistance = 0;
     if (this.suppressFlipClick) setTimeout(() => { this.suppressFlipClick = false; }, 0);
   }
+  private renderSurface():void{const element=this.motion?.nativeElement;if(!element)return;for(const[name,value]of Object.entries(surfaceVariables(this.surfaceState,this.shownRarity,this.effects,this.motionReduced)))element.style.setProperty(name,value);element.dataset['pressProgress']=this.surfaceState.press.toFixed(3);}
+  private scheduleAnswerFit():void{if(this.fitFrame)return;this.fitFrame=requestAnimationFrame(()=>{this.fitFrame=0;this.fitAdaptiveAnswer();});}
+  private fitAdaptiveAnswer():void{const answer=this.answerText?.nativeElement,measure=this.answerMeasure?.nativeElement,surface=this.cardSurface?.nativeElement,copy=this.copy?.nativeElement;if(!answer||!measure||!surface||!copy||this.answerSize!=='adaptive-short'||!this.displayedRevealed())return;const safeWidth=copy.clientWidth*.74,safeHeight=Math.min(104,copy.clientHeight*.42),min=44,max=92;const fits=(size:number)=>{measure.style.fontSize=`${size}px`;const rect=measure.getBoundingClientRect();return rect.width<=safeWidth&&rect.height<=safeHeight;};let size=max,fallback=false;if(!fits(min)){size=38;fallback=true;}else if(!fits(max)){let low=min,high=max;for(let step=0;step<9;step++){const candidate=(low+high)/2;if(fits(candidate))low=candidate;else high=candidate;}size=Math.floor(low*100)/100;}answer.style.setProperty('--adaptive-answer-size',`${size}px`);surface.dataset['adaptiveFit']=fallback?'fallback':'fitted';surface.dataset['adaptiveSize']=size.toFixed(2);surface.dataset['adaptiveSafeWidth']=safeWidth.toFixed(2);}
+  private animatePennant():void{const pennant=this.cluePennant?.nativeElement;if(!pennant)return;this.pennantTween?.kill();this.pennantTween=this.motionReduced?gsap.fromTo(pennant,{opacity:0},{opacity:1,duration:.14,clearProps:'opacity'}):gsap.fromTo(pennant,{scaleX:.1,skewX:-8,opacity:.45},{scaleX:1,skewX:0,opacity:1,duration:.34,ease:'back.out(1.3)',clearProps:'transform,opacity'});}
+  private animateClueRemoval():void{const sticker=this.clueSticker?.nativeElement;if(!sticker)return;this.clueTween?.kill();if(this.motionReduced){this.clueTween=gsap.to(sticker,{opacity:0,duration:.14,ease:'power1.out',onComplete:()=>this.completeStudyClueRemoval()});return;}this.clueTween=gsap.to(this.clueProxy,{value:1,duration:.52,ease:'power2.inOut',onUpdate:()=>this.renderCluePeel(this.clueProxy.value),onComplete:()=>{this.renderCluePeel(1);this.completeStudyClueRemoval();}});}
+  private renderCluePeel(progress:number):void{const value=Math.max(0,Math.min(1,progress)),width=268,height=148,boundary=width-value*(width+height),overlap=2,front=this.clipPeel(boundary+overlap,false),back=this.clipPeel(boundary-overlap,true);if(this.clueFront){this.clueFront.nativeElement.style.clipPath=front.length>=3?`polygon(${front.map(point=>`${(point.x/width*100).toFixed(2)}% ${(point.y/height*100).toFixed(2)}%`).join(',')})`:'polygon(0 0,0 0,0 0)';this.clueFront.nativeElement.style.opacity=value>=.985?'0':'1';}if(this.clueUnderside){this.clueUnderside.nativeElement.setAttribute('points',back.map(point=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' '));const depth=7+value*29;this.clueUnderside.nativeElement.style.transform=`translate(${-depth*.24}px,${depth*.32}px) rotate(${4+value*17}deg) scale(${(1-value*.08).toFixed(3)})`;this.clueUnderside.nativeElement.style.opacity=String(value>=.96?Math.max(0,(1-value)/.04):Math.min(1,.45+value*2));}const intersections=this.peelIntersections(boundary);if(this.clueShadow&&intersections.length===2){const[a,b]=intersections,depth=7+value*29;this.clueShadow.nativeElement.setAttribute('points',`${a!.x},${a!.y} ${b!.x},${b!.y} ${b!.x-depth*.2},${b!.y+depth*.22} ${a!.x-depth*.2},${a!.y+depth*.22}`);this.clueShadow.nativeElement.style.opacity=String(Math.min(.3,.08+value*.28));}const sticker=this.clueSticker?.nativeElement;if(sticker&&!this.motionReduced){const release=Math.max(0,(value-.78)/.22);sticker.style.transform=`perspective(700px) translate3d(${release*40}px,${-release*32}px,${release*52}px) rotate(${-1.4+release*8}deg) rotateY(${release*12}deg)`;sticker.style.opacity=String(1-Math.max(0,(value-.9)/.1));}sticker?.setAttribute('data-peel-progress',value.toFixed(3));}
+  private clipPeel(boundary:number,inverse:boolean):Array<{x:number;y:number}>{const width=268,height=148,input=[{x:0,y:0},{x:width,y:0},{x:width,y:height},{x:0,y:height}],inside=(point:{x:number;y:number})=>inverse?point.x-point.y>=boundary:point.x-point.y<=boundary,output:Array<{x:number;y:number}>=[];for(let index=0;index<input.length;index++){const current=input[index]!,previous=input[(index+input.length-1)%input.length]!,currentInside=inside(current),previousInside=inside(previous);if(currentInside!==previousInside){const dx=current.x-previous.x,dy=current.y-previous.y,denominator=dx-dy;if(Math.abs(denominator)>.0001){const t=(boundary-(previous.x-previous.y))/denominator;output.push({x:previous.x+dx*t,y:previous.y+dy*t});}}if(currentInside)output.push(current);}return output;}
+  private peelIntersections(boundary:number):Array<{x:number;y:number}>{const width=268,height=148,points:Array<{x:number;y:number}>=[];if(boundary>=0&&boundary<=width)points.push({x:boundary,y:0});const rightY=width-boundary;if(rightY>=0&&rightY<=height)points.push({x:width,y:rightY});const bottomX=boundary+height;if(bottomX>=0&&bottomX<=width)points.push({x:bottomX,y:height});const leftY=-boundary;if(leftY>=0&&leftY<=height)points.push({x:0,y:leftY});return points.slice(0,2);}
   async toggleAudio(ref: string, event: Event): Promise<void> {
     event.stopPropagation(); this.audioError.set('');
     if (this.playingAudio() === ref) { this.stopAudio(); return; }
@@ -371,6 +407,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @HostListener('stop-card-audio') stopAudioForAcceptedAction():void{if(this.stopAudioOnAction)this.stopAudio();}
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
+    cancelAnimationFrame(this.fitFrame);this.surfaceTween?.kill();this.pressTween?.kill();this.clueTween?.kill();this.pennantTween?.kill();
     this.observer?.disconnect();
     this.copyResize?.disconnect();
     this.copyMutation?.disconnect();

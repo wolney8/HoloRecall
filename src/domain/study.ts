@@ -33,7 +33,7 @@ export function createInitialState(decks: Deck[], cards: CardContent[]): State {
     events: [],
     designs: [], assets: [], rewardEvents: [], rewardConfig: { ...DEFAULT_REWARD_CONFIG }, session: null, ankiMappings: [], ankiConversionProfiles:[], ankiSources: [],
     studyPresets:cloneBuiltInPresets(),todayOverrides:[],cardControls:{},administrativeEvents:[],practiceEvents:[],focusPresets:[],
-    preferences: { effects: true, haptics: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100, studyMode: 'mastery' },
+    preferences: { effects: true, motion: 'system', haptics: true, theme: 'system', timeZone: 'Europe/London', newCardLimit: 10, reviewLimit: 100, studyMode: 'mastery' },
     scheduler: { version: SCHEDULER_VERSION, configVersion: CONFIG_VERSION, parameters: structuredClone(SCHEDULER_PARAMETERS) },
   };
 }

@@ -21,6 +21,7 @@ export function validatePreferences(value: unknown): asserts value is Preference
   const prefs = object(value);
   if (typeof prefs['effects'] !== 'boolean' || !text(prefs['timeZone'], 100) || !integer(prefs['newCardLimit']) || prefs['newCardLimit'] > 1000 || !integer(prefs['reviewLimit'], 1) || prefs['reviewLimit'] > 10000) fail('invalid study preferences.');
   if (prefs['haptics'] !== undefined && typeof prefs['haptics'] !== 'boolean') fail('invalid haptics preference.');
+  if (prefs['motion'] !== undefined && !['system', 'full', 'reduced'].includes(String(prefs['motion']))) fail('invalid motion preference.');
   if (prefs['theme'] !== undefined && !['system', 'light', 'dark'].includes(String(prefs['theme']))) fail('invalid theme preference.');
   if (prefs['studyMode'] !== undefined && !['anki','mastery','free-revision'].includes(String(prefs['studyMode']))) fail('invalid Study mode preference.');
   try { new Intl.DateTimeFormat('en', { timeZone: prefs['timeZone'] as string }).format(); } catch { fail('unknown time zone.'); }
