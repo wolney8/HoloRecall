@@ -1,12 +1,24 @@
 # Canonical work-item tracker
 
-Updated: 16 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 17 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Active corrective milestone — HR-VISUAL-EFFECTS-INTEGRATION-02
+
+Authorised 17 October 2026. This production correction is limited to Study transform-overflow stability and the Answer face's material signature.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-VISUAL-EFFECTS-INTEGRATION-02A | Stable Study 3D paint envelope | VERIFY | Contain transformed card/shadow paint within a padded Study-only viewport while preserving tilt, attached controls, deliberate card-content scrolling and normal page scrolling. |
+| HR-VISUAL-EFFECTS-INTEGRATION-02B | Non-geometric Answer surface | VERIFY | Replace the ring and four-point bloom with diffuse material atmosphere that remains subordinate to text and visual answers in Light, Dark, System and Effects Off. |
+| HR-VISUAL-EFFECTS-INTEGRATION-02C | Focused cross-platform evidence | VERIFY | Prove exact page scroll geometry during extreme tilt, retained paint clearance, unchanged adaptive answer/pronunciation, browser profiles, production build and relevant native smoke. |
+
+Implementation evidence: exact document width, height and scroll position remain unchanged across five extreme tilt positions in Chromium and desktop WebKit; the transformed card retains at least 32 px measured clearance inside a 48 px desktop / 40 px compact paint envelope. Relevant card, clue, Answer and responsive browser coverage passes **27/27**, with the final focused integration matrix **9/9**. Unit/domain passes **274** with three opt-in suites skipped; production build and Capacitor iOS sync pass. Packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each.
 
 ## Active prototype milestone — HR-VISUAL-EFFECTS-LAB-06
 

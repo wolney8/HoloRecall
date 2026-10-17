@@ -6,7 +6,7 @@ async function mutateState(page:Parameters<typeof openApp>[0],mutate:(state:Stat
 }
 
 async function seedEffectsCard(page:Parameters<typeof openApp>[0]):Promise<void>{
-  await mutateState(page,state=>{state.preferences.effects=true;state.preferences.motion='full';const card=state.cards[0]!;card.kind='text';card.front='Name this compact answer';card.answer='L’';card.secondary='l';card.pronunciation='l';card.image=undefined;card.backImage=undefined;card.art=undefined;card.rarity='holo-rare';card.presentation={...(card.presentation??{}),title:'SHORT ANSWER',artRole:'hidden',studyArtPolicy:'text-first'};card.revision+=1;});
+  await mutateState(page,state=>{state.preferences.effects=true;state.preferences.motion='full';const card=state.cards[0]!;card.kind='text';card.front='Name this compact answer';card.answer='E';card.secondary='EH';card.pronunciation='EH';card.image=undefined;card.backImage=undefined;card.art=undefined;card.rarity='holo-rare';card.presentation={...(card.presentation??{}),title:'SHORT ANSWER',artRole:'hidden',studyArtPolicy:'text-first'};card.revision+=1;});
   await page.reload();await expect(page.getByRole('heading',{name:'Study dashboard',exact:true})).toBeVisible();
 }
 
@@ -19,11 +19,22 @@ test('production card uses continuous surface pressure and theme-aware Holo mate
   await expect.poll(()=>motion.evaluate(element=>Number((element as HTMLElement).dataset['pressProgress']))).toBeGreaterThan(.95);const held=await motion.evaluate(element=>({tilt:getComputedStyle(element).getPropertyValue('--tilt-y').trim(),leave:element.getAttribute('data-test-leave'),up:element.getAttribute('data-test-up'),cancel:element.getAttribute('data-test-cancel'),motion:element.getAttribute('data-motion')}));expect(held.tilt,JSON.stringify(held)).not.toBe('0.00deg');await motion.dispatchEvent('pointerup',{pointerId:7,isPrimary:true,pointerType:'mouse'});await expect.poll(()=>motion.evaluate(element=>Number((element as HTMLElement).dataset['pressProgress']))).toBeLessThan(.05);
 });
 
+test('Study contains 3D card paint without changing document scroll geometry',async({page})=>{
+  await page.setViewportSize({width:1024,height:768});await openApp(page);await seedEffectsCard(page);await page.getByRole('button',{name:/Start studying/}).click();await page.getByRole('button',{name:'Check answer'}).click();await expect(page.locator('.study-answer-support')).toBeVisible();
+  const viewport=page.locator('.study-card-viewport'),motion=viewport.locator('.card-motion');await expect(viewport).toHaveCSS('overflow-x','clip');await expect(viewport).toHaveCSS('overflow-y','clip');const envelope=await viewport.evaluate(element=>Number.parseFloat(getComputedStyle(element).paddingLeft));expect(envelope).toBeGreaterThanOrEqual(40);
+  await page.evaluate(()=>window.scrollTo(0,Math.min(120,document.documentElement.scrollHeight-innerHeight)));await page.waitForTimeout(50);
+  const metrics=()=>page.evaluate(()=>({height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,y:window.scrollY,clientWidth:document.documentElement.clientWidth}));const before=await metrics(),box=await viewport.boundingBox();expect(box).not.toBeNull();
+  const positions=[[.04,.04],[.96,.04],[.96,.96],[.04,.96],[.5,.5]] as const;
+  for(const [x,y] of positions){await page.mouse.move(box!.x+box!.width*x,box!.y+box!.height*y);await page.waitForTimeout(45);const current=await metrics();expect(current).toEqual(before);const painted=await motion.boundingBox();const clearance=Math.min(painted!.x-box!.x,painted!.y-box!.y,box!.x+box!.width-painted!.x-painted!.width,box!.y+box!.height-painted!.y-painted!.height);expect(clearance).toBeGreaterThanOrEqual(32);}
+  expect(before.width).toBeLessThanOrEqual(before.clientWidth);
+});
+
 test('adaptive short answer fits real glyphs and quotes only semantic pronunciation @ios-compact @ios-large @ios-landscape',async({page})=>{
   await openApp(page);await seedEffectsCard(page);await page.getByRole('button',{name:/Start studying/}).click();await page.locator('.study-card-area .card-motion').click();
-  const card=page.locator('.study-card-area .memory-card'),answer=card.locator('.card-copy.answer h3');await expect(card).toHaveAttribute('data-answer-size','adaptive-short');await expect(card).toHaveAttribute('data-adaptive-fit','fitted');await expect(answer).toHaveText('L’');await expect(card.locator('.secondary.pronunciation')).toHaveText('“l”');
+  const card=page.locator('.study-card-area .memory-card'),answer=card.locator('.card-copy.answer h3');await expect(card).toHaveAttribute('data-answer-size','adaptive-short');await expect(card).toHaveAttribute('data-adaptive-fit','fitted');await expect(answer).toHaveText('E');await expect(card.locator('.secondary.pronunciation')).toHaveText('“EH”');
   const geometry=await answer.evaluate(element=>{const box=element.getBoundingClientRect(),copy=element.parentElement!.getBoundingClientRect();return{answerWidth:box.width,copyWidth:copy.width,nowrap:getComputedStyle(element).whiteSpace,size:parseFloat(getComputedStyle(element).fontSize)};});expect(geometry.nowrap).toBe('nowrap');expect(geometry.answerWidth).toBeLessThanOrEqual(geometry.copyWidth*.75);expect(geometry.size).toBeGreaterThanOrEqual(44);
-  const signature=card.locator('.face-signature');const background=await signature.evaluate(element=>getComputedStyle(element).backgroundImage);expect(background).toContain('radial-gradient');expect(background).not.toContain('linear-gradient');
+  const signature=card.locator('.face-signature');const surface=await signature.evaluate(element=>{const style=getComputedStyle(element),after=getComputedStyle(element,'::after');return{background:style.backgroundImage,clip:style.clipPath,afterContent:after.content,afterBackground:after.backgroundImage};});expect(surface.background).toContain('radial-gradient');expect(surface.background).not.toContain('circle at 50% 50%');expect(surface.clip).toBe('none');expect(surface.afterContent).toBe('none');expect(surface.afterBackground).toBe('none');
+  for(const theme of ['light','dark','system']){await page.locator('html').evaluate((element,value)=>element.setAttribute('data-theme',value),theme);const themed=await signature.evaluate(element=>({background:getComputedStyle(element).backgroundImage,after:getComputedStyle(element,'::after').content}));expect(themed.background).not.toContain('circle at 50% 50%');expect(themed.after).toBe('none');}await card.evaluate(element=>element.classList.remove('effects'));await expect(answer).toHaveText('E');await expect(card.locator('.secondary.pronunciation')).toHaveText('“EH”');
 });
 
 test('Motion System, Full and Reduced persist independently from Card effects',async({page})=>{

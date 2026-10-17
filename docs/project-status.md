@@ -1,5 +1,11 @@
 # Current restart point
 
+## 17 October 2026 — Study overflow and Answer surface correction
+
+- **Study containment:** the shared 3D card previously painted directly into page overflow, so its rotating outer corners and shadow could change document scroll bounds. Study now gives the transformed deck a fixed, padded, clipped paint envelope while leaving shortcut guidance and normal page scrolling outside it.
+- **Answer material:** the former low-opacity circular ring and central four-point pseudo-element still read as a target behind concise answers. Answer now uses a broad, open-ended luminance/tone wash with no closed ring or central icon; Image Occlusion receives a further restrained treatment.
+- **Evidence:** Chromium and desktop WebKit retain exact document width, height and scroll position through five tilt extremes, with at least 32 px transformed-card clearance. Relevant card/clue/Answer/responsive coverage passes **27/27** and the final integration matrix passes **9/9**; unit/domain passes **274** with three opt-in suites skipped; production build and iOS sync pass. Clean iPhone 17 Pro and iPad Pro 11-inch (M5) packaged Study/navigation smokes pass **1/1** each. Import, surface lighting, pressure, fitting, pronunciation, clue, rating, reveal, Prestige, motion, scheduling and learner-state behavior are unchanged.
+
 ## 16 October 2026 — Visual Effects Lab v6 awaiting manual approval
 
 - **Adaptive sizing:** the former `micro` preview used one fixed scale for every answer with at most four grapheme clusters, so rendered glyph width was ignored. The lab now treats grapheme count only as adaptive-short eligibility and measures the actual Roboto glyph run before assigning its size.

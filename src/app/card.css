@@ -149,9 +149,10 @@
 @media(prefers-color-scheme:light){:host-context([data-theme=system]) .memory-card.effects[data-rarity=holo-rare] .surface-substrate{opacity:.31;mix-blend-mode:multiply;filter:saturate(1.55) blur(7px)}:host-context([data-theme=system]) .memory-card.effects[data-rarity=ultra-rare] .surface-substrate{opacity:.44;mix-blend-mode:multiply;filter:saturate(1.7) blur(6px)}}
 .memory-card.effects[data-rarity=common] .surface-shimmer{opacity:0}.memory-card.effects[data-rarity=holo-rare] .surface-shimmer,.memory-card.effects[data-rarity=ultra-rare] .surface-shimmer,.memory-card.effects[data-rarity=secret-rare] .surface-shimmer,.memory-card.effects[data-rarity=relic] .surface-shimmer{opacity:var(--shimmer-strength,0)}
 
-/* Answer resolves the Recall echo with a quiet halo and four-point bloom. */
-.memory-card[data-face=answer] .face-signature{clip-path:none;-webkit-mask:none;mask:none;background:radial-gradient(circle at 50% 50%,currentColor 0 1%,transparent 1.5% 10%,currentColor 10.5% 11.2%,transparent 12% 100%);background-size:100% 100%;opacity:.055}
-.memory-card[data-face=answer] .face-signature::after{content:'';position:absolute;left:50%;top:50%;width:28%;aspect-ratio:1;translate:-50% -50%;background:currentColor;clip-path:polygon(50% 0,56% 42%,100% 50%,56% 58%,50% 100%,44% 58%,0 50%,44% 42%);opacity:.28;filter:blur(.4px)}
+/* Answer resolves the Recall echo as diffuse material atmosphere, without a
+   central watermark object competing with the learned answer. */
+.memory-card[data-face=answer] .face-signature{inset:4%;clip-path:none;-webkit-mask:none;mask:none;background:radial-gradient(ellipse 135% 90% at 50% 48%,color-mix(in srgb,currentColor 4%,transparent) 0 18%,transparent 72%),linear-gradient(155deg,transparent 7%,color-mix(in srgb,currentColor 2.5%,transparent) 46%,transparent 91%);background-size:100% 100%;opacity:1}
+.memory-card[data-face=answer] .face-signature::after{content:none}.memory-card.image-occlusion-card[data-face=answer] .face-signature{opacity:.35}
 
 /* Adaptive short answers use real glyph measurement; the secondary hierarchy
    remains stable and independent of the fitted primary size. */
