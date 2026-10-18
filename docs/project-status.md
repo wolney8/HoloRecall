@@ -1,5 +1,11 @@
 # Current restart point
 
+## 18 October 2026 — Study surface motion and concise Answer fit polished
+
+- **Surface continuity:** raw pointer coordinates previously replaced the rendered X/Y state on each frame, while exit and pointer release used separate reset paths. Study now damps one rendered surface state toward pointer targets and neutral, so tilt, glare and shimmer enter, track and settle together while continuous pressure retains the current orientation.
+- **Answer fitting:** ordinary short answers previously bypassed glyph fitting, inherited `overflow-wrap:anywhere`, and could be top-aligned once the copy became scrollable. Short and adaptive-short answers now measure untransformed rendered glyph metrics, prefer one line with a bounded font reduction, wrap only at safe boundaries when possible, and centre the primary answer plus secondary cue as one block.
+- **Evidence:** unit/domain passes **274** with three opt-in suites skipped. Focused Study/Card coverage passes **31/31** across Chromium, desktop WebKit and compact/large/landscape WebKit, including continuous entry/exit samples and a one-line centred `Buongiorno!` with quoted pronunciation. Production build and iOS sync pass; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. The first clean iPhone launch produced an XCTest accessibility-query miss even though its captured hierarchy contained `Study dashboard`; the immediate unchanged rerun completed **1/1**.
+
 ## 17 October 2026 — Study overflow and Answer surface correction
 
 - **Study containment:** the shared 3D card previously painted directly into page overflow, so its rotating outer corners and shadow could change document scroll bounds. Study now gives the transformed deck a fixed, padded, clipped paint envelope while leaving shortcut guidance and normal page scrolling outside it.

@@ -23,7 +23,7 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
       [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? (inspectionUnavailable ? -1 : 0) : (inspectionUnavailable ? -1 : null)" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
       [attr.aria-label]="flippable ? (displayedRevealed() ? 'Show card front' : 'Show card answer') : null"
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
-      (pointerenter)="cacheSurfaceBounds()" (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="leaveTilt($event)" (pointerup)="settle()" (pointercancel)="settle()">
+      (pointerenter)="enterTilt($event)" (pointerdown)="beginTilt($event)" (pointermove)="tilt($event)" (pointerleave)="leaveTilt($event)" (pointerup)="releaseTilt($event)" (pointercancel)="settle()">
       <div #turn class="card-turn">
         <article #cardSurface class="memory-card" [attr.data-rarity]="shownRarity" [attr.data-finish]="shownFinish" [attr.data-prestige]="prestigeLevel || null" [attr.data-prestige-band]="prestigeBand" [attr.data-layout]="design?.layout || 'clean'" [attr.data-composition]="resolvedComposition" [attr.data-art-policy]="resolvedPresentation.effectiveArtPolicy" [attr.data-art-role]="resolvedPresentation.artRole" [attr.data-art-treatment]="artTreatment" [attr.data-art-mask]="design?.artwork?.mask || 'none'" [attr.data-face]="displayedRevealed() ? 'answer' : 'recall'" [attr.data-answer-size]="answerSize" [class.answer-first]="answerFirstHierarchy" [class.full-bleed-art]="design?.artwork?.fullBleed" [class.has-native-art]="hasNativeArt" [class.image-occlusion-card]="!!card.imageOcclusion" [style.--art-hue]="artHue" [style.--art-accent]="artAccent" [style.--design-primary]="design?.palette?.primary" [style.--design-secondary]="design?.palette?.secondary" [style.--design-surface]="design?.palette?.surface" [style.--design-on-surface]="design?.palette?.onSurface" [style.--design-accent]="rarityAccent" [style.--art-tint]="artTint" [style.--art-x.%]="design?.artwork?.focalX ?? 50" [style.--art-y.%]="design?.artwork?.focalY ?? 50" [style.--art-vignette]="artVignette" [style.--art-edge-fade]="artEdgeFade" [style.--art-background-bleed]="artBackgroundBleed" [style.--art-duotone]="artDuotone" [style.--art-texture]="artTexture" [style.--art-emboss]="artEmboss" [style.--art-depth]="artDepth" [class.revealed]="displayedRevealed()" [class.effects]="effects" [attr.data-theme-preview]="themePreview || null" [attr.aria-label]="(displayedRevealed() ? 'Answer face, ' : 'Recall face, ') + rarityLabel + ' ' + finishLabel + (prestigeLevel ? ', Prestige '+prestigeRoman : '') + (demo ? ' design preview' : ' flashcard')">
           <div class="background-layer" aria-hidden="true">
@@ -157,7 +157,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private pointerStart?: { x: number; y: number };
   private flipSequence = 0;
   private motionSequence = 0;
-  private surfaceRect?:DOMRect;private readonly surfaceState={x:0,y:0,press:0};private surfaceTween?:gsap.core.Tween;private pressTween?:gsap.core.Tween;
+  private surfaceRect?:DOMRect;private readonly surfaceState={x:0,y:0,press:0};private readonly surfaceTarget={x:0,y:0};private surfaceFrameTime=0;private surfacePointerInside=false;private pressTween?:gsap.core.Tween;
   private clueTween?:gsap.core.Tween;private pennantTween?:gsap.core.Tween;private readonly clueProxy={value:.18};
   private readonly lifecycle = inject(AppLifecycle);
   private readonly store = inject(LocalStudyStore);
@@ -355,37 +355,52 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.dragDistance = 0;
     this.surfaceRect=this.motion?.nativeElement.getBoundingClientRect();
     if(this.animated()&&event.isPrimary){try{(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);}catch{/* Pointer capture is unavailable for synthetic/non-active pointers. */}}
-    this.pressTween?.kill();this.surfaceTween?.kill();
+    this.pressTween?.kill();
     if(this.animated()){this.pressTween=gsap.to(this.surfaceState,{press:1,duration:.13,ease:'power1.out',onUpdate:()=>this.renderSurface()});}
     if (event.pointerType === 'touch' && this.dragTilt && this.animated()) this.dragging = true;
   }
   cacheSurfaceBounds():void{this.surfaceRect=this.motion?.nativeElement.getBoundingClientRect();}
-  leaveTilt(event:PointerEvent):void{if(this.pointerStart||(event.currentTarget as HTMLElement).hasPointerCapture(event.pointerId))return;this.settle();}
+  enterTilt(event:PointerEvent):void{this.surfacePointerInside=true;this.cacheSurfaceBounds();this.updateSurfaceTarget(event);}
+  leaveTilt(event:PointerEvent):void{this.surfacePointerInside=false;if(this.pointerStart||(event.currentTarget as HTMLElement).hasPointerCapture(event.pointerId))return;this.surfaceTarget.x=0;this.surfaceTarget.y=0;this.startSurfaceSmoothing();}
   tilt(event: PointerEvent): void {
     if (this.pointerStart) this.dragDistance = Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y);
     if (!this.animated() || (event.pointerType === 'touch' && !this.dragging) || !this.motion) return;
     const bounds=this.surfaceRect??this.motion.nativeElement.getBoundingClientRect();this.surfaceRect=bounds;if(!bounds.width||!bounds.height)return;
-    const x = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / bounds.width*2-1));
-    const y = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / bounds.height*2-1));
-    cancelAnimationFrame(this.frame);
-    this.frame = requestAnimationFrame(() => {
-      this.surfaceState.x=x;this.surfaceState.y=y;this.renderSurface();
-    });
+    this.updateSurfaceTarget(event,bounds);
+  }
+  releaseTilt(event:PointerEvent):void{
+    this.dragging=false;this.suppressFlipClick=this.dragDistance>8;this.pointerStart=undefined;
+    const bounds=this.surfaceRect??this.motion?.nativeElement.getBoundingClientRect(),inside=!!bounds&&event.clientX>=bounds.left&&event.clientX<=bounds.right&&event.clientY>=bounds.top&&event.clientY<=bounds.bottom;
+    this.surfacePointerInside=inside;if(inside&&bounds)this.updateSurfaceTarget(event,bounds);else{this.surfaceTarget.x=0;this.surfaceTarget.y=0;this.startSurfaceSmoothing();}
+    this.pressTween?.kill();if(this.motionReduced){this.surfaceState.press=0;this.renderSurface();}else this.pressTween=gsap.to(this.surfaceState,{press:0,duration:.22,ease:'power2.out',onUpdate:()=>this.renderSurface()});
+    this.dragDistance=0;if(this.suppressFlipClick)setTimeout(()=>{this.suppressFlipClick=false;},0);
   }
   settle(): void {
     this.dragging = false;
     this.suppressFlipClick = this.dragDistance > 8;
-    cancelAnimationFrame(this.frame);this.pressTween?.kill();this.surfaceTween?.kill();
+    this.surfacePointerInside=false;this.surfaceTarget.x=0;this.surfaceTarget.y=0;this.pressTween?.kill();
     if (!this.motion) return;
-    if(this.motionReduced){this.surfaceState.x=0;this.surfaceState.y=0;this.surfaceState.press=0;this.renderSurface();}else this.surfaceTween=gsap.to(this.surfaceState,{x:0,y:0,press:0,duration:.24,ease:'power2.out',onUpdate:()=>this.renderSurface()});
+    if(this.motionReduced){cancelAnimationFrame(this.frame);this.frame=0;this.surfaceState.x=0;this.surfaceState.y=0;this.surfaceState.press=0;this.renderSurface();}else{this.startSurfaceSmoothing();this.pressTween=gsap.to(this.surfaceState,{press:0,duration:.22,ease:'power2.out',onUpdate:()=>this.renderSurface()});}
     this.pointerStart = undefined;
-    this.surfaceRect=undefined;
     this.dragDistance = 0;
     if (this.suppressFlipClick) setTimeout(() => { this.suppressFlipClick = false; }, 0);
   }
-  private renderSurface():void{const element=this.motion?.nativeElement;if(!element)return;for(const[name,value]of Object.entries(surfaceVariables(this.surfaceState,this.shownRarity,this.effects,this.motionReduced)))element.style.setProperty(name,value);element.dataset['pressProgress']=this.surfaceState.press.toFixed(3);}
+  private updateSurfaceTarget(event:PointerEvent,bounds=this.surfaceRect):void{if(!bounds?.width||!bounds.height)return;this.surfaceTarget.x=Math.max(-1,Math.min(1,(event.clientX-bounds.left)/bounds.width*2-1));this.surfaceTarget.y=Math.max(-1,Math.min(1,(event.clientY-bounds.top)/bounds.height*2-1));this.startSurfaceSmoothing();}
+  private startSurfaceSmoothing():void{
+    if(this.motionReduced){this.surfaceState.x=0;this.surfaceState.y=0;this.renderSurface();return;}if(this.frame)return;this.surfaceFrameTime=performance.now();
+    const step=(time:number)=>{this.frame=0;const elapsed=Math.min(40,Math.max(1,time-this.surfaceFrameTime));this.surfaceFrameTime=time;const blend=1-Math.exp(-elapsed/72),dx=this.surfaceTarget.x-this.surfaceState.x,dy=this.surfaceTarget.y-this.surfaceState.y;this.surfaceState.x+=dx*blend;this.surfaceState.y+=dy*blend;if(Math.abs(dx)<.001&&Math.abs(dy)<.001){this.surfaceState.x=this.surfaceTarget.x;this.surfaceState.y=this.surfaceTarget.y;}this.renderSurface();if(Math.abs(this.surfaceTarget.x-this.surfaceState.x)>=.001||Math.abs(this.surfaceTarget.y-this.surfaceState.y)>=.001)this.frame=requestAnimationFrame(step);else if(!this.surfacePointerInside)this.surfaceRect=undefined;};
+    this.frame=requestAnimationFrame(step);
+  }
+  private renderSurface():void{const element=this.motion?.nativeElement;if(!element)return;for(const[name,value]of Object.entries(surfaceVariables(this.surfaceState,this.shownRarity,this.effects,this.motionReduced)))element.style.setProperty(name,value);element.dataset['surfaceX']=this.surfaceState.x.toFixed(4);element.dataset['surfaceY']=this.surfaceState.y.toFixed(4);element.dataset['pressProgress']=this.surfaceState.press.toFixed(3);}
   private scheduleAnswerFit():void{if(this.fitFrame)return;this.fitFrame=requestAnimationFrame(()=>{this.fitFrame=0;this.fitAdaptiveAnswer();});}
-  private fitAdaptiveAnswer():void{const answer=this.answerText?.nativeElement,measure=this.answerMeasure?.nativeElement,surface=this.cardSurface?.nativeElement,copy=this.copy?.nativeElement;if(!answer||!measure||!surface||!copy||this.answerSize!=='adaptive-short'||!this.displayedRevealed())return;const safeWidth=copy.clientWidth*.74,safeHeight=Math.min(104,copy.clientHeight*.42),min=44,max=92;const fits=(size:number)=>{measure.style.fontSize=`${size}px`;const rect=measure.getBoundingClientRect();return rect.width<=safeWidth&&rect.height<=safeHeight;};let size=max,fallback=false;if(!fits(min)){size=38;fallback=true;}else if(!fits(max)){let low=min,high=max;for(let step=0;step<9;step++){const candidate=(low+high)/2;if(fits(candidate))low=candidate;else high=candidate;}size=Math.floor(low*100)/100;}answer.style.setProperty('--adaptive-answer-size',`${size}px`);surface.dataset['adaptiveFit']=fallback?'fallback':'fitted';surface.dataset['adaptiveSize']=size.toFixed(2);surface.dataset['adaptiveSafeWidth']=safeWidth.toFixed(2);}
+  private fitAdaptiveAnswer():void{
+    const answer=this.answerText?.nativeElement,measure=this.answerMeasure?.nativeElement,surface=this.cardSurface?.nativeElement,copy=this.copy?.nativeElement;if(!answer||!measure||!surface||!copy)return;
+    answer.style.removeProperty('--answer-fit-size');delete surface.dataset['answerFit'];delete surface.dataset['adaptiveFit'];delete surface.dataset['adaptiveSize'];delete surface.dataset['adaptiveSafeWidth'];if(!this.displayedRevealed()||!['adaptive-short','short'].includes(this.answerSize))return;
+    const adaptive=this.answerSize==='adaptive-short',safeWidth=copy.clientWidth*(adaptive?.74:.82),safeHeight=adaptive?Math.min(104,copy.clientHeight*.42):copy.clientHeight*.55,computed=parseFloat(getComputedStyle(answer).fontSize),max=adaptive?92:Math.min(64,computed||64),minimum=adaptive?44:Math.min(max,this.compact?28:34);
+    const fits=(size:number)=>{measure.style.fontSize=`${size}px`;return measure.scrollWidth<=safeWidth&&measure.scrollHeight<=safeHeight;};const bestFit=(low:number,high:number)=>{for(let step=0;step<9;step++){const candidate=(low+high)/2;if(fits(candidate))low=candidate;else high=candidate;}return Math.floor(low*100)/100;};
+    let size=max,fit='single-line';if(!fits(max)){if(fits(minimum))size=bestFit(minimum,max);else if(adaptive){size=38;fit='wrapped';}else if(!/\s|[-\u2010-\u2015]/u.test(this.card.answer)&&fits(24)){size=bestFit(24,minimum);fit='single-line';}else{size=minimum;fit=/\s|[-\u2010-\u2015]/u.test(this.card.answer)?'wrapped':'emergency';}}
+    answer.style.setProperty('--answer-fit-size',`${size}px`);surface.dataset['answerFit']=fit;if(adaptive){surface.dataset['adaptiveFit']=fit==='single-line'?'fitted':'fallback';surface.dataset['adaptiveSize']=size.toFixed(2);surface.dataset['adaptiveSafeWidth']=safeWidth.toFixed(2);}
+  }
   private animatePennant():void{const pennant=this.cluePennant?.nativeElement;if(!pennant)return;this.pennantTween?.kill();this.pennantTween=this.motionReduced?gsap.fromTo(pennant,{opacity:0},{opacity:1,duration:.14,clearProps:'opacity'}):gsap.fromTo(pennant,{scaleX:.1,skewX:-8,opacity:.45},{scaleX:1,skewX:0,opacity:1,duration:.34,ease:'back.out(1.3)',clearProps:'transform,opacity'});}
   private animateClueRemoval():void{const sticker=this.clueSticker?.nativeElement;if(!sticker)return;this.clueTween?.kill();if(this.motionReduced){this.clueTween=gsap.to(sticker,{opacity:0,duration:.14,ease:'power1.out',onComplete:()=>this.completeStudyClueRemoval()});return;}this.clueTween=gsap.to(this.clueProxy,{value:1,duration:.52,ease:'power2.inOut',onUpdate:()=>this.renderCluePeel(this.clueProxy.value),onComplete:()=>{this.renderCluePeel(1);this.completeStudyClueRemoval();}});}
   private renderCluePeel(progress:number):void{const value=Math.max(0,Math.min(1,progress)),width=268,height=148,boundary=width-value*(width+height),overlap=2,front=this.clipPeel(boundary+overlap,false),back=this.clipPeel(boundary-overlap,true);if(this.clueFront){this.clueFront.nativeElement.style.clipPath=front.length>=3?`polygon(${front.map(point=>`${(point.x/width*100).toFixed(2)}% ${(point.y/height*100).toFixed(2)}%`).join(',')})`:'polygon(0 0,0 0,0 0)';this.clueFront.nativeElement.style.opacity=value>=.985?'0':'1';}if(this.clueUnderside){this.clueUnderside.nativeElement.setAttribute('points',back.map(point=>`${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' '));const depth=7+value*29;this.clueUnderside.nativeElement.style.transform=`translate(${-depth*.24}px,${depth*.32}px) rotate(${4+value*17}deg) scale(${(1-value*.08).toFixed(3)})`;this.clueUnderside.nativeElement.style.opacity=String(value>=.96?Math.max(0,(1-value)/.04):Math.min(1,.45+value*2));}const intersections=this.peelIntersections(boundary);if(this.clueShadow&&intersections.length===2){const[a,b]=intersections,depth=7+value*29;this.clueShadow.nativeElement.setAttribute('points',`${a!.x},${a!.y} ${b!.x},${b!.y} ${b!.x-depth*.2},${b!.y+depth*.22} ${a!.x-depth*.2},${a!.y+depth*.22}`);this.clueShadow.nativeElement.style.opacity=String(Math.min(.3,.08+value*.28));}const sticker=this.clueSticker?.nativeElement;if(sticker&&!this.motionReduced){const release=Math.max(0,(value-.78)/.22);sticker.style.transform=`perspective(700px) translate3d(${release*40}px,${-release*32}px,${release*52}px) rotate(${-1.4+release*8}deg) rotateY(${release*12}deg)`;sticker.style.opacity=String(1-Math.max(0,(value-.9)/.1));}sticker?.setAttribute('data-peel-progress',value.toFixed(3));}
@@ -407,7 +422,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @HostListener('stop-card-audio') stopAudioForAcceptedAction():void{if(this.stopAudioOnAction)this.stopAudio();}
   ngOnDestroy(): void {
     cancelAnimationFrame(this.frame);
-    cancelAnimationFrame(this.fitFrame);this.surfaceTween?.kill();this.pressTween?.kill();this.clueTween?.kill();this.pennantTween?.kill();
+    cancelAnimationFrame(this.fitFrame);this.pressTween?.kill();this.clueTween?.kill();this.pennantTween?.kill();
     this.observer?.disconnect();
     this.copyResize?.disconnect();
     this.copyMutation?.disconnect();

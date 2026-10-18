@@ -1,12 +1,24 @@
 # Canonical work-item tracker
 
-Updated: 17 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 18 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Active corrective milestone — Study motion and Answer presentation polish
+
+Authorised 18 October 2026. This pass is limited to production Study surface interpolation and concise Answer fitting/centring.
+
+| Requirement | Status | Acceptance boundary |
+|---|---|---|
+| Continuous card-surface motion | VERIFY | Dampen pointer targets through one rendered X/Y state so tilt, glare and shimmer enter, track and settle without snaps; retain continuous pressure and current orientation. |
+| Short Answer fit and centring | VERIFY | Keep single-token and reasonable short answers on one line through measured fitting and modest reduction, use safe balanced wrapping as fallback, and centre the primary/secondary block. |
+| Focused cross-platform evidence | VERIFY | Verify existing answer hierarchy, clue and overflow behavior plus new motion/fit cases in Chromium and WebKit; run production build and relevant packaged native smoke. |
+
+Implementation evidence: unit/domain passes **274** with three opt-in suites skipped. Focused Study/Card coverage passes **31/31** across Chromium, desktop WebKit and compact/large/landscape WebKit. Production build and iOS sync pass; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each. One initial clean iPhone XCTest accessibility lookup missed an element present in its captured hierarchy; the unchanged rerun passed.
 
 ## Active corrective milestone — HR-VISUAL-EFFECTS-INTEGRATION-02
 
