@@ -102,7 +102,7 @@ export class AppComponent {
   readonly settingsDeckId=signal('');
   readonly ankiUpdateFile=signal<File|null>(null);
   readonly ankiSourceMode=signal<'manage'|'update'|'repair'|'mapping'>('update');
-  readonly collectionDeckId=signal('');
+  readonly collectionDeckId=signal(this.initialCollectionDeckId());
   readonly collectionLabel=signal('');
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
@@ -223,8 +223,9 @@ export class AppComponent {
     inject(DestroyRef).onDestroy(()=>{destroyed=true;void nativeBackCleanup?.();clearInterval(timer);this.clearAutoAdvanceTimer(false);this.clearRecallPeek();this.clearClueDelay(true);this.clearResultMotion();this.cancelStudyPresentation();document.removeEventListener('pointerdown',activity);document.removeEventListener('keydown',activity);window.removeEventListener('popstate',this.appPopState);unsubscribeLifecycle();});
   }
   private initialScreen():Screen{const value=location.hash.slice(1).split('/')[0];if(value==='effects-lab')return isDevMode()?'effects-lab':'dashboard';return ['dashboard','library','focus','study','results','collection','studio','progress','exchange','settings'].includes(value)?value as Screen:'dashboard';}
+  private initialCollectionDeckId():string{const value=location.hash.match(/^#collection\/deck\/([^/]+)/)?.[1];return value?decodeURIComponent(value):'';}
   private initialLibrarySubview():LibrarySubview{return location.hash.match(/^#library\/(search)(?:\/|$)/)?.[1]==='search'?'search':'decks';}
-  private syncNavigationFromLocation():void{this.screen.set(this.initialScreen());if(this.screen()==='library')this.librarySubview.set(this.initialLibrarySubview());}
+  private syncNavigationFromLocation():void{this.screen.set(this.initialScreen());if(this.screen()==='library')this.librarySubview.set(this.initialLibrarySubview());if(this.screen()==='collection'){const match=location.hash.match(/^#collection\/deck\/([^/]+)/);const id=match?.[1]?decodeURIComponent(match[1]):'';this.collectionDeckId.set(id);this.collectionLabel.set(id?this.deckName(id):'');}}
   private async checkpoint():Promise<void>{if(this.checkpointing||this.busy()||this.screen()!=='study'||!this.current()||this.elapsedMs<= (this.session()?.activeMs??0)+500)return;this.checkpointing=true;try{await this.store.updateSessionTime(Math.round(this.elapsedMs));}catch{/* Retain the unsaved current-card time locally; review is authoritative. */}finally{this.checkpointing=false;}}
   timeZone():string{return this.data()?.preferences.timeZone??'Europe/London';}
   predictedInterval(rating:1|2|3|4|5):string{const data=this.data(),card=this.displayedCard(),preset=this.currentPreset();if(!data||!card||!preset)return'';const previous=data.states[card.id]?hydrateCard(data.states[card.id]!):createEmptyCard(new Date());const result=fsrs(fsrsParameters(preset)).next(previous,new Date(),mapRating(rating)).card,days=result.scheduled_days;return days<1?'Soon':days===1?'1 day':`${days} days`;}
@@ -286,8 +287,9 @@ export class AppComponent {
   deckChildren(id:string):Deck[]{return this.data()?.decks.filter(deck=>deck.parentId===id)??[];}
   private deckBranchIds(id:string):Set<string>{const state=this.data(),ids=new Set<string>([id]);if(!state)return ids;let changed=true;while(changed){changed=false;for(const deck of state.decks)if(deck.parentId&&ids.has(deck.parentId)&&!ids.has(deck.id)){ids.add(deck.id);changed=true;}}return ids;}
   browseDeck(deckId:string,focusSearch=false):void{this.browseDecks([deckId],this.deckName(deckId),focusSearch);}
-  browseDecks(deckIds:string[],label:string,focusSearch=false):void{const ids=new Set<string>();for(const deckId of deckIds)for(const id of this.deckBranchIds(deckId))ids.add(id);this.library.setQuery('');this.library.clear();this.library.setFilter('deckIds',[...ids]);this.go('collection');this.collectionDeckId.set(deckIds.length===1?deckIds[0]!:'');this.collectionLabel.set(label);if(focusSearch)setTimeout(()=>document.getElementById('collection-search')?.focus());}
-  clearCollectionContext():void{this.collectionDeckId.set('');this.collectionLabel.set('');}
+  browseDecks(deckIds:string[],label:string,focusSearch=false):void{const ids=new Set<string>();for(const deckId of deckIds)for(const id of this.deckBranchIds(deckId))ids.add(id);this.library.setQuery('');this.library.clear();this.library.setFilter('deckIds',[...ids]);this.go('collection');const deckId=deckIds.length===1?deckIds[0]!:'';this.collectionDeckId.set(deckId);this.collectionLabel.set(label);if(deckId)history.replaceState(null,'',`#collection/deck/${encodeURIComponent(deckId)}`);if(focusSearch)setTimeout(()=>document.getElementById('collection-search')?.focus());}
+  clearCollectionContext():void{this.collectionDeckId.set('');this.collectionLabel.set('');history.pushState(null,'','#collection');}
+  openCollectionSet(deckId:string):void{if(!this.data()?.decks.some(deck=>deck.id===deckId))return;this.collectionDeckId.set(deckId);this.collectionLabel.set(this.deckName(deckId));history.pushState(null,'',`#collection/deck/${encodeURIComponent(deckId)}`);window.scrollTo({top:0,behavior:'instant'});}
   deckCards(id:string):CardContent[]{const state=this.data();if(!state)return[];const ids=this.deckBranchIds(id);return state.cards.filter(card=>ids.has(card.deckId));}
   deckSubdeckCount(id:string):number{return this.deckBranchIds(id).size-1;}
   deckRows(id:string):{deck:Deck;depth:number}[]{const rows:{deck:Deck;depth:number}[]=[];const visit=(parent:string,depth:number)=>{for(const deck of this.deckChildren(parent)){rows.push({deck,depth});visit(deck.id,depth+1);}};visit(id,1);return rows;}

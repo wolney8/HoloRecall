@@ -1,13 +1,12 @@
-import { test, expect, openApp, navigate, snapshot } from './helpers';
+import { test, expect, openApp, navigate, snapshot, ownCards } from './helpers';
 
 test('HR-UX-01 overlays span the card face above surfaces and below readable content', async ({ page }, testInfo) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await openApp(page);
+  await ownCards(page,1);
   await navigate(page, 'Collection');
-  for (const rarity of ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic']) {
-    await page.locator(`.sample-button[data-rarity="${rarity}"]`).click();
+  await expect(page.locator('.sample-button')).toHaveCount(0);await page.getByRole('button',{name:/Inspect /}).first().click();
     const card = page.locator('.inspection-card .memory-card');
-    await expect(card).toHaveAttribute('data-rarity', rarity);
     const layers = await card.evaluate(element => {
       const query = (selector: string) => getComputedStyle(element.querySelector(selector)!);
       return {
@@ -19,7 +18,6 @@ test('HR-UX-01 overlays span the card face above surfaces and below readable con
       };
     });
     expect(layers).toEqual({ illustration: 1, effects: 3, frame: 4, text: 6, pointerEvents: 'none' });
-  }
   const motion = page.locator('.inspection-card .card-motion');
   await motion.hover({ position: { x: 250, y: 220 } });
   await expect.poll(() => motion.evaluate(node => (node as HTMLElement).style.getPropertyValue('--ambient-x'))).not.toBe('');
@@ -30,7 +28,9 @@ test('HR-UX-01 overlays span the card face above surfaces and below readable con
 
 test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion are coherent', async ({ page }) => {
   await openApp(page);
+  await ownCards(page,2);
   await navigate(page, 'Collection');
+  await page.getByRole('button',{name:/Inspect /}).first().click();
   const motion = page.locator('.inspection-card .card-motion');
   const before=await snapshot(page);
   await expect(motion).toHaveAttribute('aria-label', 'Show card answer');
@@ -62,8 +62,9 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
 });
 
 test('HR-COLLECTION-DETAIL-01 stays top-aligned without page overflow at 1280×720',async({page},testInfo)=>{
-  await page.setViewportSize({width:1280,height:720});await openApp(page);await navigate(page,'Collection');
+  await page.setViewportSize({width:1280,height:720});await openApp(page);await ownCards(page,1);await navigate(page,'Collection');await page.getByRole('button',{name:/Inspect /}).first().click();
   const showcase=page.locator('#collection-inspection'),card=showcase.locator('.inspection-card'),details=showcase.locator('.inspection-details');
+  await showcase.scrollIntoViewIfNeeded();
   await expect(showcase).toHaveAttribute('data-reveal-state','settled');
   const [cardBox,detailsBox]=await Promise.all([card.boundingBox(),details.boundingBox()]);expect(cardBox).toBeTruthy();expect(detailsBox).toBeTruthy();expect(Math.abs(cardBox!.y-detailsBox!.y)).toBeLessThanOrEqual(2);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1280);

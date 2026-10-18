@@ -113,7 +113,11 @@ The card interaction decisions are implemented by the shared renderer and Study 
 - pointer input sets a target surface orientation. One damped render state drives tilt, ambient glare and rarity shimmer through entry, movement and neutral settlement; pressure remains an independent continuous depth value and never resets the current orientation;
 - compact Study context uses one display-only hierarchy rule: a trustworthy course ancestry becomes `Lesson N · cleaned current topic`, direct lesson-parent study uses its cleaned parent subject, and ordinary decks use the cleaned current leaf. Date/version noise and numeric child prefixes are removed even when parent and child names arrive in one combined hierarchy value. Stored deck names and imported hierarchy remain unchanged;
 - the browsable Collection contains unlocked cards; its default prioritises unlocked and near-unlock progress, while deck/set views may show locked silhouette slots;
-- Collection progress is collectible-only: unlocked/total, rarity distribution and Prestige, without due/FSRS scheduling data. The near-unlock threshold remains undecided.
+- Collection progress is collectible-only: unlocked/total, rarity distribution and Prestige, without due/FSRS scheduling data. Near unlock ranks locked cards by remaining qualifying days, completion ratio, then stable source order.
+
+### Collection ownership and locked slots
+
+Normal Collection surfaces render the shared card only for an earned authored-rarity collectible. Global search and practice are restricted to those owned cards. Near-unlock and scoped-set locked positions use a dedicated card-back silhouette whose input contains only set/deck identity, authored rarity, stable position and derived progress; prompt, answer, cues, source media and source details never enter its DOM or accessible name. A scoped set preserves stable source order, mixing owned rendered cards with lightweight locked slots. Prestige remains a layer on an owned card and never increases set completion beyond one card.
 
 ## Confirmed uploaded-art integration direction
 

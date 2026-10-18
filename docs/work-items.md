@@ -1541,3 +1541,12 @@ The detailed acceptance evidence for these items remains in `docs/project-status
 | HR-VISUAL-EFFECTS-INTEGRATION-01 | Shared material, handling, clue, answer, rating, unlock, Prestige and motion-preference integration | IMPLEMENTED — verified except explicitly unavailable exact-package and physical-device checks |
 
 Durable scope: production cards use surface-linked theme-aware material, continuous pressure, resolved Answer signature, rendered-width adaptive short answers, semantic pronunciation, layered GSAP clues, card-local rating feedback, deterministic earned-card reveal and distinct Prestige stamping. Motion System/Full/Reduced remains separate from Card Effects. Anki semantics, scheduler and reward rules are unchanged.
+
+## HR-COLLECTION-FOUNDATION-01 — owned Collection and set progress
+
+Status: **IMPLEMENTED — browser, domain and packaged simulator verification recorded; physical-device accessibility remains unverified.**
+
+- Global Collection contains earned authored-rarity collectibles only; search and Practice never include locked IDs.
+- Close to unlocking uses answer-free silhouettes ranked by remaining qualifying days, ratio and stable order.
+- Top-level set progress aggregates descendants once; scoped set views preserve owned/locked sequence and reload-safe hash context.
+- Prestige stays visible on owned cards and separate from completion. Design Samples were removed; Design Studio retains unrestricted preview. Collection Desk was not started.

@@ -1,4 +1,4 @@
-import { test, expect, openApp, navigate, snapshot, expectNoOverflow } from './helpers';
+import { test, expect, openApp, navigate, snapshot, expectNoOverflow, ownCards } from './helpers';
 import type { Page } from '@playwright/test';
 
 async function installManualCase(page: Page): Promise<string> {
@@ -37,6 +37,7 @@ test('HR-PRESENTATION-01 text-first alignment, Collection spacing and real grid 
   await openApp(page);
   const cardId = await installManualCase(page);
   await page.reload();
+  await ownCards(page,1);
   await navigate(page, 'Collection');
 
   const item = page.locator('.collectible-item').filter({ has: page.getByText('Five letters. How many vowel sounds?', { exact: true }) }).first();
@@ -96,7 +97,9 @@ test('HR-PRESENTATION-01 Study support owns a full stage row', async ({ page }, 
   await openApp(page);
   await installManualCase(page);
   await page.reload();
+  await ownCards(page,1);
   await navigate(page, 'Collection');
+  await page.getByRole('button',{name:/Inspect /}).first().click();
   await page.locator('.inspection-details .practice-card-actions').getByRole('button', { name: 'Practice this card' }).click();
   await expect(page.getByRole('heading', { name: 'Practice', exact: true })).toBeVisible();
   await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 70, y: 70 } });
@@ -125,7 +128,9 @@ test('HR-PRESENTATION-01 compact Study stacks card, rating and support @ios-comp
   await openApp(page);
   await installManualCase(page);
   await page.reload();
+  await ownCards(page,1);
   await navigate(page, 'Collection');
+  await page.getByRole('button',{name:/Inspect /}).first().click();
   await page.locator('.inspection-details .practice-card-actions').getByRole('button', { name: 'Practice this card' }).click();
   await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 60, y: 60 } });
   await expect(page.locator('.study-card-area .memory-card')).toHaveClass(/revealed/);
@@ -145,6 +150,7 @@ test('HR-PRESENTATION-01 corrected surfaces reflow across supported desktop widt
   await openApp(page);
   await installManualCase(page);
   await page.reload();
+  await ownCards(page,1);
   await navigate(page, 'Collection');
   for (const size of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 720 }, { width: 1024, height: 768 }]) {
     await page.setViewportSize(size);

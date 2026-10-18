@@ -1,8 +1,13 @@
 import { expect, navigate, openApp, revealCard, snapshot, test } from './helpers';
+import type {Page} from '@playwright/test';
+import type {State} from '../src/domain/models';
+import {acceptScheduledReview} from '../src/test/scheduled-review';
+
+async function ownFirstCard(page:Page):Promise<void>{let state=await snapshot(page);const card=state.cards[0]!;state={...state,cards:state.cards.map(item=>item.id===card.id?{...item,rarity:'common' as const}:item)};state=acceptScheduledReview(state,{id:'collection-owned',cardId:card.id,sessionId:'collection-owned-session',rating:4,now:new Date('2026-10-01T12:00:00Z'),activeMs:1200,recallMs:500});await page.evaluate(next=>new Promise<void>((resolve,reject)=>{const request=indexedDB.open('holorecall-local-v1',2);request.onsuccess=()=>{const db=request.result,transaction=db.transaction('local-study','readwrite');transaction.objectStore('local-study').put(next,'snapshot');transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>reject(transaction.error);};request.onerror=()=>reject(request.error);}),state);await page.reload();}
 
 test('HR-FOCUS practice from Collection never mutates FSRS, limits or rewards and recovers on reload',async({page})=>{
-  await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);const before=await snapshot(page);
-  await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('button',{name:'Practice this card'}).click();
+  await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);await ownFirstCard(page);const before=await snapshot(page);
+  await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('button',{name:/Inspect /}).first().click();await page.getByRole('button',{name:'Practice this card'}).click();
   await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Collection cards');
   await revealCard(page);await page.getByRole('button',{name:/1 Again Forgot/}).click();
   await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();const after=await snapshot(page);

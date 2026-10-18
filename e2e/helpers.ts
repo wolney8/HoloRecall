@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test';
 import type { State } from '../src/domain/models';
+import { acceptScheduledReview } from '../src/test/scheduled-review';
 
 export const test = base.extend<{ runtimeErrors: void }>({
   runtimeErrors: [async ({ page }, use, testInfo) => {
@@ -61,6 +62,18 @@ export async function snapshot(page: Page): Promise<State> {
       read.onerror=()=>reject(read.error);read.onsuccess=()=>{const state=read.result as State,media=transaction.objectStore('local-media'),pending=state.assets.map(asset=>{const value=media.get(asset.contentHash??`asset:${asset.id}`);return new Promise<void>((done,fail)=>{value.onsuccess=()=>{asset.dataUrl=value.result;done();};value.onerror=()=>fail(value.error);});});Promise.all(pending).then(()=>resolve(state),reject);};transaction.oncomplete=()=>db.close();
     };
   }));
+}
+export async function replaceSnapshot(page:Page,state:State):Promise<void>{
+  await page.evaluate(next=>new Promise<void>((resolve,reject)=>{const open=indexedDB.open('holorecall-local-v1',2);open.onerror=()=>reject(open.error);open.onsuccess=()=>{const db=open.result,transaction=db.transaction('local-study','readwrite');transaction.objectStore('local-study').put(next,'snapshot');transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>reject(transaction.error);};}),state);
+}
+/** Earn authored collectibles through valid scheduled evidence for presentation tests. */
+export async function ownCards(page:Page,count=1):Promise<void>{
+  let state=await snapshot(page);
+  for(const card of state.cards.slice(0,count)){
+    const required=state.rewardConfig[card.rarity??'common'];let now=new Date('2026-01-01T12:00:00Z');
+    for(let index=0;index<required;index++){const stored=state.states[card.id];if(stored)now=new Date(Math.max(Date.parse(stored.due),Date.parse(stored.last_review!)+86_400_000));state=acceptScheduledReview(state,{id:`owned-${card.id}-${index}`,cardId:card.id,sessionId:`owned-session-${card.id}-${index}`,rating:5,now,activeMs:1200,recallMs:500});}
+  }
+  await replaceSnapshot(page,state);await page.reload();
 }
 export async function confidentReview(page: Page): Promise<void> {
   await revealCard(page);

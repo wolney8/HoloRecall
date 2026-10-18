@@ -250,6 +250,8 @@ The authored-rarity unlock is the mastery ceiling. Version `prestige-days-v1` us
 
 The Collection-facing teaser projection exposes only locked/unlocked/Prestige state, card-back versus collectible-face treatment, silhouette state, stable in-deck numbering and an authored-rarity hint. It deliberately contains no prompt or answer, so a future Collection Desk can render locked cards without leaking learning content.
 
+Collection ownership is now derived solely from `rewardProgress(state, card.id).earned`. `src/domain/collection.ts` computes active inventory, descendant-aware set scope, completion and answer-free near-unlock projections once from the existing state. Global Collection passes complete card content only for owned cards; locked components accept the answer-free projection type. Parent progress includes descendant decks by ID without duplicate card counting, archived cards/decks leave active totals, and suspended owned cards remain collected. Prestige is reported separately from the earned/total completion ratio. Hash context `#collection/deck/<id>` preserves scoped set navigation across reload and browser Back; Collection Desk interaction remains outside this boundary.
+
 ## Decision 015: subject presentation profiles over source-faithful content
 
 **Status: implemented for the language profile and generic fallback.**
