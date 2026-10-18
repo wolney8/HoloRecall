@@ -34,6 +34,7 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
           <div class="face-signature" aria-hidden="true"></div>
           @if(prestigeLevel){<span class="prestige-crest" [attr.aria-label]="'Prestige '+prestigeRoman">P {{prestigeRoman}}</span>}
           <header class="card-heading protected"><span class="card-chrome-title">{{ displayedChromeTitle }}</span><span class="tier"><span aria-hidden="true">{{ raritySymbol }}</span> {{ rarityLabel }}</span></header>
+          <div class="card-body-stage">
           <div class="illustration-layer" [class.no-illustration]="hideStudyArt || (!hasIllustrationReference && card.kind !== 'visual')" [class.image-missing]="illustrationMissing">
             @if (illustration && !failedImage()) {
               <img [src]="illustration" [style.object-fit]="card.imageOcclusion ? 'contain' : (design?.artwork?.fit || 'contain')" [style.object-position]="card.imageOcclusion ? '50% 50%' : ((design?.artwork?.focalX ?? 50) + '% ' + (design?.artwork?.focalY ?? 50) + '%')" [alt]="displayedRevealed() ? (card.interpretation || card.meaning || card.imageDescription || 'Card illustration') : (card.imageDescription || 'Recall illustration. Reveal for the answer.')" (error)="failedImage.set(true)" draggable="false">
@@ -51,6 +52,7 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
               @if (card.secondary || card.pronunciation) { <p class="secondary" [class.pronunciation]="secondaryIsPronunciation">{{ secondaryIsPronunciation ? '“'+(card.secondary || card.pronunciation)+'”' : (card.secondary || card.pronunciation) }}</p> }
               @if (resolvedPresentation.answerInterpretation && !compact) { <p class="interpretation">{{ resolvedPresentation.answerInterpretation }}</p> }
             } @else { <h3>{{ resolvedPresentation.primary }}</h3>@if(resolvedPresentation.cue){<p class="recall-cue">{{resolvedPresentation.cue}}</p>}@if(resolvedPresentation.situationContext){<p class="recall-context">{{resolvedPresentation.situationContext}}</p>}@if(resolvedPresentation.taskGuidance){<p class="recall-guidance">{{resolvedPresentation.taskGuidance}}</p>}@if(hideStudyArt&&card.choices?.length){<hr-imported-card-content [card]="card" mode="choices"/>} }
+          </div>
           </div>
           @if (missingDesignAsset) { <span class="fallback-note protected"><span>Design asset missing · default frame shown</span></span> }
           @if(studyClue && studyClueState==='available' && !displayedRevealed()){

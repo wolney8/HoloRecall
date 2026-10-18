@@ -8,6 +8,18 @@ Updated: 18 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Active corrective milestone — HR-ANSWER-STAGE-LAYOUT-01
+
+Authorised 18 October 2026. This pass changes only the spatial composition of concise production Answer faces.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-ANSWER-STAGE-LAYOUT-01A | Shared concise Answer stage | VERIFY | Place ornament context and the answer group in one flexible body-stage grid between unchanged header and footer regions. |
+| HR-ANSWER-STAGE-LAYOUT-01B | Answer-group visual centring | VERIFY | Centre primary answer plus semantic secondary cue against the complete usable stage instead of the residual area below the ornament. |
+| HR-ANSWER-STAGE-LAYOUT-01C | Responsive and specialist safety | VERIFY | Preserve fitting and pronunciation rules, contain 200% compact layouts, and leave image, Image Occlusion and rich specialist compositions unchanged. |
+
+Implementation evidence: the Lesson 1 `Buonasera!`/`L1` fixture uses a shared grid stage, retains one-line fitting and centres its answer group within 28 px of the stage midpoint without header/footer overlap. Unit/domain passes **274** with three opt-in suites skipped. The focused Chromium/WebKit matrix passes **56** with two inaccessible exact-package conditionals skipped, followed by **18/18** for the changed integration spec across every profile. Production build and iOS sync pass; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) smokes pass **1/1** each.
+
 ## Active corrective milestone — Study motion and Answer presentation polish
 
 Authorised 18 October 2026. This pass is limited to production Study surface interpolation and concise Answer fitting/centring.

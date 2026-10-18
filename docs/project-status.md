@@ -1,5 +1,11 @@
 # Current restart point
 
+## 18 October 2026 — Concise Answer stage composition corrected
+
+- **Cause:** `answer-showcase` kept its ornament in a 7–9rem flex child, then centred the answer only inside the remaining lower block. This created a dead band and pushed concise answer groups below the card body's visual centre.
+- **Composition:** header and footer remain structural siblings. Between them, one flexible grid stage overlays a compact top-aligned ornament layer and a full-stage answer layer. Primary answer plus semantic secondary cue centre as one group; existing glyph fitting, pronunciation styling and specialist image/Image Occlusion layouts are unchanged.
+- **Evidence:** unit/domain passes **274** with three opt-in suites skipped. The final focused matrix passes **56** with two inaccessible exact-package conditionals skipped; it covers the Lesson 1 `Buonasera!`/`L1` stage, `Buongiorno!`, `CE`, `L’`, medium/long text, native Image Occlusion, instructional images, enlarged compact/large/landscape WebKit and header/footer containment. The changed integration spec then passes **18/18** across every assigned profile. Production build and iOS sync pass; packaged iPhone 17 Pro and iPad Pro 11-inch (M5) Study/navigation smokes pass **1/1** each.
+
 ## 18 October 2026 — Study surface motion and concise Answer fit polished
 
 - **Surface continuity:** raw pointer coordinates previously replaced the rendered X/Y state on each frame, while exit and pointer release used separate reset paths. Study now damps one rendered surface state toward pointer targets and neutral, so tilt, glare and shimmer enter, track and settle together while continuous pressure retains the current orientation.
