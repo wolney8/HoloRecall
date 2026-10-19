@@ -19,9 +19,9 @@ test('HR-PRESTIGE Collection distinguishes P1, P5 and P10 and Results reuses the
   await openApp(page);let state=await snapshot(page);const cards=state.cards.slice(0,3);
   state=atLevel(state,cards[0]!.id,1);state=atLevel(state,cards[1]!.id,5);state=atLevel(state,cards[2]!.id,10);
   expect(cards.map(card=>prestigeProgress(state,card.id).level)).toEqual([1,5,10]);await replaceSnapshot(page,state);
-  await page.goto('/?prestige=collection#collection');await expect(page.getByRole('heading',{name:'Collection',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sort by Prestige'}).click();
+  await page.goto('/?prestige=collection#collection/cards');await expect(page.getByRole('heading',{name:'Collection',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sort by Prestige'}).click();
   const prestigeCards=page.locator('.owned-section hr-card .memory-card[data-prestige]');await expect(prestigeCards).toHaveCount(3);expect(await prestigeCards.evaluateAll(nodes=>nodes.map(node=>[node.getAttribute('data-prestige'),node.getAttribute('data-prestige-band')]))).toEqual(expect.arrayContaining([['1','edge'],['5','midpoint'],['10','capstone']]));
-  await expect(page.getByRole('heading',{name:'Recently prestiged'})).toBeVisible();await testInfo.attach('prestige-collection.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
+  await page.getByRole('tab',{name:'Overview'}).click();await expect(page.getByRole('heading',{name:'Recent Prestige'})).toBeVisible();await testInfo.attach('prestige-collection.png',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   await page.goto('/?prestige=results#results');await expect(page.getByRole('heading',{name:'Nice work'})).toBeVisible();await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded();await expect(page.getByRole('progressbar',{name:/Prestige progress: 8 of 8/})).toBeVisible();await expect(page.locator('.unlock-reveal')).toContainText('Prestige X');
   const before=(await snapshot(page)).rewardEvents;await expect(page.getByRole('button',{name:'Replay'})).toHaveCount(0);expect((await snapshot(page)).rewardEvents).toEqual(before);
 });

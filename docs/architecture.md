@@ -252,6 +252,8 @@ The Collection-facing teaser projection exposes only locked/unlocked/Prestige st
 
 Collection ownership is now derived solely from `rewardProgress(state, card.id).earned`. `src/domain/collection.ts` computes active inventory, descendant-aware set scope, completion and answer-free near-unlock projections once from the existing state. Global Collection passes complete card content only for owned cards; locked components accept the answer-free projection type. Parent progress includes descendant decks by ID without duplicate card counting, archived cards/decks leave active totals, and suspended owned cards remain collected. Prestige is reported separately from the earned/total completion ratio. Hash context `#collection/deck/<id>` preserves scoped set navigation across reload and browser Back; Collection Desk interaction remains outside this boundary.
 
+Collection navigation is app-owned as three peer subviews: Overview, Sets and Cards. Canonical hashes are `#collection/{overview|sets|cards}`, with subordinate `sets/deck/:id` and `cards/card/:id` states; the former `#collection/deck/:id` remains readable as a Sets detail. The shared subview navigation owns web/iOS presentation and keyboard semantics. Filters remain component state while browser history owns detail transitions.
+
 ## Decision 015: subject presentation profiles over source-faithful content
 
 **Status: implemented for the language profile and generic fallback.**

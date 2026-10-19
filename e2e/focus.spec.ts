@@ -7,7 +7,7 @@ async function ownFirstCard(page:Page):Promise<void>{let state=await snapshot(pa
 
 test('HR-FOCUS practice from Collection never mutates FSRS, limits or rewards and recovers on reload',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);await ownFirstCard(page);const before=await snapshot(page);
-  await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('button',{name:/Inspect /}).first().click();await page.getByRole('button',{name:'Practice this card'}).click();
+  await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('tab',{name:'Cards'}).click();await page.getByRole('button',{name:/Inspect /}).first().click();await page.getByRole('button',{name:'Practice this card'}).click();
   await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Collection cards');
   await revealCard(page);await page.getByRole('button',{name:/1 Again Forgot/}).click();
   await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();const after=await snapshot(page);

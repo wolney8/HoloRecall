@@ -1550,3 +1550,10 @@ Status: **IMPLEMENTED — browser, domain and packaged simulator verification re
 - Close to unlocking uses answer-free silhouettes ranked by remaining qualifying days, ratio and stable order.
 - Top-level set progress aggregates descendants once; scoped set views preserve owned/locked sequence and reload-safe hash context.
 - Prestige stays visible on owned cards and separate from completion. Design Samples were removed; Design Studio retains unrestricted preview. Collection Desk was not started.
+
+## HR-COLLECTION-NAV-01 — Collection information architecture
+
+Status: **IMPLEMENTED — browser, domain and packaged simulator verification recorded.**
+
+- Collection uses the shared subview navigation for Overview, Sets and Cards. Overview is compact; Sets owns progress and sequence drill-down; Cards owns search, filters and owned-card inspection.
+- Set and card details are subordinate, reload/back-safe hash states. Legacy deck hashes remain readable. Collection Desk remains future work.

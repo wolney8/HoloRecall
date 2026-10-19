@@ -103,6 +103,19 @@ final class NativeSmokeUITests: XCTestCase {
         cancel.tap()
     }
 
+    func testCollectionSubviewNavigation() throws {
+        tapButton("Collection")
+        XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["Overview"].exists)
+        XCTAssertTrue(app.buttons["Sets"].exists)
+        XCTAssertTrue(app.buttons["Cards"].exists)
+        app.buttons["Sets"].tap()
+        XCTAssertTrue(app.staticTexts["Collection sets"].waitForExistence(timeout: 8))
+        app.buttons["Cards"].tap()
+        XCTAssertTrue(app.staticTexts["Your collection"].waitForExistence(timeout: 8))
+        attachScreenshot("native-collection-segments")
+    }
+
     func testDesignSuiteFoundation() throws {
         openMore("Design Studio")
         XCTAssertTrue(app.staticTexts["Design Suite"].waitForExistence(timeout: 10))

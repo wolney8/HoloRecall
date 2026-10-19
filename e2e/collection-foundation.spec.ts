@@ -25,9 +25,8 @@ async function installCollectionFixture(page:Page):Promise<void>{
 
 test('global Collection renders only owned cards and locked teasers leak no learning content',async({page})=>{
   await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
-  await expect(page.getByRole('heading',{name:'Your collection'})).toBeVisible();
-  await expect(page.locator('.owned-section hr-card')).toHaveCount(4);
-  await expect(page.locator('.near-unlock hr-locked-collectible')).toHaveCount(6);
+  await expect(page.getByRole('heading',{name:'Close to unlocking'})).toBeVisible();
+  await expect(page.locator('.near-unlock hr-locked-collectible')).toHaveCount(3);
   await expect(page.getByText('SECRET ANSWER 4',{exact:true})).toHaveCount(0);
   await expect(page.getByText('SECRET PROMPT 4',{exact:true})).toHaveCount(0);
   await expect(page.getByText('SECRET SOUND 4',{exact:true})).toHaveCount(0);
@@ -36,6 +35,7 @@ test('global Collection renders only owned cards and locked teasers leak no lear
   await expect(page.getByRole('heading',{name:'Design samples'})).toHaveCount(0);
   const labels=await page.locator('.near-unlock hr-locked-collectible button').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('aria-label')).join(' '));
   expect(labels).not.toContain('SECRET');
+  await page.getByRole('tab',{name:'Cards'}).click();await expect(page.locator('#collection-inspection')).toHaveCount(0);await expect(page.locator('.owned-section hr-card')).toHaveCount(4);
   await page.getByRole('textbox',{name:'Search your collection'}).fill('SECRET ANSWER 9');
   await expect(page.locator('.owned-section hr-card')).toHaveCount(0);
   await page.getByRole('button',{name:'Clear filters'}).click();await page.getByRole('button',{name:'Filters',exact:true}).click();await page.getByLabel('Tag').selectOption('fixture');await expect(page.locator('.owned-section hr-card')).toHaveCount(4);await page.getByLabel('Rarity').selectOption('rare');await expect(page.locator('.owned-section hr-card')).toHaveCount(0);await page.getByRole('button',{name:'Clear filters'}).click();const before=await snapshot(page);await page.locator('.owned-section hr-card').first().getByRole('button',{name:'Expand Recall image'}).click();await expect(page.getByRole('dialog',{name:'Expanded Recall image'})).toBeVisible();await page.getByRole('dialog').getByRole('button',{name:'Close'}).click();const after=await snapshot(page);expect(after.events).toEqual(before.events);expect(after.rewardEvents).toEqual(before.rewardEvents);
@@ -46,7 +46,7 @@ test('deck set progress aggregates descendants once and scoped view keeps stable
   await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
   const lesson=page.locator('.progress-card').filter({hasText:'Lesson'});
   await expect(lesson).toContainText('4 / 10 collected');await expect(lesson).toContainText('40%');await lesson.click();
-  await expect(page).toHaveURL(/#collection\/deck\/lesson$/);
+  await expect(page).toHaveURL(/#collection\/sets\/deck\/lesson$/);
   await expect(page.locator('.set-summary')).toContainText('4 / 10 collected');
   await expect(page.locator('.child-progress')).toContainText('A · 4 / 4');
   await expect(page.locator('.child-progress')).toContainText('B · 0 / 6');
@@ -60,4 +60,16 @@ test('deck set progress aggregates descendants once and scoped view keeps stable
 test('Collection foundation stacks safely at 200% text @ios-compact @ios-large @ios-landscape',async({page})=>{
   await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');await page.addStyleTag({content:'html{font-size:200%}'});
   await expect(page.getByRole('heading',{name:'Close to unlocking'})).toBeVisible();await expect(page.locator('.near-unlock hr-locked-collectible').first()).toBeVisible();await expectNoOverflow(page);
+});
+
+test('Collection peer views and subordinate details are reload and Back safe',async({page})=>{
+  await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
+  const tabs=page.getByRole('tablist',{name:'Collection sections'});await expect(tabs).toBeVisible();await expect(page.getByRole('tab',{name:'Overview'})).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('.owned-section')).toHaveCount(0);await expect(page.locator('.collection-tools')).toHaveCount(0);await expect(page.locator('.set-slots')).toHaveCount(0);
+  await page.getByRole('tab',{name:'Sets'}).click();await expect(page).toHaveURL(/#collection\/sets$/);await page.locator('.progress-card').filter({hasText:'Lesson'}).click();await expect(page).toHaveURL(/#collection\/sets\/deck\/lesson$/);await expect(page.getByRole('tab',{name:'Sets'})).toHaveAttribute('aria-selected','true');await page.reload();await expect(page.locator('.set-summary')).toContainText('4 / 10');await page.goBack();await expect(page).toHaveURL(/#collection\/sets$/);
+  await page.getByRole('tab',{name:'Cards'}).click();await expect(page.locator('#collection-inspection')).toHaveCount(0);const search=page.getByRole('textbox',{name:'Search your collection'});await search.fill('SECRET ANSWER 0');await page.getByRole('button',{name:'Inspect SECRET ANSWER 0'}).click();await expect(page).toHaveURL(/#collection\/cards\/card\/locked-fixture-0$/);await expect(page.locator('#collection-inspection')).toBeVisible();await page.goBack();await expect(search).toHaveValue('SECRET ANSWER 0');await expect(page.locator('#collection-inspection')).toHaveCount(0);
+});
+
+test('legacy Collection deck hash maps to Sets detail and tabs retain keyboard semantics',async({page})=>{
+  await openApp(page);await installCollectionFixture(page);await page.goto('/#collection/deck/lesson');await expect(page.locator('.set-summary')).toContainText('4 / 10');await expect(page.getByRole('tab',{name:'Sets'})).toHaveAttribute('aria-selected','true');const overview=page.getByRole('tab',{name:'Overview'});await overview.focus();await overview.press('End');await expect(page.getByRole('tab',{name:'Cards'})).toHaveAttribute('aria-selected','true');await expect(page).toHaveURL(/#collection\/cards$/);const sticky=page.locator('.collection-subnav');await expect(sticky).toHaveCSS('position','sticky');
 });

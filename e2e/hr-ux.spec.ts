@@ -4,7 +4,7 @@ test('HR-UX-01 overlays span the card face above surfaces and below readable con
   await page.emulateMedia({ colorScheme: 'dark' });
   await openApp(page);
   await ownCards(page,1);
-  await navigate(page, 'Collection');
+  await navigate(page, 'Collection');await page.getByRole('tab',{name:'Cards'}).click();
   await expect(page.locator('.sample-button')).toHaveCount(0);await page.getByRole('button',{name:/Inspect /}).first().click();
     const card = page.locator('.inspection-card .memory-card');
     const layers = await card.evaluate(element => {
@@ -29,7 +29,7 @@ test('HR-UX-01 overlays span the card face above surfaces and below readable con
 test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion are coherent', async ({ page }) => {
   await openApp(page);
   await ownCards(page,2);
-  await navigate(page, 'Collection');
+  await navigate(page, 'Collection');await page.getByRole('tab',{name:'Cards'}).click();
   await page.getByRole('button',{name:/Inspect /}).first().click();
   const motion = page.locator('.inspection-card .card-motion');
   const before=await snapshot(page);
@@ -62,7 +62,7 @@ test('HR-UX-02 and 03 Collection card click, keyboard, drag and reduced motion a
 });
 
 test('HR-COLLECTION-DETAIL-01 stays top-aligned without page overflow at 1280×720',async({page},testInfo)=>{
-  await page.setViewportSize({width:1280,height:720});await openApp(page);await ownCards(page,1);await navigate(page,'Collection');await page.getByRole('button',{name:/Inspect /}).first().click();
+  await page.setViewportSize({width:1280,height:720});await openApp(page);await ownCards(page,1);await navigate(page,'Collection');await page.getByRole('tab',{name:'Cards'}).click();await page.getByRole('button',{name:/Inspect /}).first().click();
   const showcase=page.locator('#collection-inspection'),card=showcase.locator('.inspection-card'),details=showcase.locator('.inspection-details');
   await showcase.scrollIntoViewIfNeeded();
   await expect(showcase).toHaveAttribute('data-reveal-state','settled');
