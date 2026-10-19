@@ -23,6 +23,14 @@ async function installCollectionFixture(page:Page):Promise<void>{
   await page.reload();
 }
 
+async function expectStableCardMotion(page:Page,selector:string):Promise<void>{
+  const motion=page.locator(selector).first();await motion.scrollIntoViewIfNeeded();await page.waitForTimeout(80);
+  const metrics=()=>page.evaluate(()=>({height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,y:window.scrollY,clientWidth:document.documentElement.clientWidth}));
+  const before=await metrics(),box=await motion.boundingBox();expect(box).not.toBeNull();
+  for(const[x,y]of [[.04,.04],[.96,.04],[.96,.96],[.04,.96],[.5,.5]] as const){await page.mouse.move(box!.x+box!.width*x,box!.y+box!.height*y);await page.waitForTimeout(55);expect(await metrics()).toEqual(before);const paint=await motion.evaluate(element=>{const surface=element.getBoundingClientRect(),viewport=element.closest('.card-motion-viewport')!.getBoundingClientRect(),style=getComputedStyle(element.closest('.card-motion-viewport')!),margin=Number.parseFloat(style.getPropertyValue('--card-motion-paint-margin'))||0;return{left:surface.left,top:surface.top,right:surface.right,bottom:surface.bottom,minLeft:viewport.left-margin,minTop:viewport.top-margin,maxRight:viewport.right+margin,maxBottom:viewport.bottom+margin};});expect(paint.left).toBeGreaterThanOrEqual(paint.minLeft-1);expect(paint.top).toBeGreaterThanOrEqual(paint.minTop-1);expect(paint.right).toBeLessThanOrEqual(paint.maxRight+1);expect(paint.bottom).toBeLessThanOrEqual(paint.maxBottom+1);}
+  await page.mouse.move(Math.max(0,box!.x-20),Math.max(0,box!.y-20));await page.waitForTimeout(80);expect(await metrics()).toEqual(before);expect(before.width).toBeLessThanOrEqual(before.clientWidth);
+}
+
 test('global Collection renders only owned cards and locked teasers leak no learning content',async({page})=>{
   await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
   await expect(page.getByRole('heading',{name:'Close to unlocking'})).toBeVisible();
@@ -72,4 +80,24 @@ test('Collection peer views and subordinate details are reload and Back safe',as
 
 test('legacy Collection deck hash maps to Sets detail and tabs retain keyboard semantics',async({page})=>{
   await openApp(page);await installCollectionFixture(page);await page.goto('/#collection/deck/lesson');await expect(page.locator('.set-summary')).toContainText('4 / 10');await expect(page.getByRole('tab',{name:'Sets'})).toHaveAttribute('aria-selected','true');const overview=page.getByRole('tab',{name:'Overview'});await overview.focus();await overview.press('End');await expect(page.getByRole('tab',{name:'Cards'})).toHaveAttribute('aria-selected','true');await expect(page).toHaveURL(/#collection\/cards$/);const sticky=page.locator('.collection-subnav');await expect(sticky).toHaveCSS('position','sticky');
+});
+
+test('shared physical card viewports keep Collection scroll geometry stable',async({page})=>{
+  await page.setViewportSize({width:1280,height:720});await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
+  await expectStableCardMotion(page,'.recent-unlocks .card-motion');
+  await expectStableCardMotion(page,'.near-unlock .locked-collectible');
+  await page.getByRole('tab',{name:'Cards'}).click();await expectStableCardMotion(page,'.owned-section .card-motion');
+  await page.getByRole('button',{name:'Inspect SECRET ANSWER 0'}).click();await expectStableCardMotion(page,'.inspection-card .card-motion');
+  await page.getByRole('tab',{name:'Sets'}).click();await page.locator('.progress-card').filter({hasText:'Lesson'}).click();await expectStableCardMotion(page,'.set-slots .card-motion');
+  await expectStableCardMotion(page,'.set-slots .locked-collectible');
+});
+
+test('Overview and set slots use matching portrait mini collectibles without locked-content leakage',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
+  const owned=page.locator('.overview-mini hr-card-motion-viewport .memory-card').first(),locked=page.locator('.near-unlock hr-locked-collectible .locked-collectible').first();
+  const geometry=async(locator:ReturnType<Page['locator']>)=>{const box=await locator.boundingBox();expect(box).not.toBeNull();return box!;};const ownedBox=await geometry(owned),lockedBox=await geometry(locked);
+  expect(ownedBox.width).toBeGreaterThanOrEqual(205);expect(ownedBox.width).toBeLessThanOrEqual(232);expect(Math.abs(ownedBox.width/ownedBox.height-2/3)).toBeLessThan(.03);expect(Math.abs(lockedBox.width/lockedBox.height-2/3)).toBeLessThan(.03);
+  const lockedHost=page.locator('.near-unlock hr-locked-collectible').first(),lockedMarkup=await lockedHost.evaluate(element=>element.outerHTML);expect(lockedMarkup).not.toContain('SECRET');expect(lockedMarkup).not.toContain('<img');await expect(lockedHost.locator('hr-card')).toHaveCount(0);
+  for(const size of [{width:1920,height:1080},{width:1280,height:720},{width:1024,height:768}]){await page.setViewportSize(size);await expectNoOverflow(page);const responsive=await geometry(page.locator('.overview-mini .memory-card').first());expect(Math.abs(responsive.width/responsive.height-2/3)).toBeLessThan(.03);expect(responsive.width).toBeLessThanOrEqual(232);}
+  await page.getByRole('tab',{name:'Sets'}).click();await page.locator('.progress-card').filter({hasText:'Lesson'}).click();const slots=page.locator('.set-slots :is(.memory-card,.locked-collectible)');await expect(slots).toHaveCount(10);const slotBoxes=await slots.evaluateAll(nodes=>nodes.slice(0,5).map(node=>{const box=node.getBoundingClientRect();return{width:box.width,height:box.height};}));expect(slotBoxes.length).toBe(5);for(const box of slotBoxes)expect(Math.abs(box.width/box.height-2/3)).toBeLessThan(.03);
 });

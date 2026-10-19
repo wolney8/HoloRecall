@@ -9,6 +9,7 @@ import type { CardCompositionId, CardContent, DesignPalette, DesignSet, FinishPr
 import { RARITIES } from '../../domain/rewards';
 import { FINISH_TREATMENTS } from '../../domain/card-treatments';
 import { FlashcardComponent } from '../card';
+import { CardMotionViewportComponent } from '../card-motion-viewport';
 import { LocalStudyStore } from '../data/study-store';
 import { PageRevealDirective } from '../motion/page-reveal';
 import { CAPABILITY_POLICY } from '../platform/capability-policy';
@@ -25,7 +26,7 @@ const LAYOUTS: ReadonlyArray<{ id: CardCompositionId; label: string; description
   { id: 'symbolic-generated', label: 'Symbolic / Generated Art', description: 'Stable offline motifs without images.' },
 ];
 
-@Component({ selector: 'hr-design-studio', standalone: true, imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonToggleModule, FlashcardComponent, PageRevealDirective], templateUrl: './design-studio.html', styleUrl: './design-studio.css' })
+@Component({ selector: 'hr-design-studio', standalone: true, imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonToggleModule, FlashcardComponent, CardMotionViewportComponent, PageRevealDirective], templateUrl: './design-studio.html', styleUrl: './design-studio.css' })
 export class DesignStudioComponent {
   readonly store = inject(LocalStudyStore); private readonly capabilityPolicy = inject(CAPABILITY_POLICY); private readonly fileDelivery = inject(FILE_DELIVERY);
   readonly authoringDecision = this.capabilityPolicy.decide('custom-design-authoring'); readonly tiers = RARITIES; readonly finishes = FINISH_TREATMENTS; readonly layouts = LAYOUTS;

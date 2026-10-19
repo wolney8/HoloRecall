@@ -119,6 +119,10 @@ The card interaction decisions are implemented by the shared renderer and Study 
 
 Normal Collection surfaces render the shared card only for an earned authored-rarity collectible. Global search and practice are restricted to those owned cards. Near-unlock and scoped-set locked positions use a dedicated card-back silhouette whose input contains only set/deck identity, authored rarity, stable position and derived progress; prompt, answer, cues, source media and source details never enter its DOM or accessible name. A scoped set preserves stable source order, mixing owned rendered cards with lightweight locked slots. Prestige remains a layer on an owned card and never increases set completion beyond one card.
 
+### Physical card presentation scales
+
+Physical card objects use one shared motion viewport that contains transformed paint without changing page scroll bounds. A focal collectible is used for Study, inspection and earned reveals. A mini collectible uses a real 2:3 layout box, normally 210–230 px wide on desktop, for grids and summaries; it is not a transformed focal card. Owned minis use the shared renderer. Locked minis use a separate privacy-safe physical shell with only rarity, position and progress inputs. Review history, search results and progress statistics remain metadata rows.
+
 ## Confirmed uploaded-art integration direction
 
 Uploaded artwork should not feel pasted onto a template.

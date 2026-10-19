@@ -45,6 +45,7 @@ import { SubviewNavigationComponent, type SubviewNavigationItem } from './naviga
 import { PlatformPresentation } from './platform/platform-presentation';
 import { conciseStudyContext } from '../domain/study-context';
 import { EffectsLabComponent } from './effects-lab/effects-lab';
+import { CardMotionViewportComponent } from './card-motion-viewport';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings' | 'effects-lab';
 type LibrarySubview = 'decks' | 'search';
@@ -53,7 +54,7 @@ interface NavigationContext { label: string; screen: Screen; deckId?: string }
 interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,CardMotionViewportComponent,DesignStudioComponent,CollectionComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
   templateUrl:'./app.html',
 })
 export class AppComponent {

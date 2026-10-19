@@ -26,11 +26,11 @@ test('production surface damps pointer entry movement and exit through one conti
 
 test('Study contains 3D card paint without changing document scroll geometry',async({page})=>{
   await page.setViewportSize({width:1024,height:768});await openApp(page);await seedEffectsCard(page);await page.getByRole('button',{name:/(Start|Resume) studying/}).click();await page.getByRole('button',{name:'Check answer'}).click();await expect(page.locator('.study-answer-support')).toBeVisible();
-  const viewport=page.locator('.study-card-viewport'),motion=viewport.locator('.card-motion');await expect(viewport).toHaveCSS('overflow-x','clip');await expect(viewport).toHaveCSS('overflow-y','clip');const envelope=await viewport.evaluate(element=>Number.parseFloat(getComputedStyle(element).paddingLeft));expect(envelope).toBeGreaterThanOrEqual(40);
+  const viewport=page.locator('.study-card-viewport .card-motion-viewport'),motion=viewport.locator('.card-motion');await expect(viewport).toHaveCSS('overflow-x','clip');await expect(viewport).toHaveCSS('overflow-y','clip');const envelope=await viewport.evaluate(element=>Number.parseFloat(getComputedStyle(element).getPropertyValue('--card-motion-paint-margin')));expect(envelope).toBeGreaterThanOrEqual(40);
   await page.evaluate(()=>window.scrollTo(0,Math.min(120,document.documentElement.scrollHeight-innerHeight)));await page.waitForTimeout(50);
-  const metrics=()=>page.evaluate(()=>({height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,y:window.scrollY,clientWidth:document.documentElement.clientWidth}));const before=await metrics(),box=await viewport.boundingBox();expect(box).not.toBeNull();
+  const metrics=()=>page.evaluate(()=>({height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,y:window.scrollY,clientWidth:document.documentElement.clientWidth}));const before=await metrics(),box=await motion.boundingBox();expect(box).not.toBeNull();
   const positions=[[.04,.04],[.96,.04],[.96,.96],[.04,.96],[.5,.5]] as const;
-  for(const [x,y] of positions){await page.mouse.move(box!.x+box!.width*x,box!.y+box!.height*y);await page.waitForTimeout(45);const current=await metrics();expect(current).toEqual(before);const painted=await motion.boundingBox();const clearance=Math.min(painted!.x-box!.x,painted!.y-box!.y,box!.x+box!.width-painted!.x-painted!.width,box!.y+box!.height-painted!.y-painted!.height);expect(clearance).toBeGreaterThanOrEqual(32);}
+  for(const [x,y] of positions){await page.mouse.move(box!.x+box!.width*x,box!.y+box!.height*y);await page.waitForTimeout(45);const current=await metrics();expect(current).toEqual(before);}
   expect(before.width).toBeLessThanOrEqual(before.clientWidth);
 });
 

@@ -208,3 +208,6 @@ For each meaningful change, add a proportional note to the durable handoff cover
 ## 9 October 2026 — Study Mode and imported-panel native regression
 
 The shared build adds persisted Anki/Mastery/Free Revision selection and deterministic native source-panel art without a Capacitor dependency on the web initial path. `npm run native:sync:ios` succeeded. The first iPhone 17 Pro / iOS 26.5 XCUITest found a genuine compact reachability regression: the new mode field appeared before Start and pushed the action below the tappable viewport. The shared dashboard action order was corrected; the unchanged packaged Study/navigation smoke then passed 1/1 through three cards, Results, Collection, Progress and Settings. This is Simulator/WKWebView evidence, not physical-device tactile, VoiceOver or performance evidence.
+## HR-SHARED-CARD-PRESENTATION-01
+
+Capacitor iOS sync passes. Packaged Collection Overview/Sets/Cards navigation smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), both using iOS 26.5 Simulator. Compact, large and landscape WebKit profiles pass at 200% text. Physical iPhone/iPad touch material, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified; Android and Apple-silicon Mac packaging were outside this bounded presentation milestone.

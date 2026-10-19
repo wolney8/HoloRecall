@@ -16,10 +16,11 @@ import { ReviewHistoryComponent } from '../history/review-history';
 import { AnswerSupportComponent } from '../answer-support';
 import { LockedCollectibleComponent } from './locked-collectible';
 import { SubviewNavigationComponent, type SubviewNavigationItem } from '../navigation/subview-navigation';
+import { CardMotionViewportComponent } from '../card-motion-viewport';
 
 @Component({
   selector: 'hr-collection', standalone: true,
-  imports: [FormsModule,NgTemplateOutlet,FlashcardComponent,LockedCollectibleComponent,SubviewNavigationComponent,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective,ReviewHistoryComponent,AnswerSupportComponent],
+  imports: [FormsModule,NgTemplateOutlet,FlashcardComponent,LockedCollectibleComponent,SubviewNavigationComponent,CardMotionViewportComponent,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective,ReviewHistoryComponent,AnswerSupportComponent],
   templateUrl:'./collection.html',
   styleUrl:'./collection.css',
 })
@@ -68,6 +69,7 @@ export class CollectionComponent {
   frameUrl(card:CardContent){const design=this.store.designFor(card);return this.store.mediaUrl(design?.frames?.[card.rarity??'common']||design?.frame);}
   prestigePercent(card:CardContent){const p=this.prestige(card);return p.capped?100:Math.min(100,p.days/p.required*100);} roman(level:number){return['','I','II','III','IV','V','VI','VII','VIII','IX','X'][level]??'';} tierName(r:Rarity){return this.tiers.find(t=>t.id===r)?.label??'Common';} tierSymbol(r:Rarity){return this.tiers.find(t=>t.id===r)?.symbol??'●';} deckName(id:string){return this.store.decks().find(deck=>deck.id===id)?.name??'Deck unavailable';}
   inspect(card:CardContent){if(!this.state()||!isCollected(this.state()!,card.id))return;this.lockedSelected.set(null);this.gridRevealedId.set(null);this.selectedId.set(card.id);this.revealed.set(false);this.cardsScrollY=window.scrollY;this.cardOpened.emit(card.id);queueMicrotask(()=>window.scrollTo({top:0,behavior:'instant'}));}
+  inspectMini(event:Event,card:CardContent){if((event.target as HTMLElement).closest('button,a,input,select,textarea'))return;this.inspect(card);}
   inspectLocked(teaser:LockedCollectibleTeaser){this.selectedId.set('');this.lockedSelected.set(teaser);this.scrollTo('locked-details');}
   openDeck(id:string){this.setOriginId=id;this.setsScrollY=window.scrollY;this.deckOpened.emit(id);} hasFilters(){return!!(this.query()||this.higherRarity()||this.prestigeOnly()||this.sortPrestige()||this.deckFilter()||this.rarityFilter()||this.prestigeBand()||this.tagFilter()||this.designFilter());} clearFilters(){this.query.set('');this.higherRarity.set(false);this.prestigeOnly.set(false);this.sortPrestige.set(false);this.deckFilter.set('');this.rarityFilter.set('');this.prestigeBand.set('');this.tagFilter.set('');this.designFilter.set('');} setGridRevealed(id:string,value:boolean){this.gridRevealedId.set(value?id:null);}
   async openCardInspection(card:CardContent,request:CardInspectionRequest){if(!this.state()||!isCollected(this.state()!,card.id))return;const ref=request.revealed?(card.backImage||card.image):card.image,url=this.store.mediaUrl(ref);if(url)await this.cardInspection.open(card,request,url);}

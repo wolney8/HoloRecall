@@ -1544,7 +1544,7 @@ Durable scope: production cards use surface-linked theme-aware material, continu
 
 ## HR-COLLECTION-FOUNDATION-01 — owned Collection and set progress
 
-Status: **IMPLEMENTED — browser, domain and packaged simulator verification recorded; physical-device accessibility remains unverified.**
+Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device accessibility remains unverified.**
 
 - Global Collection contains earned authored-rarity collectibles only; search and Practice never include locked IDs.
 - Close to unlocking uses answer-free silhouettes ranked by remaining qualifying days, ratio and stable order.
@@ -1557,3 +1557,11 @@ Status: **IMPLEMENTED — browser, domain and packaged simulator verification re
 
 - Collection uses the shared subview navigation for Overview, Sets and Cards. Overview is compact; Sets owns progress and sequence drill-down; Cards owns search, filters and owned-card inspection.
 - Set and card details are subordinate, reload/back-safe hash states. Legacy deck hashes remain readable. Collection Desk remains future work.
+
+## HR-SHARED-CARD-PRESENTATION-01 — reusable 3D viewport and mini collectibles
+
+Status: **IMPLEMENTED — browser, domain and packaged simulator verification recorded; physical-device accessibility remains unverified.**
+
+- Shared focal/mini paint containment now owns transformed card overflow across Study, Collection, previews and Results.
+- Collection summaries and grids use real 2:3 mini collectibles; locked positions use a separate privacy-safe mini shell with shared surface response.
+- Collection ownership, navigation, reward rules and locked-content inputs are unchanged. Collection Desk was not started.
