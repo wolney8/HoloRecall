@@ -109,6 +109,13 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Overview"].exists)
         XCTAssertTrue(app.buttons["Sets"].exists)
         XCTAssertTrue(app.buttons["Cards"].exists)
+        let desk = app.buttons["Open Collection Desk"]
+        XCTAssertTrue(desk.waitForExistence(timeout: 8))
+        desk.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Collection Desk'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Your collection on the table"].exists)
+        app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Back to Collection'")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
         app.buttons["Sets"].tap()
         XCTAssertTrue(app.staticTexts["Collection sets"].waitForExistence(timeout: 8))
         app.buttons["Cards"].tap()

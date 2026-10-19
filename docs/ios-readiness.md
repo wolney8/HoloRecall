@@ -211,3 +211,7 @@ The shared build adds persisted Anki/Mastery/Free Revision selection and determi
 ## HR-SHARED-CARD-PRESENTATION-01
 
 Capacitor iOS sync passes. Packaged Collection Overview/Sets/Cards navigation smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), both using iOS 26.5 Simulator. Compact, large and landscape WebKit profiles pass at 200% text. Physical iPhone/iPad touch material, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified; Android and Apple-silicon Mac packaging were outside this bounded presentation milestone.
+
+## HR-COLLECTION-DESK-01
+
+Capacitor iOS sync passes. The packaged Collection navigation smoke reaches the subordinate Desk, opens a set workspace and returns to Collection on iPhone 17 Pro and iPad Pro 11-inch (M5), both using iOS 26.5 Simulator. Compact, large and landscape WebKit profiles cover Desk layout, progressive large-set rendering, Reduced Motion and Effects Off. Physical-device drag/touch arbitration, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified; persistent Desk placement is intentionally absent in phase 1.

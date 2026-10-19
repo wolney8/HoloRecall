@@ -1565,3 +1565,12 @@ Status: **IMPLEMENTED — browser, domain and packaged simulator verification re
 - Shared focal/mini paint containment now owns transformed card overflow across Study, Collection, previews and Results.
 - Collection summaries and grids use real 2:3 mini collectibles; locked positions use a separate privacy-safe mini shell with shared surface response.
 - Collection ownership, navigation, reward rules and locked-content inputs are unchanged. Collection Desk was not started.
+
+## HR-COLLECTION-DESK-01 — interactive Collection Desk foundation
+
+Status: **DONE — implementation and bounded verification complete; physical-device acceptance remains open.**
+
+- Subordinate reload/back-safe Desk and set routes leave Overview, Sets and Cards unchanged.
+- Bounded ephemeral stack, progressive layout, shuffle, deal, drag, keyboard nudge, flip, inspect, gather and reset interactions reuse the shared physical card system.
+- Collection/reward state stays read-only and locked slots receive only the safe teaser projection. Persistent layouts remain deferred.
+- Evidence: unit/domain **281 passed** with three optional exact-package suites skipped; the focused Desk matrix passes **15/15** across Chromium, desktop WebKit and compact/large/landscape WebKit, and the broader Collection matrix passes **28/28**. Shared Prestige/material regressions pass **14/14** in Chromium and WebKit. Production build, Capacitor iOS sync, and packaged Collection/Desk navigation smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), both on iOS 26.5. Physical-device drag, VoiceOver, Dynamic Type and GPU performance remain unverified.

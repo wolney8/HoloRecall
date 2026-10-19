@@ -254,6 +254,8 @@ Collection ownership is now derived solely from `rewardProgress(state, card.id).
 
 Collection navigation is app-owned as three peer subviews: Overview, Sets and Cards. Canonical hashes are `#collection/{overview|sets|cards}`, with subordinate `sets/deck/:id` and `cards/card/:id` states; the former `#collection/deck/:id` remains readable as a Sets detail. The shared subview navigation owns web/iOS presentation and keyboard semantics. Filters remain component state while browser history owns detail transitions.
 
+Collection Desk is a subordinate route at `#collection/desk[/set/:deckId]`, not a fourth peer view. Its injectable presentation state holds bounded card coordinates, rotation, z-order, face and selection only for the current application session. The bounded internal desk owns overflow; outer placement transforms and inner shared card-motion transforms remain separate. Stack, deal, drag, flip, gather and reset never write Collection, review, scheduling or reward state. Locked Desk items receive only `LockedCollectibleTeaser`; persistent arrangements remain deferred.
+
 ## Decision 015: subject presentation profiles over source-faithful content
 
 **Status: implemented for the language profile and generic fallback.**
