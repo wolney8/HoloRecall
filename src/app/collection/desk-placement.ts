@@ -12,6 +12,14 @@ export interface DeskCardPlacement {
   face:DeskFace;
 }
 
+export type DeskPlacementIdentity=Pick<DeskCardPlacement,'id'|'cardId'|'kind'>;
+export type DeskPlacementGeometry=Pick<DeskCardPlacement,'x'|'y'|'rotation'|'zIndex'>;
+
+/** The only constructor for a newly materialised physical Desk card. */
+export function createDeskPlacement(identity:DeskPlacementIdentity,geometry:DeskPlacementGeometry):DeskCardPlacement {
+  return {...identity,...geometry,face:'recall'};
+}
+
 export const DESK_BATCH_SIZE=5;
 export const DESK_LAYOUT_PAGE=18;
 export const DESK_CARD_WIDTH=190;
@@ -29,13 +37,11 @@ export function placementGrid(
   cardHeight=DESK_CARD_HEIGHT,
 ):DeskCardPlacement[] {
   const inset=64,gap=36,usable=Math.max(cardWidth,width-inset*2),columns=Math.max(1,Math.floor((usable+gap)/(cardWidth+gap)));
-  return items.map((item,index)=>({
-    ...item,
+  return items.map((item,index)=>createDeskPlacement(item,{
     x:inset+(index%columns)*(cardWidth+gap),
     y:inset+Math.floor(index/columns)*(cardHeight+gap),
     rotation:deterministicRotation(index),
     zIndex:index+1,
-    face:'recall',
   }));
 }
 
@@ -58,7 +64,7 @@ export function nextFreePlacement(
   const capacity=Math.max(columns,columns*Math.ceil((world.height-inset*2+gap)/(DESK_CARD_HEIGHT+gap)));
   let index=0,x=inset,y=inset;
   for(;index<capacity;index++){x=inset+(index%columns)*(DESK_CARD_WIDTH+gap);y=inset+Math.floor(index/columns)*(DESK_CARD_HEIGHT+gap);if(!occupied(x,y))break;}
-  return {...item,x:clampPlacement(x,world.width,DESK_CARD_WIDTH,64),y:clampPlacement(y,world.height,DESK_CARD_HEIGHT,64),rotation:deterministicRotation(index),zIndex:placements.length+1,face:'recall'};
+  return createDeskPlacement(item,{x:clampPlacement(x,world.width,DESK_CARD_WIDTH,64),y:clampPlacement(y,world.height,DESK_CARD_HEIGHT,64),rotation:deterministicRotation(index),zIndex:placements.length+1});
 }
 
 export function clampPan(value:number,viewportExtent:number,worldExtent:number):number {

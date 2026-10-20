@@ -220,7 +220,7 @@ The renderer consumes declarative presentation rather than source HTML. Imported
 
 ## Decision 012: inherited Design Sets and portable declarative composition
 
-**Status: Design Suite, Prestige and ephemeral Collection Desk foundations implemented; persisted Desk layouts remain future work.**
+**Status: Design Suite, Prestige and local Collection Desk presentation persistence implemented.**
 
 Card presentation resolves through one chain: the built-in HoloRecall default, the nearest deck or ancestor-deck Design Set, a rarity-compatible variant derived from that set, then an optional per-card override. A missing card `designSetId` means inheritance; an explicit ID is a stable override. Presentation-only assignment and return-to-inherited operations never increment the card content revision or change source provenance, reviews, FSRS state, due dates, rewards or authored rarity.
 
@@ -254,7 +254,9 @@ Collection ownership is now derived solely from `rewardProgress(state, card.id).
 
 Collection navigation is app-owned as three peer subviews: Overview, Sets and Cards. Canonical hashes are `#collection/{overview|sets|cards}`, with subordinate `sets/deck/:id` and `cards/card/:id` states; the former `#collection/deck/:id` remains readable as a Sets detail. The shared subview navigation owns web/iOS presentation and keyboard semantics. Filters remain component state while browser history owns detail transitions.
 
-Collection Desk is a subordinate route at `#collection/desk[/set/:deckId]`, not a fourth peer view. Its injectable presentation state holds bounded card coordinates, rotation, z-order, face and selection only for the current application session. The bounded internal desk owns overflow; outer placement transforms and inner shared card-motion transforms remain separate. Stack, deal, drag, flip, gather and reset never write Collection, review, scheduling or reward state. Locked Desk items receive only `LockedCollectibleTeaser`; persistent arrangements remain deferred.
+Collection Desk is a subordinate route at `#collection/desk[/set/:deckId]`, not a fourth peer view. Its injectable presentation state holds bounded card coordinates, rotation, z-order, face and selection. A separate versioned local-storage boundary persists only per-set geometry, mode and clamped camera position; it is excluded from learner state, backup and deck exchange. Current Collection state always re-derives ownership and locked presentation during restore. Face, selection, shuffle and transition state remain session-only, and restored owned cards always begin on Recall. Corrupt or unavailable layout storage falls back to the collected stack without blocking Collection or Study.
+
+The bounded internal desk owns overflow; outer placement transforms and inner shared card-motion transforms remain separate. Stack, deal, drag, flip, gather and reset never write Collection, review, scheduling or reward state. Locked Desk items receive only `LockedCollectibleTeaser`; saved records contain identifiers and geometry, never learning content. Reset deletes only the active set's saved arrangement.
 
 Desk transition ownership is layered: the placement element owns bounded coordinates, z-order and tabletop rotation; a child transition wrapper owns GSAP deal/gather motion after Angular's committed render; the shared motion viewport/card owns paint containment and live 3D tilt. The default physical stack and primary layout represent earned cards only. Canonical locked positions appear only in the explicit full-set layout, while zero-owned sets remain progress-only surfaces.
 

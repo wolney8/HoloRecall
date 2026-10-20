@@ -1600,3 +1600,13 @@ Status: **DONE — implementation and bounded verification complete; physical-de
 - Give shared compact cards deterministic mini typography tokens, an additional stack-preview density, and inherited imported-panel type controls without changing focal rendering.
 - Preserve owned/full-set deal order, locked privacy, page geometry, accessibility and read-only Collection state; persistence, themes and physics remain deferred.
 - Evidence: unit/domain **283 passed** with three optional suites skipped. Focused Desk passes **32/32** across Chromium and desktop WebKit; shared mini typography and 200% layout pass **6/6** across compact/large/landscape WebKit. Collection/shared-card and focal Study regressions pass **24/24** across Chromium and WebKit. Production build and Capacitor iOS sync pass; packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device drag layering, touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
+## HR-COLLECTION-DESK-05 — Recall-first Desk, manipulation hygiene and local arrangements
+
+Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device acceptance remains open.**
+
+- Centralise Recall-first placement and restore rules while retaining deliberate same-session loose-card flips.
+- Suppress native selection and image dragging only inside Desk physical objects.
+- Persist versioned per-set geometry and pan through a failure-tolerant presentation-only store; current ownership overrides saved kind, and face, selection and shuffle never persist.
+- Reset deletes only the active set layout. Themes, physics, cloud sync and authoritative learner state remain outside scope.
+- Evidence: unit/domain **290 passed** with three optional suites skipped. Focused Desk passes **38/38** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **6/6**; Collection ownership/navigation regressions pass **22/22**. Production build and Capacitor iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5.

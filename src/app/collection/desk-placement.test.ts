@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { clampPan,clampPlacement,deskWorldSize,deterministicRotation,nextFreePlacement,nextZIndex,placementGrid } from './desk-placement';
+import { clampPan,clampPlacement,createDeskPlacement,deskWorldSize,deterministicRotation,nextFreePlacement,nextZIndex,placementGrid } from './desk-placement';
 
 describe('collection desk placement',()=>{
   const items=Array.from({length:6},(_,index)=>({id:`slot-${index}`,cardId:`card-${index}`,kind:index<2?'owned' as const:'locked' as const}));
@@ -31,5 +31,9 @@ describe('collection desk placement',()=>{
     expect(existing).toEqual(before);
     expect(existing.some(item=>item.x===next.x&&item.y===next.y)).toBe(false);
     expect(next.face).toBe('recall');
+  });
+  it('centralises the Recall-first materialisation invariant',()=>{
+    expect(createDeskPlacement(items[0]!,{x:12,y:34,rotation:2,zIndex:7})).toMatchObject({face:'recall',x:12,y:34,rotation:2,zIndex:7});
+    expect(placementGrid(items,700).every(item=>item.face==='recall')).toBe(true);
   });
 });

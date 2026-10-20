@@ -123,6 +123,34 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-collection-segments")
     }
 
+    func testCollectionDeskLayoutPersistence() throws {
+        let start = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'study' AND label CONTAINS '→'")).firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        start.tap()
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
+        revealableCard().tap()
+        let qualifying = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '5 Easy'")).firstMatch
+        XCTAssertTrue(qualifying.waitForExistence(timeout: 8))
+        qualifying.tap()
+        tapButton("End session")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'")).firstMatch.waitForExistence(timeout: 8))
+        tapButton("Done")
+
+        openDeskWithFirstCollectedStack()
+        tapButton("Lay out collected")
+        let placed = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch
+        XCTAssertTrue(placed.waitForExistence(timeout: 8))
+        attachScreenshot("native-desk-arrangement-before-relaunch")
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
+        openDeskWithFirstCollectedStack()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch.waitForExistence(timeout: 8))
+        attachScreenshot("native-desk-arrangement-restored")
+        tapButton("Reset set")
+    }
+
     func testDesignSuiteFoundation() throws {
         openMore("Design Studio")
         XCTAssertTrue(app.staticTexts["Design Suite"].waitForExistence(timeout: 10))
@@ -238,6 +266,17 @@ final class NativeSmokeUITests: XCTestCase {
         }
         tapButton("More")
         tapButton(destination)
+    }
+
+    private func openDeskWithFirstCollectedStack() {
+        tapButton("Collection")
+        XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
+        tapButton("Open Collection Desk")
+        XCTAssertTrue(app.staticTexts["My collection stacks"].waitForExistence(timeout: 8))
+        let stack = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'collected' AND NOT label CONTAINS[c] 'not yet'")).firstMatch
+        XCTAssertTrue(stack.waitForExistence(timeout: 8), "No collected Desk stack was available\n\(app.debugDescription)")
+        stack.tap()
+        XCTAssertTrue(app.buttons["Lay out collected"].waitForExistence(timeout: 8))
     }
 
     private func attachScreenshot(_ name: String) {

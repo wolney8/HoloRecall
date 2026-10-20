@@ -1,5 +1,11 @@
 # Current restart point
 
+## 20 October 2026 — Collection Desk Recall invariant and local arrangements implemented
+
+- **Recall and manipulation:** one constructor now materialises every fresh/restored owned Desk card on Recall. The root Desk session preserves an Answer face only for an explicit same-session inspection return; normal reopen, return/redeal, reset and persisted restore return to Recall. Desk-only global scoping prevents text selection and native image dragging through nested card components without changing focal cards or accessibility content.
+- **Persistence boundary:** versioned per-set `localStorage` records contain only card IDs, geometry, bounded z-order, mode and camera position. Writes are coalesced after settled actions and flushed on page hide. Restore removes stale/invalid entries, clamps coordinates/pan, normalises z-order and derives current owned/locked state; face, selection, shuffle and learning content are absent. Reset deletes only the active set record. Storage failure or corruption falls back to the collected stack.
+- **Evidence:** unit/domain **290 passed** with three optional suites skipped. Focused Desk passes **38/38** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **6/6**; Collection ownership/navigation regressions pass **22/22**. Production build and iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device persistence durability, touch quality, VoiceOver, Dynamic Type and storage-pressure behavior remain unverified.
+
 ## 20 October 2026 — Collection Desk drag lift and shared mini typography implemented
 
 - **Drag layering:** the transformed Desk world formed a stacking context beneath the fixed stack dock, so descendant z-index could not raise a dragged card above the deck. One viewport-level, presentation-only lift now mirrors the authoritative placement above the dock, preserves an owned card's current face, and uses only the safe locked teaser for locked cards. Drop return aligns and settles the lifted object into the stack before removing the loose placement; moving away cancels the target without a jump.

@@ -227,3 +227,7 @@ Capacitor iOS sync passes. Packaged Collection/Desk navigation passes **1/1** on
 ## HR-COLLECTION-DESK-04
 
 Capacitor iOS sync passes. Packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. Desktop WebKit covers owned/locked viewport-level drag lift and return; compact/large/landscape WebKit covers shared mini/stack-preview type, inherited imported-panel density and 200% text without page overflow. The native smoke verifies the synced Collection/Desk surface is reachable; physical-device drag-over-deck compositing, touch quality, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified.
+
+## HR-COLLECTION-DESK-05
+
+Capacitor iOS sync passes. A clean packaged flow earns a collectible, lays it out, terminates/relaunches the app, reopens the same set, observes the restored card, and resets the arrangement **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. This verifies the WKWebView local-presentation persistence seam and non-fatal shared route path. It does not establish physical-device storage durability, quota/eviction behavior, touch-selection quality, VoiceOver, Dynamic Type or backup inclusion; Desk layout remains deliberately outside learning backup/export.
