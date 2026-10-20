@@ -11,7 +11,7 @@ import { CardMotionViewportComponent } from '../card-motion-viewport';
   imports: [MatProgressBarModule,CardMotionViewportComponent],
   template: `
     <hr-card-motion-viewport scale="mini">
-      <button #surface type="button" class="locked-collectible" [class.effects]="effects" (click)="opened.emit(teaser)"
+      <button #surface type="button" class="locked-collectible" [class.effects]="effects" (click)="opened.emit(teaser)" [attr.tabindex]="parentOwnsKeyboard?-1:null"
         [attr.aria-label]="accessibleLabel()" [attr.data-rarity]="teaser.rarity" [attr.data-motion]="motionReduced?'reduced':'full'"
         (pointerenter)="point($event)" (pointermove)="point($event)" (pointerleave)="settle()" (pointercancel)="settle()">
         <span class="locked-material" aria-hidden="true"><i class="locked-substrate"></i><i class="locked-ambient"></i><i class="locked-shimmer"></i></span>
@@ -29,6 +29,7 @@ export class LockedCollectibleComponent implements AfterViewInit,OnDestroy {
   @Input({required:true}) teaser!:LockedCollectibleTeaser;
   @Input() effects=true;
   @Input() motionPreference:MotionPreference='system';
+  @Input() parentOwnsKeyboard=false;
   @Output() readonly opened=new EventEmitter<LockedCollectibleTeaser>();
   @ViewChild('surface') private surface?:ElementRef<HTMLElement>;
   private readonly preference=matchMedia('(prefers-reduced-motion: reduce)');

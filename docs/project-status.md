@@ -1,5 +1,11 @@
 # Current restart point
 
+## 20 October 2026 — Collection Desk bounded table and direct manipulation implemented
+
+- **Table/camera:** the former internally scrolling Desk is a finite world translated beneath a clipped 72–80vh viewport. Empty-surface pointer/touch drag pans one clamped camera transform; owned and locked cards keep world coordinates, and the fixed stack dock remains reachable.
+- **Direct handling:** the dock renders the actual next owned card or privacy-safe locked surface, deals one item per activation, and receives animated card returns. New deals append at deterministic free positions without moving prior arrangements. Owned double-click flips persist through hover and drag; locked cards are draggable and keyboard movable but never flippable.
+- **Evidence:** unit/domain **283/283** pass with three optional suites skipped. Focused Desk passes **28/28** in Chromium/desktop WebKit and **3/3** compact/large/landscape WebKit profiles; Collection ownership/privacy/navigation passes **15/15**. Production build and Capacitor iOS sync pass. Packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
 ## 20 October 2026 — Collection Desk transitions and owned-first stacks corrected
 
 - **Transition boundary and layers:** `queueMicrotask` could run before Angular committed new placement nodes, so GSAP silently had no targets. Desk entry now starts through `afterNextRender`; absolute placement, deal/gather motion, selection lift and live card tilt own separate wrappers. Stack open/back, deal, gather and reset use short coordinated transitions; Reduced Motion settles without card flight.

@@ -219,3 +219,7 @@ Capacitor iOS sync passes. The packaged Collection navigation smoke reaches the 
 ## HR-COLLECTION-DESK-02
 
 Capacitor iOS sync passes. The packaged Collection/Desk navigation smoke passes on iPhone 17 Pro and iPad Pro 11-inch (M5), both using iOS 26.5 Simulator. Desktop and compact/large/landscape WebKit cover render-committed deal/gather motion, owned-first/full-set modes, zero-owned privacy, 200% text, Reduced Motion and stable page geometry. Physical-device transition quality, drag/touch arbitration, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified.
+
+## HR-COLLECTION-DESK-03
+
+Capacitor iOS sync passes. Packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. Browser WebKit covers bounded table layout, pointer/touch-shaped pan and card drag paths, fixed stack docking, locked privacy, 200% text and compact/large/landscape profiles. Physical-device gesture arbitration and tactile quality, VoiceOver, Dynamic Type, GPU/compositing and thermal performance remain unverified; table pan, positions and face state remain intentionally ephemeral.

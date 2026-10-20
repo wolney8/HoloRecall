@@ -220,7 +220,7 @@ The renderer consumes declarative presentation rather than source HTML. Imported
 
 ## Decision 012: inherited Design Sets and portable declarative composition
 
-**Status: Design Suite and Prestige foundation implemented; Collection Desk remains future work.**
+**Status: Design Suite, Prestige and ephemeral Collection Desk foundations implemented; persisted Desk layouts remain future work.**
 
 Card presentation resolves through one chain: the built-in HoloRecall default, the nearest deck or ancestor-deck Design Set, a rarity-compatible variant derived from that set, then an optional per-card override. A missing card `designSetId` means inheritance; an explicit ID is a stable override. Presentation-only assignment and return-to-inherited operations never increment the card content revision or change source provenance, reviews, FSRS state, due dates, rewards or authored rarity.
 
@@ -250,13 +250,15 @@ The authored-rarity unlock is the mastery ceiling. Version `prestige-days-v1` us
 
 The Collection-facing teaser projection exposes only locked/unlocked/Prestige state, card-back versus collectible-face treatment, silhouette state, stable in-deck numbering and an authored-rarity hint. It deliberately contains no prompt or answer, so a future Collection Desk can render locked cards without leaking learning content.
 
-Collection ownership is now derived solely from `rewardProgress(state, card.id).earned`. `src/domain/collection.ts` computes active inventory, descendant-aware set scope, completion and answer-free near-unlock projections once from the existing state. Global Collection passes complete card content only for owned cards; locked components accept the answer-free projection type. Parent progress includes descendant decks by ID without duplicate card counting, archived cards/decks leave active totals, and suspended owned cards remain collected. Prestige is reported separately from the earned/total completion ratio. Hash context `#collection/deck/<id>` preserves scoped set navigation across reload and browser Back; Collection Desk interaction remains outside this boundary.
+Collection ownership is now derived solely from `rewardProgress(state, card.id).earned`. `src/domain/collection.ts` computes active inventory, descendant-aware set scope, completion and answer-free near-unlock projections once from the existing state. Global Collection passes complete card content only for owned cards; locked components accept the answer-free projection type. Parent progress includes descendant decks by ID without duplicate card counting, archived cards/decks leave active totals, and suspended owned cards remain collected. Prestige is reported separately from the earned/total completion ratio. Hash context preserves Collection peer/detail navigation across reload and browser Back; Desk routes remain subordinate and never persist presentation state into Collection data.
 
 Collection navigation is app-owned as three peer subviews: Overview, Sets and Cards. Canonical hashes are `#collection/{overview|sets|cards}`, with subordinate `sets/deck/:id` and `cards/card/:id` states; the former `#collection/deck/:id` remains readable as a Sets detail. The shared subview navigation owns web/iOS presentation and keyboard semantics. Filters remain component state while browser history owns detail transitions.
 
 Collection Desk is a subordinate route at `#collection/desk[/set/:deckId]`, not a fourth peer view. Its injectable presentation state holds bounded card coordinates, rotation, z-order, face and selection only for the current application session. The bounded internal desk owns overflow; outer placement transforms and inner shared card-motion transforms remain separate. Stack, deal, drag, flip, gather and reset never write Collection, review, scheduling or reward state. Locked Desk items receive only `LockedCollectibleTeaser`; persistent arrangements remain deferred.
 
 Desk transition ownership is layered: the placement element owns bounded coordinates, z-order and tabletop rotation; a child transition wrapper owns GSAP deal/gather motion after Angular's committed render; the shared motion viewport/card owns paint containment and live 3D tilt. The default physical stack and primary layout represent earned cards only. Canonical locked positions appear only in the explicit full-set layout, while zero-owned sets remain progress-only surfaces.
+
+Desk table navigation uses a finite world inside a stationary clipped viewport. One camera wrapper owns ephemeral clamped pan; placements retain world coordinates beneath it, while the stack/drop dock stays in viewport coordinates. Empty-surface drag pans the camera, card drag updates world coordinates, and deal/gather animation remains on its existing child wrapper. The stack renders exactly one real owned or privacy-safe locked top surface matching the next deal item; dropping either loose kind returns only presentation state. No camera, placement or face state enters routing or persisted learner data.
 
 ## Decision 015: subject presentation profiles over source-faithful content
 

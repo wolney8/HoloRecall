@@ -1,6 +1,6 @@
 # Canonical work-item tracker
 
-Updated: 18 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 20 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
@@ -1582,3 +1582,12 @@ Status: **DONE — browser, domain and packaged simulator verification recorded;
 - Angular `afterNextRender` starts placement motion after committed DOM. Placement, deal/gather, selection and live card tilt own separate transform layers.
 - Desk landing and active stacks default to collected cards. Canonical full-set layout is explicit and paged; zero-owned sets remain progress-only.
 - Evidence: unit/domain **281 passed** with three optional suites skipped; focused Desk **21/21** and Collection ownership/navigation **15/15** pass across Chromium, WebKit and compact/large/landscape profiles. Production build and iOS sync pass; packaged Collection/Desk smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), iOS 26.5.
+
+## HR-COLLECTION-DESK-03 — pannable table and direct manipulation
+
+Status: **DONE — implementation and bounded verification complete; physical-device acceptance remains open.**
+
+- Replace the Desk's internal scroll panel with a clipped bounded world translated by ephemeral camera state.
+- Add empty-table pan, owned/locked world-coordinate drag, owned double-click flip, a fixed stack dock/drop target, honest next-item stack top and one-item direct dealing.
+- Preserve progressive bounded rendering, locked privacy, Collection routing and read-only learning/reward state; persistent layouts, themes and physics remain deferred.
+- Evidence: unit/domain **283 passed** with three optional suites skipped. Focused Desk passes **28/28** across Chromium and desktop WebKit plus **3/3** compact/large/landscape WebKit profiles; Collection ownership/privacy/navigation passes **15/15**. Production build and Capacitor iOS sync pass; packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
