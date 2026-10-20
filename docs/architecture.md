@@ -256,6 +256,8 @@ Collection navigation is app-owned as three peer subviews: Overview, Sets and Ca
 
 Collection Desk is a subordinate route at `#collection/desk[/set/:deckId]`, not a fourth peer view. Its injectable presentation state holds bounded card coordinates, rotation, z-order, face and selection only for the current application session. The bounded internal desk owns overflow; outer placement transforms and inner shared card-motion transforms remain separate. Stack, deal, drag, flip, gather and reset never write Collection, review, scheduling or reward state. Locked Desk items receive only `LockedCollectibleTeaser`; persistent arrangements remain deferred.
 
+Desk transition ownership is layered: the placement element owns bounded coordinates, z-order and tabletop rotation; a child transition wrapper owns GSAP deal/gather motion after Angular's committed render; the shared motion viewport/card owns paint containment and live 3D tilt. The default physical stack and primary layout represent earned cards only. Canonical locked positions appear only in the explicit full-set layout, while zero-owned sets remain progress-only surfaces.
+
 ## Decision 015: subject presentation profiles over source-faithful content
 
 **Status: implemented for the language profile and generic fallback.**

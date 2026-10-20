@@ -1,5 +1,11 @@
 # Current restart point
 
+## 20 October 2026 — Collection Desk transitions and owned-first stacks corrected
+
+- **Transition boundary and layers:** `queueMicrotask` could run before Angular committed new placement nodes, so GSAP silently had no targets. Desk entry now starts through `afterNextRender`; absolute placement, deal/gather motion, selection lift and live card tilt own separate wrappers. Stack open/back, deal, gather and reset use short coordinated transitions; Reduced Motion settles without card flight.
+- **Ownership model:** Desk landing presents earned sets as My Collection Stacks and zero-owned sets as locked progress-only items. An active set defaults to its collected-card stack; Lay out collected and Deal use owned cards only. Lay out full set explicitly preserves canonical owned/locked positions and progressive range labels, including an all-locked first range.
+- **Evidence:** unit/domain **281/281** pass with three optional suites skipped. Focused Desk **21/21** passes across Chromium, desktop WebKit and compact/large/landscape WebKit; Collection ownership/privacy/navigation **15/15** passes. Tests observe real intermediate GSAP state, post-render entry, mounted-until-complete gather, first-18 paging, zero-owned privacy, 135-card progressive layout and stable page geometry. Production build and Capacitor iOS sync pass. Packaged Collection/Desk navigation smoke passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device drag/touch arbitration, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
 ## 18 October 2026 — Concise Answer stage composition corrected
 
 - **Cause:** `answer-showcase` kept its ornament in a 7–9rem flex child, then centred the answer only inside the remaining lower block. This created a dead band and pushed concise answer groups below the card body's visual centre.

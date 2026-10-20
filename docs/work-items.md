@@ -1574,3 +1574,11 @@ Status: **DONE — implementation and bounded verification complete; physical-de
 - Bounded ephemeral stack, progressive layout, shuffle, deal, drag, keyboard nudge, flip, inspect, gather and reset interactions reuse the shared physical card system.
 - Collection/reward state stays read-only and locked slots receive only the safe teaser projection. Persistent layouts remain deferred.
 - Evidence: unit/domain **281 passed** with three optional exact-package suites skipped; the focused Desk matrix passes **15/15** across Chromium, desktop WebKit and compact/large/landscape WebKit, and the broader Collection matrix passes **28/28**. Shared Prestige/material regressions pass **14/14** in Chromium and WebKit. Production build, Capacitor iOS sync, and packaged Collection/Desk navigation smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), both on iOS 26.5. Physical-device drag, VoiceOver, Dynamic Type and GPU performance remain unverified.
+
+## HR-COLLECTION-DESK-02 — smooth transitions and owned-first stacks
+
+Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device acceptance remains open.**
+
+- Angular `afterNextRender` starts placement motion after committed DOM. Placement, deal/gather, selection and live card tilt own separate transform layers.
+- Desk landing and active stacks default to collected cards. Canonical full-set layout is explicit and paged; zero-owned sets remain progress-only.
+- Evidence: unit/domain **281 passed** with three optional suites skipped; focused Desk **21/21** and Collection ownership/navigation **15/15** pass across Chromium, WebKit and compact/large/landscape profiles. Production build and iOS sync pass; packaged Collection/Desk smokes pass on iPhone 17 Pro and iPad Pro 11-inch (M5), iOS 26.5.
