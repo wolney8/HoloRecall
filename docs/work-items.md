@@ -1591,3 +1591,12 @@ Status: **DONE — implementation and bounded verification complete; physical-de
 - Add empty-table pan, owned/locked world-coordinate drag, owned double-click flip, a fixed stack dock/drop target, honest next-item stack top and one-item direct dealing.
 - Preserve progressive bounded rendering, locked privacy, Collection routing and read-only learning/reward state; persistent layouts, themes and physics remain deferred.
 - Evidence: unit/domain **283 passed** with three optional suites skipped. Focused Desk passes **28/28** across Chromium and desktop WebKit plus **3/3** compact/large/landscape WebKit profiles; Collection ownership/privacy/navigation passes **15/15**. Production build and Capacitor iOS sync pass; packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
+## HR-COLLECTION-DESK-04 — drag above deck and true mini-card typography
+
+Status: **DONE — implementation and bounded verification complete; physical-device acceptance remains open.**
+
+- Add a viewport-level, presentation-only drag lift above the fixed stack while one placement remains authoritative in world coordinates.
+- Give shared compact cards deterministic mini typography tokens, an additional stack-preview density, and inherited imported-panel type controls without changing focal rendering.
+- Preserve owned/full-set deal order, locked privacy, page geometry, accessibility and read-only Collection state; persistence, themes and physics remain deferred.
+- Evidence: unit/domain **283 passed** with three optional suites skipped. Focused Desk passes **32/32** across Chromium and desktop WebKit; shared mini typography and 200% layout pass **6/6** across compact/large/landscape WebKit. Collection/shared-card and focal Study regressions pass **24/24** across Chromium and WebKit. Production build and Capacitor iOS sync pass; packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device drag layering, touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.

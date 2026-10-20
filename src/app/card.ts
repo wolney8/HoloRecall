@@ -19,7 +19,7 @@ export interface CardInspectionRequest { revealed:boolean; opener:HTMLElement }
   standalone: true,
   imports:[ImportedCardContentComponent],
   template: `
-    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.drag-enabled]="dragTilt" [class.flippable]="flippable" [class.face-motion-active]="inspectionUnavailable" [attr.data-motion]="motionReduced?'reduced':'full'"
+    <div #motion class="card-motion" [class.motion-enabled]="animated()" [class.compact]="compact" [class.stack-preview]="compact && compactDensity==='stack-preview'" [attr.data-density]="compact ? compactDensity : 'focal'" [class.drag-enabled]="dragTilt" [class.flippable]="flippable" [class.face-motion-active]="inspectionUnavailable" [attr.data-motion]="motionReduced?'reduced':'full'"
       [attr.role]="flippable ? 'button' : null" [attr.tabindex]="flippable ? (inspectionUnavailable ? -1 : 0) : (inspectionUnavailable ? -1 : null)" [attr.aria-pressed]="flippable ? displayedRevealed() : null"
       [attr.aria-label]="flippable ? (displayedRevealed() ? 'Show card front' : 'Show card answer') : null"
       (click)="activateFlip($event)" (keydown)="keyFlip($event)"
@@ -101,6 +101,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() motionPreference:MotionPreference='system';
   @Input() feedbackRating:1|2|3|4|5|null=null;
   @Input() compact = false;
+  @Input() compactDensity:'mini'|'stack-preview'='mini';
   @Input() dragTilt = false;
   @Input() flippable = false;
   @Output() flipped = new EventEmitter<boolean>();
@@ -281,7 +282,7 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (changes['backgroundUrl'] || changes['design']) this.failedBackground.set(false);
     if (changes['frameUrl'] || changes['design']) this.failedFrame.set(false);
     this.updateMotion();
-    if(changes['card']||changes['revealed'])queueMicrotask(()=>this.scheduleAnswerFit());
+    if(changes['card']||changes['revealed']||changes['compact']||changes['compactDensity'])queueMicrotask(()=>this.scheduleAnswerFit());
     if(changes['studyClueState']&&!changes['studyClueState'].firstChange){const state=changes['studyClueState'].currentValue;requestAnimationFrame(()=>{if(state==='available')this.animatePennant();else if(state==='displayed'){this.clueProxy.value=.18;this.renderCluePeel(.18);}else if(state==='removing')this.animateClueRemoval();});}
     if (changes['card'] && !changes['card'].firstChange && changes['card'].previousValue?.id !== this.card.id) {
       queueMicrotask(() => this.animate('deal'));
@@ -398,9 +399,9 @@ export class FlashcardComponent implements AfterViewInit, OnChanges, OnDestroy {
   private fitAdaptiveAnswer():void{
     const answer=this.answerText?.nativeElement,measure=this.answerMeasure?.nativeElement,surface=this.cardSurface?.nativeElement,copy=this.copy?.nativeElement;if(!answer||!measure||!surface||!copy)return;
     answer.style.removeProperty('--answer-fit-size');delete surface.dataset['answerFit'];delete surface.dataset['adaptiveFit'];delete surface.dataset['adaptiveSize'];delete surface.dataset['adaptiveSafeWidth'];if(!this.displayedRevealed()||!['adaptive-short','short'].includes(this.answerSize))return;
-    const adaptive=this.answerSize==='adaptive-short',safeWidth=copy.clientWidth*(adaptive?.74:.82),safeHeight=adaptive?Math.min(104,copy.clientHeight*.42):copy.clientHeight*.55,computed=parseFloat(getComputedStyle(answer).fontSize),max=adaptive?92:Math.min(64,computed||64),minimum=adaptive?44:Math.min(max,this.compact?28:34);
+    const adaptive=this.answerSize==='adaptive-short',safeWidth=copy.clientWidth*(adaptive?.74:.82),safeHeight=adaptive?Math.min(this.compact?72:104,copy.clientHeight*.42):copy.clientHeight*.55,computed=parseFloat(getComputedStyle(answer).fontSize),preview=this.compact&&this.compactDensity==='stack-preview',max=this.compact?(adaptive?(preview?24:36):Math.min(preview?20:28,computed||28)):(adaptive?92:Math.min(64,computed||64)),minimum=this.compact?(adaptive?(preview?16:24):(preview?14:20)):(adaptive?44:Math.min(max,34));
     const fits=(size:number)=>{measure.style.fontSize=`${size}px`;return measure.scrollWidth<=safeWidth&&measure.scrollHeight<=safeHeight;};const bestFit=(low:number,high:number)=>{for(let step=0;step<9;step++){const candidate=(low+high)/2;if(fits(candidate))low=candidate;else high=candidate;}return Math.floor(low*100)/100;};
-    let size=max,fit='single-line';if(!fits(max)){if(fits(minimum))size=bestFit(minimum,max);else if(adaptive){size=38;fit='wrapped';}else if(!/\s|[-\u2010-\u2015]/u.test(this.card.answer)&&fits(24)){size=bestFit(24,minimum);fit='single-line';}else{size=minimum;fit=/\s|[-\u2010-\u2015]/u.test(this.card.answer)?'wrapped':'emergency';}}
+    let size=max,fit='single-line';if(!fits(max)){if(fits(minimum))size=bestFit(minimum,max);else if(adaptive){size=this.compact?minimum:38;fit='wrapped';}else if(!/\s|[-\u2010-\u2015]/u.test(this.card.answer)&&fits(this.compact?Math.min(16,minimum):24)){const lower=this.compact?Math.min(16,minimum):24;size=bestFit(lower,minimum);fit='single-line';}else{size=minimum;fit=/\s|[-\u2010-\u2015]/u.test(this.card.answer)?'wrapped':'emergency';}}
     answer.style.setProperty('--answer-fit-size',`${size}px`);surface.dataset['answerFit']=fit;if(adaptive){surface.dataset['adaptiveFit']=fit==='single-line'?'fitted':'fallback';surface.dataset['adaptiveSize']=size.toFixed(2);surface.dataset['adaptiveSafeWidth']=safeWidth.toFixed(2);}
   }
   private animatePennant():void{const pennant=this.cluePennant?.nativeElement;if(!pennant)return;this.pennantTween?.kill();this.pennantTween=this.motionReduced?gsap.fromTo(pennant,{opacity:0},{opacity:1,duration:.14,clearProps:'opacity'}):gsap.fromTo(pennant,{scaleX:.1,skewX:-8,opacity:.45},{scaleX:1,skewX:0,opacity:1,duration:.34,ease:'back.out(1.3)',clearProps:'transform,opacity'});}

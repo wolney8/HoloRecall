@@ -1,5 +1,11 @@
 # Current restart point
 
+## 20 October 2026 — Collection Desk drag lift and shared mini typography implemented
+
+- **Drag layering:** the transformed Desk world formed a stacking context beneath the fixed stack dock, so descendant z-index could not raise a dragged card above the deck. One viewport-level, presentation-only lift now mirrors the authoritative placement above the dock, preserves an owned card's current face, and uses only the safe locked teaser for locked cards. Drop return aligns and settles the lifted object into the stack before removing the loose placement; moving away cancels the target without a jump.
+- **Mini typography:** compact cards previously inherited focal and browser-viewport clamps, while imported panels retained encapsulated fixed sizes. Shared card-relative mini tokens now govern primary, secondary, context, artwork and choice type across Overview, Sets, Cards and Desk. Stack preview is a denser form of the same renderer; imported panels inherit the tokens. Focal Study and inspection sizing are unchanged.
+- **Evidence:** unit/domain **283/283** pass with three optional suites skipped. Focused Desk passes **32/32** in Chromium/desktop WebKit; compact/large/landscape WebKit mini and 200% coverage passes **6/6**; Collection/shared-card and focal Study regressions pass **24/24**. Production build and Capacitor iOS sync pass. Packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device drag layering/touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
 ## 20 October 2026 — Collection Desk bounded table and direct manipulation implemented
 
 - **Table/camera:** the former internally scrolling Desk is a finite world translated beneath a clipped 72–80vh viewport. Empty-surface pointer/touch drag pans one clamped camera transform; owned and locked cards keep world coordinates, and the fixed stack dock remains reachable.

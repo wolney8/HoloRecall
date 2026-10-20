@@ -175,3 +175,80 @@
 .clue-sticker-copy{z-index:3}.clue-sticker:disabled{color:inherit;cursor:default}
 .rating-facets{position:absolute;inset:0;overflow:visible}.rating-facets i{position:absolute;left:50%;top:58%;width:10px;height:10px;background:linear-gradient(135deg,var(--frame-color),color-mix(in srgb,var(--frame-color) 25%,#fff));clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);animation:rating-facet .62s cubic-bezier(.16,1,.3,1) both}.rating-facets i:nth-child(2){--fx:76px;--fy:-38px;animation-delay:.03s}.rating-facets i:nth-child(3){--fx:-83px;--fy:-16px;animation-delay:.06s}.rating-facets i:nth-child(4){--fx:67px;--fy:52px;animation-delay:.09s}.rating-facets i:nth-child(5){--fx:-58px;--fy:57px;animation-delay:.12s}.rating-facets i:nth-child(6){--fx:12px;--fy:-76px;animation-delay:.15s}@keyframes rating-facet{from{opacity:.9;transform:translate(0,0) rotate(0) scale(.5)}to{opacity:0;transform:translate(var(--fx,-42px),var(--fy,-48px)) rotate(125deg) scale(1)}}
 .card-motion[data-motion=reduced] .surface-ambient,.card-motion[data-motion=reduced] .surface-graze,.card-motion[data-motion=reduced] .surface-shimmer{display:none}.card-motion[data-motion=reduced] .rating-facets{display:none}.card-motion[data-motion=reduced] .clue-pennant,.card-motion[data-motion=reduced] .clue-sticker{animation:none!important}
+
+/* Mini collectibles are laid out at their real 190–230px size. Their type is
+   card-relative and shared by Collection grids, Sets and Desk; focal cards do
+   not inherit these variables. Imported visual panels consume the same tokens. */
+.card-motion.compact{
+  --card-primary-size:clamp(14px,7.4cqw,17px);
+  --card-answer-size:clamp(17px,9cqw,21px);
+  --card-secondary-size:clamp(10px,5.5cqw,12.5px);
+  --card-context-size:clamp(8px,4.4cqw,10px);
+  --card-art-title-size:clamp(13px,7.2cqw,17px);
+  --card-art-subtitle-size:clamp(10px,5.3cqw,12px);
+  --card-art-icon-box:clamp(30px,16cqw,38px);
+  --card-art-icon-size:clamp(14px,7.4cqw,18px);
+  --card-ornament-icon-box:clamp(32px,17cqw,40px);
+  --card-ornament-icon-size:clamp(14px,7.4cqw,18px);
+  --card-choice-size:clamp(9px,4.8cqw,11px);
+  --card-choice-min-height:30px;
+  --card-choice-padding:.24rem .48rem;
+  --card-choice-gap:.25rem;
+  --card-choice-reserve:3.7rem;
+  --card-art-padding:.65rem;
+  --card-art-gap:.3rem;
+  --card-mini-line-height:1.2;
+  container-type:inline-size;
+}
+.compact .memory-card{gap:7px;padding:12px}
+.compact .card-heading{font-size:var(--card-context-size);line-height:1.2}
+.compact .tier{font-size:var(--card-context-size)}
+.compact .tier>span{font-size:clamp(11px,6cqw,14px)}
+.compact .card-copy{padding:7px 4px;min-height:56px}
+.compact .card-copy h3,
+.compact .prompt h3,
+.compact .memory-card[data-art-policy=text-first] .card-copy.prompt h3{font-size:var(--card-primary-size);line-height:1.22;letter-spacing:-.015em}
+.compact .memory-card[data-art-policy=text-first] .card-copy.prompt{padding:clamp(11px,6cqw,16px) clamp(7px,4cqw,12px)}
+.compact .recall-cue{font-size:var(--card-secondary-size);line-height:1.25}
+.compact .recall-context,.compact .recall-guidance,.compact .recall-hint{font-size:var(--card-secondary-size);line-height:1.28}
+.compact .secondary,.compact .interpretation{font-size:var(--card-secondary-size);line-height:1.28}
+.compact footer{font-size:var(--card-context-size);line-height:1.2}
+.compact .capability-list li{font-size:var(--card-context-size)}
+.compact .memory-card[data-composition=answer-showcase] .illustration-layer{height:clamp(3.7rem,18%,4.8rem)}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer{padding:1.9rem .4rem .45rem}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer>h3,
+.compact .memory-card[data-composition=answer-showcase][data-answer-size=medium] .card-copy.answer>h3,
+.compact .memory-card[data-composition=answer-showcase][data-answer-size=long] .card-copy.answer>h3{font-size:var(--answer-fit-size,var(--card-answer-size));line-height:1.08;letter-spacing:-.025em}
+.compact .memory-card[data-composition=answer-showcase] .card-copy.answer>.secondary{font-size:var(--card-secondary-size);line-height:1.25;margin-top:.45rem}
+
+/* The 106–126px stack top is a denser preview of the same renderer. It is
+   inert and prioritises recognition over reproducing every focal detail. */
+.card-motion.compact.stack-preview{
+  --card-primary-size:clamp(10px,8cqw,12px);
+  --card-answer-size:clamp(12px,9.5cqw,15px);
+  --card-secondary-size:clamp(8px,6.5cqw,10px);
+  --card-context-size:clamp(7px,5.6cqw,8px);
+  --card-art-title-size:clamp(10px,8cqw,12px);
+  --card-art-subtitle-size:clamp(8px,6.4cqw,9px);
+  --card-art-icon-box:clamp(23px,18cqw,29px);
+  --card-art-icon-size:clamp(10px,8cqw,13px);
+  --card-ornament-icon-box:clamp(25px,19cqw,31px);
+  --card-ornament-icon-size:clamp(11px,8.5cqw,14px);
+  --card-choice-size:8px;
+  --card-choice-min-height:22px;
+  --card-choice-padding:.16rem .28rem;
+  --card-choice-gap:.16rem;
+  --card-choice-reserve:2.8rem;
+  --card-art-padding:.42rem;
+  --card-art-gap:.18rem;
+}
+.compact.stack-preview .memory-card{gap:4px;padding:8px;border-radius:13px}
+.compact.stack-preview .card-heading{padding:2px}
+.compact.stack-preview .tier>span{font-size:10px}
+.compact.stack-preview .card-copy{padding:4px 2px;min-height:38px}
+.compact.stack-preview .memory-card[data-art-policy=text-first] .card-copy.prompt{padding:7px 4px}
+.compact.stack-preview .memory-card[data-composition=answer-showcase] .illustration-layer{height:2.8rem}
+.compact.stack-preview .memory-card[data-composition=answer-showcase] .card-copy.answer{padding:1.35rem .2rem .25rem}
+.compact.stack-preview footer{min-height:16px;padding:2px 3px}
+.compact.stack-preview .capability-list{display:none}
+.compact.stack-preview .scroll-hint{font-size:7px}
