@@ -180,7 +180,10 @@ hr-collection-desk .desk-card-position *,
 hr-collection-desk .stack-preview-shell,
 hr-collection-desk .stack-preview-shell *,
 hr-collection-desk .drag-lift-card,
-hr-collection-desk .drag-lift-card *{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+hr-collection-desk .drag-lift-card *,
+hr-collection-desk .user-pile,
+hr-collection-desk .user-pile *{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 hr-collection-desk .desk-card-position img,
 hr-collection-desk .stack-preview-shell img,
 hr-collection-desk .drag-lift-card img{-webkit-user-drag:none}
+hr-collection-desk .user-pile img{-webkit-user-drag:none}

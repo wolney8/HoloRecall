@@ -8,6 +8,19 @@ Updated: 21 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed milestone — HR-COLLECTION-DESK-09
+
+Authorised 21 October 2026. Add deterministic, presentation-only user piles without changing the fixed primary deck, card semantics or learner state.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-COLLECTION-DESK-09A | Pile model and direct manipulation | DONE | Loose cards form ordered user piles; top-card extraction and whole-pile movement remain distinct. |
+| HR-COLLECTION-DESK-09B | Bounded fan/collapse | DONE | Deterministic fan renders at most 12 cards per page with accessible controls and Reduced Motion behavior. |
+| HR-COLLECTION-DESK-09C | Layout persistence V2 | DONE | Pile anchors/order persist without content or face data; V1 flat layouts remain readable. |
+| HR-COLLECTION-DESK-09D | Cross-platform regression evidence | DONE | Desk materials, primary deck, privacy, overflow, Collection Answer-first and Study Recall-first remain intact. |
+
+Implementation evidence: user piles keep top-first member order, use a separate touch-sized grip for whole-pile movement and reuse the viewport drag lift for top-card extraction. Collapsed piles mount one real/safe top renderer; fans are deterministic and paged at 12. Layout V2 stores safe IDs, anchors, order and fan state while V1 remains readable and restored owned faces remain Answer-first. Unit/domain passes **300** with four opt-in suites skipped. Focused Desk, appearance and Study/Collection semantics pass **70/70** across Chromium and desktop WebKit; compact/large/landscape touch profiles pass **3/3**. Production build and iOS sync pass. Packaged create/fan/collapse/relaunch/Reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5 Simulator.
+
 ## Completed milestone — HR-COLLECTION-DESK-08
 
 Authorised 21 October 2026. This milestone adds a bounded family of table materials without changing card appearance, Collection interaction state or learner data.

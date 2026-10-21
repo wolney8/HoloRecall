@@ -1,5 +1,14 @@
 # Current restart point
 
+## 21 October 2026 — Collection Desk user piles implemented
+
+- **Pile model:** dragging a loose card onto another loose card creates a top-first user pile; dropping onto an existing pile adds to its top. The fixed primary deck retains canonical undealt/return semantics. A separate 44 px grip moves the whole pile, while the visible top card uses the existing drag lift to extract exactly one member. One-member and empty groups dissolve.
+- **Fan and scale:** collapsed piles render one real owned or safe locked top surface, three lightweight edge layers and a count. Fan/collapse uses deterministic readable geometry, restrained rotation and at most 12 mounted cards per page; Reduced Motion is immediate. Mixed owned/locked fans preserve the existing safe-shell boundary.
+- **Persistence:** Desk layout V2 stores safe loose geometry, pile anchors, top-first card IDs, fan/page state and camera position. It stores no face, kind or content; current ownership is authoritative and restored owned cards remain Answer-first. V1 flat records restore as loose cards.
+- **Evidence:** unit/domain passes **300** with four opt-in suites skipped. Focused Desk, materials and visible Study/Collection semantics pass **70/70** across Chromium and desktop WebKit; compact, large and landscape touch profiles pass **3/3**; production build and Capacitor iOS sync pass. Packaged pile creation, fan/collapse and relaunch persistence pass **1/1 in 107.702 s** on iPhone 17 Pro and **1/1 in 112.715 s** on iPad Pro 11-inch (M5), iOS 26.5 Simulator.
+- **Remaining boundary:** physical-device pile gesture quality, VoiceOver ordering, Dynamic Type and GPU/thermal behavior remain unverified. Full physics remains deferred.
+- **Recommended next bounded milestone:** physical-device and VoiceOver acceptance for Desk direct manipulation, followed by focused pile UX refinement only where that evidence shows a problem.
+
 ## 21 October 2026 — Collection Desk curated materials implemented
 
 - **Table material model:** Collection Desk now owns a declarative five-preset material family: Holo Grid, Midnight Felt, Walnut, Graphite and Aurora. Holo Grid preserves the prior technical surface and remains the default. Static CSS gradients and Desk-scoped variables style the finite world, trim, inset ambience and drop accent without changing card Design Sets or application chrome.

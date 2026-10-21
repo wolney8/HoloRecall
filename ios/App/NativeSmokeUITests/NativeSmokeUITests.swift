@@ -5,6 +5,7 @@ final class NativeSmokeUITests: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_GB"]
         app.launch()
@@ -143,15 +144,35 @@ final class NativeSmokeUITests: XCTestCase {
         openDeskWithFirstCollectedStack()
         chooseDeskAppearance("Walnut")
         tapButton("Lay out collected")
-        let placed = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch
-        XCTAssertTrue(placed.waitForExistence(timeout: 8))
+        let placedCards = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'"))
+        XCTAssertTrue(placedCards.firstMatch.waitForExistence(timeout: 8))
+        XCTAssertGreaterThanOrEqual(placedCards.count, 2)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(placedCards.element(boundBy: 1).waitForExistence(timeout: 8))
+        app.swipeUp()
+        let appFrame = app.frame
+        let sourceFrame = placedCards.element(boundBy: 0).frame
+        let targetFrame = placedCards.element(boundBy: 1).frame
+        let sourceY = max(24, min(sourceFrame.maxY - 24, appFrame.height - 80))
+        let targetY = max(24, min(targetFrame.maxY - 24, appFrame.height - 80))
+        let sourcePoint = app.coordinate(withNormalizedOffset: CGVector(dx: sourceFrame.midX / appFrame.width, dy: sourceY / appFrame.height))
+        let targetPoint = app.coordinate(withNormalizedOffset: CGVector(dx: targetFrame.midX / appFrame.width, dy: targetY / appFrame.height))
+        sourcePoint.press(forDuration: 0.2, thenDragTo: targetPoint)
+        let pileGrip = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Move card pile, 2 cards'")).firstMatch
+        XCTAssertTrue(pileGrip.waitForExistence(timeout: 8), "Pile grip did not appear after grouping two cards\n\(app.debugDescription)")
+        pileGrip.tap()
+        tapButton("Fan cards")
+        XCTAssertTrue(app.buttons["Collapse pile"].waitForExistence(timeout: 8))
+        tapButton("Collapse pile")
         attachScreenshot("native-desk-arrangement-before-relaunch")
 
         app.terminate()
+        XCUIDevice.shared.orientation = .portrait
         app.launch()
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
         openDeskWithFirstCollectedStack()
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Move card pile, 2 cards'")).firstMatch.waitForExistence(timeout: 8))
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance' AND label CONTAINS[c] 'Walnut'")).firstMatch.waitForExistence(timeout: 8))
         attachScreenshot("native-desk-arrangement-restored")
         tapButton("Reset set")
@@ -278,6 +299,7 @@ final class NativeSmokeUITests: XCTestCase {
 
     private func openDeskWithFirstCollectedStack() {
         tapButton("Collection")
+        if app.buttons["Lay out collected"].waitForExistence(timeout: 2) { return }
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
         tapButton("Open Collection Desk")
         XCTAssertTrue(app.staticTexts["My collection stacks"].waitForExistence(timeout: 8))

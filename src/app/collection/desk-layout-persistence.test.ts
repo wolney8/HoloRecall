@@ -1,5 +1,5 @@
 import { afterEach,describe,expect,it,vi } from 'vitest';
-import { DESK_LAYOUT_STORAGE_PREFIX,DESK_LAYOUT_VERSION,DeskLayoutPersistence,type DeskLayoutV1 } from './desk-layout-persistence';
+import { DESK_LAYOUT_STORAGE_PREFIX,DESK_LAYOUT_VERSION,DeskLayoutPersistence,type DeskLayoutV1,type DeskLayoutV2 } from './desk-layout-persistence';
 
 class MemoryStorage implements Storage {
   private values=new Map<string,string>();
@@ -11,7 +11,8 @@ class MemoryStorage implements Storage {
   setItem(key:string,value:string){this.values.set(key,value);}
 }
 
-const layout=(setId='lesson'):DeskLayoutV1=>({version:DESK_LAYOUT_VERSION,setId,mode:'full-set-layout',visibleCount:3,placements:[{cardId:'owned-1',x:120,y:240,rotation:2,zIndex:1},{cardId:'locked-2',x:360,y:240,rotation:-2,zIndex:2}],panX:-40,panY:-20});
+const layout=(setId='lesson'):DeskLayoutV2=>({version:DESK_LAYOUT_VERSION,setId,mode:'full-set-layout',visibleCount:3,placements:[{cardId:'owned-1',x:120,y:240,rotation:2,zIndex:1}],piles:[{id:'pile-1',x:360,y:240,rotation:-2,zIndex:2,cardIds:['locked-2','owned-3'],expanded:true,page:0}],panX:-40,panY:-20});
+const legacy=(setId='lesson'):DeskLayoutV1=>({version:1,setId,mode:'full-set-layout',visibleCount:2,placements:[{cardId:'owned-1',x:120,y:240,rotation:2,zIndex:1},{cardId:'locked-2',x:360,y:240,rotation:-2,zIndex:2}],panX:-40,panY:-20});
 
 describe('DeskLayoutPersistence',()=>{
   afterEach(()=>vi.unstubAllGlobals());
@@ -21,6 +22,10 @@ describe('DeskLayoutPersistence',()=>{
     expect(persistence.load('lesson')).toEqual(value);
     expect(storage.getItem(`${DESK_LAYOUT_STORAGE_PREFIX}lesson`)).not.toContain('prompt');
     expect(persistence.load('another')).toBeNull();
+  });
+  it('keeps V1 flat layouts readable without inventing piles',()=>{
+    const storage=new MemoryStorage();vi.stubGlobal('localStorage',storage);const persistence=new DeskLayoutPersistence();storage.setItem(persistence.key('lesson'),JSON.stringify(legacy()));
+    expect(persistence.load('lesson')).toEqual(legacy());
   });
   it('removes corrupt and unsupported records without throwing',()=>{
     const storage=new MemoryStorage();vi.stubGlobal('localStorage',storage);const persistence=new DeskLayoutPersistence(),key=persistence.key('lesson');
