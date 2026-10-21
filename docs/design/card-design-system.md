@@ -344,7 +344,7 @@ Effects Off and Reduced Motion retain the crest, numeral and static material bor
 
 ## 14. Subject presentation and Study artwork — implemented 12 October 2026
 
-The generic learning card remains subject-neutral. A presentation profile may interpret retained source content for a subject without replacing the authoritative prompt or answer. The first profile is `language`: its recall face prioritises the concrete retrieval task, then a natural-language cue and concise grammatical/situational guidance. Its answer face keeps the target answer dominant, pronunciation secondary and a short meaning/interpretation on-card; long labelled sections stay in Card Details.
+The generic learning card remains subject-neutral. A presentation profile may interpret retained source content for a subject without replacing the authoritative prompt or answer. The first profile is `language`: its recall face keeps a meaningful retained Anki template front intact, then uses source-derived task/cue/guidance only when the front is empty or genuinely vague. An image-first vague front remains image-led and never promotes the answer-side meaning into the Recall primary. Its answer face keeps the target answer dominant, pronunciation secondary and a short meaning/interpretation on-card; long labelled sections stay in Card Details. Study and every physical Collection scale consume the same resolved Recall content.
 
 In wide Study, Card Details belongs to the complete revealed-answer stage: card and rating controls form the first row and support spans beneath both. Compact Study orders card, rating controls, then support. This keeps ratings immediately reachable while giving reference prose, lists and tables a readable width outside the collectible object.
 

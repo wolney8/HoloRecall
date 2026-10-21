@@ -57,17 +57,34 @@ function inferredPresentation(card: CardContent, source?: { fields: Record<strin
   const meaningfulQuestion = question && (!VAGUE.test(question) || visibleGap) ? question : '';
   const meaningfulFocus = focus && (!VAGUE.test(focus) || visibleGap) ? focus : '';
   const front = clean(card.front);
-  let primary = meaningfulQuestion || meaningfulFocus || (!VAGUE.test(front) ? front : '') || equivalent;
+  const hasArt = !!(card.image || card.art);
+  const explicitlyVisual = /illustration|image|picture|what (?:do you see|is shown)/i.test(`${prompt} ${front}`);
+  // A retained template front is the same pre-Reveal learning surface Study received
+  // from Anki. Keep it intact instead of replacing it with an answer-side gloss.
+  const retainedTemplateFront=card.ankiSource?.contentProvenance?.front==='template'&&!VAGUE.test(front)?front:'';
+  const visualFallback=explicitlyVisual&&hasArt?'Recall the target-language expression shown by the illustration.':'';
+  let primary = retainedTemplateFront || meaningfulQuestion || meaningfulFocus || (!VAGUE.test(front) ? front : '') || visualFallback || equivalent;
   if (same(primary, card.answer)) primary = equivalent && !same(equivalent, card.answer) ? equivalent : (prompt && !VAGUE.test(prompt) ? prompt : 'Recall the target-language expression');
   const promptIsTask=/^(?:say|use|complete|fill|choose|identify|translate|answer|recall)\b/i.test(prompt);
   const situation = context || (!promptIsTask&&prompt&&!VAGUE.test(prompt)&&!same(prompt,primary)?prompt:'');
   const instruction = task || (promptIsTask&&!VAGUE.test(prompt)&&!same(prompt,primary)?prompt:'Say it in the target language');
   const answer = clean(card.answer).toLocaleLowerCase();
-  const safe = (value?: string): string | undefined => { const result=clean(value);return result&&!same(result,primary)&&!(answer.length>1&&result.toLocaleLowerCase().includes(answer))?result:undefined; };
+  const primaryLines=new Set(clean(primary).split('\n').map(line=>line.toLocaleLowerCase()));
+  const safe = (value?: string): string | undefined => { const result=clean(value);return result&&!same(result,primary)&&!primaryLines.has(result.toLocaleLowerCase())&&!(answer.length>1&&result.toLocaleLowerCase().includes(answer))?result:undefined; };
   const safeSituation=safe(situation),safeInstruction=safe(instruction),safeHint=safe(hint);
-  const explicitlyVisual = /illustration|image|picture|what (?:do you see|is shown)/i.test(prompt);
-  const hasArt = !!(card.image || card.art);
   return { profile: 'language', recallTask: primary, recallCue: meaningfulQuestion && meaningfulFocus && !same(meaningfulFocus, primary) ? meaningfulFocus : undefined, situationContext:safeSituation,taskGuidance:safeInstruction,hint:safeHint,artRole: hasArt ? (explicitlyVisual ? 'instructional' : 'supportive') : 'hidden' };
+}
+
+function storedPresentationIsAuthored(card:CardContent,source:ReturnType<typeof sourceForCard>,inferred:CardPresentation):boolean{
+  if(!card.ankiSource)return true;
+  const recall=clean(card.presentation?.recallTask);if(!recall)return false;
+  const origin=card.ankiSource.conversion?.fieldOrigins?.presentation;
+  if(origin==='local')return true;
+  if(origin==='derived')return false;
+  // Older snapshots did not record presentation provenance. Preserve a distinct
+  // legacy override, but reject values that match known importer-derived fields.
+  const fields=source?.fields??{},derived=[inferred.recallTask,card.front,card.answer,card.meaning,sourceField(fields,'Prompt'),sourceField(fields,'Question'),sourceField(fields,'Focus'),sourceField(fields,'English','Meaning')];
+  return !derived.some(value=>same(recall,value));
 }
 
 const CAPABILITY_TITLE=/^(?:cloze|image occlusion|audio|choices?|clue)$/i;
@@ -91,8 +108,8 @@ function contextualChromeLabel(card:CardContent,presentation:CardPresentation,so
 }
 
 export function derivedCardPresentation(card: CardContent, snapshots: AnkiSourceSnapshot[]): CardPresentation {
-  const inferred = inferredPresentation(card, sourceForCard(card, snapshots));
-  return { ...inferred, ...card.presentation, situationContext:card.presentation?.situationContext??inferred.situationContext,taskGuidance:card.presentation?.taskGuidance??inferred.taskGuidance??card.presentation?.recallGuidance?.[0],hint:card.presentation?.hint??inferred.hint };
+  const source=sourceForCard(card,snapshots),inferred = inferredPresentation(card, source),stored=card.presentation,authored=storedPresentationIsAuthored(card,source,inferred);
+  return { ...inferred, ...stored,recallTask:authored?stored?.recallTask:inferred.recallTask, situationContext:stored?.situationContext??inferred.situationContext,taskGuidance:stored?.taskGuidance??inferred.taskGuidance??stored?.recallGuidance?.[0],hint:stored?.hint??inferred.hint };
 }
 
 export function resolveCardPresentation(card: CardContent, snapshots: AnkiSourceSnapshot[], deck?: Deck, design?: DesignSet): ResolvedCardPresentation {
@@ -100,9 +117,10 @@ export function resolveCardPresentation(card: CardContent, snapshots: AnkiSource
   const requestedArtPolicy = presentation.studyArtPolicy ?? deck?.studyArtPolicy ?? design?.studyArtPolicy ?? 'auto';
   const artRole = presentation.artRole ?? (card.image || card.art ? 'supportive' : 'hidden');
   const effectiveArtPolicy = requestedArtPolicy === 'auto' ? (artRole === 'instructional' || presentation.profile !== 'language' && !!(card.image || card.art) ? 'image-first' : 'text-first') : requestedArtPolicy;
-  const situationContext=clean(presentation.situationContext)||undefined,taskGuidance=clean(presentation.taskGuidance)||undefined,hint=clean(presentation.hint)||undefined;
   const explicit=safeChromeLabel(presentation.title,card,presentation,source),contextual=contextualChromeLabel(card,presentation,source),deckFallback=safeChromeLabel(deck?.name,card,presentation,source),chromeTitle=explicit??contextual??deckFallback;
   const requestedPrimary=clean(presentation.recallTask)||clean(card.front),fallbackPrimary=clean(inferred.recallTask)||clean(card.front);
   const primary=!same(requestedPrimary,card.answer)?requestedPrimary:!same(fallbackPrimary,card.answer)?fallbackPrimary:!same(card.front,card.answer)?clean(card.front):'Recall the requested response';
+  const primaryLines=new Set(primary.split('\n').map(line=>line.toLocaleLowerCase())),supplement=(value?:string)=>{const result=clean(value);return result&&!primaryLines.has(result.toLocaleLowerCase())?result:undefined;};
+  const situationContext=supplement(presentation.situationContext),taskGuidance=supplement(presentation.taskGuidance),hint=supplement(presentation.hint);
   return { profile: presentation.profile ?? 'general', title:clean(presentation.title)||undefined,...(chromeTitle?{chromeTitle}:{}),chromeTitleSource:explicit?'explicit':contextual?'source-context':deckFallback?'deck':'none', primary, cue: clean(presentation.recallCue) || undefined, situationContext,taskGuidance,hint,answerInterpretation:card.details?.length?undefined:clean(card.interpretation||card.meaning)||undefined, artRole, requestedArtPolicy, effectiveArtPolicy };
 }

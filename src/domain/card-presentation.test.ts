@@ -6,9 +6,27 @@ const card=(front:string,answer:string,guid='guid'):CardContent=>({id:`card-${gu
 const snapshot=(guid:string,fields:Record<string,string>):AnkiSourceSnapshot=>({id:'source',version:2,packageVariant:'legacy-anki2',sourceDecks:[{id:'source-deck',path:'Lesson 1'}],noteTypes:[{id:'model',name:'Italian Visual Study',cloze:false,fields:Object.keys(fields).map((name,ordinal)=>({id:String(ordinal),name,ordinal})),templates:[{id:'model:0',name:'Card 1',ordinal:0,question:'{{Prompt}}{{Question}}{{Context}}',answer:'{{FrontSide}}<hr id="answer">{{Italian}}'}],signature:'anki-model-v1-test'}],notes:[{id:guid,guid,noteTypeId:'model',fields,tags:['italian']}],cards:[{id:`source-${guid}`,noteId:guid,templateId:'model:0',templateOrdinal:0,sourceDeckId:'source-deck'}],media:[],contentHash:'snapshot'});
 
 describe('language card presentation',()=>{
-  it('replaces a vague illustration label with the retained English retrieval cue without leaking Italian',()=>{
+  it('keeps an image-first source front image-led without substituting the answer-side English meaning',()=>{
     const source=snapshot('ciao',{Prompt:'Recall from the illustration',Italian:'Ciao!',Meaning:'Hi / Hello / Bye — informal',Picture:'<div>CIAO</div>'}),value=card('Recall from the illustration','Ciao!','ciao');value.meaning='Hi / Hello / Bye — informal';
-    expect(resolveCardPresentation(value,[source],{id:'lesson',name:'Lesson',description:'',suspended:false})).toMatchObject({profile:'language',primary:'Hi / Hello / Bye — informal',artRole:'instructional',effectiveArtPolicy:'image-first'});
+    value.ankiSource!.contentProvenance={front:'template',answer:'template',frontFields:['Picture','Prompt'],answerFields:['Italian','Meaning']};
+    expect(resolveCardPresentation(value,[source],{id:'lesson',name:'Lesson',description:'',suspended:false})).toMatchObject({profile:'language',primary:'Recall the target-language expression shown by the illustration.',artRole:'instructional',effectiveArtPolicy:'image-first'});
+  });
+
+  it('uses the complete retained Anki front ahead of a stale machine-derived gloss',()=>{
+    const front='Say the short informal greeting that also works when leaving.\nYou meet a friend.',source=snapshot('canonical',{Prompt:'Say the short informal greeting that also works when leaving.',Question:'You meet a friend.',Italian:'Ciao!',Meaning:'Hi / Hello / Bye — informal'}),value=card(front,'Ciao!','canonical');
+    value.meaning='Hi / Hello / Bye — informal';
+    value.presentation={profile:'language',recallTask:value.meaning,taskGuidance:'Say the answer aloud.',artRole:'supportive'};
+    value.ankiSource!.contentProvenance={front:'template',answer:'template',frontFields:['Prompt','Question'],answerFields:['Italian','Meaning']};
+    value.ankiSource!.conversion={converterVersion:5,templateEngineVersion:1,normalizerVersion:4,enrichmentVersion:2,mappingVersion:3,mappingPolicyVersion:3,mappingOrigin:'auto-inferred',mappingSignature:'anki-mapping-v1-test',fieldBaselines:{},fieldOrigins:{presentation:'derived'}};
+    expect(resolveCardPresentation(value,[source]).primary).toBe(front);
+  });
+
+  it('preserves a locally authored imported Recall override',()=>{
+    const source=snapshot('authored',{Prompt:'Source prompt',Question:'Source question',Italian:'Ciao!'}),value=card('Source prompt\nSource question','Ciao!','authored');
+    value.presentation={profile:'language',recallTask:'My chosen Recall direction',artRole:'supportive'};
+    value.ankiSource!.contentProvenance={front:'template',answer:'template',frontFields:['Prompt','Question'],answerFields:['Italian']};
+    value.ankiSource!.conversion={converterVersion:5,templateEngineVersion:1,normalizerVersion:4,enrichmentVersion:2,mappingVersion:3,mappingPolicyVersion:3,mappingOrigin:'auto-inferred',mappingSignature:'anki-mapping-v1-test',fieldBaselines:{},fieldOrigins:{presentation:'local'}};
+    expect(resolveCardPresentation(value,[source]).primary).toBe('My chosen Recall direction');
   });
 
   it('shows the actual incomplete phrase and preserves contextual guidance',()=>{

@@ -8,7 +8,19 @@ Updated: 21 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
-## Active corrective milestone — HR-BUG-COLLECTION-RECALL-01
+## Completed corrective milestone — HR-BUG-COLLECTION-RECALL-02
+
+Authorised 21 October 2026. This pass corrects the visible semantic front after manual evidence showed that a Recall-labelled Desk card could still substitute an English meaning/gloss for the Anki source front.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-BUG-COLLECTION-RECALL-02A | Canonical imported front | DONE | A meaningful retained Anki template front outranks machine-derived presentation metadata; image-first fronts keep their image prompt and do not substitute the answer-side meaning. |
+| HR-BUG-COLLECTION-RECALL-02B | Study/Collection parity | DONE | Study before Reveal, Collection minis, Desk placements, stack preview and stack lift resolve the same visible Recall content for one card ID. |
+| HR-BUG-COLLECTION-RECALL-02C | Visible browser evidence | DONE | Assert initial visible prompt, explicit Answer, return/redeal, stack A→B reuse and persisted restore in Chromium and WebKit. |
+
+Implementation evidence: the screenshot fixture was the legacy image-first six-card Greetings set. Its loose `Ciao!`, `Piacere!` and `Buonasera!` cards stored the front `Recall from the illustration`, no presentation override, and answer-side meanings matching the screenshot; `Come stai?` stored `How are you?` with source Focus `To a friend`. The resolver had promoted those Meaning/Focus values over the source front, while newer derived `recallTask` values could similarly outrank a complete template front. Linked imported cards now keep a meaningful retained template front; image-first vague fronts remain image-led with neutral Recall guidance; only provenance-marked local or distinct legacy presentation overrides can replace source Recall semantics. The exact Lesson 1 Ciao card renders the same complete two-line front in Study, Overview, Sets, Cards, Desk and stack preview, flips to `Ciao!`, and returns/redeals/restores on that front. Unit/domain passes **292** with four opt-in suites skipped. Desk interaction and persistence passes **44/44** across Chromium/WebKit; the final semantic journey passes **2/2** across both engines. Production build passes.
+
+## Completed corrective milestone — HR-BUG-COLLECTION-RECALL-01
 
 Authorised 21 October 2026. This correction is limited to proving and enforcing the visible Recall semantics of shared Collection cards.
 
