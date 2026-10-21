@@ -1,5 +1,14 @@
 # Current restart point
 
+## 21 October 2026 — Collection Desk curated materials implemented
+
+- **Table material model:** Collection Desk now owns a declarative five-preset material family: Holo Grid, Midnight Felt, Walnut, Graphite and Aurora. Holo Grid preserves the prior technical surface and remains the default. Static CSS gradients and Desk-scoped variables style the finite world, trim, inset ambience and drop accent without changing card Design Sets or application chrome.
+- **Control and state:** a keyboard/touch-accessible Material menu exposes a labelled swatch and selected check state. Selection updates the material without rebuilding placements or changing pan, stack order, selection or face. A separate versioned global local preference applies across sets; corrupt or unavailable storage falls back to Holo Grid. Reset Set does not clear it.
+- **Preserved contracts:** Collection physical cards remain Answer-first and flip to canonical Recall; Study remains Recall-first. Locked cards retain the privacy-safe renderer. Appearance adds no image assets, animation loop, learner-state field, backup/export data or per-set override.
+- **Evidence:** unit/domain passes **296** with four opt-in suites skipped. New appearance acceptance passes **5/5 Chromium**, **5/5 desktop WebKit** and **1/1** in each compact, large-portrait and landscape WebKit profile; it covers five-preset screenshots, Light/Dark materials, selected state, geometry/pan/face invariance, global persistence, Reset independence, corruption fallback, Reduced Motion and 200% text. Existing Desk and visible face semantics pass **44/44** across Chromium/WebKit. Production build and Capacitor iOS sync pass. Packaged appearance/arrangement/relaunch/Reset passes **1/1 in 93.034 s** on iPhone 17 Pro and **1/1 in 101.697 s** on iPad Pro 11-inch (M5), iOS 26.5 Simulator.
+- **Remaining boundary:** physical-device colour, OLED contrast, touch, VoiceOver, Dynamic Type and GPU/thermal behavior remain unverified. Per-set/free-form materials and physics remain deferred.
+- **Recommended next bounded milestone:** manually assess the curated materials on physical iPhone/iPad before considering richer pile interactions. Do not start a physics engine without a demonstrated interaction need.
+
 ## 21 October 2026 — Collection Answer-first showcase correction
 
 - **Product boundary:** Study remains Recall/front before Reveal and Answer/back after Reveal. Collection is a showcase surface: Overview, Sets, Cards, inspection and Desk start on Answer/back; an explicit Collection flip exposes the canonical Recall/front retained by the prior semantic correction.

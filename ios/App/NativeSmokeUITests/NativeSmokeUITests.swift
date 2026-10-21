@@ -127,16 +127,21 @@ final class NativeSmokeUITests: XCTestCase {
         let start = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'study' AND label CONTAINS '→'")).firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         start.tap()
-        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
-        revealableCard().tap()
-        let qualifying = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '5 Easy'")).firstMatch
-        XCTAssertTrue(qualifying.waitForExistence(timeout: 8))
-        qualifying.tap()
-        tapButton("End session")
+        for _ in 0..<10 {
+            XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
+            revealableCard().tap()
+            let qualifying = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '5 Easy'")).firstMatch
+            XCTAssertTrue(qualifying.waitForExistence(timeout: 8))
+            qualifying.tap()
+            if app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'")).firstMatch.waitForExistence(timeout: 1) { break }
+        }
+        let end = app.buttons["End session"]
+        if end.exists { end.tap() }
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'")).firstMatch.waitForExistence(timeout: 8))
         tapButton("Done")
 
         openDeskWithFirstCollectedStack()
+        chooseDeskAppearance("Walnut")
         tapButton("Lay out collected")
         let placed = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch
         XCTAssertTrue(placed.waitForExistence(timeout: 8))
@@ -147,8 +152,11 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
         openDeskWithFirstCollectedStack()
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Collected card:'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance' AND label CONTAINS[c] 'Walnut'")).firstMatch.waitForExistence(timeout: 8))
         attachScreenshot("native-desk-arrangement-restored")
         tapButton("Reset set")
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance' AND label CONTAINS[c] 'Walnut'")).firstMatch.exists)
+        chooseDeskAppearance("Holo Grid")
     }
 
     func testDesignSuiteFoundation() throws {
@@ -277,6 +285,16 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(stack.waitForExistence(timeout: 8), "No collected Desk stack was available\n\(app.debugDescription)")
         stack.tap()
         XCTAssertTrue(app.buttons["Lay out collected"].waitForExistence(timeout: 8))
+    }
+
+    private func chooseDeskAppearance(_ name: String) {
+        let trigger = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance'")).firstMatch
+        XCTAssertTrue(trigger.waitForExistence(timeout: 8), "Desk appearance trigger is unavailable\n\(app.debugDescription)")
+        trigger.tap()
+        let option = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH[c] %@", name)).firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 8), "Missing Desk appearance preset: \(name)\n\(app.debugDescription)")
+        option.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance' AND label CONTAINS[c] %@", name)).firstMatch.waitForExistence(timeout: 8))
     }
 
     private func attachScreenshot(_ name: String) {

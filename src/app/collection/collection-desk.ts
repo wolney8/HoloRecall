@@ -1,6 +1,7 @@
 import { afterNextRender, Component, DestroyRef, ElementRef, EventEmitter, inject, Injector, input, Output, signal, computed, effect, untracked, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatMenuModule } from '@angular/material/menu';
 import { gsap } from 'gsap';
 import type { CardContent, Rarity } from '../../domain/models';
 import { activeCollectibleCards, cardsInCollectionScope, deckCollectionProgress, isCollected, lockedCollectibleTeaser, topLevelCollectionProgress, type LockedCollectibleTeaser } from '../../domain/collection';
@@ -15,6 +16,7 @@ import { DESK_LAYOUT_VERSION, DeskLayoutPersistence, type DeskLayoutV1, type Per
 import { DeskStackComponent, type DeskStackOpen } from './desk-stack';
 import { clampPan, clampPlacement, createDeskPlacement, DESK_BATCH_SIZE, DESK_CARD_HEIGHT, DESK_CARD_WIDTH, DESK_LAYOUT_PAGE, deskWorldSize, deterministicRotation, nextFreePlacement, nextZIndex, placementGrid, type DeskCardPlacement, type DeskWorldSize } from './desk-placement';
 import { COLLECTION_DEFAULT_FACE, collectionFaceIsRevealed } from './collection-face-policy';
+import { DESK_APPEARANCE_PRESETS, DeskAppearancePersistence, type DeskAppearanceId } from './desk-appearance';
 
 interface DragSession {id:string;pointerId:number;startX:number;startY:number;originX:number;originY:number;dragging:boolean;element:HTMLElement}
 interface StackDragSession {pointerId:number;startX:number;startY:number;offsetX:number;offsetY:number;liftX:number;liftY:number;dragging:boolean;element:HTMLElement;item:DeskStackItem}
@@ -25,7 +27,7 @@ interface DragLift {id:string;cardId:string;kind:'owned'|'locked';face:'recall'|
 
 @Component({
   selector:'hr-collection-desk',standalone:true,
-  imports:[MatButtonModule,MatProgressBarModule,FlashcardComponent,CardMotionViewportComponent,LockedCollectibleComponent,DeskStackComponent],
+  imports:[MatButtonModule,MatProgressBarModule,MatMenuModule,FlashcardComponent,CardMotionViewportComponent,LockedCollectibleComponent,DeskStackComponent],
   templateUrl:'./collection-desk.html',styleUrl:'./collection-desk.css',
 })
 export class CollectionDeskComponent {
@@ -33,12 +35,13 @@ export class CollectionDeskComponent {
   readonly Math=Math;
   readonly setId=input('');
   @Output() readonly closed=new EventEmitter<string>();@Output() readonly setOpened=new EventEmitter<string>();@Output() readonly inspectCard=new EventEmitter<string>();@Output() readonly practiceCards=new EventEmitter<string[]>();
-  readonly store=inject(LocalStudyStore);readonly deskState=inject(CollectionDeskState);private readonly layoutPersistence=inject(DeskLayoutPersistence);private readonly destroyRef=inject(DestroyRef);private readonly injector=inject(Injector);private readonly host=inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly store=inject(LocalStudyStore);readonly deskState=inject(CollectionDeskState);private readonly layoutPersistence=inject(DeskLayoutPersistence);private readonly appearancePersistence=inject(DeskAppearancePersistence);private readonly destroyRef=inject(DestroyRef);private readonly injector=inject(Injector);private readonly host=inject<ElementRef<HTMLElement>>(ElementRef);
   @ViewChild('deskCanvas') private deskCanvas?:ElementRef<HTMLElement>;
   @ViewChild('stackDock') private stackDock?:ElementRef<HTMLElement>;
   private deskViewport?:ElementRef<HTMLElement>;
   @ViewChild('deskViewport') set deskViewportElement(value:ElementRef<HTMLElement>|undefined){this.resizeObserver?.disconnect();this.deskViewport=value;if(value){this.measureViewport();this.resizeObserver=new ResizeObserver(()=>this.measureViewport());this.resizeObserver.observe(value.nativeElement);}}
   readonly tiers=RARITIES;readonly lockedSelected=signal<LockedCollectibleTeaser|null>(null);readonly transitioning=signal(false);readonly dropActive=signal(false);readonly panning=signal(false);readonly dragLift=signal<DragLift|null>(null);readonly stackDrawingId=signal('');
+  readonly appearancePresets=DESK_APPEARANCE_PRESETS;readonly appearanceId=signal<DeskAppearanceId>(this.appearancePersistence.load());readonly selectedAppearance=computed(()=>this.appearancePresets.find(preset=>preset.id===this.appearanceId())!);
   readonly viewportWidth=signal(900);readonly viewportHeight=signal(680);
   private drag?:DragSession;private stackDrag?:StackDragSession;private pan?:PanSession;private animations:gsap.core.Animation[]=[];private routeSeen=false;private previousSetId='';private openedSetId:string|undefined;private pendingViewEnter=false;private resizeObserver?:ResizeObserver;private panFrame=0;private pendingPan?:DeskPoint;private suppressFlipId='';private suppressFlipUntil=0;private saveTimer?:ReturnType<typeof setTimeout>;
   private readonly flushLayout=()=>{if(this.saveTimer){clearTimeout(this.saveTimer);this.saveTimer=undefined;this.saveLayout();}};
@@ -68,6 +71,7 @@ export class CollectionDeskComponent {
     this.destroyRef.onDestroy(()=>{this.animations.forEach(animation=>animation.kill());this.resizeObserver?.disconnect();cancelAnimationFrame(this.panFrame);window.removeEventListener('pagehide',this.flushLayout);this.flushLayout();this.dragLift.set(null);this.stackDrawingId.set('');});
   }
   motionReduced():boolean{const preference=this.state()?.preferences.motion??'system';return reducedMotion(preference,matchMedia('(prefers-reduced-motion: reduce)').matches);}
+  selectAppearance(id:DeskAppearanceId):void{this.appearanceId.set(id);this.appearancePersistence.save(id);}
   openSet(event:DeskStackOpen):void{if(event.locked){this.closed.emit(event.deckId);return;}if(this.motionReduced()){this.setOpened.emit(event.deckId);return;}this.transitioning.set(true);event.source.dataset['transition']='opening';const landing=this.host.nativeElement.querySelector<HTMLElement>('.stack-landing');if(landing)landing.dataset['transition']='exiting';const timeline=gsap.timeline({onComplete:()=>{this.untrack(timeline);this.pendingViewEnter=true;this.setOpened.emit(event.deckId);}}).to(event.source,{y:-8,scale:1.025,duration:.14,ease:'power2.out'}).to(landing,{opacity:0,y:12,duration:.17,ease:'power1.inOut'},.08);this.track(timeline);}
   close():void{this.transitionOut(this.activeSet()?'.active-desk-view':'.stack-landing',()=>this.closed.emit(this.activeSet()?.id??''));}
   backToStacks():void{this.transitionOut('.active-desk-view',()=>{this.pendingViewEnter=true;this.setOpened.emit('');});}

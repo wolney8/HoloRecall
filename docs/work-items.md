@@ -8,6 +8,19 @@ Updated: 21 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed milestone — HR-COLLECTION-DESK-08
+
+Authorised 21 October 2026. This milestone adds a bounded family of table materials without changing card appearance, Collection interaction state or learner data.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-COLLECTION-DESK-08A | Curated appearance model | DONE | Five declarative CSS-only Desk presets preserve Holo Grid as the default and remain separate from Design Sets and card materials. |
+| HR-COLLECTION-DESK-08B | Accessible live picker | DONE | A compact Material control supports keyboard, touch, labelled selected state and live updates without moving cards or resetting Desk state. |
+| HR-COLLECTION-DESK-08C | Presentation-only persistence | DONE | One versioned global local preference restores safely, falls back on invalid storage and survives Reset set independently of learner and geometry state. |
+| HR-COLLECTION-DESK-08D | Responsive/native evidence | DONE | Light/Dark, responsive browsers, 200% text, production build, iOS sync and packaged iPhone/iPad smoke retain interaction, contrast and Answer-first behavior. |
+
+Implementation evidence: the five static materials are applied to the finite table world through Desk-owned CSS variables; the Material menu exposes labelled swatches and an explicit checked state. Appearance persists under its own versioned global local key and is absent from learner state, geometry records and export. Unit/domain passes **296** with four opt-in suites skipped. Appearance coverage passes **5/5 Chromium**, **5/5 desktop WebKit** and **1/1** for compact, large portrait and landscape WebKit; existing Desk/visible-face regressions pass **44/44** across Chromium/WebKit. Production build and Capacitor sync pass. The packaged appearance/arrangement/relaunch/Reset smoke passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5 Simulator.
+
 ## Completed corrective milestone — HR-COLLECTION-DESK-07
 
 Authorised 21 October 2026. This correction separates Study's Recall-first learning flow from Collection's Answer-first showcase presentation while retaining the canonical Recall semantics established by HR-BUG-COLLECTION-RECALL-02.
