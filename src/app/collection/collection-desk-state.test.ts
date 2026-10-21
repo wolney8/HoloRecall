@@ -11,6 +11,6 @@ describe('CollectionDeskState session boundary',()=>{
   it('restores settled placements unselected with no shuffled order',()=>{
     const state=new CollectionDeskState(),placement=createDeskPlacement({id:'owned-card',cardId:'card',kind:'owned'},{x:10,y:20,rotation:0,zIndex:1});
     state.restore('lesson','owned-stack',[placement],1,-4,-8);
-    expect(state.selectedId()).toBe('');expect(state.shuffledOwnedIds()).toEqual([]);expect(state.dealtOwnedIds()).toEqual(['card']);expect(state.placements()[0]?.face).toBe('recall');
+    expect(state.selectedId()).toBe('');expect(state.shuffledOwnedIds()).toEqual([]);expect(state.dealtOwnedIds()).toEqual(['card']);expect(state.placements()[0]?.face).toBe('answer');
   });
 });

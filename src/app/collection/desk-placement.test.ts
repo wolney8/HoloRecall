@@ -30,10 +30,10 @@ describe('collection desk placement',()=>{
     const next=nextFreePlacement(existing,items[2]!,world);
     expect(existing).toEqual(before);
     expect(existing.some(item=>item.x===next.x&&item.y===next.y)).toBe(false);
-    expect(next.face).toBe('recall');
+    expect(next.face).toBe('answer');
   });
-  it('centralises the Recall-first materialisation invariant',()=>{
-    expect(createDeskPlacement(items[0]!,{x:12,y:34,rotation:2,zIndex:7})).toMatchObject({face:'recall',x:12,y:34,rotation:2,zIndex:7});
-    expect(placementGrid(items,700).every(item=>item.face==='recall')).toBe(true);
+  it('centralises the Collection Answer-first materialisation invariant',()=>{
+    expect(createDeskPlacement(items[0]!,{x:12,y:34,rotation:2,zIndex:7})).toMatchObject({face:'answer',x:12,y:34,rotation:2,zIndex:7});
+    expect(placementGrid(items,700).every(item=>item.face==='answer')).toBe(true);
   });
 });

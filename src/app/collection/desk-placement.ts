@@ -1,4 +1,6 @@
-export type DeskFace='recall'|'answer';
+import { COLLECTION_DEFAULT_FACE, type CollectionCardFace } from './collection-face-policy';
+
+export type DeskFace=CollectionCardFace;
 export type DeskPlacementKind='owned'|'locked';
 
 export interface DeskCardPlacement {
@@ -17,7 +19,7 @@ export type DeskPlacementGeometry=Pick<DeskCardPlacement,'x'|'y'|'rotation'|'zIn
 
 /** The only constructor for a newly materialised physical Desk card. */
 export function createDeskPlacement(identity:DeskPlacementIdentity,geometry:DeskPlacementGeometry):DeskCardPlacement {
-  return {...identity,...geometry,face:'recall'};
+  return {...identity,...geometry,face:COLLECTION_DEFAULT_FACE};
 }
 
 export const DESK_BATCH_SIZE=5;

@@ -8,6 +8,18 @@ Updated: 21 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed corrective milestone — HR-COLLECTION-DESK-07
+
+Authorised 21 October 2026. This correction separates Study's Recall-first learning flow from Collection's Answer-first showcase presentation while retaining the canonical Recall semantics established by HR-BUG-COLLECTION-RECALL-02.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-COLLECTION-DESK-07A | Central Collection face policy | DONE | Owned physical collectibles initially render their semantic Answer/back across Overview, Sets, Cards, inspection and Desk; Study remains Recall-first. |
+| HR-COLLECTION-DESK-07B | Desk stack and placement lifecycle | DONE | Stack preview, click/deal, drag/draw, return/redeal and restored geometry use Answer; an explicit same-session flip exposes canonical Recall. |
+| HR-COLLECTION-DESK-07C | Visible-content regression evidence | DONE | Chromium/WebKit assertions verify the actual Answer and Recall text, stack A→B reuse, return/redeal, persistence restore and Study separation. |
+
+Implementation evidence: `COLLECTION_DEFAULT_FACE` is Collection-only and drives peer/detail bindings, Desk placement construction, the stack preview and stack lift. The retained Anki Ciao fixture renders its complete two-line prompt in Study, `Ciao!` initially throughout Collection, the prompt after an explicit Collection flip, and `Ciao!` after return/redeal and persisted reload. Unit/domain passes **292** with four opt-in suites skipped. Focused Collection/Desk/Study coverage passes **58/58** across Chromium and desktop WebKit. Production build passes.
+
 ## Completed corrective milestone — HR-BUG-COLLECTION-RECALL-02
 
 Authorised 21 October 2026. This pass corrects the visible semantic front after manual evidence showed that a Recall-labelled Desk card could still substitute an English meaning/gloss for the Anki source front.
@@ -15,10 +27,10 @@ Authorised 21 October 2026. This pass corrects the visible semantic front after 
 | ID | Requirement | Status | Acceptance boundary |
 |---|---|---|---|
 | HR-BUG-COLLECTION-RECALL-02A | Canonical imported front | DONE | A meaningful retained Anki template front outranks machine-derived presentation metadata; image-first fronts keep their image prompt and do not substitute the answer-side meaning. |
-| HR-BUG-COLLECTION-RECALL-02B | Study/Collection parity | DONE | Study before Reveal, Collection minis, Desk placements, stack preview and stack lift resolve the same visible Recall content for one card ID. |
+| HR-BUG-COLLECTION-RECALL-02B | Study/Collection parity | DONE | Study before Reveal and an explicitly flipped Collection card resolve the same canonical Recall content for one card ID; Collection's initial face is governed separately by HR-COLLECTION-DESK-07. |
 | HR-BUG-COLLECTION-RECALL-02C | Visible browser evidence | DONE | Assert initial visible prompt, explicit Answer, return/redeal, stack A→B reuse and persisted restore in Chromium and WebKit. |
 
-Implementation evidence: the screenshot fixture was the legacy image-first six-card Greetings set. Its loose `Ciao!`, `Piacere!` and `Buonasera!` cards stored the front `Recall from the illustration`, no presentation override, and answer-side meanings matching the screenshot; `Come stai?` stored `How are you?` with source Focus `To a friend`. The resolver had promoted those Meaning/Focus values over the source front, while newer derived `recallTask` values could similarly outrank a complete template front. Linked imported cards now keep a meaningful retained template front; image-first vague fronts remain image-led with neutral Recall guidance; only provenance-marked local or distinct legacy presentation overrides can replace source Recall semantics. The exact Lesson 1 Ciao card renders the same complete two-line front in Study, Overview, Sets, Cards, Desk and stack preview, flips to `Ciao!`, and returns/redeals/restores on that front. Unit/domain passes **292** with four opt-in suites skipped. Desk interaction and persistence passes **44/44** across Chromium/WebKit; the final semantic journey passes **2/2** across both engines. Production build passes.
+Implementation evidence: the screenshot fixture was the legacy image-first six-card Greetings set. Its loose `Ciao!`, `Piacere!` and `Buonasera!` cards stored the front `Recall from the illustration`, no presentation override, and answer-side meanings matching the screenshot; `Come stai?` stored `How are you?` with source Focus `To a friend`. The resolver had promoted those Meaning/Focus values over the source front, while newer derived `recallTask` values could similarly outrank a complete template front. Linked imported cards now keep a meaningful retained template front; image-first vague fronts remain image-led with neutral Recall guidance; only provenance-marked local or distinct legacy presentation overrides can replace source Recall semantics. The exact Lesson 1 Ciao card proved the same complete two-line Recall content across the shared renderer. HR-COLLECTION-DESK-07 retains that semantic correction while making Collection's initial side `Ciao!` and its deliberate flip the Recall front. Unit/domain passes **292** with four opt-in suites skipped. Desk interaction and persistence passes **44/44** across Chromium/WebKit; the final semantic journey passes **2/2** across both engines. Production build passes.
 
 ## Completed corrective milestone — HR-BUG-COLLECTION-RECALL-01
 
@@ -27,10 +39,10 @@ Authorised 21 October 2026. This correction is limited to proving and enforcing 
 | ID | Requirement | Status | Acceptance boundary |
 |---|---|---|---|
 | HR-BUG-COLLECTION-RECALL-01A | Semantic Recall boundary | VERIFY | A persisted/imported presentation cannot render the card's Answer as the Recall primary, even when its stored `recallTask` is stale or malformed. |
-| HR-BUG-COLLECTION-RECALL-01B | Physical Collection lifecycle | VERIFY | Overview, Sets, Cards, Desk placements and stack preview initially show the resolved Recall prompt; deliberate flip shows Answer, while return/redeal restores Recall. |
+| HR-BUG-COLLECTION-RECALL-01B | Physical Collection lifecycle | VERIFY | The resolver supplies canonical Recall content without answer leakage; HR-COLLECTION-DESK-07 supersedes this item's former Collection face-order requirement. |
 | HR-BUG-COLLECTION-RECALL-01C | Rendered evidence | VERIFY | Assert both `data-face` and visible primary text for representative imported language cards in Chromium/WebKit, with focused Study and persisted-layout regressions. |
 
-Implementation evidence: the defect reproduced as `data-face="recall"` with a stale persisted `recallTask` rendering `Ciao!`, because explicit presentation data overrode the inference layer's answer-leak guard. Resolution now re-derives an answer-distinct primary from retained source semantics and invalidates an outgoing flip when a shared renderer changes card identity. The exact Lesson 1 package verifies `Ciao!`, `Buongiorno!` and `Buonasera!` as visible Recall prompts before explicit reveal in Chromium/WebKit; `Ciao!` renders `You meet a friend.` → `Ciao!` → `You meet a friend.` through initial, flip and return/redeal. Unit/domain passes **290** with four opt-in suites skipped. Collection/Desk/Study coverage completed **66** assigned checks across Chromium/WebKit after one unchanged WebKit clue-peel timing sample passed its isolated test and complete five-test file rerun. Production build passes.
+Implementation evidence: the defect reproduced as `data-face="recall"` with a stale persisted `recallTask` rendering `Ciao!`, because explicit presentation data overrode the inference layer's answer-leak guard. Resolution now re-derives an answer-distinct primary from retained source semantics and invalidates an outgoing flip when a shared renderer changes card identity. The exact Lesson 1 package verifies canonical Recall prompts for `Ciao!`, `Buongiorno!` and `Buonasera!` in Chromium/WebKit. HR-COLLECTION-DESK-07 retains those semantics but supersedes the recorded face order: Collection renders Answer initially, Recall after explicit flip, then Answer after return/redeal. Unit/domain passes **290** with four opt-in suites skipped. Collection/Desk/Study coverage completed **66** assigned checks across Chromium/WebKit after one unchanged WebKit clue-peel timing sample passed its isolated test and complete five-test file rerun. Production build passes.
 
 ## Active corrective milestone — HR-ANSWER-STAGE-LAYOUT-01
 
@@ -503,7 +515,7 @@ Authorised and completed 12 October 2026 after manual browser acceptance exposed
 | HR-PRESENTATION-01B | Full-width Study Answer Support | DONE | Wide Study renders card and rating in row one with Answer Support spanning both columns; compact Study stacks card, rating, then support. |
 | HR-PRESENTATION-01C | Readable answer-reference presentation | DONE | Native support sections, prose, lists and locally scrolling tables use a clear reading hierarchy without bloating the collectible card. |
 | HR-PRESENTATION-01D | Trace the actual Collection grid surface | DONE | The inert, answer-only `.collectible-item.hr-reveal .collectible-card` surface and its scroll-region click guard were identified; earlier evidence covered only selected detail. |
-| HR-PRESENTATION-01E | Unified collectible inspection flip | DONE | The actual Collection card grid uses the shared renderer: Recall by default, click/tap/Enter/Space toggles, meaningful drag only tilts, and another inspected card resets the grid to Recall. |
+| HR-PRESENTATION-01E | Unified collectible inspection flip | DONE | The actual Collection card grid uses the shared renderer: Answer by default under HR-COLLECTION-DESK-07, click/tap/Enter/Space toggles to canonical Recall, meaningful drag only tilts, and another inspected card resets the grid to Answer. |
 | HR-PRESENTATION-01F | Pure and accessible inspection | DONE | Grid flips retain button name/pressed state and leave reviews, FSRS, due dates, mastery, Prestige, rarity and content unchanged. |
 | HR-PRESENTATION-01G | Collection support/action spacing | DONE | Answer Support and Practice use distinct token-spaced regions; neighbouring mastery and history retain a consistent vertical rhythm. |
 | HR-PRESENTATION-01H | Exact manual-case and responsive acceptance | DONE | The vowel card, wide/compact Study, Collection support/action and real collectible-grid cases pass across requested widths and 200% text. |
@@ -1543,7 +1555,7 @@ Source: Will's 12 October 2026 front/back semantic-fidelity and Collection inspe
 
 **Completion evidence (12 October 2026):** retained snapshot `anki-source-2072609220`, note GUID `26af5d2f4845d6d5`, places `A formal interaction with an unfamiliar adult` in `Prompt`, `Which “you”?` in `Focus`, and `Say it in Italian` in `Task`; qfmt renders all three. The former resolver selected `Task || Prompt`, so Task suppressed the answer-constraining situation. The subject-neutral projection now retains situation, primary prompt, task, hint, choices and instructional art independently. The matching afmt is interpreted through `FrontSide` plus the explicit `hr#answer` boundary; internal dividers remain safe structure rather than universal split points. Answer essentials stay concise while labelled safe headings, paragraphs, lists, tables and code render in lazy Answer Support; residual meaningful material is retained under `Original card details`. Source-block provenance records source → classification → destination.
 
-A read-only real-profile audit covered formal and informal “Which you?”, asking a friend’s name, talking about a woman, phrase completion, a verb form, greeting, image-led and rich-back cards without mutating 86 retained reviews. Collection defaults to Recall, flips by pointer/touch/Enter/Space, resets on selection and writes no review/reward state. Its 1280×720 inspection grid top-aligns and has no horizontal overflow. Unit/domain **214/214** pass. The full browser matrix reached **208/213** before five superseded answer-first Collection assertions were corrected; the corrected cases pass **5/5** across Chromium, desktop WebKit and compact WebKit without weakened coverage. Production is **849.37 kB raw / 202.96 kB transfer**, below the unchanged ceiling. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 39.657 s**. Ignored evidence is under `.runtime/evidence/hr-anki-semantic-fidelity-01/` and `.runtime/language-trace-20261012/`.
+A read-only real-profile audit covered formal and informal “Which you?”, asking a friend’s name, talking about a woman, phrase completion, a verb form, greeting, image-led and rich-back cards without mutating 86 retained reviews. Collection now defaults to Answer under HR-COLLECTION-DESK-07, flips to canonical Recall by pointer/touch/Enter/Space, resets to Answer on selection and writes no review/reward state. Its 1280×720 inspection grid top-aligns and has no horizontal overflow. Unit/domain **214/214** pass. That milestone's browser matrix changed five Answer-first assertions to the then-approved Recall-first policy; HR-COLLECTION-DESK-07 supersedes that face order and current coverage asserts Answer first with an explicit flip to Recall. Production is **849.37 kB raw / 202.96 kB transfer**, below the unchanged ceiling. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 39.657 s**. Ignored evidence is under `.runtime/evidence/hr-anki-semantic-fidelity-01/` and `.runtime/language-trace-20261012/`.
 
 ## Preserved completed history
 
@@ -1625,21 +1637,21 @@ Status: **DONE — implementation and bounded verification complete; physical-de
 - Preserve owned/full-set deal order, locked privacy, page geometry, accessibility and read-only Collection state; persistence, themes and physics remain deferred.
 - Evidence: unit/domain **283 passed** with three optional suites skipped. Focused Desk passes **32/32** across Chromium and desktop WebKit; shared mini typography and 200% layout pass **6/6** across compact/large/landscape WebKit. Collection/shared-card and focal Study regressions pass **24/24** across Chromium and WebKit. Production build and Capacitor iOS sync pass; packaged Collection/Desk navigation passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5. Physical-device drag layering, touch quality, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
 
-## HR-COLLECTION-DESK-05 — Recall-first Desk, manipulation hygiene and local arrangements
+## HR-COLLECTION-DESK-05 — Desk manipulation hygiene and local arrangements (face policy superseded)
 
 Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device acceptance remains open.**
 
-- Centralise Recall-first placement and restore rules while retaining deliberate same-session loose-card flips.
+- Historical implementation centralised placement and restore face rules; HR-COLLECTION-DESK-07 supersedes the former Recall default with Collection Answer-first behavior.
 - Suppress native selection and image dragging only inside Desk physical objects.
 - Persist versioned per-set geometry and pan through a failure-tolerant presentation-only store; current ownership overrides saved kind, and face, selection and shuffle never persist.
 - Reset deletes only the active set layout. Themes, physics, cloud sync and authoritative learner state remain outside scope.
 - Evidence: unit/domain **290 passed** with three optional suites skipped. Focused Desk passes **38/38** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **6/6**; Collection ownership/navigation regressions pass **22/22**. Production build and Capacitor iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5.
 
-## HR-COLLECTION-DESK-06 — Recall-first physical deck and drag-to-draw
+## HR-COLLECTION-DESK-06 — Physical deck and drag-to-draw (face policy superseded)
 
 Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device acceptance remains open.**
 
-- Reset Collection face presentation at peer/detail boundaries and bind noninteractive physical cards explicitly to Recall.
+- Reset Collection face presentation at peer/detail boundaries; HR-COLLECTION-DESK-07 now binds these surfaces explicitly to Answer while preserving the canonical Recall flip.
 - Add threshold-arbitrated pointer/touch drawing of exactly one top item from the fixed Desk stack through the existing viewport lift layer.
 - Preserve click/keyboard deal, locked privacy, saved geometry, read-only learner state and Study behavior.
 - Evidence: unit/domain **289 passed** with four optional suites skipped when run with one worker so the unchanged wall-clock performance gate is measured without suite contention. Collection/Desk passes **56/56** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **12/12**. Production build and Capacitor iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5) after the recorded cold-iPad accessibility-mount retry, both on iOS 26.5.
