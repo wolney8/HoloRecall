@@ -1,5 +1,11 @@
 # Current restart point
 
+## 21 October 2026 — Collection visible Recall semantics corrected
+
+- **Cause:** this was a semantic face-content defect rather than a Desk face flag defect. A persisted/imported `presentation.recallTask` could equal `card.answer`; `resolveCardPresentation()` merged that explicit value after inference had applied its answer-leak guard. The rendered card therefore truthfully reported `data-face="recall"` while visibly presenting Answer content.
+- **Correction:** the shared resolver now accepts an explicit Recall primary only when it differs from the normalized Answer, otherwise it re-derives the prompt from retained source semantics and finally the source front. Card identity changes also invalidate any outgoing asynchronous flip before a recycled renderer can update the incoming card. Collection surfaces keep their existing deliberate flip behavior; stack preview and returned/redealt Desk cards resolve visibly to Recall.
+- **Evidence:** the exact Lesson 1 package verifies three distinct cards in Chromium/WebKit. For `anki-iv263a3e9557464f7eff-0`, stored front is `Say the short informal greeting that also works when leaving. / You meet a friend.`, Answer is `Ciao!`, initial rendered state is `recall / You meet a friend.`, explicit flip is `answer / Ciao!`, and return/redeal is `recall / You meet a friend.` Unit/domain passes **290** with four opt-in suites skipped. Collection/Desk/Study coverage completed **66** assigned checks across Chromium/WebKit after one unchanged WebKit clue-peel timing sample passed its isolated test and the complete five-test file rerun. Production build passes. Manual user acceptance remains open.
+
 ## 21 October 2026 — Recall-first Collection deck and direct draw implemented
 
 - **Cause and face contract:** Collection's shared renderer already defaulted to Recall, but `gridRevealedId` survived peer/context changes and reapplied an earlier deliberate flip when the same owned card appeared elsewhere. Collection now clears that interaction state at view, set and detail boundaries, and noninteractive minis bind Recall explicitly. Desk placement creation/restore remains centralised on Recall; stack previews and stack-sourced lift proxies are explicitly front-facing, so returned and redrawn cards reset to Recall.

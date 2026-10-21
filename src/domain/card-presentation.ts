@@ -96,11 +96,13 @@ export function derivedCardPresentation(card: CardContent, snapshots: AnkiSource
 }
 
 export function resolveCardPresentation(card: CardContent, snapshots: AnkiSourceSnapshot[], deck?: Deck, design?: DesignSet): ResolvedCardPresentation {
-  const source=sourceForCard(card,snapshots),presentation = derivedCardPresentation(card, snapshots);
+  const source=sourceForCard(card,snapshots),inferred=inferredPresentation(card,source),presentation = derivedCardPresentation(card, snapshots);
   const requestedArtPolicy = presentation.studyArtPolicy ?? deck?.studyArtPolicy ?? design?.studyArtPolicy ?? 'auto';
   const artRole = presentation.artRole ?? (card.image || card.art ? 'supportive' : 'hidden');
   const effectiveArtPolicy = requestedArtPolicy === 'auto' ? (artRole === 'instructional' || presentation.profile !== 'language' && !!(card.image || card.art) ? 'image-first' : 'text-first') : requestedArtPolicy;
   const situationContext=clean(presentation.situationContext)||undefined,taskGuidance=clean(presentation.taskGuidance)||undefined,hint=clean(presentation.hint)||undefined;
   const explicit=safeChromeLabel(presentation.title,card,presentation,source),contextual=contextualChromeLabel(card,presentation,source),deckFallback=safeChromeLabel(deck?.name,card,presentation,source),chromeTitle=explicit??contextual??deckFallback;
-  return { profile: presentation.profile ?? 'general', title:clean(presentation.title)||undefined,...(chromeTitle?{chromeTitle}:{}),chromeTitleSource:explicit?'explicit':contextual?'source-context':deckFallback?'deck':'none', primary: clean(presentation.recallTask) || clean(card.front), cue: clean(presentation.recallCue) || undefined, situationContext,taskGuidance,hint,answerInterpretation:card.details?.length?undefined:clean(card.interpretation||card.meaning)||undefined, artRole, requestedArtPolicy, effectiveArtPolicy };
+  const requestedPrimary=clean(presentation.recallTask)||clean(card.front),fallbackPrimary=clean(inferred.recallTask)||clean(card.front);
+  const primary=!same(requestedPrimary,card.answer)?requestedPrimary:!same(fallbackPrimary,card.answer)?fallbackPrimary:!same(card.front,card.answer)?clean(card.front):'Recall the requested response';
+  return { profile: presentation.profile ?? 'general', title:clean(presentation.title)||undefined,...(chromeTitle?{chromeTitle}:{}),chromeTitleSource:explicit?'explicit':contextual?'source-context':deckFallback?'deck':'none', primary, cue: clean(presentation.recallCue) || undefined, situationContext,taskGuidance,hint,answerInterpretation:card.details?.length?undefined:clean(card.interpretation||card.meaning)||undefined, artRole, requestedArtPolicy, effectiveArtPolicy };
 }

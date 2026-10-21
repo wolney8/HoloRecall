@@ -1,12 +1,24 @@
 # Canonical work-item tracker
 
-Updated: 20 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 21 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Active corrective milestone — HR-BUG-COLLECTION-RECALL-01
+
+Authorised 21 October 2026. This correction is limited to proving and enforcing the visible Recall semantics of shared Collection cards.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-BUG-COLLECTION-RECALL-01A | Semantic Recall boundary | VERIFY | A persisted/imported presentation cannot render the card's Answer as the Recall primary, even when its stored `recallTask` is stale or malformed. |
+| HR-BUG-COLLECTION-RECALL-01B | Physical Collection lifecycle | VERIFY | Overview, Sets, Cards, Desk placements and stack preview initially show the resolved Recall prompt; deliberate flip shows Answer, while return/redeal restores Recall. |
+| HR-BUG-COLLECTION-RECALL-01C | Rendered evidence | VERIFY | Assert both `data-face` and visible primary text for representative imported language cards in Chromium/WebKit, with focused Study and persisted-layout regressions. |
+
+Implementation evidence: the defect reproduced as `data-face="recall"` with a stale persisted `recallTask` rendering `Ciao!`, because explicit presentation data overrode the inference layer's answer-leak guard. Resolution now re-derives an answer-distinct primary from retained source semantics and invalidates an outgoing flip when a shared renderer changes card identity. The exact Lesson 1 package verifies `Ciao!`, `Buongiorno!` and `Buonasera!` as visible Recall prompts before explicit reveal in Chromium/WebKit; `Ciao!` renders `You meet a friend.` → `Ciao!` → `You meet a friend.` through initial, flip and return/redeal. Unit/domain passes **290** with four opt-in suites skipped. Collection/Desk/Study coverage completed **66** assigned checks across Chromium/WebKit after one unchanged WebKit clue-peel timing sample passed its isolated test and complete five-test file rerun. Production build passes.
 
 ## Active corrective milestone — HR-ANSWER-STAGE-LAYOUT-01
 

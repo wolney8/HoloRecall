@@ -37,6 +37,12 @@ describe('language card presentation',()=>{
     expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'You are called…',situationContext:'Speaking TO a friend or peer',taskGuidance:'Say it in Italian',artRole:'supportive',effectiveArtPolicy:'text-first'});
   });
 
+  it('rejects a stale explicit Recall task that is actually the Answer',()=>{
+    const source=snapshot('stale',{Prompt:'Say the short informal greeting that also works when leaving.',Focus:'You meet a friend.',Task:'Say the answer aloud.',Italian:'Ciao!',Meaning:'Hi / Hello / Bye — informal'}),value=card('Say the short informal greeting that also works when leaving.\nYou meet a friend.','Ciao!','stale');
+    value.presentation={profile:'language',recallTask:'Ciao!',taskGuidance:'Say the answer aloud.',artRole:'supportive'};
+    expect(resolveCardPresentation(value,[source])).toMatchObject({primary:'You meet a friend.',taskGuidance:'Say the answer aloud.'});
+  });
+
   it('keeps material register context alongside a stronger Focus prompt',()=>{
     const source=snapshot('formal',{Prompt:'A formal interaction with an unfamiliar adult',Focus:'Which “you”?',Task:'Say it in Italian',Italian:'Lei',Pronunciation:'LAY',English:'You — formal'}),value=card('A formal interaction with an unfamiliar adult','Lei','formal');
     const result=resolveCardPresentation(value,[source]);
