@@ -21,6 +21,7 @@
 .desk-canvas::after{content:'';position:absolute;inset:12px;border:1px solid color-mix(in srgb,var(--mat-sys-outline) 35%,transparent);border-radius:20px;pointer-events:none}
 .stack-dock{position:absolute;right:22px;top:22px;z-index:30;width:158px;display:grid;justify-items:center;gap:5px;padding:9px;border:2px solid color-mix(in srgb,var(--mat-sys-primary) 45%,var(--mat-sys-outline-variant));border-radius:22px;background:color-mix(in srgb,var(--mat-sys-surface-container-high) 94%,transparent);box-shadow:var(--mat-sys-level3);cursor:pointer;text-align:center;transition:border-color .16s,box-shadow .16s,background .16s}
 .stack-dock:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:3px}
+.stack-dock.drawing{cursor:grabbing}
 .stack-dock.drop-active{border-color:var(--mat-sys-primary);background:var(--mat-sys-primary-container);box-shadow:0 0 0 5px color-mix(in srgb,var(--mat-sys-primary) 20%,transparent),0 0 26px 8px color-mix(in srgb,var(--mat-sys-primary) 23%,transparent),var(--mat-sys-level4)}
 .stack-dock>strong{font:var(--mat-sys-label-large)}.stack-dock>small{font:var(--mat-sys-label-small);color:var(--mat-sys-on-surface-variant)}
 .stack-underlay{position:absolute;top:10px;width:126px;aspect-ratio:2/3;z-index:-1}

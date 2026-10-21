@@ -231,3 +231,7 @@ Capacitor iOS sync passes. Packaged Collection/Desk navigation passes **1/1** on
 ## HR-COLLECTION-DESK-05
 
 Capacitor iOS sync passes. A clean packaged flow earns a collectible, lays it out, terminates/relaunches the app, reopens the same set, observes the restored card, and resets the arrangement **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. This verifies the WKWebView local-presentation persistence seam and non-fatal shared route path. It does not establish physical-device storage durability, quota/eviction behavior, touch-selection quality, VoiceOver, Dynamic Type or backup inclusion; Desk layout remains deliberately outside learning backup/export.
+
+## HR-COLLECTION-DESK-06
+
+Capacitor iOS sync passes. The packaged clean-fixture arrange/relaunch/restore/reset flow passes **1/1 in 54.760 s** on iPhone 17 Pro and **1/1 in 56.626 s** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. The first cold iPad run failed before the initial WKWebView accessibility tree exposed `Study dashboard`; after explicit boot completion, the unchanged clean-container test passed. Compact/large/landscape browser WebKit verifies touch-shaped threshold drawing of exactly one Recall-side card from the stack, while packaged evidence verifies the synced Collection/Desk and persistence path. Physical-device stack-drag feel, VoiceOver, Dynamic Type and GPU/compositing remain unverified.

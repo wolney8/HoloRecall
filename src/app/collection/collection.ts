@@ -58,9 +58,10 @@ export class CollectionComponent {
   readonly scopeProgress=computed(()=>this.state()&&this.contextDeckId()?deckCollectionProgress(this.state()!,this.contextDeckId()):{earned:0,total:0,percent:0,prestiged:0,deckId:'',name:'',childCount:0});
   readonly childProgress=computed(()=>{const state=this.state();return state&&this.contextDeckId()?state.decks.filter(deck=>!deck.archived&&deck.parentId===this.contextDeckId()).map(deck=>deckCollectionProgress(state,deck.id)).filter(row=>row.total):[];});
   readonly scopeSlots=computed(()=>{const state=this.state();if(!state)return[];const cards=this.scopeCards();return cards.map(card=>isCollected(state,card.id)?{id:card.id,owned:true as const,card}:{id:card.id,owned:false as const,teaser:lockedCollectibleTeaser(state,card,cards)});});
-  constructor(){effect(()=>{const detail=this.cardDetailId();if(!detail){const id=this.selectedId();if(id)queueMicrotask(()=>{window.scrollTo({top:this.cardsScrollY,behavior:'instant'});this.host.nativeElement.querySelector<HTMLElement>(`[data-card-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true});});}else this.revealed.set(false);});effect(()=>{if(!this.contextDeckId()&&this.setOriginId)queueMicrotask(()=>{window.scrollTo({top:this.setsScrollY,behavior:'instant'});this.host.nativeElement.querySelector<HTMLElement>(`[data-set-id="${CSS.escape(this.setOriginId)}"]`)?.focus({preventScroll:true});this.setOriginId='';});});}
+  constructor(){effect(()=>{this.view();this.contextDeckId();this.cardDetailId();this.gridRevealedId.set(null);});effect(()=>{const detail=this.cardDetailId();if(!detail){const id=this.selectedId();if(id)queueMicrotask(()=>{window.scrollTo({top:this.cardsScrollY,behavior:'instant'});this.host.nativeElement.querySelector<HTMLElement>(`[data-card-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true});});}else this.revealed.set(false);});effect(()=>{if(!this.contextDeckId()&&this.setOriginId)queueMicrotask(()=>{window.scrollTo({top:this.setsScrollY,behavior:'instant'});this.host.nativeElement.querySelector<HTMLElement>(`[data-set-id="${CSS.escape(this.setOriginId)}"]`)?.focus({preventScroll:true});this.setOriginId='';});});}
   selectView(view:'overview'|'sets'|'cards'){
     this.lockedSelected.set(null);
+    this.gridRevealedId.set(null);
     if(view!=='cards') this.selectedId.set('');
     this.viewChanged.emit(view);
   }

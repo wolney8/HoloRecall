@@ -1610,3 +1610,13 @@ Status: **DONE — browser, domain and packaged simulator verification recorded;
 - Persist versioned per-set geometry and pan through a failure-tolerant presentation-only store; current ownership overrides saved kind, and face, selection and shuffle never persist.
 - Reset deletes only the active set layout. Themes, physics, cloud sync and authoritative learner state remain outside scope.
 - Evidence: unit/domain **290 passed** with three optional suites skipped. Focused Desk passes **38/38** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **6/6**; Collection ownership/navigation regressions pass **22/22**. Production build and Capacitor iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5), iOS 26.5.
+
+## HR-COLLECTION-DESK-06 — Recall-first physical deck and drag-to-draw
+
+Status: **DONE — browser, domain and packaged simulator verification recorded; physical-device acceptance remains open.**
+
+- Reset Collection face presentation at peer/detail boundaries and bind noninteractive physical cards explicitly to Recall.
+- Add threshold-arbitrated pointer/touch drawing of exactly one top item from the fixed Desk stack through the existing viewport lift layer.
+- Preserve click/keyboard deal, locked privacy, saved geometry, read-only learner state and Study behavior.
+- Evidence: unit/domain **289 passed** with four optional suites skipped when run with one worker so the unchanged wall-clock performance gate is measured without suite contention. Collection/Desk passes **56/56** across Chromium and desktop WebKit; compact/large/landscape WebKit and 200% coverage pass **12/12**. Production build and Capacitor iOS sync pass. Packaged arrange/relaunch/restore/reset passes **1/1** on iPhone 17 Pro and **1/1** on iPad Pro 11-inch (M5) after the recorded cold-iPad accessibility-mount retry, both on iOS 26.5.
+- Historic local learner state was identified during diagnosis but is disposable development data by user decision and is no longer a feature blocker.

@@ -22,7 +22,7 @@
     </article>
   }
   </div>
-  <div #stackDock class="stack-dock" [class.drop-active]="dropActive()" [class.empty]="!nextStackItem()" role="button" tabindex="0" [attr.aria-label]="stackActionLabel()" (click)="dealOne()" (keydown.enter)="dealOne()" (keydown.space)="$event.preventDefault();dealOne()">
+  <div #stackDock class="stack-dock" [class.drop-active]="dropActive()" [class.drawing]="!!stackDrawingId()" [class.empty]="!nextStackItem()" role="button" tabindex="0" [attr.aria-label]="stackActionLabel()" (dragstart)="$event.preventDefault()" (pointerdown)="stackPointerDown($event)" (pointermove)="stackPointerMove($event)" (pointerup)="stackPointerUp($event)" (pointercancel)="stackPointerCancel($event)" (keydown.enter)="dealOne()" (keydown.space)="$event.preventDefault();dealOne()">
     <span class="stack-underlay" aria-hidden="true"><i></i><i></i><i></i></span>
     <div class="stack-preview-shell" aria-hidden="true" inert>
       @if(nextStackItem();as next){
@@ -34,8 +34,8 @@
   </div>
   @if(dragLift();as lift){
   <div class="drag-lift-layer" aria-hidden="true" inert data-testid="drag-lift-layer">
-    <div class="drag-lift-card" [attr.data-placement-id]="lift.id" [attr.data-drag-kind]="lift.kind" [attr.data-motion-state]="lift.state" [style.left.px]="lift.x" [style.top.px]="lift.y" [style.--desk-rotation]="lift.rotation+'deg'">
-      @if(lift.kind==='owned' && card(lift.cardId);as item){<hr-card-motion-viewport scale="mini"><hr-card [card]="item" [presentation]="store.presentationFor(item)" [prestigeLevel]="prestige(item).level" [compact]="true" [dragTilt]="false" [flippable]="false" [revealed]="lift.face==='answer'" [rarity]="item.rarity||'common'" [effects]="state()?.preferences?.effects??true" [motionPreference]="'reduced'" [design]="store.designFor(item)" [imageUrl]="store.mediaUrl(item.image)" [backImageUrl]="store.mediaUrl(item.backImage||item.image)" [backgroundUrl]="store.mediaUrl(store.designFor(item)?.background)" [frameUrl]="frameUrl(item)" [textureUrl]="store.mediaUrl(store.designFor(item)?.texture)"/></hr-card-motion-viewport>}
+    <div class="drag-lift-card" [attr.data-placement-id]="lift.id" [attr.data-drag-kind]="lift.kind" [attr.data-drag-source]="lift.source" [attr.data-motion-state]="lift.state" [style.left.px]="lift.x" [style.top.px]="lift.y" [style.--desk-rotation]="lift.rotation+'deg'">
+      @if(lift.kind==='owned' && card(lift.cardId);as item){<hr-card-motion-viewport scale="mini"><hr-card [card]="item" [presentation]="store.presentationFor(item)" [prestigeLevel]="prestige(item).level" [compact]="true" [dragTilt]="false" [flippable]="false" [revealed]="lift.source==='stack'?false:lift.face==='answer'" [rarity]="item.rarity||'common'" [effects]="state()?.preferences?.effects??true" [motionPreference]="'reduced'" [design]="store.designFor(item)" [imageUrl]="store.mediaUrl(item.image)" [backImageUrl]="store.mediaUrl(item.backImage||item.image)" [backgroundUrl]="store.mediaUrl(store.designFor(item)?.background)" [frameUrl]="frameUrl(item)" [textureUrl]="store.mediaUrl(store.designFor(item)?.texture)"/></hr-card-motion-viewport>}
       @if(lift.kind==='locked' && teaser(lift.id);as locked){<hr-locked-collectible [teaser]="locked" [effects]="state()?.preferences?.effects??true" [motionPreference]="'reduced'"/>}
     </div>
   </div>

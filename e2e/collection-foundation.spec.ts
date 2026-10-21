@@ -28,6 +28,15 @@ test('global Collection renders only owned cards and locked teasers leak no lear
   await expectNoOverflow(page);
 });
 
+test('Collection physical cards enter every peer surface on Recall',async({page})=>{
+  await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
+  await expect(page.locator('.overview-mini .memory-card')).toHaveCount(4);await expect(page.locator('.overview-mini .memory-card[data-face="recall"]')).toHaveCount(4);
+  await page.getByRole('tab',{name:'Cards'}).click();const first=page.locator('.owned-section .card-motion').first();await first.click();await expect(first.locator('.memory-card')).toHaveAttribute('data-face','answer');
+  await page.getByRole('tab',{name:'Sets'}).click();await page.locator('.progress-card').filter({hasText:'Lesson'}).click();await expect(page.locator('.set-slots hr-card .memory-card[data-face="recall"]')).toHaveCount(4);
+  await page.getByRole('tab',{name:'Cards'}).click();await expect(page.locator('.owned-section hr-card .memory-card[data-face="recall"]')).toHaveCount(4);
+  await page.goto('/#collection/desk/set/lesson');await expect(page.locator('.stack-preview-shell .memory-card')).toHaveAttribute('data-face','recall');
+});
+
 test('deck set progress aggregates descendants once and scoped view keeps stable safe slots',async({page})=>{
   await openApp(page);await installCollectionFixture(page);await navigate(page,'Collection');
   const lesson=page.locator('.progress-card').filter({hasText:'Lesson'});
