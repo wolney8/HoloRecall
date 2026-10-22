@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import type { State } from '../src/domain/models';
 
-export async function installCollectionFixture(page:Page):Promise<void>{
-  await page.evaluate(async()=>{
+export async function installCollectionFixture(page:Page,ownedCount=4):Promise<void>{
+  await page.evaluate(async ownedCount=>{
     const db=await new Promise<IDBDatabase>((resolve,reject)=>{const request=indexedDB.open('holorecall-local-v1',2);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});
     const state=await new Promise<State>((resolve,reject)=>{const request=db.transaction('local-study','readonly').objectStore('local-study').get('snapshot');request.onsuccess=()=>resolve(request.result as State);request.onerror=()=>reject(request.error);});
     state.decks=[{id:'lesson',name:'Lesson',description:'',suspended:false},{id:'a',name:'A',description:'',suspended:false,parentId:'lesson'},{id:'b',name:'B',description:'',suspended:false,parentId:'lesson'}];
@@ -14,11 +14,11 @@ export async function installCollectionFixture(page:Page):Promise<void>{
       state.events.push({kind:'review',id:`review-${index}`,userId:state.userId,cardId,sessionId:'fixture-session',contentRevision:1,timestamp,rating:4,grade:3,previousStateVersion:0,previousState:previous,resultingState:result,schedulerVersion:'ts-fsrs@5.4.2',configVersion:'holorecall-fsrs-v1',mode:'scheduled'});
       state.states[cardId]=result;
       state.rewardEvents.push({kind:'contribution',id:`contribution-${index}`,reviewEventId:`review-${index}`,cardId,timestamp,studyDay:`2026-10-${String(index+1).padStart(2,'0')}`,timeZone:'Europe/London',configVersion:'confidence-days-v1'});
-      if(index<4)state.rewardEvents.push({kind:'unlock',id:`unlock-${index}`,reviewEventId:`review-${index}`,cardId,timestamp,rarity:'common',required:1,contributionIds:[`contribution-${index}`]});
+      if(index<ownedCount)state.rewardEvents.push({kind:'unlock',id:`unlock-${index}`,reviewEventId:`review-${index}`,cardId,timestamp,rarity:'common',required:1,contributionIds:[`contribution-${index}`]});
     }
     state.version+=1;
     await new Promise<void>((resolve,reject)=>{const transaction=db.transaction('local-study','readwrite');transaction.objectStore('local-study').put(state,'snapshot');transaction.oncomplete=()=>resolve();transaction.onerror=()=>reject(transaction.error);});db.close();
-  });
+  },ownedCount);
   await page.reload();
 }
 

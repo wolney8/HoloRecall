@@ -8,6 +8,18 @@ Updated: 22 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Completed corrective milestone — HR-BUG-COLLECTION-PILE-02
+
+Authorised 22 October 2026. Close every pile-card pointer session without allowing the viewport drag proxy to survive a completed or cancelled interaction.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-BUG-COLLECTION-PILE-02A | Session-owned finalisation | DONE | One idempotent finaliser clears the pile pointer session, visual owner, lift, drop target and drawing identity after commit, cancel or invalid state. |
+| HR-BUG-COLLECTION-PILE-02B | Capture-loss recovery | DONE | `lostpointercapture` resolves the session before returning its card; programmatic capture release cannot cancel an already committed drop. |
+| HR-BUG-COLLECTION-PILE-02C | World-attachment regression | DONE | The exact four-card dissolution journey leaves zero pile lift DOM, pans all loose cards with one camera delta and permits immediate loose-card and primary-deck drags. |
+
+Evidence: the pre-fix capture-loss journey retained `pileCardDrag`, `drawingPileMemberId` and a pile-source `dragLift`, reproducing the camera-fixed object and blocked primary deck. Pile domain/persistence tests pass **9/9**; the full pile interaction file passes **28/28** across Chromium and desktop WebKit, including normal completion, `pointercancel`, capture loss, persistence and the 350 px pan check. Touch-shaped compact/large/landscape WebKit extraction passes **3/3**. Collection Answer-first and Study Recall-first semantics pass **2/2** across Chromium/WebKit.
+
 ## Completed corrective milestone — HR-BUG-COLLECTION-PILE-01
 
 Authorised 22 October 2026. Correct two-card extraction and cross-object z-order without changing pile, Collection or learner semantics.

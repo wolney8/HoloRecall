@@ -1,5 +1,12 @@
 # Current restart point
 
+## 22 October 2026 — Pile drag transient lifetime corrected
+
+- **Reproduced cause:** losing pointer capture during a pile extraction bypassed both `pointerup` and `pointercancel`. The live pile pointer session, drawing identity and viewport-level `dragLift` therefore survived together. That lift stayed camera-relative while normal placements moved with the world, and its non-null state blocked the primary stack from starting another draw.
+- **Correction:** pile drag now has an explicit resolved session and one idempotent finaliser for pointer/session state, visual ownership, lift, drop target and drawing identity. `lostpointercapture` uses the same cancellation route. Normal pointer-up marks the session resolved before releasing capture, so the resulting capture-loss event cannot undo a committed 2→1 transition. Finite GSAP callbacks are bound to their owning session and cannot clear a newer interaction.
+- **Evidence:** the exact four-card journey extracts through final pile dissolution, leaves both former pile members as ordinary world placements, reports zero pile lift DOM after settle, and moves every loose card by the same 350 px camera delta. A loose-card drag and primary-deck drag then start immediately. Pile domain/persistence passes **9/9**; pile browser coverage passes **28/28** across Chromium/WebKit; touch-shaped WebKit passes **3/3**. Collection Answer-first and Study Recall-first pass **2/2** across Chromium/WebKit.
+- **Remaining boundary:** physical-device capture interruption, gesture feel and VoiceOver remain unverified. No new Collection milestone has started.
+
 ## 22 October 2026 — Collection pile conservation corrected
 
 - **Reproduced causes:** two-card extraction used pointer-up against the live outer pile rectangle, so a card pulled mostly clear could still cancel according to its grab point. Extracted cards initially received the next table z-index, but ordinary selection then renormalised loose cards without piles and pushed them behind the remaining pile; pile selection also promoted the entire pile. The reported disappearance was occlusion, while card IDs remained in state.
