@@ -34,11 +34,11 @@ test('HR-EXCHANGE-03 separates Import, Export and Templates into reload-safe vie
   await expect(page.getByRole('tabpanel',{name:'Import'})).toContainText('Import Anki .apkg decks');
   await expect(page.getByText('Blank workbook',{exact:true})).toHaveCount(0);
   await page.getByRole('tab',{name:'Export'}).click();await expect(page).toHaveURL(/#exchange\/export$/);
-  await expect(page.getByRole('tabpanel',{name:'Export'})).toContainText('Portable ZIP');
+  await expect(page.getByRole('tabpanel',{name:'Export'})).toContainText('HoloRecall package');
   await expect(page.getByText('Blank workbook',{exact:true})).toHaveCount(0);
   await page.reload();await expect(page.getByRole('tab',{name:'Export'})).toHaveAttribute('aria-selected','true');
   await page.getByRole('tab',{name:'Templates'}).click();await expect(page.getByRole('tabpanel',{name:'Templates'})).toContainText('Blank workbook');
-  await expect(page.getByRole('button',{name:'Export ZIP'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Export package'})).toHaveCount(0);
 });
 
 test('HR-EXCHANGE-03 keeps Anki internals behind the provider journey and Advanced details',async({page})=>{

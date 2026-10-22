@@ -79,6 +79,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   readonly exchangeViews:readonly SubviewNavigationItem<ExchangeView>[]=[{id:'import',label:'Import',panelId:'exchange-import-panel'},{id:'export',label:'Export',panelId:'exchange-export-panel'},{id:'templates',label:'Templates',panelId:'exchange-templates-panel'}];
   readonly exchangeView=signal<ExchangeView>('import');
   readonly ankiJourneyOpen=signal(false);readonly ankiExportOpen=signal(false);
+  exportDeckId='';
   readonly showAdvancedDetails=signal(false);readonly showAdvancedIssueIds=signal(false);
   private readonly exchangePopState=()=>this.syncExchangeView();
 
@@ -104,7 +105,8 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   issueActionTitle(message:string):string{if(/no answer/i.test(message))return'No safe answer';if(/no source image/i.test(message))return'Source image missing';if(/Advanced Image Occlusion/i.test(message))return'Image Occlusion format needs review';return'Conversion review';}
   issueActionExplanation(message:string):string{if(/no answer/i.test(message))return'No safe answer could be determined from the source card template.';if(/no source image/i.test(message))return'The native mask data is valid, but this source note does not contain the image it masks.';if(/Advanced Image Occlusion/i.test(message))return'This card uses an occlusion representation HoloRecall cannot yet classify as native.';return message;}
 
-  hasChanges(preview: ImportPreview): boolean { return !!(preview.newCards.length + preview.updatedCards.length + preview.newDecks.length + preview.updatedDecks.length + preview.newDesigns.length + preview.updatedDesigns.length + preview.bundle.assets.length); }
+  exportDecks(){return this.store.decks().filter(deck=>!deck.archived).sort((a,b)=>a.name.localeCompare(b.name));}
+  hasChanges(preview: ImportPreview): boolean { if(preview.warnings.includes('This package is already present; importing it again would make no content changes.'))return false;const state=this.store.data(),changed=(incoming:{id:string}[],existing:{id:string}[]|undefined)=>incoming.some(item=>!existing?.some(current=>current.id===item.id&&JSON.stringify(current)===JSON.stringify(item))),assetChanges=preview.bundle.assets.some(asset=>{const current=state?.assets.find(item=>item.id===asset.id);return!current||current.dataUrl!==asset.dataUrl||current.mime!==asset.mime||current.width!==asset.width||current.height!==asset.height;});return !!(preview.newCards.length + preview.updatedCards.length + preview.newDecks.length + preview.updatedDecks.length + preview.newDesigns.length + preview.updatedDesigns.length+Number(assetChanges)+Number(changed(preview.bundle.ankiSources??[],state?.ankiSources))+Number(changed(preview.bundle.ankiMappings??[],state?.ankiMappings))+Number(changed(preview.bundle.ankiConversionProfiles??[],state?.ankiConversionProfiles))); }
   exportCard():CardContent|undefined{return this.store.cards()[0]}
   refreshAnkiExportPreview():void{const card=this.exportCard();this.ankiExportPreview.set(card?previewAnkiExport(card,this.ankiExportProfile):null);}
   async exportAnkiText():Promise<void>{const state=this.store.data();if(!state)return;this.busy.set('Building Anki-compatible text import…');try{const bytes=writeAnkiTextExport(state.cards.filter(card=>!card.archived),state.decks,this.ankiExportProfile),blob=new Blob([bytes.slice().buffer],{type:'text/tab-separated-values;charset=utf-8'});await this.fileDelivery.deliver(blob,`holorecall-${this.ankiExportProfile}.txt`);this.message.set('Anki-compatible text import requested. Import it into the matching HoloRecall note type; production APKG generation remains a separate compatibility milestone.');}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
@@ -133,7 +135,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   async apply(): Promise<void> {
     const preview = this.preview(); if (!preview || preview.errors.length || this.busy()) return;
     this.busy.set('Saving content atomically…'); this.failure.set('');
-    try { const deckIds=this.completionDecks(preview.bundle.decks,preview.newDecks.concat(preview.updatedDecks));await this.store.applyContentImport(preview.bundle, preview.expectedVersion); this.message.set(`Imported ${preview.newCards.length} new cards and updated ${preview.updatedCards.length} cards. Existing reviews and earned cosmetics are preserved.`); this.preview.set(null);if(deckIds.length)this.setCompletion(deckIds,'IMPORT'); }
+    try { const deckIds=this.completionDecks(preview.bundle.decks,preview.newDecks.concat(preview.updatedDecks));await this.store.applyContentImport(preview.bundle, preview.expectedVersion,BALANCED_PRESET_ID,false,[],[],true); this.message.set(`Imported ${preview.newCards.length} new cards and updated ${preview.updatedCards.length} cards. Learning progress was not included in the package; existing local reviews and earned cosmetics are preserved.`); this.preview.set(null);if(deckIds.length)this.setCompletion(deckIds,'IMPORT'); }
     catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }
   }
@@ -191,12 +193,14 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
     try {
       const state = this.store.data(); if (!state) throw new Error('Local data is still loading.');
       const { contentFromState, writeWorkbook, makePortableBundle, writePortableZip } = await import('../../domain/exchange');
-      let bundle = contentFromState(state);
+      const selected=this.exportDeckId?[this.exportDeckId]:undefined,root=this.exportDeckId?state.decks.find(deck=>deck.id===this.exportDeckId):undefined;
+      let bundle = contentFromState(state,selected);
       if (portable) bundle = await makePortableBundle(bundle, rasterizeBundled);
-      const bytes = portable ? await writePortableZip(bundle) : await writeWorkbook(bundle);
+      const bytes = portable ? await writePortableZip(bundle,{selectedRootIds:selected,rootName:root?.name??'All HoloRecall decks'}) : await writeWorkbook(bundle);
       const blob = new Blob([bytes.slice().buffer], { type: portable ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      await this.fileDelivery.deliver(blob, `holorecall-content-v10.${portable ? 'zip' : 'xlsx'}`);
-      this.message.set(portable ? 'Portable ZIP download requested with media and design definitions. No learning history is included.' : 'Workbook download requested. Uploaded media references require the portable ZIP when shared with another browser.');
+      const name=(root?.name??'all-decks').normalize('NFKD').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'content',date=new Date().toISOString().slice(0,10);
+      await this.fileDelivery.deliver(blob, `holorecall-${name}-${date}-v11.${portable ? 'zip' : 'xlsx'}`);
+      this.message.set(portable ? `HoloRecall package requested for ${root?.name??'all decks'}, including required media, designs and safe source dependencies. Learning progress is not included.` : 'Workbook download requested. Use the HoloRecall package to move media, designs and source dependencies between installations.');
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }
   }

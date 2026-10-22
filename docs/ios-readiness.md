@@ -238,3 +238,7 @@ Capacitor iOS sync passes. A clean packaged flow earns a collectible, lays it ou
 ## HR-COLLECTION-DESK-06
 
 Capacitor iOS sync passes. The packaged clean-fixture arrange/relaunch/restore/reset flow passes **1/1 in 54.760 s** on iPhone 17 Pro and **1/1 in 56.626 s** on iPad Pro 11-inch (M5), both on iOS 26.5 Simulator. The first cold iPad run failed before the initial WKWebView accessibility tree exposed `Study dashboard`; after explicit boot completion, the unchanged clean-container test passed. Compact/large/landscape browser WebKit verifies touch-shaped threshold drawing of exactly one card from the stack; Collection now applies its Answer-first policy to that interaction, while the earlier packaged evidence verifies the synced Collection/Desk and persistence path. Physical-device stack-drag feel, VoiceOver, Dynamic Type and GPU/compositing remain unverified.
+
+## HR-EXPORT-01
+
+Capacitor iOS sync passes with the same platform-neutral format-v11 ZIP generator and existing `FileDelivery` adapter. A packaged iPhone 17 Pro / iOS 26.5 Simulator smoke generates the HoloRecall package and reaches the native Share sheet plus Save to Files **1/1 in 63.759 s**; the same journey also opens and cancels the native document picker without mutation. Evidence is under `.runtime/evidence/hr-export-01/`. Package re-import from Files, iPad export, physical-device Share/Files behavior, VoiceOver, Dynamic Type, cancellation under large media and memory pressure remain unverified.

@@ -8,6 +8,19 @@ Updated: 22 October 2026. This file is the canonical local execution tracker. Th
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
 
+## Active milestone — HR-EXPORT-01
+
+Authorised 22 October 2026. Complete the existing HoloRecall portable ZIP as a scoped, integrity-checked content package while keeping full learner backup and future APKG export separate.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-EXPORT-01A | Existing-contract audit and scope | DONE | Reuses content workbook/ZIP, atomic preview/apply and FileDelivery; recursive branch export excludes learner state. |
+| HR-EXPORT-01B | Full-fidelity package contract | DONE | Format v11 manifest, scoped Designs/media, referenced source snapshots and mapping/conversion dependencies round-trip with SHA-256 integrity. |
+| HR-EXPORT-01C | Safe import and compatibility | DONE | Existing v1–v10 packages remain readable; malformed/incomplete packages fail without mutation and stable IDs make repeat import non-duplicating. |
+| HR-EXPORT-01D | Product UX and evidence | DONE | Exchange distinguishes portable content, full backup and planned APKG export; real Italian/anatomy fixtures and browser delivery are verified. |
+
+Evidence: synthetic/domain and real-package portable tests pass **63/63**. The exact Italian package round-trips **254/254** cards across Lesson 1/2/3 with stable source identity, Conversion Profiles and a protected local edit. The bBarryy anatomy package round-trips **58** safe cards, referenced media hashes and **26** native Image Occlusion cards; this caught and corrected the prior empty-text-answer parser rejection. Focused Exchange passes **17** browser checks across Chromium, desktop WebKit and compact WebKit, including download/import, v11 preview, 200% text and atomic apply. Production build and Capacitor iOS sync pass; packaged iPhone 17 Pro / iOS 26.5 Simulator package export reaches Share and Save to Files **1/1**. Native package re-import and physical-device Share/Save remain unverified; APKG generation remains HR-EXPORT-02.
+
 ## Completed corrective milestone — HR-BUG-COLLECTION-PILE-02
 
 Authorised 22 October 2026. Close every pile-card pointer session without allowing the viewport drag proxy to survive a completed or cancelled interaction.
@@ -1439,7 +1452,7 @@ Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the
 | HR-ANKI-V2-13 | Deterministic native fallback art for media-free imported cards | Import/collection/design | Anki replacement usability | P0 | DONE | Declarative source panels and content-v7 card art |
 | HR-CARD-DELIGHT-01 | Accessible finish/frame/motion treatment foundation | Collection/design/platform | Anki replacement usability | P1 | DONE | Existing rarity/finish renderer and feedback adapters |
 | HR-DECK-UX-02 | Group imported-deck study, deck, and source management | Deck management/UX | Anki replacement usability | P1 | DONE | Existing deck actions and contextual source manager |
-| HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | PLANNED | Phase 2 acceptance and source/art portability |
+| HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | DONE | Format v11 scoped content package; learner backup remains separate |
 | HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | PLANNED | Safe static templates/media and Anki-compatible validation |
 
 Phase 1 acceptance requires the exact supplied package to pass automatic template-first conversion, safe declarative presentation, concise import/update, legacy repair, portability and browser evidence without manual mapping. The automatic gate now passes; HR-ACCEPT-ANKI-01 remains VERIFY until Will retests the genuine existing local deck.

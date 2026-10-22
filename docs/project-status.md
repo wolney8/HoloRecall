@@ -1,5 +1,13 @@
 # Current restart point
 
+## 22 October 2026 — HR-EXPORT-01 full-fidelity portable package implemented
+
+- **Existing foundation reused:** v10 already carried hierarchy, structured cards, Design Sets, media, native Image Occlusion and inert per-card provenance through the lazy XLSX/ZIP pipeline; preview/apply was version-checked and atomic, `FileDelivery` handled web/native output, and full JSON backup separately retained learner state.
+- **Closed gaps:** portable v11 adds recursive deck-branch scope, a required package manifest with package/root/count declarations and per-file SHA-256/length integrity, exact referenced Designs/media, referenced normalized Anki source snapshots, and Mapping/Conversion Profile dependencies. Selected subdecks become self-contained roots while retaining inherited presentation. Stable IDs remain intact; changed ID collisions are disclosed before explicit apply and repeat import produces no duplicates.
+- **Boundary:** content packages omit scheduling, reviews/practice/administration, rewards/unlocks/Prestige, sessions, learner suspend/archive state, Study overrides and Desk presentation. Full backup remains the learner-state recovery path. XLSX remains an editing format; APKG generation remains HR-EXPORT-02.
+- **Evidence:** focused domain/store/real-package tests pass **63/63**. The exact Italian Lessons 1–3 fixture round-trips **254** cards, source identities, conversion policy and a locally edited imported card. The bBarryy fixture round-trips **58** safe cards, media hashes and **26** native Image Occlusion cards. Focused Exchange passes **17** Chromium/desktop-WebKit/compact-WebKit checks; production build and Capacitor iOS sync pass. Packaged iPhone 17 Pro / iOS 26.5 Simulator package export reaches Share and Save to Files **1/1 in 63.759 s**.
+- **Remaining boundary:** native package re-import and physical-device Share/Save/reopen are not newly evidenced. The next bounded milestone is HR-EXPORT-02, content-compatible Anki APKG export; it has not started.
+
 ## 22 October 2026 — Pile drag transient lifetime corrected
 
 - **Reproduced cause:** losing pointer capture during a pile extraction bypassed both `pointerup` and `pointercancel`. The live pile pointer session, drawing identity and viewport-level `dragLift` therefore survived together. That lift stayed camera-relative while normal placements moved with the world, and its non-null state blocked the primary stack from starting another draw.

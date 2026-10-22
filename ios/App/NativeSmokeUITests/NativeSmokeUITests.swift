@@ -85,7 +85,7 @@ final class NativeSmokeUITests: XCTestCase {
         openMore("Exchange")
         XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 10))
         tapButton("Export")
-        tapScrollableButton("Export XLSX")
+        tapScrollableButton("Export package")
         let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
         XCTAssertTrue(shareSheet.waitForExistence(timeout: 20), "Native share sheet did not appear\n\(app.debugDescription)")
         XCTAssertTrue(app.cells["Save to Files"].waitForExistence(timeout: 8))

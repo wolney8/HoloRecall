@@ -1,15 +1,22 @@
-import type { AnkiSourceSnapshot, CardContent, Deck, DesignSet, LocalAsset, Rarity, State } from './models';
-import { validateAnkiSourceSnapshot, validateAsset, validateCard, validateDeck, validateDesign } from './backup';
+import type { AnkiConversionProfile, AnkiMappingPreset, AnkiSourceSnapshot, CardContent, Deck, DesignSet, LocalAsset, Rarity, State } from './models';
+import { validateAnkiConversionProfile, validateAnkiMapping, validateAnkiSourceSnapshot, validateAsset, validateCard, validateDeck, validateDesign } from './backup';
 
 /** Content exchange deliberately has no learner, event, schedule, reward, or session fields. */
-export interface ContentBundle { decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[] }
+export interface ContentBundle { decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[]; ankiMappings?: AnkiMappingPreset[]; ankiConversionProfiles?: AnkiConversionProfile[] }
+export interface PortablePackageManifest {
+  format:'holorecall-portable-content'; formatVersion:11; packageType:'content'; packageId:string; exportedAt:string;
+  selectedRootIds:string[]; rootName:string;
+  counts:{decks:number;cards:number;designSets:number;media:number;ankiSources:number;mappings:number;conversionProfiles:number};
+  files:Array<{path:string;byteLength:number;sha256:string}>;
+}
 export interface ImportPreview {
   bundle: ContentBundle; expectedVersion: number; errors: string[];
   newCards: string[]; updatedCards: string[]; duplicateCards: string[];
   newDecks: string[]; updatedDecks: string[]; duplicateDecks: string[];
   newDesigns: string[]; updatedDesigns: string[]; duplicateDesigns: string[];
+  manifest?:PortablePackageManifest; warnings:string[];
 }
-export const FORMAT_VERSION = '10';
+export const FORMAT_VERSION = '11';
 export const EXCHANGE_RARITIES: Rarity[] = ['common', 'uncommon', 'rare', 'holo-rare', 'ultra-rare', 'secret-rare', 'relic'];
 export const HEADERS = {
   Metadata: ['key', 'value'],
@@ -41,16 +48,31 @@ const BUNDLED_ART = new Set(['limone', 'caffe', 'casa', 'libro', 'tavolo', 'mela
 const emptyBundle = (): ContentBundle => ({ decks: [], cards: [], designs: [], assets: [] });
 const normalize = (value: unknown): unknown => Array.isArray(value) ? value.map(normalize) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined && item !== '').sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, normalize(item)])) : value;
 export const sameContent = (first: unknown, second: unknown): boolean => JSON.stringify(normalize(first)) === JSON.stringify(normalize(second));
-export function contentFromState(state: State): ContentBundle { const ids=new Set(state.cards.flatMap(card=>card.ankiSource?.sourceSnapshotId?[card.ankiSource.sourceSnapshotId]:[])),ankiSources=state.ankiSources.filter(source=>ids.has(source.id));return structuredClone({ decks: state.decks, cards: state.cards, designs: state.designs, assets: state.assets,...(ankiSources.length?{ankiSources}:{}) }); }
+const refId=(ref?:string):string|undefined=>ref?.startsWith('asset:')?ref.slice(6):undefined;
+function designRefs(design:DesignSet):Array<string|undefined>{return[design.background,design.frame,design.texture,...Object.values(design.frames??{}),...Object.values(design.rarityVariants??{}).flatMap(variant=>[variant?.frame,variant?.texture])];}
+/** Build a content-only bundle. Optional roots select complete descendant branches and their exact dependencies. */
+export function contentFromState(state: State, selectedRootIds?:readonly string[]): ContentBundle {
+  const wanted=new Set<string>();if(selectedRootIds?.length){for(const root of selectedRootIds){if(!state.decks.some(deck=>deck.id===root))throw new Error(`Deck ${root} is unavailable.`);wanted.add(root);}let changed=true;while(changed){changed=false;for(const deck of state.decks)if(deck.parentId&&wanted.has(deck.parentId)&&!wanted.has(deck.id)){wanted.add(deck.id);changed=true;}}}else state.decks.forEach(deck=>wanted.add(deck.id));
+  const decks=state.decks.filter(deck=>wanted.has(deck.id)).map(deck=>{let designSetId=deck.designSetId,studyArtPolicy=deck.studyArtPolicy,parent=deck.parentId?state.decks.find(item=>item.id===deck.parentId):undefined;while(parent&&(!designSetId||!studyArtPolicy)){designSetId??=parent.designSetId;studyArtPolicy??=parent.studyArtPolicy;parent=parent.parentId?state.decks.find(item=>item.id===parent!.parentId):undefined;}return{...deck,parentId:deck.parentId&&wanted.has(deck.parentId)?deck.parentId:undefined,designSetId,studyArtPolicy,suspended:false,archived:undefined,studyPresetId:undefined,studyOverrides:undefined};}),cards=state.cards.filter(card=>wanted.has(card.deckId)).map(card=>({...card,suspended:false,archived:undefined}));
+  const designIds=new Set([...decks.map(deck=>deck.designSetId),...cards.map(card=>card.designSetId)].filter((value):value is string=>!!value)),designs=state.designs.filter(design=>designIds.has(design.id));
+  // A source snapshot is a content-addressed repair unit. Keep the complete referenced unit so its hash and future repair contract remain truthful.
+  const sourceIds=new Set(cards.map(card=>card.ankiSource?.sourceSnapshotId).filter((value):value is string=>!!value)),ankiSources=state.ankiSources.filter(source=>sourceIds.has(source.id));
+  const profileKeys=new Set(cards.filter(card=>card.ankiSource).map(card=>`${card.ankiSource!.modelSignature}::${card.ankiSource!.sourceTemplateId??''}`)),ankiConversionProfiles=state.ankiConversionProfiles.filter(profile=>profileKeys.has(`${profile.sourceSignature}::${profile.templateId}`));
+  const mappingIds=new Set(ankiConversionProfiles.map(profile=>profile.mappingProfileId).filter((value):value is string=>!!value)),ankiMappings=state.ankiMappings.filter(mapping=>mappingIds.has(mapping.id)||profileKeys.has(`${mapping.sourceSignature}::${mapping.templateId??''}`)||(!mapping.templateId&&[...profileKeys].some(key=>key.startsWith(`${mapping.sourceSignature}::`))));
+  const assetIds=new Set<string>();for(const ref of [...decks.map(deck=>deck.coverImage),...cards.flatMap(card=>[card.image,card.backImage,...(card.frontAudio??[]),...(card.backAudio??[])]),...designs.flatMap(design=>designRefs(design)),...ankiSources.flatMap(source=>source.media.map(item=>`asset:${item.assetId}`))]){const asset=refId(ref);if(asset)assetIds.add(asset);}
+  const assets=state.assets.filter(asset=>assetIds.has(asset.id));return structuredClone({decks,cards,designs,assets,...(ankiSources.length?{ankiSources}:{}),...(ankiMappings.length?{ankiMappings}:{}),...(ankiConversionProfiles.length?{ankiConversionProfiles}:{})});
+}
 export function makePreview(bundle: ContentBundle, state: State, errors: string[] = []): ImportPreview {
-  const result: ImportPreview = { bundle, expectedVersion: state.version, errors: [...errors], newCards: [], updatedCards: [], duplicateCards: [], newDecks: [], updatedDecks: [], duplicateDecks: [], newDesigns: [], updatedDesigns: [], duplicateDesigns: [] };
+  const result: ImportPreview = { bundle, expectedVersion: state.version, errors: [...errors], warnings:[], newCards: [], updatedCards: [], duplicateCards: [], newDecks: [], updatedDecks: [], duplicateDecks: [], newDesigns: [], updatedDesigns: [], duplicateDesigns: [] };
+  const cardContent=(card:CardContent)=>{const {revision:_,createdAt:__,suspended:___,archived:____,...content}=card;return{rarity:'common',...content};};
+  const deckContent=(deck:Deck)=>{const {suspended:_,archived:__,studyPresetId:___,studyOverrides:____,...content}=deck;return content;};
   for (const card of bundle.cards) {
     const old = state.cards.find(item => item.id === card.id);
-    (!old ? result.newCards : sameContent({ rarity: 'common', ...old, revision: 0 }, { rarity: 'common', ...card, revision: 0 }) ? result.duplicateCards : result.updatedCards).push(card.id);
+    (!old ? result.newCards : sameContent(cardContent(old),cardContent(card)) ? result.duplicateCards : result.updatedCards).push(card.id);
   }
   for (const deck of bundle.decks) {
     const old = state.decks.find(item => item.id === deck.id);
-    (!old ? result.newDecks : sameContent(old, deck) ? result.duplicateDecks : result.updatedDecks).push(deck.id);
+    (!old ? result.newDecks : sameContent(deckContent(old),deckContent(deck)) ? result.duplicateDecks : result.updatedDecks).push(deck.id);
   }
   for (const design of bundle.designs) {
     const old = state.designs.find(item => item.id === design.id);
@@ -142,7 +164,7 @@ async function readTables(bytes: Uint8Array): Promise<Tables> {
         const actual = values.slice(0, sheet.columnCount);
         const current = [...HEADERS[name]],v9=[...V9_HEADERS[name]],v8=[...V8_HEADERS[name]],v7=[...V7_HEADERS[name]],v6=[...V6_HEADERS[name]], v5=[...V5_HEADERS[name]],v4 = [...V4_HEADERS[name]], v3 = [...V3_HEADERS[name]], prior = [...V2_HEADERS[name]], legacy = [...LEGACY_HEADERS[name]];
         const matches = (expected: readonly string[]) => actual.slice(0, expected.length).every((value, index) => value === expected[index]) && actual.slice(expected.length).every(value => value === '');
-        if (!matches(current) && !matches(v9) && !matches(v8) && !matches(v7) && !matches(v6) && !matches(v5) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-10 template.`);
+        if (!matches(current) && !matches(v9) && !matches(v8) && !matches(v7) && !matches(v6) && !matches(v5) && !matches(v4) && !matches(v3) && !matches(prior) && !matches(legacy)) throw new Error(`${name}: headers must exactly match a supported version-1 through version-11 template.`);
       }
       else if (values.some(value => value !== '')) rows.push(values);
     });
@@ -160,7 +182,7 @@ function validRef(ref: string | undefined, assets: Set<string>, label: string): 
 function duplicates(items: { id: string }[], name: string): void { const ids = new Set<string>(); for (const item of items) { if (ids.has(item.id)) throw new Error(`${name}: duplicate ID ${item.id} inside this file.`); ids.add(item.id); } }
 
 export function parseTables(tables: Tables, state: State, incomingAssets: LocalAsset[] = []): ContentBundle {
-  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4','5','6','7','8','9', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 10) and content_only=true only.');
+  if (tables.Metadata.length !== 2 || tables.Metadata.filter(row => row[0] === 'format_version' && ['1', '2', '3', '4','5','6','7','8','9','10', FORMAT_VERSION].includes(row[1])).length !== 1 || tables.Metadata.filter(row => row[0] === 'content_only' && row[1] === 'true').length !== 1) throw new Error('Metadata must contain a supported format_version (1 through 11) and content_only=true only.');
   const bundle = emptyBundle(); bundle.assets = incomingAssets;
   bundle.decks = tables.Decks.map(([deckId, title, description, designSetId, suspended,parentId,ankiSourceRaw,coverImage,studyArtPolicy]) => {let ankiSource:Deck['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Deck ${deckId}: anki_source must be valid inert JSON.`);}}const deck:Deck={ id: id(deckId, 'Deck ID'), name: required(title, 'Deck title'), description, designSetId: optional(designSetId), suspended: bool(suspended, 'Deck suspended'),parentId:optional(parentId),coverImage:optional(coverImage),...(studyArtPolicy?{studyArtPolicy:studyArtPolicy as Deck['studyArtPolicy']}:{}),...(ankiSource?{ankiSource}:{})};validateDeck(deck);return deck;});
   bundle.designs = tables.Designs.map(row => {
@@ -186,7 +208,7 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
     const frontAudio = parseAudio(frontAudioRaw, 'front_audio'), backAudio = parseAudio(backAudioRaw, 'back_audio');
     let ankiSource:CardContent['ankiSource'];if(ankiSourceRaw){try{ankiSource=JSON.parse(ankiSourceRaw);}catch{throw new Error(`Card ${cardId}: anki_source must be valid inert JSON.`);}}
     let art:CardContent['art'],presentation:CardContent['presentation'],imageOcclusion:CardContent['imageOcclusion'],choices:string[]=[],details:NonNullable<CardContent['details']>=[];try{art=artRaw?JSON.parse(artRaw):undefined;choices=choicesRaw?JSON.parse(choicesRaw):[];details=detailsRaw?JSON.parse(detailsRaw):[];presentation=presentationRaw?JSON.parse(presentationRaw):undefined;imageOcclusion=imageOcclusionRaw?JSON.parse(imageOcclusionRaw):undefined;}catch{throw new Error(`Card ${cardId}: structured content must be valid inert JSON.`);}
-    const card:CardContent={ id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, ...(secondary?{secondary}:{}),...(interpretation?{interpretation}:{}), tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], ...(frontAudio.length ? { frontAudio } : {}), ...(backAudio.length ? { backAudio } : {}),siblingGroupId:optional(siblingGroupId),...(ankiSource?{ankiSource}:{}),...(art?{art}:{}),...(choices.length?{choices}:{}),...(answerLabel?{answerLabel}:{}),...(details.length?{details}:{}),...(presentation?{presentation}:{}),...(imageOcclusion?{imageOcclusion}:{}), revision: 1, suspended: bool(suspended, 'Card suspended') };validateCard(card);return card;
+    const card:CardContent={ id: id(cardId, 'Card ID'), deckId: id(deckId, 'Card deck ID'), kind, front, answer: imageOcclusion?answer:required(answer, `Card ${cardId} back_text`), pronunciation, meaning, notes, ...(secondary?{secondary}:{}),...(interpretation?{interpretation}:{}), tags: parsedTags as string[], rarity: (rarity || 'common') as Rarity, designSetId: optional(designSetId), image: optional(image), backImage: optional(backImage), imageDescription: optional(imageDescription), finish: optional(finish) as CardContent['finish'], ...(frontAudio.length ? { frontAudio } : {}), ...(backAudio.length ? { backAudio } : {}),siblingGroupId:optional(siblingGroupId),...(ankiSource?{ankiSource}:{}),...(art?{art}:{}),...(choices.length?{choices}:{}),...(answerLabel?{answerLabel}:{}),...(details.length?{details}:{}),...(presentation?{presentation}:{}),...(imageOcclusion?{imageOcclusion}:{}), revision: 1, suspended: bool(suspended, 'Card suspended') };validateCard(card);return card;
   });
   duplicates(bundle.decks, 'Decks'); duplicates(bundle.cards, 'Cards'); duplicates(bundle.designs, 'Designs'); duplicates(bundle.assets, 'Assets');
   bundle.decks.forEach(validateDeck); bundle.cards.forEach(validateCard); bundle.designs.forEach(validateDesign); bundle.assets.forEach(validateAsset);
@@ -214,6 +236,7 @@ export function parseTables(tables: Tables, state: State, incomingAssets: LocalA
 
 function bytesBase64(bytes: Uint8Array): string { let raw = ''; for (let offset = 0; offset < bytes.length; offset += 8192) raw += String.fromCharCode(...bytes.subarray(offset, offset + 8192)); return btoa(raw); }
 function assetBytes(asset: LocalAsset): Uint8Array { const raw = atob(asset.dataUrl.split(',')[1] ?? ''); return Uint8Array.from(raw, char => char.charCodeAt(0)); }
+async function sha256(bytes:Uint8Array):Promise<string>{const copy=new Uint8Array(bytes.byteLength);copy.set(bytes);const digest=await crypto.subtle.digest('SHA-256',copy.buffer);return`sha256:${[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('')}`;}
 export function validateMediaSignature(bytes: Uint8Array, mime: string): void {
   const text = (start:number,end:number)=>new TextDecoder().decode(bytes.subarray(start,end));
   const matches = mime === 'image/png' ? [137,80,78,71,13,10,26,10].every((value, index) => bytes[index] === value) : mime === 'image/jpeg' ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 : mime === 'image/webp' ? text(0,4) === 'RIFF' && text(8,12) === 'WEBP' : mime === 'audio/mpeg' ? text(0,3) === 'ID3' || bytes[0] === 255 && (bytes[1]! & 0xe0) === 0xe0 : mime === 'audio/wav' ? text(0,4) === 'RIFF' && text(8,12) === 'WAVE' : false;
@@ -222,7 +245,7 @@ export function validateMediaSignature(bytes: Uint8Array, mime: string): void {
 
 export async function readContentFile(bytes: Uint8Array, filename: string, state: State): Promise<ImportPreview> {
   try {
-    let tables: Tables; const incomingAssets: LocalAsset[] = []; let jsonDesigns: unknown;let ankiSources:AnkiSourceSnapshot[]=[];
+    let tables: Tables; const incomingAssets: LocalAsset[] = []; let jsonDesigns: unknown;let ankiSources:AnkiSourceSnapshot[]=[],ankiMappings:AnkiMappingPreset[]=[],ankiConversionProfiles:AnkiConversionProfile[]=[];let manifest:PortablePackageManifest|undefined;
     if (/\.xlsx$/i.test(filename)) tables = await readTables(bytes);
     else if (/\.zip$/i.test(filename)) {
       inspectZip(bytes); const { default: JSZip } = await import('jszip'); const zip = await JSZip.loadAsync(bytes);
@@ -232,19 +255,24 @@ export async function readContentFile(bytes: Uint8Array, filename: string, state
       const definitionsText = await definitions.async('string'); if (definitionsText.length > 1000000) throw new Error('Design definitions are too large.');
       jsonDesigns = JSON.parse(definitionsText);
       const sourceDefinitions=zip.file('anki-source.json');if(sourceDefinitions){const sourceText=await sourceDefinitions.async('string');if(sourceText.length>10_000_000)throw new Error('Anki source definitions are too large.');const parsed:unknown=JSON.parse(sourceText);if(!Array.isArray(parsed))throw new Error('anki-source.json must contain source snapshots.');parsed.forEach(validateAnkiSourceSnapshot);ankiSources=parsed as AnkiSourceSnapshot[];}
-      const permitted = new Set(['deck.xlsx', 'designs.json', ...(sourceDefinitions?['anki-source.json']:[]), ...tables.Assets.map(row => row[1])]);
-      for (const entry of Object.values(zip.files)) if (!entry.dir && !permitted.has(entry.name)) throw new Error(`Unexpected ZIP file ${entry.name}. Only declared media, deck.xlsx, designs.json and Anki source definitions are allowed.`);
+      const dependencyDefinitions=zip.file('anki-dependencies.json');if(dependencyDefinitions){const text=await dependencyDefinitions.async('string');if(text.length>2_000_000)throw new Error('Anki dependency definitions are too large.');const parsed:unknown=JSON.parse(text);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('anki-dependencies.json must contain mapping and conversion-profile arrays.');const data=parsed as Record<string,unknown>;if(Object.keys(data).some(key=>!['mappings','conversionProfiles'].includes(key))||!Array.isArray(data['mappings'])||!Array.isArray(data['conversionProfiles']))throw new Error('anki-dependencies.json has an unsupported structure.');data['mappings'].forEach(validateAnkiMapping);data['conversionProfiles'].forEach(validateAnkiConversionProfile);ankiMappings=data['mappings'] as AnkiMappingPreset[];ankiConversionProfiles=data['conversionProfiles'] as AnkiConversionProfile[];duplicates(ankiMappings,'Anki mappings');duplicates(ankiConversionProfiles,'Anki conversion profiles');}
+      const manifestEntry=zip.file('manifest.json'),version=tables.Metadata.find(row=>row[0]==='format_version')?.[1];if(version==='11'&&!manifestEntry)throw new Error('Portable format v11 requires manifest.json.');
+      if(manifestEntry){const text=await manifestEntry.async('string');if(text.length>500_000)throw new Error('Package manifest is too large.');const parsed:unknown=JSON.parse(text);if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Package manifest is malformed.');manifest=parsed as PortablePackageManifest;const date=Date.parse(manifest.exportedAt);if(manifest.format!=='holorecall-portable-content'||manifest.formatVersion!==11||manifest.packageType!=='content'||!ID_PATTERN.test(manifest.packageId)||!Number.isFinite(date)||!Array.isArray(manifest.selectedRootIds)||manifest.selectedRootIds.some(root=>!ID_PATTERN.test(root))||typeof manifest.rootName!=='string'||!manifest.rootName.trim()||!manifest.counts||typeof manifest.counts!=='object'||!Array.isArray(manifest.files))throw new Error('Package manifest identity is invalid.');const files=new Map(manifest.files.map(file=>[file.path,file]));if(files.size!==manifest.files.length||manifest.files.some(file=>!file||typeof file.path!=='string'||!/^sha256:[a-f0-9]{64}$/.test(file.sha256)||!Number.isInteger(file.byteLength)||file.byteLength<0))throw new Error('Package manifest integrity declarations are invalid.');for(const [path,file] of files){const entry=zip.file(path);if(!entry)throw new Error(`Package manifest declares missing file ${path}.`);const payload=await entry.async('uint8array');if(payload.byteLength!==file.byteLength||await sha256(payload)!==file.sha256)throw new Error(`Package integrity check failed for ${path}.`);}}
+      const permitted = new Set(['deck.xlsx', 'designs.json', ...(sourceDefinitions?['anki-source.json']:[]),...(dependencyDefinitions?['anki-dependencies.json']:[]),...(manifestEntry?['manifest.json']:[]), ...tables.Assets.map(row => row[1])]);
+      for (const entry of Object.values(zip.files)) if (!entry.dir && !permitted.has(entry.name)) throw new Error(`Unexpected ZIP file ${entry.name}. Only declared inert package data and media are allowed.`);
+      if(manifest){const declared=new Set(manifest.files.map(file=>file.path));const actual=[...permitted].filter(path=>path!=='manifest.json');if(actual.some(path=>!declared.has(path))||declared.size!==actual.length)throw new Error('Package manifest must declare every content and media file exactly once.');}
       for (const [assetId, path, name, mime, width, height, credit, source, license] of tables.Assets) {
         id(assetId, 'Asset ID'); if (!/^media\/[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|webp|mp3|wav)$/i.test(path)) throw new Error(`Unsafe media path ${path}.`);
         const entry = zip.file(path); if (!entry) throw new Error(`Missing ZIP media file ${path}.`);
         const data = await entry.async('uint8array'); validateMediaSignature(data, mime); const image = mime.startsWith('image/');
         incomingAssets.push({ id: assetId, name: required(name, 'Asset name'), mime: mime as LocalAsset['mime'], dataUrl: `data:${mime};base64,${bytesBase64(data)}`, ...(image ? { width: boundedNumber(width, 0, 'Image width', 1, 8192), height: boundedNumber(height, 0, 'Image height', 1, 8192) } : {}), credit, source, license });
       }
-    } else throw new Error('Choose a supported version-1 through version-8 .xlsx workbook or portable .zip archive.');
-    const bundle = parseTables(tables, state, incomingAssets);if(ankiSources.length)bundle.ankiSources=ankiSources;
+    } else throw new Error('Choose a supported version-1 through version-11 .xlsx workbook or portable .zip archive.');
+    const bundle = parseTables(tables, state, incomingAssets);if(ankiSources.length)bundle.ankiSources=ankiSources;if(ankiMappings.length)bundle.ankiMappings=ankiMappings;if(ankiConversionProfiles.length)bundle.ankiConversionProfiles=ankiConversionProfiles;
     const sourceIds=new Set(ankiSources.map(source=>source.id));bundle.cards=bundle.cards.map(card=>card.ankiSource?.sourceSnapshotId&&!sourceIds.has(card.ankiSource.sourceSnapshotId)?{...card,ankiSource:{...card.ankiSource,sourceSnapshotId:undefined}}:card);
+    duplicates(ankiSources,'Anki sources');const packageAssetIds=new Set((manifest?bundle.assets:[...state.assets,...bundle.assets]).map(asset=>asset.id));for(const source of ankiSources)for(const media of source.media)if(!packageAssetIds.has(media.assetId))throw new Error(`Anki source ${source.id} references missing media ${media.assetId}.`);const mappingIds=new Set((manifest?ankiMappings:[...state.ankiMappings,...ankiMappings]).map(mapping=>mapping.id));for(const profile of ankiConversionProfiles)if(profile.mappingProfileId&&!mappingIds.has(profile.mappingProfileId))throw new Error(`Anki conversion profile ${profile.id} references missing mapping ${profile.mappingProfileId}.`);
     if (jsonDesigns !== undefined && !sameContent(jsonDesigns, bundle.designs)) throw new Error('designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.');
-    return makePreview(bundle, state);
+    const preview=makePreview(bundle, state);preview.manifest=manifest;if(manifest){const counts=manifest.counts,actual={decks:bundle.decks.length,cards:bundle.cards.length,designSets:bundle.designs.length,media:bundle.assets.length,ankiSources:bundle.ankiSources?.length??0,mappings:bundle.ankiMappings?.length??0,conversionProfiles:bundle.ankiConversionProfiles?.length??0};if(!sameContent(counts,actual))throw new Error('Package manifest counts do not match its content.');if(preview.updatedCards.length||preview.updatedDecks.length||preview.updatedDesigns.length)preview.warnings.push('Matching IDs contain changed content. Review the update counts before importing.');const assetChanges=bundle.assets.some(asset=>{const current=state.assets.find(item=>item.id===asset.id);return!current||current.dataUrl!==asset.dataUrl||current.mime!==asset.mime||current.width!==asset.width||current.height!==asset.height;}),dependencyChanges=[...(bundle.ankiSources??[]),...(bundle.ankiMappings??[]),...(bundle.ankiConversionProfiles??[])].some(item=>![...state.ankiSources,...state.ankiMappings,...state.ankiConversionProfiles].some(current=>current.id===item.id&&sameContent(current,item)));if(!assetChanges&&!dependencyChanges&&!preview.newCards.length&&!preview.updatedCards.length&&!preview.newDecks.length&&!preview.updatedDecks.length&&!preview.newDesigns.length&&!preview.updatedDesigns.length)preview.warnings.push('This package is already present; importing it again would make no content changes.');}return preview;
   } catch (error) { return makePreview(emptyBundle(), state, [error instanceof Error ? error.message : 'Unable to read this file.']); }
 }
 
@@ -264,10 +292,14 @@ export async function makePortableBundle(source: ContentBundle, rasterize: Raste
   bundle.designs = bundle.designs.map(design => ({ ...design, background: replace(design.background), frame: replace(design.frame), texture: replace(design.texture), frames: Object.fromEntries(Object.entries(design.frames ?? {}).map(([rarity, ref]) => [rarity, replace(ref)])),...(design.rarityVariants?{rarityVariants:Object.fromEntries(Object.entries(design.rarityVariants).map(([rarity,variant])=>[rarity,variant?{...variant,frame:replace(variant.frame),texture:replace(variant.texture)}:variant]))}:{}) }));
   return bundle;
 }
-export async function writePortableZip(bundle: ContentBundle): Promise<Uint8Array> {
+export interface PortablePackageOptions{selectedRootIds?:string[];rootName?:string;exportedAt?:Date;packageId?:string}
+export async function writePortableZip(bundle: ContentBundle,options:PortablePackageOptions={}): Promise<Uint8Array> {
   const { default: JSZip } = await import('jszip'); const zip = new JSZip();
-  zip.file('deck.xlsx', await writeWorkbook(bundle)); zip.file('designs.json', JSON.stringify(bundle.designs, null, 2));if(bundle.ankiSources?.length)zip.file('anki-source.json',JSON.stringify(bundle.ankiSources));
-  for (const asset of bundle.assets) { const bytes = assetBytes(asset); validateMediaSignature(bytes, asset.mime); zip.file(`media/${asset.id}.${extension(asset)}`, bytes); }
+  const files=new Map<string,Uint8Array>(),encoder=new TextEncoder();files.set('deck.xlsx',await writeWorkbook(bundle));files.set('designs.json',encoder.encode(JSON.stringify(bundle.designs,null,2)));if(bundle.ankiSources?.length)files.set('anki-source.json',encoder.encode(JSON.stringify(bundle.ankiSources)));if(bundle.ankiMappings?.length||bundle.ankiConversionProfiles?.length)files.set('anki-dependencies.json',encoder.encode(JSON.stringify({mappings:bundle.ankiMappings??[],conversionProfiles:bundle.ankiConversionProfiles??[]})));
+  for (const asset of bundle.assets) { const bytes = assetBytes(asset); validateMediaSignature(bytes, asset.mime);files.set(`media/${asset.id}.${extension(asset)}`,bytes); }
+  const exportedAt=(options.exportedAt??new Date()).toISOString(),integrity=await Promise.all([...files].map(async([path,payload])=>({path,byteLength:payload.byteLength,sha256:await sha256(payload)}))),identityBytes=encoder.encode(JSON.stringify({exportedAt,roots:options.selectedRootIds??bundle.decks.filter(deck=>!deck.parentId).map(deck=>deck.id),cards:bundle.cards.map(card=>card.id),files:integrity})),packageId=options.packageId??`portable-${(await sha256(identityBytes)).slice(7,31)}`;
+  const manifest:PortablePackageManifest={format:'holorecall-portable-content',formatVersion:11,packageType:'content',packageId,exportedAt,selectedRootIds:options.selectedRootIds??bundle.decks.filter(deck=>!deck.parentId).map(deck=>deck.id),rootName:options.rootName??(bundle.decks.find(deck=>!deck.parentId)?.name??'HoloRecall content'),counts:{decks:bundle.decks.length,cards:bundle.cards.length,designSets:bundle.designs.length,media:bundle.assets.length,ankiSources:bundle.ankiSources?.length??0,mappings:bundle.ankiMappings?.length??0,conversionProfiles:bundle.ankiConversionProfiles?.length??0},files:integrity};
+  for(const[path,payload]of files)zip.file(path,payload);zip.file('manifest.json',JSON.stringify(manifest,null,2));
   const bytes = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   // Never offer an archive that exceeds this prototype's own import boundary.
   inspectZip(bytes); return bytes;

@@ -36,20 +36,27 @@ test('XLSX preview adds accented content atomically and preserves existing cards
   expect(after.cards.find(card => card.id === 'exchange-test-card')).toMatchObject({ answer: 'la città', notes: 'Line one\nLine two', rarity: 'ultra-rare' });
 });
 
-test('portable ZIP packages all sixteen illustrations and imports decodable durable media', async ({ page }) => {
+test('HoloRecall package exposes a scoped v11 manifest and imports decodable durable media without learner state', async ({ page }) => {
   await openExchange(page);
   await page.getByRole('tab', { name: 'Export' }).click();
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export ZIP', exact: true }).click()]);
+  await expect(page.getByRole('combobox',{name:'Deck branch'})).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export package', exact: true }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^holorecall-all-decks-\d{4}-\d{2}-\d{2}-v11\.zip$/);
   const bytes = await readFile((await download.path())!);
   await page.getByRole('tab', { name: 'Import' }).click();
   await page.getByLabel('Workbook or portable archive').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/zip', buffer: bytes });
   await expect(page.getByRole('heading', { name: 'Import preview' })).toBeVisible();
+  await expect(page.getByText(/All HoloRecall decks · 1 decks · 16 cards · 16 media/)).toBeVisible();
   await expect(page.getByText(/16 bundled media files/)).toBeVisible();
   await page.getByRole('button', { name: 'Apply 16 card changes', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('updated 16 cards');
+  await expect(page.getByRole('status').filter({ hasText: 'updated 16 cards' })).toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Exchange', exact: true })).toBeVisible();
   const data = await snapshot(page); expect(data.assets).toHaveLength(16); expect(data.cards.every(card => card.image?.startsWith('asset:'))).toBe(true); expect(data.events).toEqual([]); expect(data.rewardEvents).toEqual([]);
   expect(data.assets.every(asset => asset.dataUrl.startsWith('data:image/png;base64,') && asset.width === 900)).toBe(true);
+  await page.getByLabel('Workbook or portable archive').setInputFiles({ name: download.suggestedFilename(), mimeType: 'application/zip', buffer: bytes });
+  await expect(page.getByText('This package is already present; importing it again would make no content changes.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Apply 0 card changes', exact: true })).toBeDisabled();
+  expect((await snapshot(page)).cards).toEqual(data.cards);
 });
 
 test('formula workbook is blocked in preview without changing stored data', async ({ page }) => {

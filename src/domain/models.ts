@@ -557,5 +557,5 @@ export interface PrestigePromotion {
 export type RewardEvent = RewardContribution | RewardUnlock | PrestigeContribution | PrestigePromotion | RewardReversal;
 export type CollectiblePresentationState = 'locked' | 'unlocked' | 'prestige';
 export interface ContentImport {
-  decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[];
+  decks: Deck[]; cards: CardContent[]; designs: DesignSet[]; assets: LocalAsset[]; ankiSources?: AnkiSourceSnapshot[]; ankiMappings?: AnkiMappingPreset[]; ankiConversionProfiles?: AnkiConversionProfile[];
 }
