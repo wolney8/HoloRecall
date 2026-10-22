@@ -1,5 +1,12 @@
 # Current restart point
 
+## 22 October 2026 — Collection pile conservation corrected
+
+- **Reproduced causes:** two-card extraction used pointer-up against the live outer pile rectangle, so a card pulled mostly clear could still cancel according to its grab point. Extracted cards initially received the next table z-index, but ordinary selection then renormalised loose cards without piles and pushed them behind the remaining pile; pile selection also promoted the entire pile. The reported disappearance was occlusion, while card IDs remained in state.
+- **Correction:** pile drag now retains an immutable source-card hitbox and cancels only when at least half of the lifted card returns over it. The 2→1 transition derives the reduced pile, remaining loose member and extracted placement before applying the settled state. Selection no longer changes z-order; actual pointer/keyboard movement raises a card or pile through one shared bounded ordering.
+- **Evidence:** the two-card edge-grab journey finishes with two visible loose cards and no pile. The four-card journey asserts the same four IDs exactly once during both drag-proxy states, after each extraction, after plain pile selection and after reload; the two loose cards remain visibly unobscured. A locked remainder dissolves into the safe loose shell with no learning content in DOM or persistence. Pile domain/persistence tests pass **11/11**; focused pile and visible face semantics pass **24/24** across Chromium and desktop WebKit; compact/large/landscape touch-shaped WebKit passes **3/3**.
+- **Remaining boundary:** physical-device gesture feel and VoiceOver remain unverified. No new Collection milestone has started.
+
 ## 21 October 2026 — Collection Desk user piles implemented
 
 - **Pile model:** dragging a loose card onto another loose card creates a top-first user pile; dropping onto an existing pile adds to its top. The fixed primary deck retains canonical undealt/return semantics. A separate 44 px grip moves the whole pile, while the visible top card uses the existing drag lift to extract exactly one member. One-member and empty groups dissolve.

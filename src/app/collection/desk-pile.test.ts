@@ -18,4 +18,8 @@ describe('Desk piles',()=>{
   it('normalises the current page after extraction',()=>{
     const value={...pile(13),page:1};const next=removePileMember(value,'owned-12');expect(next.members).toHaveLength(12);expect(next.page).toBe(0);
   });
+
+  it('preserves the final member and its session face through a two-to-one dissolution',()=>{
+    const value=pile(2),next=removePileMember(value,'owned-0');expect(next.members).toEqual([{id:'owned-1',cardId:'card-1',kind:'owned',face:'answer'}]);expect(next.page).toBe(0);
+  });
 });

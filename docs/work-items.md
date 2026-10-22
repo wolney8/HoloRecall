@@ -1,12 +1,24 @@
 # Canonical work-item tracker
 
-Updated: 21 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 22 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Completed corrective milestone — HR-BUG-COLLECTION-PILE-01
+
+Authorised 22 October 2026. Correct two-card extraction and cross-object z-order without changing pile, Collection or learner semantics.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-BUG-COLLECTION-PILE-01A | Atomic 2→1 extraction | DONE | The drag proxy owns the extracted card until one state transition creates the dropped loose card and dissolves the one-member remainder into a second loose card. |
+| HR-BUG-COLLECTION-PILE-01B | Selection-safe z-order | DONE | Selection changes selection only; actual card/pile movement raises the moved object in one shared table ordering. |
+| HR-BUG-COLLECTION-PILE-01C | Conservation/privacy regression | DONE | Pointer/touch journeys assert all IDs exactly once through 2- and 4-card transitions, persistence restore and locked-shell dissolution. |
+
+Evidence: pile domain/persistence tests pass **11/11**. Focused pile plus visible Collection/Study semantics pass **24/24** across Chromium and desktop WebKit; compact, large and landscape touch-shaped WebKit extraction passes **3/3**. The four-card journey verifies two loose cards remain visible after selecting the two-card remainder, with unchanged membership, coordinates and z-order.
 
 ## Completed milestone — HR-COLLECTION-DESK-09
 
