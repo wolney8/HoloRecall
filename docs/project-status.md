@@ -1,5 +1,12 @@
 # Current restart point
 
+## 23 October 2026 — HR-NATIVE-07B portable ZIP Files round-trip verified in Simulator
+
+- **Production path:** Exchange now records SHA-256 and byte-count receipts for the exact portable-ZIP bytes before native `FileDelivery` and after production picker selection. Both paths reuse the 07A integrity service, Cache-to-Share adapter, private session cleanup and ordinary portable v11 parser/apply transaction.
+- **Evidence:** iPhone 17 Pro / iOS 26.5 Simulator passes **1/1 in 90.598 s** for production package generation, Share → Save to Files, picker cancellation, picker reopen, byte-identical saved-file selection, v11 preview and isolated atomic import. `holorecall-all-decks-2026-10-23-v11.zip` is **964,985 bytes** with SHA-256 `de67abb82694ea9a41a811648bf880b43125ee1be88abe6b74a2d6191be06de8`. Focused unit/domain passes **66/66**; portable Exchange passes **3/3 Chromium** and **3/3 WebKit**; the shared native APKG regression passes **1/1**.
+- **Boundary:** browser assertions prove unrelated cards, reviews, scheduling, practice and rewards remain unchanged, while native automation uses an isolated fixture branch because stable IDs correctly make same-store reimport a no-op. The app-owned export cache is empty after delivery; the system-owned WebKit picker staging copy is governed by iOS temporary-file lifecycle. Physical-device providers, VoiceOver, iPad-specific presentation, XLSX reopen and full-backup reopen remain unverified; HR-NATIVE-07 stays VERIFY.
+- **Next bounded recommendation:** prove the XLSX Save-to-Files reopen, byte-integrity and production parser/apply journey on iPhone Simulator.
+
 ## 23 October 2026 — HR-NATIVE-07A APKG Files round-trip verified in Simulator
 
 - **Production correction:** the iOS bundle now declares the APKG imported document type; without it, Files displayed a saved `.apkg` but disabled selection from WKWebView's production file input. Exchange computes a SHA-256/byte-count receipt for the exact generated and selected APKG bytes while retaining the existing Cache-to-Share `FileDelivery` and ordinary Anki parser/apply path.
