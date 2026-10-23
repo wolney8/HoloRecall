@@ -1,12 +1,25 @@
 # Canonical work-item tracker
 
-Updated: 22 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 23 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Completed milestone — HR-EXPORT-02
+
+Authorised 23 October 2026. Produce a content-only Anki deck package that current official Anki can import, inspect and re-export, without shipping or copying Anki's AGPL implementation.
+
+| ID | Requirement | Status | Acceptance boundary |
+|---|---|---|---|
+| HR-EXPORT-02A | Official format and licence audit | DONE | The writer targets official legacy-compatible `collection.anki21` schema 11; official source is a test oracle only and no Anki runtime/code ships. |
+| HR-EXPORT-02B | Browser-compatible APKG writer | DONE | HoloRecall-owned sql.js/JSZip writer reuses Basic/Extended semantics, hierarchy, deterministic identity and safe media without learner state. |
+| HR-EXPORT-02C | Exchange preview and delivery | DONE | Deck/profile/media/fallback preview precedes FileDelivery-based web/native export with disclosed loss boundaries. |
+| HR-EXPORT-02D | Official interoperability evidence | DONE | Official Anki 26.9.3 imports/inspects the Italian and anatomy outputs; an official re-export returns through the ordinary HoloRecall importer. |
+
+Evidence: generated SQLite passes `integrity_check`; official Anki 26.9.3 imports the **254-card** Lesson 1–3 package and the **58-card** anatomy package with **26** disclosed static Image Occlusion fallbacks. Basic and Extended note types import through the official API. An unchanged package reimport adds zero notes; a single revision change updates one note. Cards remain new with zero revlog/reps/interval/lapses. Official re-export is accepted by the ordinary HoloRecall parser. Exchange passes Chromium, desktop WebKit and compact WebKit at 200% text. Production build, Capacitor sync and packaged iPhone Simulator Share/Save-to-Files pass. Physical-device delivery and native Image Occlusion mask editing/reveal remain unverified.
 
 ## Active milestone — HR-EXPORT-01
 
@@ -540,7 +553,7 @@ Authorised 12 October 2026. This bounded milestone keeps Collection Desk out of 
 | HR-ANKI-INTEROP-01M | Export preview | DONE | The learner can compare HoloRecall content with generated Anki front/back and sees Basic-loss warnings. |
 | HR-ANKI-INTEROP-01N | Safe export format feasibility | DONE | Implement only an evidenced Anki-compatible format; production APKG packaging remains explicit follow-on work if absent. |
 | HR-ANKI-INTEROP-01O | Round-trip identity contract | DONE | Imported provenance and native stable export identity prevent accidental unrelated duplicates. |
-| HR-ANKI-EXPORT-APKG-01 | Production APKG generation | DEFERRED | Build and validate an actual Anki package only in a later bounded milestone; do not emit brittle undocumented SQLite archives. |
+| HR-ANKI-EXPORT-APKG-01 | Production APKG generation | DONE | Superseded and completed by HR-EXPORT-02 with the official legacy-compatible schema-11 package and Anki 26.9.3 validation. |
 
 Evidence: unit/domain **220/220** with one opt-in real-package test skipped by default; the exact 254-card Italian package test passes separately. The complete browser matrix reached **227/231** on its first pass: three phone-profile failures were an obsolete button-name assertion after the deliberate Mapping Studio rename and pass **3/3** with the current name; one existing WebKit animation-object sample passes unchanged **4/4** in focused rerun. New Mapping Studio/preview/export acceptance passes in Chromium, desktop WebKit and compact WebKit. Production is **849.99 kB raw / 203.12 kB transfer**, under the unchanged 850 kB ceiling; Exchange (73.56 kB) and the Anki Worker (52.55 kB) remain lazy. Packaged iPhone 17 Pro / iOS 26.5 Study/navigation smoke passes **1/1 in 44.650 s**.
 
@@ -1453,7 +1466,7 @@ Source: Will's 9 October 2026 bounded dogfood request. Work proceeds through the
 | HR-CARD-DELIGHT-01 | Accessible finish/frame/motion treatment foundation | Collection/design/platform | Anki replacement usability | P1 | DONE | Existing rarity/finish renderer and feedback adapters |
 | HR-DECK-UX-02 | Group imported-deck study, deck, and source management | Deck management/UX | Anki replacement usability | P1 | DONE | Existing deck actions and contextual source manager |
 | HR-EXPORT-01 | Full-fidelity HoloRecall portable package | Import/export | Dogfood Phase 3 | P0 | DONE | Format v11 scoped content package; learner backup remains separate |
-| HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | PLANNED | Safe static templates/media and Anki-compatible validation |
+| HR-EXPORT-02 | Content-compatible Anki `.apkg` export | Import/export | Dogfood Phase 3 | P1 | DONE | Legacy-compatible schema-11 package, static Basic/Extended notes, media and official Anki 26.9.3 validation |
 
 Phase 1 acceptance requires the exact supplied package to pass automatic template-first conversion, safe declarative presentation, concise import/update, legacy repair, portability and browser evidence without manual mapping. The automatic gate now passes; HR-ACCEPT-ANKI-01 remains VERIFY until Will retests the genuine existing local deck.
 

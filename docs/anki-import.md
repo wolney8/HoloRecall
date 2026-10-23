@@ -105,12 +105,14 @@ Anki 23.10+ native Image Occlusion is supported from the official [Image Occlusi
 
 ## HoloRecall to Anki export contract
 
-Two versioned profiles are available as a preview and Anki-compatible UTF-8 text export:
+Two versioned profiles drive both Anki-compatible UTF-8 text and packaged `.apkg` output:
 
 - **HoloRecall Basic** emits Front and Back. Selecting it for a rich card shows an explicit loss warning.
 - **HoloRecall Extended v1** emits stable Identity and Deck plus Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, ImageOcclusion, Source and Tags. Blank optional fields are valid. Its predictable templates use conditional sections and an explicit `{{FrontSide}}<hr id="answer">` boundary.
 
-Image Occlusion exports always warn that TSV cannot faithfully create native masks; Extended retains the declarative payload while Basic reports the loss. The file includes documented Anki text-import headers for separator, HTML, note type, deck, tags and columns. It is an interoperable intermediate, not an `.apkg`. Production APKG database/media creation remains `HR-ANKI-EXPORT-APKG-01`; HoloRecall will not emit an undocumented SQLite archive merely to claim package support. Imported cards derive export identity from source model/note/template identity. Native cards use their stable HoloRecall card ID, so repeated exports have deterministic identities. Source provenance remains authoritative for later Anki package updates; export does not detach or rewrite it.
+APKG v1 uses Anki's official legacy-compatible `collection.anki21` schema-11 variant plus the JSON media map and package metadata. Static HoloRecall-owned templates render images and audio from packaged, hash-deduplicated files; no imported JavaScript, CSS, remote dependency or original template is emitted. Imported cards derive deterministic GUID/note/card identity from source model/note/template identity; native cards use their stable HoloRecall card ID. An unchanged reimport is a duplicate, while a higher HoloRecall content revision updates that note under Anki's ordinary package rules. Current HoloRecall values always win over retained source-snapshot values.
+
+Image Occlusion is explicit partial compatibility: Extended retains the normalized payload and packages the source image, but outputs a consented static source-image fallback rather than claiming native Anki mask editing/reveal. Basic reports its wider semantic loss. Scheduling, reviews, due state, rewards and Collection state are never exported. The official Anki 26.9.3 Python package validates generated output in development only and is not a shipped dependency.
 
 ## Anki feature capability matrix
 

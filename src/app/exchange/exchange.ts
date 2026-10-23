@@ -4,11 +4,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { LocalStudyStore } from '../data/study-store';
 import { decodeRaster } from '../upload';
 import { FILE_DELIVERY } from '../platform/file-delivery';
 import type { ImportPreview } from '../../domain/exchange';
+import type { AnkiApkgPlan } from '../../domain/anki-apkg';
 import type { AnkiAnalysis, AnkiImportPreview, AnkiProgress } from '../../domain/anki';
 import { ANKI_MAPPING_POLICY_VERSION, ANKI_MAPPING_VERSION, eligibleAnkiMappings } from '../../domain/anki';
 import type { AnkiConversionProfile, AnkiMappingPreset, CardContent, Rarity } from '../../domain/models';
@@ -26,7 +28,7 @@ type ExchangeView='import'|'export'|'templates';
 
 @Component({
   selector: 'hr-exchange', standalone: true,
-  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, SubviewNavigationComponent, PageRevealDirective],
+  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatCheckboxModule, SubviewNavigationComponent, PageRevealDirective],
   templateUrl: './exchange.html',
   styleUrl: './exchange.css',
   styles: [`
@@ -73,7 +75,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   readonly ankiRunning = signal(false); readonly mappingDrafts = new Map<string, AnkiMappingPreset>();
   private activeMappings:AnkiMappingPreset[]=[];
   readonly mappingGroups=['Recall','Answer','Support','Other'].map(name=>({name,roles:SEMANTIC_ROLES.filter(role=>role.group===name)}));
-  ankiExportProfile:AnkiExportProfile='extended-v1';readonly ankiExportPreview=signal<AnkiExportPreview|null>(null);
+  ankiExportProfile:AnkiExportProfile='extended-v1';ankiExportDeckId='';ankiExportIncludeMedia=true;acceptOcclusionFallback=false;readonly ankiExportPreview=signal<AnkiExportPreview|null>(null);readonly ankiApkgPlan=signal<AnkiApkgPlan|null>(null);
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
   readonly completion=signal<{deckId:string;deckIds:string[];label:string;kind:'IMPORT'|'UPDATE'|'REPAIR'}|null>(null);
   readonly exchangeViews:readonly SubviewNavigationItem<ExchangeView>[]=[{id:'import',label:'Import',panelId:'exchange-import-panel'},{id:'export',label:'Export',panelId:'exchange-export-panel'},{id:'templates',label:'Templates',panelId:'exchange-templates-panel'}];
@@ -109,7 +111,11 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   hasChanges(preview: ImportPreview): boolean { if(preview.warnings.includes('This package is already present; importing it again would make no content changes.'))return false;const state=this.store.data(),changed=(incoming:{id:string}[],existing:{id:string}[]|undefined)=>incoming.some(item=>!existing?.some(current=>current.id===item.id&&JSON.stringify(current)===JSON.stringify(item))),assetChanges=preview.bundle.assets.some(asset=>{const current=state?.assets.find(item=>item.id===asset.id);return!current||current.dataUrl!==asset.dataUrl||current.mime!==asset.mime||current.width!==asset.width||current.height!==asset.height;});return !!(preview.newCards.length + preview.updatedCards.length + preview.newDecks.length + preview.updatedDecks.length + preview.newDesigns.length + preview.updatedDesigns.length+Number(assetChanges)+Number(changed(preview.bundle.ankiSources??[],state?.ankiSources))+Number(changed(preview.bundle.ankiMappings??[],state?.ankiMappings))+Number(changed(preview.bundle.ankiConversionProfiles??[],state?.ankiConversionProfiles))); }
   exportCard():CardContent|undefined{return this.store.cards()[0]}
   refreshAnkiExportPreview():void{const card=this.exportCard();this.ankiExportPreview.set(card?previewAnkiExport(card,this.ankiExportProfile):null);}
-  async exportAnkiText():Promise<void>{const state=this.store.data();if(!state)return;this.busy.set('Building Anki-compatible text import…');try{const bytes=writeAnkiTextExport(state.cards.filter(card=>!card.archived),state.decks,this.ankiExportProfile),blob=new Blob([bytes.slice().buffer],{type:'text/tab-separated-values;charset=utf-8'});await this.fileDelivery.deliver(blob,`holorecall-${this.ankiExportProfile}.txt`);this.message.set('Anki-compatible text import requested. Import it into the matching HoloRecall note type; production APKG generation remains a separate compatibility milestone.');}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
+  async exportAnkiText():Promise<void>{const state=this.store.data();if(!state)return;this.busy.set('Building Anki-compatible text import…');try{const planned=this.ankiApkgPlan()?.cards.map(item=>item.card),bytes=writeAnkiTextExport(planned??state.cards.filter(card=>!card.archived),state.decks,this.ankiExportProfile),blob=new Blob([bytes.slice().buffer],{type:'text/tab-separated-values;charset=utf-8'});await this.fileDelivery.deliver(blob,`holorecall-${this.ankiExportProfile}.txt`);this.message.set('Anki-compatible text import requested. This editing/intermediate format is separate from the packaged Anki deck.');}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
+  openAnkiExport():void{this.ankiExportOpen.set(!this.ankiExportOpen());if(this.ankiExportOpen()&&!this.ankiExportDeckId)this.ankiExportDeckId=this.exportDecks().find(deck=>!deck.parentId)?.id??this.exportDecks()[0]?.id??'';}
+  async refreshAnkiPackagePreview():Promise<void>{const state=this.store.data();if(!state)return;this.failure.set('');this.message.set('');this.ankiApkgPlan.set(null);this.acceptOcclusionFallback=false;this.busy.set('Preparing Anki package preview…');try{const[{contentFromState,makePortableBundle},{planAnkiApkg}]=await Promise.all([import('../../domain/exchange'),import('../../domain/anki-apkg')]);let bundle=contentFromState(state,this.ankiExportDeckId?[this.ankiExportDeckId]:undefined);if(this.ankiExportIncludeMedia)bundle=await makePortableBundle(bundle,rasterizeBundled);const plan=await planAnkiApkg(bundle.cards,bundle.decks,bundle.assets,this.ankiExportDeckId,this.ankiExportProfile,this.ankiExportIncludeMedia);this.ankiApkgPlan.set(plan);this.ankiExportPreview.set(plan.cards[0]?.preview??null);}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
+  canExportAnkiPackage():boolean{const plan=this.ankiApkgPlan();return !!plan&&(!plan.imageOcclusionFallbackIds.length||this.acceptOcclusionFallback)&&!this.busy();}
+  async exportAnkiPackage():Promise<void>{const plan=this.ankiApkgPlan();if(!plan||!this.canExportAnkiPackage())return;this.failure.set('');this.message.set('');this.busy.set('Building the Anki deck package…');try{const{writeAnkiApkg}=await import('../../domain/anki-apkg'),bytes=await writeAnkiApkg(plan),blob=new Blob([bytes.slice().buffer],{type:'application/zip'}),name=plan.rootName.normalize('NFKD').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'deck';await this.fileDelivery.deliver(blob,`holorecall-${name}-${new Date().toISOString().slice(0,10)}.apkg`);this.message.set(`Anki deck requested with ${plan.cards.length} clean, unscheduled cards in the ${plan.profile==='basic'?'Basic':'Extended'} profile.`);}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
 
   async selectFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file) return;

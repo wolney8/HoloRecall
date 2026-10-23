@@ -1,5 +1,13 @@
 # Current restart point
 
+## 23 October 2026 — HR-EXPORT-02 content-compatible Anki package implemented
+
+- **Package contract:** Exchange now writes the official legacy-compatible `collection.anki21` schema-11 APKG variant with HoloRecall-owned sql.js/JSZip code. Basic and Extended v1 share the existing semantic projection; static templates contain no source JavaScript/CSS or remote dependencies. Deck `::` hierarchy, tags, structured support, deterministic identities and hash-deduplicated PNG/JPEG/WebP/MP3/WAV media are carried. HoloRecall scheduling, reviews, rewards and Collection state are excluded.
+- **Compatibility boundary:** native Image Occlusion mask editing/reveal is not claimed. Extended retains normalized mask data and exports a disclosed static source-image fallback after explicit preview consent; all 58 safe anatomy cards remain present, including 26 fallbacks.
+- **Evidence:** SQLite integrity and package-structure checks pass. Official Anki 26.9.3 imports Basic/Extended output, the 254-card Italian Lesson 1–3 set and the 58-card anatomy set. Reimporting unchanged output adds zero notes; changing one revision updates one note. Imported cards have zero revlog/reps/interval/lapses. Official Anki re-export returns through the ordinary HoloRecall parser. Focused Exchange and existing portable/import regressions pass Chromium, desktop WebKit and compact WebKit at 200% text. Production build, Capacitor sync and packaged iPhone Simulator APKG Share/Save-to-Files pass **1/1 in 67.667 s**.
+- **Remaining boundary:** physical-device delivery/accessibility and native Anki Image Occlusion behavior remain unverified. An attempted GUI Desktop check was not isolated because the already-running Anki single instance accepted the file in its existing User 1 profile; that run is not counted as isolated Desktop acceptance. Headless official-API evidence used fresh temporary collections.
+- **Next bounded recommendation:** close `HR-NATIVE-07` with actual Files reopen/hash/import checks and physical-device Share/VoiceOver evidence across APKG, portable ZIP, XLSX and backup. Do not begin cloud/accounts/sync as part of it.
+
 ## 22 October 2026 — HR-EXPORT-01 full-fidelity portable package implemented
 
 - **Existing foundation reused:** v10 already carried hierarchy, structured cards, Design Sets, media, native Image Occlusion and inert per-card provenance through the lazy XLSX/ZIP pipeline; preview/apply was version-checked and atomic, `FileDelivery` handled web/native output, and full JSON backup separately retained learner state.

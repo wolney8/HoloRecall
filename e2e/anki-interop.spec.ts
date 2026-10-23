@@ -1,4 +1,5 @@
 import { expect, test, navigate, openApp, snapshot, expectNoOverflow } from './helpers';
+import { readFileSync } from 'node:fs';
 import initSqlJs from 'sql.js';
 import JSZip from 'jszip';
 
@@ -17,9 +18,14 @@ test('HR-ANKI-INTEROP-01 reviews and confirms one note-type/template semantic ma
   await expect(page.getByText(/exact semantic projection/)).toBeVisible();await page.getByRole('button',{name:'Import 1 supported cards'}).click();const state=await snapshot(page),mapping=state.ankiMappings.find(item=>item.modelName==='Arbitrary science layout');expect(mapping).toMatchObject({version:4,origin:'user-confirmed',scope:'template',templateName:'Forward',fields:{ExplanationBlock:'explanation'}});expect(state.cards.find(card=>card.ankiSource?.noteGuid==='semantic-guid')).toMatchObject({id:'anki-semantic-guid-0',answer:'9.81 m/s²'});
 });
 
-test('HR-ANKI-INTEROP-01 previews Basic and Extended v1 Anki text contracts',async({page})=>{
-  await openApp(page);await navigate(page,'Exchange');await page.getByRole('tab',{name:'Export'}).click();await page.getByLabel('Anki · Basic or Extended v1 text-import files').click();await page.getByRole('button',{name:'Preview Anki export'}).click();const preview=page.getByLabel('Anki export preview');await expect(preview).toContainText('ANKI FRONT');await expect(preview).toContainText('ANKI BACK');await expect(preview.getByRole('button',{name:/Download HoloRecall Extended v1/})).toBeVisible();
-  await page.getByLabel('Export profile').click();await page.getByRole('option',{name:'HoloRecall Basic'}).click();await expect(preview).toContainText(/Basic exports only Prompt and Answer/);
+test('HR-EXPORT-02 previews and downloads Extended and Basic Anki deck packages',async({page})=>{
+  await openApp(page);await navigate(page,'Exchange');await page.getByRole('tab',{name:'Export'}).click();await page.getByLabel('Anki · Export an Anki deck package').click();await page.getByRole('button',{name:'Preview Anki deck'}).click();const preview=page.getByLabel('Anki deck export preview');await expect(preview).toContainText('HoloRecall Extended');await expect(preview).toContainText('Legacy-compatible Anki deck package');
+  const [download]=await Promise.all([page.waitForEvent('download'),preview.getByRole('button',{name:'Export Anki deck'}).click()]);expect(download.suggestedFilename()).toMatch(/\.apkg$/);const zip=await JSZip.loadAsync(readFileSync((await download.path())!));expect(zip.file('collection.anki21')).toBeTruthy();expect(zip.file('media')).toBeTruthy();
+  await page.getByLabel('Export profile').click();await page.getByRole('option',{name:'HoloRecall Basic'}).click();await page.getByRole('button',{name:'Preview Anki deck'}).click();await expect(preview).toContainText('HoloRecall Basic');await expect(preview).toContainText(/Basic exports only Prompt and Answer/);
+});
+
+test('HR-EXPORT-02 Anki export remains contained at 200 percent text @ios-compact',async({page})=>{
+  await openApp(page);await navigate(page,'Exchange');await page.getByRole('tab',{name:'Export'}).click();await page.addStyleTag({content:'html{-webkit-text-size-adjust:200%;text-size-adjust:200%}'});await page.getByLabel('Anki · Export an Anki deck package').click();await page.getByRole('button',{name:'Preview Anki deck'}).click();await expect(page.getByLabel('Anki deck export preview')).toContainText('Legacy-compatible Anki deck package');await expectNoOverflow(page);
 });
 
 test('HR-ANKI-INTEROP-01 Mapping Studio reflows without page overflow @ios-compact',async({page})=>{

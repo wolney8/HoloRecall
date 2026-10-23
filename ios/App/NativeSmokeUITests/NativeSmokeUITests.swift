@@ -93,6 +93,15 @@ final class NativeSmokeUITests: XCTestCase {
         app.otherElements["dismiss popup"].tap()
         XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 8))
 
+        tapScrollableButton("Anki · Export an Anki deck package")
+        tapScrollableButton("Preview Anki deck", timeout: 20)
+        tapScrollableButton("Export Anki deck", timeout: 20)
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 30), "Anki APKG share sheet did not appear\n\(app.debugDescription)")
+        XCTAssertTrue(app.cells["Save to Files"].waitForExistence(timeout: 8))
+        attachScreenshot("native-anki-apkg-share-sheet")
+        app.otherElements["dismiss popup"].tap()
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 8))
+
         for _ in 0..<4 { app.swipeDown() }
         tapButton("Import")
         let pickerLabel = app.descendants(matching: .any).matching(identifier: "Workbook or portable archive").firstMatch

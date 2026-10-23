@@ -242,3 +242,7 @@ Capacitor iOS sync passes. The packaged clean-fixture arrange/relaunch/restore/r
 ## HR-EXPORT-01
 
 Capacitor iOS sync passes with the same platform-neutral format-v11 ZIP generator and existing `FileDelivery` adapter. A packaged iPhone 17 Pro / iOS 26.5 Simulator smoke generates the HoloRecall package and reaches the native Share sheet plus Save to Files **1/1 in 63.759 s**; the same journey also opens and cancels the native document picker without mutation. Evidence is under `.runtime/evidence/hr-export-01/`. Package re-import from Files, iPad export, physical-device Share/Files behavior, VoiceOver, Dynamic Type, cancellation under large media and memory pressure remain unverified.
+
+## HR-EXPORT-02
+
+Production APKG generation remains platform-neutral and reuses `FileDelivery`. After Capacitor sync, the packaged iPhone 17 Pro / iOS 26.5 Simulator opens the APKG preview, generates a legacy-compatible Anki package, reaches the native Share sheet and exposes Save to Files **1/1 in 67.667 s**. Evidence is under `.runtime/evidence/hr-export-02/`. Actual Files save/reopen/import, iPad APKG export, physical-device Share, VoiceOver, Dynamic Type and large-media memory pressure remain unverified.
