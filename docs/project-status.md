@@ -1,5 +1,12 @@
 # Current restart point
 
+## 23 October 2026 — HR-NATIVE-07C XLSX Files round-trip verified in Simulator
+
+- **Production path:** XLSX now records the same SHA-256/byte-count receipts as APKG and portable ZIP before native `FileDelivery` and after production picker selection. Generation, parsing, atomic apply and Cache-to-Share lifecycle remain the existing shared production paths.
+- **Evidence:** iPhone 17 Pro / iOS 26.5 Simulator passes **1/1 in 79.106 s** for format-v11 generation, Share → Save to Files, picker cancellation, picker reopen, byte-identical selection, ordinary preview and isolated atomic import. `holorecall-all-decks-2026-10-23-v11.xlsx` is **14,053 bytes** with SHA-256 `396553ce1fe9f91f7584b020807427ab87ce8f16c157ca6dbdc4f59f804c4e7c`. Focused unit/platform tests pass **38/38**; XLSX plus shared APKG/portable-ZIP Exchange coverage passes **14/14** across Chromium and desktop WebKit; native portable-ZIP and APKG regressions pass **1/1 in 79.495 s** and **1/1 in 72.925 s** respectively; production build and Capacitor sync pass.
+- **Contract and boundary:** automated workbook inspection verifies Metadata/Decks/Cards/Designs/Assets, format 11/current headers, Unicode/multiline content, stable IDs, rarity, tags, presentation, Design Set and Image Occlusion. XLSX does not carry media bytes, normalized Anki snapshots, Mapping/Conversion Profiles or package integrity. Browser assertions preserve unrelated learner/application state and verify unchanged duplicate IDs disable Apply. The app-owned export cache is empty; system-owned `WKFileUploadPanel` staging cleanup timing, physical-device providers, VoiceOver, iPad-specific presentation and large-workbook memory remain unverified. HR-NATIVE-07 stays VERIFY.
+- **Next bounded recommendation:** prove the full-backup Save-to-Files reopen, byte-integrity, restore-validation and non-destructive cancellation journey on iPhone Simulator.
+
 ## 23 October 2026 — HR-NATIVE-07B portable ZIP Files round-trip verified in Simulator
 
 - **Production path:** Exchange now records SHA-256 and byte-count receipts for the exact portable-ZIP bytes before native `FileDelivery` and after production picker selection. Both paths reuse the 07A integrity service, Cache-to-Share adapter, private session cleanup and ordinary portable v11 parser/apply transaction.

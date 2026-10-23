@@ -245,6 +245,78 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-portable-zip-files-round-trip")
     }
 
+    func testNativeXlsxFilesRoundTrip() throws {
+        openMore("Exchange")
+        tapButton("Export")
+        tapScrollableButton("Export XLSX", timeout: 30)
+
+        let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 30), "Native XLSX share sheet did not appear\n\(app.debugDescription)")
+        let saveToFiles = app.cells["Save to Files"]
+        XCTAssertTrue(saveToFiles.waitForExistence(timeout: 8))
+        saveToFiles.tap()
+        saveSharedFileToLocalDestination()
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 20))
+
+        let generatedHash = integrityHash(label: "Generated XLSX integrity")
+        let generatedBytes = integrityByteCount(label: "Generated XLSX integrity")
+        XCTAssertEqual(generatedHash.count, 64)
+        XCTAssertGreaterThan(generatedBytes, 0)
+
+        // Stable workbook IDs make same-store reimport a no-op. Remove only this
+        // isolated Simulator fixture branch through the production deck UI.
+        tapButton("Decks")
+        let actions = app.buttons["More deck actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 8))
+        actions.tap()
+        let edit = app.menuItems["Edit deck"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 8))
+        edit.tap()
+        let delete = app.buttons["Delete deck…"]
+        for _ in 0..<6 where !delete.isHittable { app.swipeUp() }
+        XCTAssertTrue(delete.isHittable)
+        delete.tap()
+        let acknowledgement = app.descendants(matching: .any).matching(identifier: "I understand this cannot be undone.").firstMatch
+        XCTAssertTrue(acknowledgement.waitForExistence(timeout: 8), "Delete acknowledgement was unavailable\n\(app.debugDescription)")
+        acknowledgement.tap()
+        tapButton("Delete permanently")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Deck branch and its learning records'")).firstMatch.waitForExistence(timeout: 12))
+
+        openMore("Exchange")
+        let workbookInput = app.descendants(matching: .any).matching(identifier: "Workbook or portable archive").firstMatch
+        XCTAssertTrue(workbookInput.waitForExistence(timeout: 8))
+        workbookInput.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native XLSX picker did not appear\n\(app.debugDescription)")
+        cancel.tap()
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "Selected XLSX integrity").firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["Import preview"].exists)
+
+        workbookInput.tap()
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native XLSX picker did not reopen\n\(app.debugDescription)")
+        let savedWorkbook = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'holorecall-' AND label CONTAINS[c] '-v11' AND label CONTAINS[c] 'xlsx'")).firstMatch
+        if !savedWorkbook.waitForExistence(timeout: 2) {
+            let browse = app.tabBars["Tab Bar"].buttons["Browse"]
+            XCTAssertTrue(browse.waitForExistence(timeout: 8), "Native Files Browse destination was unavailable\n\(app.debugDescription)")
+            browse.tap()
+            let onMyIPhone = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'On My iPhone'")).firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), "On My iPhone was unavailable in the native picker\n\(app.debugDescription)")
+            onMyIPhone.tap()
+        }
+        XCTAssertTrue(savedWorkbook.waitForExistence(timeout: 15), "Saved XLSX was not available in the native picker\n\(app.debugDescription)")
+        savedWorkbook.tap()
+
+        let selectedHash = integrityHash(label: "Selected XLSX integrity", timeout: 30)
+        let selectedBytes = integrityByteCount(label: "Selected XLSX integrity", timeout: 30)
+        XCTAssertEqual(selectedHash, generatedHash, "The XLSX selected from Files is not byte-identical to the generated artifact")
+        XCTAssertEqual(selectedBytes, generatedBytes, "The XLSX selected from Files changed byte length")
+        XCTAssertTrue(app.staticTexts["Import preview"].waitForExistence(timeout: 30))
+        tapScrollableButton("Apply 16 card changes", timeout: 20)
+        XCTAssertTrue(app.staticTexts["IMPORT COMPLETE"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["Italian essentials"].exists)
+        attachScreenshot("native-xlsx-files-round-trip")
+    }
+
     func testCollectionSubviewNavigation() throws {
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
@@ -477,6 +549,8 @@ final class NativeSmokeUITests: XCTestCase {
         }
         XCTAssertTrue(save.waitForExistence(timeout: 15), "Save to Files destination did not appear\n\(app.debugDescription)")
         save.tap()
+        let replace = app.buttons["Replace"]
+        if replace.waitForExistence(timeout: 2) { replace.tap() }
     }
 
     private func integrityByteCount(label: String, timeout: TimeInterval = 10) -> Int {

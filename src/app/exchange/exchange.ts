@@ -77,7 +77,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   readonly ankiRunning = signal(false); readonly mappingDrafts = new Map<string, AnkiMappingPreset>();
   private activeMappings:AnkiMappingPreset[]=[];
   readonly mappingGroups=['Recall','Answer','Support','Other'].map(name=>({name,roles:SEMANTIC_ROLES.filter(role=>role.group===name)}));
-  ankiExportProfile:AnkiExportProfile='extended-v1';ankiExportDeckId='';ankiExportIncludeMedia=true;acceptOcclusionFallback=false;readonly ankiExportPreview=signal<AnkiExportPreview|null>(null);readonly ankiApkgPlan=signal<AnkiApkgPlan|null>(null);readonly ankiExportIntegrity=signal<FileIntegrity|null>(null);readonly ankiImportIntegrity=signal<FileIntegrity|null>(null);readonly portableExportIntegrity=signal<FileIntegrity|null>(null);readonly portableImportIntegrity=signal<FileIntegrity|null>(null);
+  ankiExportProfile:AnkiExportProfile='extended-v1';ankiExportDeckId='';ankiExportIncludeMedia=true;acceptOcclusionFallback=false;readonly ankiExportPreview=signal<AnkiExportPreview|null>(null);readonly ankiApkgPlan=signal<AnkiApkgPlan|null>(null);readonly ankiExportIntegrity=signal<FileIntegrity|null>(null);readonly ankiImportIntegrity=signal<FileIntegrity|null>(null);readonly portableExportIntegrity=signal<FileIntegrity|null>(null);readonly portableImportIntegrity=signal<FileIntegrity|null>(null);readonly xlsxExportIntegrity=signal<FileIntegrity|null>(null);readonly xlsxImportIntegrity=signal<FileIntegrity|null>(null);
   readonly filename = signal(''); readonly busy = signal(''); readonly message = signal(''); readonly failure = signal('');
   readonly completion=signal<{deckId:string;deckIds:string[];label:string;kind:'IMPORT'|'UPDATE'|'REPAIR'}|null>(null);
   readonly exchangeViews:readonly SubviewNavigationItem<ExchangeView>[]=[{id:'import',label:'Import',panelId:'exchange-import-panel'},{id:'export',label:'Export',panelId:'exchange-export-panel'},{id:'templates',label:'Templates',panelId:'exchange-templates-panel'}];
@@ -121,12 +121,12 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
 
   async selectFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file) return;
-    this.message.set(''); this.failure.set(''); this.completion.set(null);this.preview.set(null);this.portableImportIntegrity.set(null); this.filename.set(file.name); this.busy.set('Validating content and media…');
+    this.message.set(''); this.failure.set(''); this.completion.set(null);this.preview.set(null);this.portableImportIntegrity.set(null);this.xlsxImportIntegrity.set(null); this.filename.set(file.name); this.busy.set('Validating content and media…');
     try {
       const state = this.store.data(); if (!state) throw new Error('Local data is still loading.');
       const { MAX_FILE_BYTES, readContentFile } = await import('../../domain/exchange');
       if (file.size > MAX_FILE_BYTES) throw new Error('Choose a file of at most 30 MiB.');
-      const bytes=new Uint8Array(await file.arrayBuffer()),isPortable=file.name.toLocaleLowerCase().endsWith('.zip');
+      const bytes=new Uint8Array(await file.arrayBuffer()),lowerName=file.name.toLocaleLowerCase(),isPortable=lowerName.endsWith('.zip'),isXlsx=lowerName.endsWith('.xlsx');
       const preview = await readContentFile(bytes, file.name, state);
       // A byte signature is insufficient to establish an image is decodable. Verify every ZIP image before enabling Apply.
       if (!preview.errors.length) for (const asset of preview.bundle.assets.filter(asset => asset.mime.startsWith('image/'))) {
@@ -136,7 +136,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
         const matches = dimensions.width === asset.width && dimensions.height === asset.height && dimensions.width >= 16 && dimensions.height >= 16 && dimensions.width <= 4096 && dimensions.height <= 4096;
         if (!matches) throw new Error(`Image ${asset.name}: dimensions must match its metadata and be 16–4096 pixels.`);
       }
-      if(isPortable)this.portableImportIntegrity.set(await fileIntegrity(file.name,bytes));
+      const integrity=await fileIntegrity(file.name,bytes);if(isPortable)this.portableImportIntegrity.set(integrity);else if(isXlsx)this.xlsxImportIntegrity.set(integrity);
       this.preview.set(preview);
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); input.value = ''; }
@@ -199,7 +199,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   private setCompletion(deckIds:string[],kind:'IMPORT'|'UPDATE'|'REPAIR',label?:string):void{const deckId=deckIds[0]!;this.completion.set({deckId,deckIds,kind,label:label||this.store.decks().find(deck=>deck.id===deckId)?.name||'Imported deck'});}
 
   async export(portable: boolean): Promise<void> {
-    this.message.set(''); this.failure.set('');if(portable)this.portableExportIntegrity.set(null); this.busy.set(portable ? 'Packaging workbook, media and designs…' : 'Building content workbook…');
+    this.message.set(''); this.failure.set('');if(portable)this.portableExportIntegrity.set(null);else this.xlsxExportIntegrity.set(null); this.busy.set(portable ? 'Packaging workbook, media and designs…' : 'Building content workbook…');
     try {
       const state = this.store.data(); if (!state) throw new Error('Local data is still loading.');
       const { contentFromState, writeWorkbook, makePortableBundle, writePortableZip } = await import('../../domain/exchange');
@@ -210,9 +210,9 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
       const blob = new Blob([bytes.slice().buffer], { type: portable ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const name=(root?.name??'all-decks').normalize('NFKD').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'content',date=new Date().toISOString().slice(0,10);
       const filename=`holorecall-${name}-${date}-v11.${portable ? 'zip' : 'xlsx'}`;
-      const integrity=portable?await fileIntegrity(filename,bytes):null;
+      const integrity=await fileIntegrity(filename,bytes);
       await this.fileDelivery.deliver(blob, filename);
-      if(integrity)this.portableExportIntegrity.set(integrity);
+      if(portable)this.portableExportIntegrity.set(integrity);else this.xlsxExportIntegrity.set(integrity);
       this.message.set(portable ? `HoloRecall package requested for ${root?.name??'all decks'}, including required media, designs and safe source dependencies. Learning progress is not included.` : 'Workbook download requested. Use the HoloRecall package to move media, designs and source dependencies between installations.');
     } catch (error) { this.failure.set(this.errorMessage(error)); }
     finally { this.busy.set(''); }
