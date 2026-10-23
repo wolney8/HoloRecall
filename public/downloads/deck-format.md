@@ -1,8 +1,8 @@
-# HoloRecall deck-content format, version 9
+# HoloRecall deck-content format, version 11
 
 This exchange format carries deck content, reusable designs and media references. It never carries learners, reviews, scheduling states, sessions, reward contributions or earned cosmetics. Use the separate full JSON learning-progress backup for those. Importing a rare card makes it studyable immediately; its cosmetic must still be earned locally.
 
-Version 9 adds portable subject-presentation metadata plus inherited Study artwork policy. Presentation can identify a general/language profile, recall task/cue/guidance, a non-destructive artwork role, and an Auto/Image first/Text first override; it never owns the answer or learner state. Version 8 added subject-neutral secondary/interpretation fields and the reusable Design Suite schema. Version 7 added portable declarative card art, native choice labels, an optional answer label and labelled supporting-detail blocks. State schema 8 retains normalized Anki source snapshots for template-first package-free repair; referenced snapshots are included as `anki-source.json` in portable ZIPs and in full backups. Versions 1–8 remain readable. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
+Version 11 adds recursive branch scope and a verified portable-ZIP envelope: a manifest with package identity, counts and per-file integrity, an exact referenced subset of the existing normalized Anki source snapshots, and required Mapping/Conversion Profile dependencies. It does not add workbook columns; standalone v11 XLSX uses the v10 worksheet schema and remains a content/reference editing format. Version 10 added validated declarative Image Occlusion, version 9 added subject-presentation metadata, inherited Study artwork policy and portable normalized Anki source snapshots, and version 8 added subject-neutral secondary/interpretation fields plus the reusable Design Suite schema. The importer accepts versions 1–11; versions 1–10 remain readable through deterministic header/default normalization. Archive state, learner settings and learning progress remain outside deck-content exchange and stay in the separate full backup.
 
 Download the [blank workbook](/downloads/holorecall-blank-v5.xlsx), [16-card Italian example](/downloads/holorecall-italian-v5.xlsx), [portable Italian ZIP](/downloads/holorecall-italian-v5.zip) and [AI generation prompt](/downloads/deck-generation-prompt.md) from Exchange. The `anki_source` columns contain validated inert JSON written by HoloRecall; ordinary authored decks leave them blank.
 
@@ -18,7 +18,7 @@ IDs are stable, case-sensitive strings matching `[A-Za-z0-9][A-Za-z0-9._-]{0,99}
 
 ```text
 key | value
-format_version | 9
+format_version | 11
 content_only | true
 ```
 
@@ -45,7 +45,7 @@ deck_id | title | description | design_set_id | suspended | parent_deck_id | ank
 ### Cards
 
 ```text
-card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details | secondary | interpretation | presentation
+card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning | notes | tags | rarity | design_set_id | front_media | back_media | image_description | suspended | finish | front_audio | back_audio | sibling_group_id | anki_source | art | choices | answer_label | details | secondary | interpretation | presentation | image_occlusion
 ```
 
 | Field | Meaning and validation |
@@ -73,10 +73,11 @@ card_id | deck_id | card_type | front_text | back_text | pronunciation | meaning
 | `art` | Optional validated declarative JSON. Supported kinds are `imported-media`, `source-visual-panel`, and `generated-text-art`; no HTML, CSS, script, event handler, URL fetch, or device path is accepted. |
 | `choices` | JSON array of visible inert choice labels. Selecting one never submits a Study rating. |
 | `answer_label` | Optional short source category/label displayed separately from the primary answer. |
-| `details` | JSON array of `{label, content}` supporting blocks. Labels and values remain separate; the default card list does not concatenate this content. |
+| `details` | JSON array of `{label, content, blocks?}` supporting sections. Optional inert `blocks` preserve headings, paragraphs, lists, tables and code without executable HTML. Labels and values remain separate; the default card list does not concatenate this content. |
 | `secondary` | Optional subject-neutral line beneath the primary answer, such as a pronunciation, formula name or date. |
 | `interpretation` | Optional concise subject-neutral interpretation, such as a meaning, explanation or context. |
-| `presentation` | Optional validated inert JSON containing `profile`, recall task/cue/guidance, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
+| `presentation` | Optional validated inert JSON containing `profile`, recall task/cue plus independent situation context, task guidance and hint, `artRole` and card-level `studyArtPolicy`. Artwork roles are `instructional`, `supportive`, `decorative` or `hidden`; hiding never deletes source media. |
+| `image_occlusion` | Optional validated inert JSON. Version 1 stores `source`, mode (`hide-all-guess-one` or `hide-one-guess-one`), active group, stable shapes/groups, normalized geometry, optional source dimensions, Header, Back Extra, Comments, image/target descriptions and Anki identities. Rectangles use `x/y/width/height`, ellipses use `cx/cy/rx/ry`, and polygons use normalized point arrays. Rendering this field never creates learning events. |
 
 ### Designs
 
@@ -108,16 +109,18 @@ Media references are `asset:<asset_id>` for uploaded/packaged raster assets, or 
 
 These allowlisted SVGs ship with the application and are trusted original project artwork. Uploaded SVG files are never accepted. External image URLs, data URLs in media-reference cells and unknown bundled paths are rejected; an external link is not a bundled asset. Embedded worksheet images are explicitly unsupported and block import rather than being silently dropped.
 
-XLSX alone carries references only. Its `asset:` references must already exist in the receiving browser; use the portable ZIP to share uploads with another browser. A portable ZIP has this exact layout:
+XLSX alone carries the documented sheets, stable content IDs and inert per-card/per-deck `anki_source` cells. It does not carry media bytes, normalized source snapshots, Mapping Profiles, Conversion Profiles or package integrity metadata. Its `asset:` references must already exist in the receiving installation; use the portable ZIP to transfer those dependencies. A v11 portable ZIP has this layout:
 
 ```text
 deck.xlsx
 designs.json
 anki-source.json  (only when referenced imported-source snapshots are present)
+anki-dependencies.json  (only when Mapping/Conversion Profile dependencies are present)
+manifest.json
 media/<asset filename>.png  (or .jpg/.jpeg/.webp/.mp3/.wav)
 ```
 
-`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`, optional `composition`, optional `layoutPolicy`, optional `palette`, optional `artwork`, and optional `rarityVariants`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. Do not add executable fields. All declared media must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Media is encoded once and reused by ID. An asset ID collision with different bytes is an error: use a new ID for replacement media.
+`designs.json` is a JSON array of design objects, including an empty `[]` when unused. Each object uses the app keys `id`, `name`, optional `background`, optional `frame`, `frames` (object from hyphenated rarity IDs to media references), `backgroundFit`, `backgroundPositionX`, `backgroundPositionY`, `frameFit`, `credit`, `source`, `license`, optional `composition`, optional `layoutPolicy`, optional `palette`, optional `artwork`, and optional `rarityVariants`. It must match the workbook Designs sheet after defaults, optional blank omission and object-key ordering normalization. `manifest.json` declares the v11 package identity, selected roots, counts, byte lengths and SHA-256 hashes for every other package file. Do not add executable fields. All declared media and dependencies must be present; extra files, unsafe paths, encrypted archives, multi-volume archives and ZIP64 are unsupported. The exporter converts trusted bundled SVG illustrations to PNG and replaces their references, making its ZIP self-contained. Media is encoded once and reused by ID. An asset ID collision with different bytes is an error: use a new ID for replacement media.
 
 ## Preview and atomic updates
 
@@ -132,3 +135,16 @@ Changing an existing card's meaning substantially while retaining its ID preserv
 The implementation uses pinned ExcelJS 4.4.0 and JSZip 3.10.2. It uses ExcelJS's supported `Workbook`, `xlsx.load`, `xlsx.writeBuffer`, worksheet/cell APIs and JSZip's supported asynchronous read/write APIs. See the [ExcelJS v4.4.0 documentation](https://github.com/exceljs/exceljs/blob/v4.4.0/README.md), [JSZip loadAsync](https://stuk.github.io/jszip/documentation/api_jszip/load_async.html) and [JSZip generateAsync](https://stuk.github.io/jszip/documentation/api_jszip/generate_async.html). Limits are checked before decompression, and browser image decoding is required before application.
 
 Regenerate checked-in templates/examples with the repository workbook generator after dependencies and the project Playwright Chromium are installed. The generator writes only the documented public downloads and build scratch files.
+
+## Anki semantic Mapping Profile v4
+
+Anki mapping records are versioned independently from source, template-engine, converter and normalizer versions. V4 profiles retain source schema signature, optional template identity/name, scope (`template`, `model` or `deck`), authorship (`automatic` or `user-confirmed`), per-source-field subject-neutral destination and optional confidence/reason evidence. The exact note-type + card-template profile is the ordinary scope. Older profile versions remain readable and keep their legacy role aliases; they never outrank a confirmed compatible v4 profile. Source snapshots retain raw inert fields/templates, so remapping changes only derived presentation.
+
+The Anki export semantic contract is separate from HoloRecall portable format v11. Basic exports Front/Back. Extended v1 exports stable Identity, Deck, Prompt, Context, Guidance, Hint, Choices, Answer, Secondary, Example, Interpretation, Support, Media, Source and Tags through HoloRecall-authored static Anki fields/templates. Imported identities derive from Anki model/note/template provenance; native identities derive from stable HoloRecall card IDs.
+
+
+## Image Occlusion portability and Anki export boundary
+
+Portable v11 preserves Image Occlusion declaratively and reuses the ordinary content-addressed `asset:` media registry, so one source image is not duplicated per target card. Editing a mask keeps stable group/card identity; removing a group that already owns a learning card is blocked until the learner uses the existing explicit archive/delete path. Full learner backup additionally preserves reviews, FSRS, due dates, Mastery and Prestige outside this content-only format.
+
+HoloRecall Extended v1 text export includes the normalized payload in an `ImageOcclusion` column and displays a fidelity warning. TSV cannot create Anki-native Image Occlusion cards and never silently flattens or drops masks. Native Anki Image Occlusion APKG emission remains deferred to a validated package-writer milestone.
