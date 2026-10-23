@@ -1,5 +1,12 @@
 # Current restart point
 
+## 23 October 2026 — HR-NATIVE-07A APKG Files round-trip verified in Simulator
+
+- **Production correction:** the iOS bundle now declares the APKG imported document type; without it, Files displayed a saved `.apkg` but disabled selection from WKWebView's production file input. Exchange computes a SHA-256/byte-count receipt for the exact generated and selected APKG bytes while retaining the existing Cache-to-Share `FileDelivery` and ordinary Anki parser/apply path.
+- **Evidence:** iPhone 17 Pro / iOS 26.5 Simulator passes **1/1** for production APKG generation, Save to Files, picker cancellation, picker reopen, saved-file selection, equal generated/selected SHA-256, 16-card parser result and content-only import. The retained saved file is 957,127 bytes with SHA-256 `05cb8cc06a9b4d7a9eb65cac172238018789d23c9df699ad294930d842e2454b`; the app-owned temporary export directory is empty after completion. Focused integrity/native-adapter/APKG tests pass **10/10**, and the non-destructive round-trip passes Chromium and WebKit **2/2**. Result bundle, artifact and manifest are under `.runtime/evidence/hr-native-07a-20261023/`.
+- **Boundary:** this is Simulator APKG evidence. Portable ZIP, XLSX, full backup, iPad-specific behavior and physical-device Files/provider behavior remain pending; HR-NATIVE-07 stays VERIFY.
+- **Next bounded recommendation:** repeat the same saved-artifact/hash/import proof for the HoloRecall portable ZIP before expanding to XLSX or full backup.
+
 ## 23 October 2026 — HR-EXPORT-02 content-compatible Anki package implemented
 
 - **Package contract:** Exchange now writes the official legacy-compatible `collection.anki21` schema-11 APKG variant with HoloRecall-owned sql.js/JSZip code. Basic and Extended v1 share the existing semantic projection; static templates contain no source JavaScript/CSS or remote dependencies. Deck `::` hierarchy, tags, structured support, deterministic identities and hash-deduplicated PNG/JPEG/WebP/MP3/WAV media are carried. HoloRecall scheduling, reviews, rewards and Collection state are excluded.

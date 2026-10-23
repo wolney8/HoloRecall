@@ -113,6 +113,65 @@ final class NativeSmokeUITests: XCTestCase {
         cancel.tap()
     }
 
+    func testNativeApkgFilesRoundTrip() throws {
+        openMore("Exchange")
+        tapButton("Export")
+        tapScrollableButton("Anki · Export an Anki deck package")
+        tapScrollableButton("Preview Anki deck", timeout: 20)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '16 cards'" )).firstMatch.waitForExistence(timeout: 20))
+        tapScrollableButton("Export Anki deck", timeout: 30)
+
+        let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 30), "Native APKG share sheet did not appear\n\(app.debugDescription)")
+        let saveToFiles = app.cells["Save to Files"]
+        XCTAssertTrue(saveToFiles.waitForExistence(timeout: 8))
+        saveToFiles.tap()
+        let save = app.buttons["Save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 15), "Save to Files destination did not appear\n\(app.debugDescription)")
+        save.tap()
+        XCTAssertTrue(app.staticTexts["Exchange"].waitForExistence(timeout: 20))
+
+        let generatedHash = integrityHash(label: "Generated APKG integrity")
+        XCTAssertEqual(generatedHash.count, 64)
+
+        tapButton("Import")
+        tapScrollableButton("Anki · Import Anki .apkg decks")
+        let packageInput = app.descendants(matching: .any).matching(identifier: "Anki package").firstMatch
+        XCTAssertTrue(packageInput.waitForExistence(timeout: 8))
+
+        packageInput.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native APKG picker did not appear\n\(app.debugDescription)")
+        cancel.tap()
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "Selected APKG integrity").firstMatch.exists)
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "Anki import result").firstMatch.exists)
+
+        packageInput.tap()
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native APKG picker did not reopen\n\(app.debugDescription)")
+        let savedPackage = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'holorecall-' AND label CONTAINS[c] '.apkg'")).firstMatch
+        if !savedPackage.waitForExistence(timeout: 2) {
+            let browse = app.tabBars["Tab Bar"].buttons["Browse"]
+            XCTAssertTrue(browse.waitForExistence(timeout: 8), "Native Files Browse destination was unavailable\n\(app.debugDescription)")
+            browse.tap()
+            let onMyIPhone = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'On My iPhone'")).firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), "On My iPhone was unavailable in the native picker\n\(app.debugDescription)")
+            onMyIPhone.tap()
+        }
+        XCTAssertTrue(savedPackage.waitForExistence(timeout: 15), "Saved APKG was not available in the native picker\n\(app.debugDescription)")
+        savedPackage.tap()
+
+        let selectedHash = integrityHash(label: "Selected APKG integrity", timeout: 30)
+        XCTAssertEqual(selectedHash, generatedHash, "The APKG selected from Files is not byte-identical to the generated artifact")
+        let importResult = app.descendants(matching: .any).matching(identifier: "Anki import result").firstMatch
+        XCTAssertTrue(importResult.waitForExistence(timeout: 30))
+        XCTAssertTrue(importResult.descendants(matching: .staticText).matching(NSPredicate(format: "label == '16'")).firstMatch.exists, "The APKG parser did not report 16 ready cards\n\(app.debugDescription)")
+        XCTAssertTrue(importResult.descendants(matching: .staticText).matching(NSPredicate(format: "label == 'Ready'")).firstMatch.exists, "The APKG parser did not expose its ready-card result\n\(app.debugDescription)")
+
+        tapScrollableButton("Import 16 supported cards", timeout: 20)
+        XCTAssertTrue(app.staticTexts["IMPORT COMPLETE"].waitForExistence(timeout: 30))
+        attachScreenshot("native-apkg-files-round-trip")
+    }
+
     func testCollectionSubviewNavigation() throws {
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
@@ -326,6 +385,14 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(option.waitForExistence(timeout: 8), "Missing Desk appearance preset: \(name)\n\(app.debugDescription)")
         option.tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Desk appearance' AND label CONTAINS[c] %@", name)).firstMatch.waitForExistence(timeout: 8))
+    }
+
+    private func integrityHash(label: String, timeout: TimeInterval = 10) -> String {
+        let receipt = app.descendants(matching: .any).matching(identifier: label).firstMatch
+        XCTAssertTrue(receipt.waitForExistence(timeout: timeout), "Missing integrity receipt: \(label)\n\(app.debugDescription)")
+        let hash = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'SHA-256 '")).firstMatch
+        XCTAssertTrue(hash.waitForExistence(timeout: timeout), "Missing SHA-256 value for \(label)\n\(app.debugDescription)")
+        return hash.label.replacingOccurrences(of: "SHA-256 ", with: "")
     }
 
     private func attachScreenshot(_ name: String) {

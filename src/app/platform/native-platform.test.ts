@@ -35,10 +35,11 @@ describe('native platform adapters', () => {
       share: { Share: { canShare: async () => ({ value: true }), share } },
     };
     await deliverNativeFile(new Blob(['HoloRecall'], { type: 'application/zip' }), '../lesson.zip', modules as unknown as Parameters<typeof deliverNativeFile>[2]);
-    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: expect.stringMatching(/^holorecall-exports\/.+-lesson\.zip$/), data: 'SG9sb1JlY2FsbA==', directory: 'CACHE', recursive: true }));
+    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: expect.stringMatching(/^holorecall-exports\/[^/]+\/lesson\.zip$/), data: 'SG9sb1JlY2FsbA==', directory: 'CACHE', recursive: true }));
     expect(rmdir).toHaveBeenCalledWith({ path: 'holorecall-exports', directory: 'CACHE', recursive: true });
     expect(share).toHaveBeenCalledWith(expect.objectContaining({ files: ['file:///cache/export.zip'] }));
     expect(deleteFile).toHaveBeenCalledOnce();
+    expect(rmdir).toHaveBeenLastCalledWith(expect.objectContaining({ path: expect.stringMatching(/^holorecall-exports\/[^/]+$/), directory: 'CACHE', recursive: true }));
   });
 
   it('still removes a native temporary file if sharing is cancelled or fails', async () => {
