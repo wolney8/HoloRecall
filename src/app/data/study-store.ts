@@ -15,6 +15,7 @@ import type { BulkCardPatch } from '../../domain/card-organisation';
 import { resolveCardDesign, type ResolvedDesign } from '../../domain/design-system';
 import type { JsonAuthoringPreview } from '../../domain/json-authoring';
 import { resolveCardPresentation, type ResolvedCardPresentation } from '../../domain/card-presentation';
+import { MEDIA_PROVIDER, PlatformMediaProvider, type MediaProvider } from '../platform/media-provider';
 
 const ankiMappingKey=(mapping:AnkiMappingPreset)=>`${mapping.sourceSignature}:${mapping.templateId??''}`;
 
@@ -30,11 +31,13 @@ export class LocalStudyStore {
   readonly decks = computed(() => this.data()?.decks ?? []);
   private readonly assetById = computed(() => new Map((this.data()?.assets ?? []).map(asset => [asset.id, asset])));
   private readonly database: StudyPersistence;
+  private readonly mediaProvider:MediaProvider;
   private saving = false;
   private pendingChange: Promise<void> = Promise.resolve();
 
-  constructor(@Inject(STUDY_PERSISTENCE) database: StudyPersistence = new LocalDatabase()) {
+  constructor(@Inject(STUDY_PERSISTENCE) database: StudyPersistence = new LocalDatabase(),@Inject(MEDIA_PROVIDER) mediaProvider:MediaProvider=new PlatformMediaProvider()) {
     this.database = database;
+    this.mediaProvider=mediaProvider;
   }
 
   async init(): Promise<void> {
@@ -47,6 +50,7 @@ export class LocalStudyStore {
       // Read only after queued mutations settle so a stale snapshot cannot replace it.
       await this.pendingChange;
       const result = await this.database.load(createInitialState(SEED_DECKS, SEED_CARDS));
+      await this.mediaProvider.prepare(result.assets);
       this.data.set(result);
       this.error.set('');
     } catch (error) { this.report(error); throw error; }
@@ -66,7 +70,7 @@ export class LocalStudyStore {
       const previous = this.data();
       if (!previous) throw new Error('Local study data is not ready.');
       const next = transform(previous);
-      if (next !== previous) this.data.set(await this.database.commit(next, previous.version));
+      if (next !== previous){const committed=await this.database.commit(next, previous.version);await this.mediaProvider.prepare(committed.assets);this.data.set(committed);}
       this.error.set('');
     } catch (error) { this.report(error); throw error; }
     finally { this.saving = false; }
@@ -237,7 +241,7 @@ export class LocalStudyStore {
   }
   mediaUrl(ref?: string): string {
     if (!ref) return '';
-    if (ref.startsWith('asset:')) return this.assetById().get(ref.slice(6))?.dataUrl ?? '';
+    if (ref.startsWith('asset:')) return this.mediaProvider.resolve(this.assetById().get(ref.slice(6)));
     return /^\/?(?:art|assets)\/[a-zA-Z0-9/_-]+\.(svg|png|webp|jpe?g)$/.test(ref) ? ref : '';
   }
   resolvedDesignFor(card: CardContent): ResolvedDesign {

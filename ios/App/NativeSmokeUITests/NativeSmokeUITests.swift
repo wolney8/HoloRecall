@@ -382,6 +382,55 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-full-backup-files-round-trip")
     }
 
+    func testImportedMp3AndWavPersistAndPlayAfterRelaunch() throws {
+        openMore("Exchange")
+        tapButton("Import")
+        tapScrollableButton("Anki · Import Anki .apkg decks")
+        let packageInput = app.descendants(matching: .any).matching(identifier: "Anki package").firstMatch
+        XCTAssertTrue(packageInput.waitForExistence(timeout: 8))
+        packageInput.tap()
+
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native APKG picker did not appear\n\(app.debugDescription)")
+        let fixture = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'native-media' AND label CONTAINS[c] '.apkg'")).firstMatch
+        if !fixture.waitForExistence(timeout: 2) {
+            let browse = app.tabBars["Tab Bar"].buttons["Browse"]
+            XCTAssertTrue(browse.waitForExistence(timeout: 8), "Native Files Browse destination was unavailable\n\(app.debugDescription)")
+            browse.tap()
+            let onMyIPhone = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'On My iPhone'")).firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), "On My iPhone was unavailable in the native picker\n\(app.debugDescription)")
+            onMyIPhone.tap()
+        }
+        XCTAssertTrue(fixture.waitForExistence(timeout: 15), "The native-media APKG fixture was unavailable\n\(app.debugDescription)")
+        fixture.tap()
+
+        let importResult = app.descendants(matching: .any).matching(identifier: "Anki import result").firstMatch
+        XCTAssertTrue(importResult.waitForExistence(timeout: 30))
+        XCTAssertTrue(importResult.descendants(matching: .staticText).matching(NSPredicate(format: "label == '2'")).firstMatch.exists)
+        tapScrollableButton("Import 2 supported cards", timeout: 20)
+        XCTAssertTrue(app.staticTexts["IMPORT COMPLETE"].waitForExistence(timeout: 30))
+        tapButton("Study now")
+
+        XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 12), "The imported MP3 card did not expose its production audio control")
+        app.buttons["Play front audio 1"].tap()
+        XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Imported MP3 did not enter the production playing state")
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
+        tapButton("Study")
+        XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 15), "The imported media Study session did not survive relaunch")
+        app.buttons["Play front audio 1"].tap()
+        XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Persisted MP3 did not play after relaunch")
+        revealableCard().tap()
+        tapButton("4 Good Confident")
+
+        XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 12), "The imported WAV card did not expose its production audio control")
+        app.buttons["Play front audio 1"].tap()
+        XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Imported WAV did not enter the production playing state")
+        attachScreenshot("native-imported-mp3-wav-playback")
+    }
+
     func testCollectionSubviewNavigation() throws {
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
