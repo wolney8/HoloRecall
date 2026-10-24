@@ -1,5 +1,11 @@
 # Current restart point
 
+## 24 October 2026 — HR-NATIVE-07 bounded Simulator scope closed
+
+- **Decision:** APKG, portable ZIP, XLSX and full-backup production round trips are verified on iPhone Simulator through Save to Files, picker reopen, byte-integrity comparison, real validation and isolated apply/restore. Cancellation, invalid-input safety and application-owned cache cleanup have automated or Simulator evidence. No non-physical defect currently blocks continued product development.
+- **Deferred evidence:** physical-device file-provider/security-scoped behavior is deferred to pre-release and is not a current development blocker. iPad-specific Share/picker presentation, VoiceOver through the system Files workflow, large-artifact memory behavior and system-owned `WKFileUploadPanel` staging cleanup timing remain unverified. HR-NATIVE-07 therefore stays `VERIFY`; this closeout does not convert Simulator evidence into physical-device evidence.
+- **Next existing P0 item:** resume `HR-NATIVE-08` native media feasibility, beginning with imported MP3/WAV playback and the existing filesystem-backed media-provider boundary. Do not begin physical-device signing or deployment as part of that item.
+
 ## 24 October 2026 — HR-NATIVE-07D full-backup Files round-trip verified in Simulator
 
 - **Contract and safeguards:** full backup v6 carries the complete validated learner `State`, including inline media, scheduling/history, rewards, sessions/preferences and retained Anki dependencies; versions 1–6 remain readable through migration. Restore remains replacement-only for untouched profiles. File selection now performs a non-mutating validated structural preview and requires explicit acknowledgement before the existing atomic snapshot/media commit.
