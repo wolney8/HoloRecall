@@ -317,6 +317,71 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-xlsx-files-round-trip")
     }
 
+    func testNativeFullBackupFilesRoundTrip() throws {
+        openMore("Settings")
+        let system = app.descendants(matching: .any).matching(identifier: "System").firstMatch
+        XCTAssertTrue(system.waitForExistence(timeout: 8))
+        if (system.value as? String) != "1" { system.tap() }
+        tapScrollableButton("Download JSON backup ↓")
+
+        let shareSheet = app.otherElements.matching(identifier: "ActivityListView").firstMatch
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 30), "Native full-backup share sheet did not appear\n\(app.debugDescription)")
+        let saveToFiles = app.cells["Save to Files"]
+        XCTAssertTrue(saveToFiles.waitForExistence(timeout: 8))
+        saveToFiles.tap()
+        saveSharedFileToLocalDestination()
+        XCTAssertTrue(app.staticTexts["Settings"].waitForExistence(timeout: 20))
+
+        let generatedHash = integrityHash(label: "Generated full backup integrity")
+        let generatedBytes = integrityByteCount(label: "Generated full backup integrity")
+        XCTAssertEqual(generatedHash.count, 64)
+        XCTAssertGreaterThan(generatedBytes, 0)
+
+        // Mutate only a preference: the production restore contract deliberately
+        // refuses profiles containing content or learner-history changes.
+        let dark = app.descendants(matching: .any).matching(identifier: "Dark").firstMatch
+        XCTAssertTrue(dark.waitForExistence(timeout: 8))
+        scrollToHittable(dark)
+        dark.tap()
+        XCTAssertEqual(dark.value as? String, "1")
+
+        let backupInput = app.descendants(matching: .any).matching(identifier: "Restore full backup").firstMatch
+        XCTAssertTrue(backupInput.waitForExistence(timeout: 8))
+        scrollToHittable(backupInput)
+        backupInput.tap()
+        let pickerCancel = app.buttons["Cancel"]
+        XCTAssertTrue(pickerCancel.waitForExistence(timeout: 10), "Native full-backup picker did not appear\n\(app.debugDescription)")
+        pickerCancel.tap()
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "Selected full backup integrity").firstMatch.exists)
+        XCTAssertEqual(dark.value as? String, "1")
+
+        selectSavedFullBackup(using: backupInput)
+        let selectedHash = integrityHash(label: "Selected full backup integrity", timeout: 30)
+        let selectedBytes = integrityByteCount(label: "Selected full backup integrity", timeout: 30)
+        XCTAssertEqual(selectedHash, generatedHash, "The full backup selected from Files is not byte-identical to the generated artifact")
+        XCTAssertEqual(selectedBytes, generatedBytes, "The full backup selected from Files changed byte length")
+        let preview = app.descendants(matching: .any).matching(identifier: "Selected full backup integrity").firstMatch
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '1 decks' AND label CONTAINS '16 cards'")).firstMatch.exists)
+        tapButton("Cancel")
+        XCTAssertFalse(preview.exists)
+        XCTAssertEqual(dark.value as? String, "1")
+
+        selectSavedFullBackup(using: backupInput)
+        XCTAssertTrue(preview.waitForExistence(timeout: 30))
+        let restore = app.buttons["Restore backup"]
+        XCTAssertTrue(restore.waitForExistence(timeout: 8))
+        XCTAssertFalse(restore.isEnabled)
+        let acknowledgement = app.descendants(matching: .any).matching(identifier: "I understand this profile will be replaced by the validated backup.").firstMatch
+        XCTAssertTrue(acknowledgement.waitForExistence(timeout: 8))
+        acknowledgement.tap()
+        XCTAssertTrue(restore.isEnabled)
+        restore.tap()
+        XCTAssertTrue(app.staticTexts["Backup restored."].waitForExistence(timeout: 30))
+        XCTAssertEqual(system.value as? String, "1", "Full restore did not replace the deliberately changed preference")
+        attachScreenshot("native-full-backup-files-round-trip")
+    }
+
     func testCollectionSubviewNavigation() throws {
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
@@ -487,11 +552,19 @@ final class NativeSmokeUITests: XCTestCase {
     private func tapScrollableButton(_ label: String, timeout: TimeInterval = 8) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: timeout), "Missing button: \(label)\n\(app.debugDescription)")
-        for _ in 0..<4 where !button.isHittable {
-            app.swipeUp()
-        }
+        scrollToHittable(button)
         XCTAssertTrue(button.isHittable, "Button is outside the reachable scroll area: \(label)\n\(app.debugDescription)")
         button.tap()
+    }
+
+    private func scrollToHittable(_ element: XCUIElement, maximumSwipes: Int = 10) {
+        for _ in 0..<maximumSwipes where !element.isHittable {
+            if element.frame.midY < app.frame.midY {
+                app.swipeDown()
+            } else {
+                app.swipeUp()
+            }
+        }
     }
 
     private func revealableCard() -> XCUIElement {
@@ -551,6 +624,24 @@ final class NativeSmokeUITests: XCTestCase {
         save.tap()
         let replace = app.buttons["Replace"]
         if replace.waitForExistence(timeout: 2) { replace.tap() }
+    }
+
+    private func selectSavedFullBackup(using input: XCUIElement) {
+        input.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "Native full-backup picker did not open\n\(app.debugDescription)")
+        let fileView = app.collectionViews["File View"]
+        let savedBackup = fileView.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'holorecall-backup-' AND label CONTAINS[c] '-v6' AND label CONTAINS[c] 'json'")).firstMatch
+        if !savedBackup.waitForExistence(timeout: 2) {
+            let browse = app.tabBars["Tab Bar"].buttons["Browse"]
+            XCTAssertTrue(browse.waitForExistence(timeout: 8), "Native Files Browse destination was unavailable\n\(app.debugDescription)")
+            browse.tap()
+            let onMyIPhone = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'On My iPhone'")).firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8), "On My iPhone was unavailable in the native picker\n\(app.debugDescription)")
+            onMyIPhone.tap()
+        }
+        XCTAssertTrue(savedBackup.waitForExistence(timeout: 15), "Saved full backup was not available in the native picker\n\(app.debugDescription)")
+        savedBackup.tap()
     }
 
     private func integrityByteCount(label: String, timeout: TimeInterval = 10) -> Int {

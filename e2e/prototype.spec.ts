@@ -1,5 +1,6 @@
 import { test, expect, openApp, snapshot, confidentReview, navigate, revealCard, selectMaterial, expectNoOverflow } from './helpers';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import type { State } from '../src/domain/models';
 
 test('visual reveal, five-point rating and FSRS state survive a reload', async ({ page }) => {
@@ -188,6 +189,8 @@ test('JSON download restores cards and review history into an untouched browser 
   const path = await download.path();
   expect(path).toBeTruthy();
   const buffer = await readFile(path!);
+  const sha256=createHash('sha256').update(buffer).digest('hex'),generated=page.getByLabel('Generated full backup integrity');
+  await expect(generated).toContainText(`${buffer.byteLength} bytes`);await expect(generated).toContainText(`SHA-256 ${sha256}`);
   const backup = JSON.parse(buffer.toString()) as { format: string; version: number; state: State };
   expect(backup).toMatchObject({ format: 'holorecall-backup', version: 6 });
   expect(backup.state.events).toEqual(source.events);
@@ -200,18 +203,25 @@ test('JSON download restores cards and review history into an untouched browser 
   try {
     await restoredPage.goto('http://127.0.0.1:4200/');
     await expect(restoredPage.getByTestId('today-count')).toContainText('0');
+    const deskPreference='{"version":1,"presetId":"walnut"}';await restoredPage.evaluate(value=>localStorage.setItem('holorecall:collection-desk:appearance:v1',value),deskPreference);
     await navigate(restoredPage, 'Settings');
-    await restoredPage.getByLabel('Restore full backup').setInputFiles({
+    await restoredPage.getByText('Light',{exact:true}).click();
+    const altered=await snapshot(restoredPage),input=restoredPage.getByLabel('Restore full backup');
+    const chooserPromise=restoredPage.waitForEvent('filechooser');await input.click();const chooser=await chooserPromise;await chooser.setFiles([]);expect(await snapshot(restoredPage)).toEqual(altered);await expect(restoredPage.getByLabel('Selected full backup integrity')).toHaveCount(0);
+    await input.setInputFiles({
       name: download.suggestedFilename(), mimeType: 'application/json', buffer,
     });
+    const preview=restoredPage.getByRole('region',{name:'Full backup restore preview'}),selected=restoredPage.getByLabel('Selected full backup integrity');await expect(preview).toContainText('1 decks · 16 cards · 1 reviews');await expect(selected).toContainText(`${buffer.byteLength} bytes`);await expect(selected).toContainText(`SHA-256 ${sha256}`);expect(await snapshot(restoredPage)).toEqual(altered);
+    const restoreButton=restoredPage.getByRole('button',{name:'Restore backup',exact:true});await expect(restoreButton).toBeDisabled();await restoredPage.getByRole('button',{name:'Cancel',exact:true}).click();expect(await snapshot(restoredPage)).toEqual(altered);await expect(preview).toHaveCount(0);
+    await input.setInputFiles({name:'corrupt-backup.json',mimeType:'application/json',buffer:Buffer.from('{broken')});await expect(restoredPage.getByRole('alert')).toContainText('not valid JSON');expect(await snapshot(restoredPage)).toEqual(altered);
+    await input.setInputFiles({name:download.suggestedFilename(),mimeType:'application/json',buffer});await restoredPage.getByRole('checkbox',{name:'I understand this profile will be replaced by the validated backup.'}).check();await restoredPage.getByRole('button',{name:'Restore backup',exact:true}).click();
     await expect(restoredPage.getByRole('status')).toContainText('Backup restored.');
     await restoredPage.reload();
     await navigate(restoredPage, 'Dashboard');
     await expect(restoredPage.getByTestId('today-count')).toContainText('1');
     const restored = await snapshot(restoredPage);
-    expect(restored.cards).toEqual(source.cards);
-    expect(restored.events).toEqual(source.events);
-    expect(restored.states).toEqual(source.states);
+    expect({...restored,version:backup.state.version}).toEqual(backup.state);
+    expect(await restoredPage.evaluate(()=>localStorage.getItem('holorecall:collection-desk:appearance:v1'))).toBe(deskPreference);
     expect(errors).toEqual([]);
   } finally {
     await context.close();

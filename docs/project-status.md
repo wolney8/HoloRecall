@@ -1,5 +1,11 @@
 # Current restart point
 
+## 24 October 2026 — HR-NATIVE-07D full-backup Files round-trip verified in Simulator
+
+- **Contract and safeguards:** full backup v6 carries the complete validated learner `State`, including inline media, scheduling/history, rewards, sessions/preferences and retained Anki dependencies; versions 1–6 remain readable through migration. Restore remains replacement-only for untouched profiles. File selection now performs a non-mutating validated structural preview and requires explicit acknowledgement before the existing atomic snapshot/media commit.
+- **Evidence:** focused backup/storage/integrity tests pass **52/52** and cover rich state, touched-profile refusal, corrupt/future-version rejection and injected commit failure without mutation. Chromium and WebKit production journeys pass **2/2**. An isolated iPhone 17 Pro / iOS 26.5 Simulator passes **1/1 in 148.956 s** through generation, Share → Save to Files, picker cancellation, Files reopen, equal generated/selected receipts, validation, deliberate System→Dark mutation, acknowledgement and restoration to System. `holorecall-backup-2026-10-24-v6.json` is **15,427 bytes** with SHA-256 `ddba874273d8d8559a00c14a58e1bdd6ca92ecb7466c7d35e3fecf86067037fa`; the app-owned export Cache is empty.
+- **Boundary:** Desk presentation local storage, entitlements/credentials and cloud state remain excluded. Native evidence uses the deterministic seed snapshot plus preference mutation; rich-category restore is automated store evidence. System-owned `WKFileUploadPanel` staging cleanup timing, physical-device providers, VoiceOver, iPad-specific presentation and large-backup memory remain unverified. HR-NATIVE-07 stays VERIFY.
+
 ## 23 October 2026 — HR-NATIVE-07C XLSX Files round-trip verified in Simulator
 
 - **Production path:** XLSX now records the same SHA-256/byte-count receipts as APKG and portable ZIP before native `FileDelivery` and after production picker selection. Generation, parsing, atomic apply and Cache-to-Share lifecycle remain the existing shared production paths.

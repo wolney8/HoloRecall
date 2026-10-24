@@ -18,6 +18,10 @@ import { resolveCardPresentation, type ResolvedCardPresentation } from '../../do
 
 const ankiMappingKey=(mapping:AnkiMappingPreset)=>`${mapping.sourceSignature}:${mapping.templateId??''}`;
 
+export interface BackupRestorePreview {
+  schemaVersion:number;stateVersion:number;decks:number;cards:number;reviews:number;practiceEvents:number;rewardEvents:number;administrativeEvents:number;assets:number;ankiSources:number;ankiMappings:number;ankiConversionProfiles:number;session:boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LocalStudyStore {
   readonly data = signal<State | null>(null);
@@ -322,11 +326,21 @@ export class LocalStudyStore {
     return exportBackup(data, new Date());
   }
 
+  private assertRestoreTargetUntouched(data:State):void{
+    const initial=createInitialState(SEED_DECKS,SEED_CARDS);
+    if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(initial.cards) || JSON.stringify(data.decks) !== JSON.stringify(initial.decks)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
+  }
+
+  async previewRestoreJson(json:string):Promise<BackupRestorePreview>{
+    const current=this.data();if(!current)throw new Error('Local study data is not ready.');this.assertRestoreTargetUntouched(current);
+    const parsed=parseBackup(json,SEED_CARDS);await Promise.all(parsed.assets.map(describeAsset));
+    return{schemaVersion:parsed.schemaVersion,stateVersion:parsed.version,decks:parsed.decks.length,cards:parsed.cards.length,reviews:parsed.events.filter(event=>event.kind==='review').length,practiceEvents:parsed.practiceEvents.length,rewardEvents:parsed.rewardEvents.length,administrativeEvents:parsed.administrativeEvents.length,assets:parsed.assets.length,ankiSources:parsed.ankiSources.length,ankiMappings:parsed.ankiMappings.length,ankiConversionProfiles:parsed.ankiConversionProfiles.length,session:parsed.session!==null};
+  }
+
   async restoreJson(json: string): Promise<void> {
     const parsed=parseBackup(json,SEED_CARDS),assets=await Promise.all(parsed.assets.map(describeAsset)),restored={...parsed,assets};
     await this.change(data => {
-      const initial=createInitialState(SEED_DECKS,SEED_CARDS);
-      if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(initial.cards) || JSON.stringify(data.decks) !== JSON.stringify(initial.decks)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
+      this.assertRestoreTargetUntouched(data);
       return { ...restored, version: data.version + 1 };
     });
   }
