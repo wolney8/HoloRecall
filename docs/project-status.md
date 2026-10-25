@@ -1,5 +1,11 @@
 # Current restart point
 
+## 25 October 2026 — HR-NATIVE-08 browser/Simulator feasibility scope closed
+
+- **Decision:** HR-NATIVE-08A/B/C satisfy the useful browser and iPhone Simulator feasibility scope: stable asset identities, authoritative IndexedDB storage, the persistent SHA-256-verified iOS mirror, MP3/WAV import/playback/relaunch, foreground-only lifecycle ownership, corruption recovery, fallback, deduplication, cleanup and supported-size evidence. No HR-NATIVE-08D is required.
+- **Deferred evidence:** physical-device acoustic/codec/memory behavior, calls/Siri/alarms, Bluetooth/headphone routing, hardware volume and physical VoiceOver acceptance remain pre-release work. They are not current development blockers. Approximate Simulator RSS is evidence from the demonstrated journey, not a peak-memory ceiling or SLA. HR-NATIVE-08 remains `VERIFY`.
+- **Next existing P0 item:** `HR-NATIVE-03 — Native smoke journey`, focused on the remaining Simulator-verifiable Practice, Auto Advance, complete Results and accepted-review lifecycle paths. Do not begin it automatically.
+
 ## 25 October 2026 — HR-NATIVE-08C persistent media mirror integrity verified in Simulator
 
 - **Integrity contract:** IndexedDB remains authoritative. iOS reconciliation now checks native file size and SHA-256 before exposing a native URL, rewrites missing, truncated or same-length-corrupt files, verifies every repair before use, and falls back to the IndexedDB data URL if any reconciliation step fails. One content hash still owns one native file; orphan deletion runs only after the complete referenced set verifies.
