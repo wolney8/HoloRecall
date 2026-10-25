@@ -161,6 +161,107 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-auto-advance-review-history")
     }
 
+    func testNativePracticeKeepsScheduledLearningUntouched() throws {
+        openMore("Progress")
+        XCTAssertTrue(app.staticTexts["0 reviews"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["0 practice events in this period."].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["16"].firstMatch.exists, "The clean fixture did not expose all 16 New cards\n\(app.debugDescription)")
+
+        openMore("Focus")
+        XCTAssertTrue(app.staticTexts["Focus"].waitForExistence(timeout: 8))
+        let previewNew = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Preview new cards'" )).firstMatch
+        XCTAssertTrue(previewNew.waitForExistence(timeout: 8))
+        scrollToHittable(previewNew)
+        XCTAssertTrue(previewNew.isHittable)
+        previewNew.tap()
+        XCTAssertTrue(app.staticTexts["Practice"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Preview new cards'" )).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '0 / 16'" )).firstMatch.exists)
+
+        revealableCard().tap()
+        let again = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '1 Again'" )).firstMatch
+        XCTAssertTrue(again.waitForExistence(timeout: 5))
+        again.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '1 / 16'" )).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 8), "Practice did not settle on the second card\n\(app.debugDescription)")
+
+        revealableCard().tap()
+        let easy = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '5 Easy'" )).firstMatch
+        XCTAssertTrue(easy.waitForExistence(timeout: 5))
+        easy.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '2 / 16'" )).firstMatch.waitForExistence(timeout: 8))
+        tapButton("End session")
+
+        XCTAssertTrue(app.staticTexts["Practice saved"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '2 practice ratings' AND label CONTAINS '2 unique cards'" )).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["3.0 / 5"].exists)
+        let distribution = app.otherElements["Practice confidence distribution"]
+        XCTAssertTrue(distribution.waitForExistence(timeout: 8))
+        XCTAssertTrue(distribution.staticTexts["Confidence 1"].exists)
+        XCTAssertTrue(distribution.staticTexts["Confidence 5"].exists)
+        XCTAssertFalse(app.staticTexts["Cosmetic progress"].exists, "Practice exposed scheduled cosmetic rewards")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Practice ratings stay separate'" )).firstMatch.exists)
+        attachScreenshot("native-practice-results")
+
+        tapButton("Done")
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 8))
+        openMore("Progress")
+        XCTAssertTrue(app.staticTexts["0 reviews"].waitForExistence(timeout: 8), "Practice created a scheduled review")
+        XCTAssertTrue(app.staticTexts["2 practice events in this period."].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["16"].firstMatch.exists, "Practice consumed or scheduled a New card\n\(app.debugDescription)")
+
+        tapButton("Decks")
+        startItalianDeckStudy()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '0 / 10'" )).firstMatch.waitForExistence(timeout: 8), "Scheduled Study did not retain its clean ten-card queue after Practice\n\(app.debugDescription)")
+        tapButton("End session")
+    }
+
+    func testNativeNaturalScheduledCompletionAndResultsAccuracy() throws {
+        setNewCardLimit("2")
+        tapButton("Decks")
+        startItalianDeckStudy()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '0 / 2'" )).firstMatch.waitForExistence(timeout: 8))
+
+        revealableCard().tap()
+        let hard = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '2 Hard'" )).firstMatch
+        XCTAssertTrue(hard.waitForExistence(timeout: 5))
+        hard.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '1 / 2'" )).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 8), "The second scheduled card did not settle visibly\n\(app.debugDescription)")
+
+        revealableCard().tap()
+        let good = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '4 Good'" )).firstMatch
+        XCTAssertTrue(good.waitForExistence(timeout: 5))
+        good.tap()
+
+        XCTAssertTrue(app.staticTexts["Nice work"].waitForExistence(timeout: 10), "Natural queue exhaustion did not open Results\n\(app.debugDescription)")
+        XCTAssertTrue(app.staticTexts["SESSION COMPLETE"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '2 reviews' AND label CONTAINS '2 unique cards'" )).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["3.0 / 5"].exists)
+        XCTAssertTrue(app.staticTexts["Cosmetic progress"].exists)
+        let contributions = app.staticTexts.matching(NSPredicate(format: "label CONTAINS '+1 eligible day'" ))
+        XCTAssertEqual(contributions.count, 1, "Results did not expose exactly the Good review's eligible contribution\n\(app.debugDescription)")
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'No eligible contribution'" )).count, 1, "Results did not keep the Hard review outside collectible progress\n\(app.debugDescription)")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Common' AND label CONTAINS 'Unlocked'" )).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Practice summary"].exists)
+        attachScreenshot("native-natural-session-results")
+
+        tapButton("Done")
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Start studying'" )).firstMatch.exists, "The completed session remained active")
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Start studying'" )).firstMatch.exists, "Relaunch restored a completed session as active")
+        openMore("Progress")
+        XCTAssertTrue(app.staticTexts["2 reviews"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["0 practice events in this period."].exists)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "Confidence 2 · Hard").count, 1)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "Confidence 4 · Good").count, 1)
+        attachScreenshot("native-complete-session-history")
+    }
+
     func testNativeOrientationAndFileSurfaces() throws {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 8))
@@ -748,6 +849,32 @@ final class NativeSmokeUITests: XCTestCase {
         app.descendants(matching: .any)
             .matching(NSPredicate(format: "label CONTAINS[c] 'Show card answer' OR label CONTAINS[c] 'flashcard'"))
             .firstMatch
+    }
+
+    private func startItalianDeckStudy() {
+        XCTAssertTrue(app.staticTexts["Italian essentials"].waitForExistence(timeout: 8))
+        let studies = app.buttons.matching(identifier: "Study")
+        XCTAssertGreaterThanOrEqual(studies.count, 2)
+        let deckStudy = studies.allElementsBoundByIndex.first { $0.isHittable && $0.frame.minY < app.frame.height - 120 }
+        XCTAssertNotNil(deckStudy, "The deterministic deck Study action was not reachable\n\(app.debugDescription)")
+        deckStudy!.tap()
+        XCTAssertTrue(revealableCard().waitForExistence(timeout: 10))
+    }
+
+    private func setNewCardLimit(_ value: String) {
+        openMore("Settings")
+        let field = app.textFields["New cards per day"]
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        scrollToHittable(field)
+        let currentValue = field.value as? String ?? ""
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count) + value)
+        XCTAssertEqual(field.value as? String, value, "The production new-card limit field did not accept the deterministic value")
+        let keyboardDone = app.toolbars.buttons["Done"]
+        XCTAssertTrue(keyboardDone.waitForExistence(timeout: 3))
+        keyboardDone.tap()
+        tapScrollableButton("Save study settings")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study preset saved'" )).firstMatch.waitForExistence(timeout: 8))
     }
 
     private func openMore(_ destination: String) {
