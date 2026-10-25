@@ -415,11 +415,19 @@ final class NativeSmokeUITests: XCTestCase {
         app.buttons["Play front audio 1"].tap()
         XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Imported MP3 did not enter the production playing state")
 
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 12), "Backgrounding did not return imported MP3 audio to an explicit-play state")
+        XCTAssertFalse(app.buttons["Pause front audio 1"].exists, "Imported MP3 audio resumed automatically after foreground activation")
+        app.buttons["Play front audio 1"].tap()
+        XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Imported MP3 did not replay explicitly after foreground activation")
+
         app.terminate()
         app.launch()
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
         tapButton("Study")
         XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 15), "The imported media Study session did not survive relaunch")
+        XCTAssertFalse(app.buttons["Pause front audio 1"].exists, "Imported MP3 audio resumed automatically after relaunch")
         app.buttons["Play front audio 1"].tap()
         XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Persisted MP3 did not play after relaunch")
         revealableCard().tap()
@@ -428,6 +436,9 @@ final class NativeSmokeUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 12), "The imported WAV card did not expose its production audio control")
         app.buttons["Play front audio 1"].tap()
         XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 8), "Imported WAV did not enter the production playing state")
+        tapButton("End session")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study saved' OR label CONTAINS[c] 'Nice work'")).firstMatch.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["Pause front audio 1"].exists, "Imported WAV audio survived Study route destruction")
         attachScreenshot("native-imported-mp3-wav-playback")
     }
 

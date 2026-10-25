@@ -1,5 +1,11 @@
 # Current restart point
 
+## 25 October 2026 — HR-NATIVE-08B active-study audio lifecycle verified in Simulator
+
+- **Lifecycle contract:** card audio belongs to the active foreground Study interaction. Losing foreground stops and disposes the current player, foreground restoration never auto-plays, explicit replay resolves the same stable asset again through `MediaProvider`, and card/route destruction prevents audio leaking into another interaction. No iOS background-audio capability, AVAudioSession customization or new dependency was added.
+- **Evidence:** focused lifecycle/provider unit tests pass **7/7**. Chromium and desktop WebKit each pass both the MP3/WAV import/reload/playback journey and the lifecycle journey (**4/4** total): advancing playback becomes a truthful Play state after repeated inactive events, resume creates no player and changes no review/reward/practice state, explicit replay advances, reload does not auto-play, and ending Study disposes WAV playback. A fresh iPhone 17 Pro / iOS 26.5 Simulator run passes **1/1 in 58.786 s** through MP3 play → Home → foreground without autoplay → explicit replay → terminate/relaunch without autoplay → explicit replay → WAV play → End session cleanup.
+- **Boundary:** Simulator proves native lifecycle event handling and UI/player state, not audible output. Real calls, Siri, alarms, Bluetooth/headphone routing, hardware volume, physical-device codecs and VoiceOver remain unverified. Continuous/background audio remains intentionally unsupported; HR-NATIVE-08 stays `VERIFY`.
+
 ## 24 October 2026 — HR-NATIVE-08A imported audio/provider feasibility verified in Simulator
 
 - **Production boundary:** stable `asset:` references remain the domain contract and IndexedDB remains the authoritative atomic state/media store. A shared `MediaProvider` now resolves browser media inline and mirrors validated iOS media to app-owned persistent `LibraryNoCloud/holorecall-media-v1` files named by SHA-256. UI code receives WKWebView-safe URLs and has no Capacitor path dependency; failed mirroring falls back inline, while orphan deletion occurs only after successful reconciliation.
@@ -10,7 +16,7 @@
 
 - **Decision:** APKG, portable ZIP, XLSX and full-backup production round trips are verified on iPhone Simulator through Save to Files, picker reopen, byte-integrity comparison, real validation and isolated apply/restore. Cancellation, invalid-input safety and application-owned cache cleanup have automated or Simulator evidence. No non-physical defect currently blocks continued product development.
 - **Deferred evidence:** physical-device file-provider/security-scoped behavior is deferred to pre-release and is not a current development blocker. iPad-specific Share/picker presentation, VoiceOver through the system Files workflow, large-artifact memory behavior and system-owned `WKFileUploadPanel` staging cleanup timing remain unverified. HR-NATIVE-07 therefore stays `VERIFY`; this closeout does not convert Simulator evidence into physical-device evidence.
-- **Next existing P0 item:** resume `HR-NATIVE-08` native media feasibility, beginning with imported MP3/WAV playback and the existing filesystem-backed media-provider boundary. Do not begin physical-device signing or deployment as part of that item.
+- **Next existing P0 item:** continue bounded `HR-NATIVE-08` verification after the imported-media and foreground-lifecycle slices; physical-device interruption/routing evidence remains deferred and is not a current development blocker.
 
 ## 24 October 2026 — HR-NATIVE-07D full-backup Files round-trip verified in Simulator
 
