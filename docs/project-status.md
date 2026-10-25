@@ -1,5 +1,11 @@
 # Current restart point
 
+## 25 October 2026 — HR-NATIVE-08C persistent media mirror integrity verified in Simulator
+
+- **Integrity contract:** IndexedDB remains authoritative. iOS reconciliation now checks native file size and SHA-256 before exposing a native URL, rewrites missing, truncated or same-length-corrupt files, verifies every repair before use, and falls back to the IndexedDB data URL if any reconciliation step fails. One content hash still owns one native file; orphan deletion runs only after the complete referenced set verifies.
+- **Evidence:** focused provider/persistence/registry coverage passes **21/21**, including exact same-size corruption recovery, failed repair read-back, fallback, shared-hash retention and an opt-in deterministic **55 MiB** provider set. Chromium and desktop WebKit media journeys pass **4/4**. On iPhone 17 Pro / iOS 26.5 Simulator, a changed 5,228-byte MP3 hash (`8cd736…e2b5`) repairs to `1ef56b…373a7`; a 1,000-byte truncation and deleted 48,044-byte WAV also recover exactly. A generated **29,422,424-byte** APKG imports five 5,242,780-byte WAVs plus one 3,147,775-byte PNG, completes selection-to-import in **11.752 s**, enters production WAV playback, and passes relaunch readiness; 60 sampled app-process RSS observations peaked at **244,144 KB**.
+- **Boundary:** hashing occurs once per changed asset signature per app process, including relaunch, rather than on each render. The sampled RSS is not a precise peak and the current eager IndexedDB data-URL hydration remains a memory cost. Physical-device memory, acoustic/codec behavior, interruptions, routing and VoiceOver remain deferred. HR-NATIVE-08 stays `VERIFY`.
+
 ## 25 October 2026 — HR-NATIVE-08B active-study audio lifecycle verified in Simulator
 
 - **Lifecycle contract:** card audio belongs to the active foreground Study interaction. Losing foreground stops and disposes the current player, foreground restoration never auto-plays, explicit replay resolves the same stable asset again through `MediaProvider`, and card/route destruction prevents audio leaking into another interaction. No iOS background-audio capability, AVAudioSession customization or new dependency was added.

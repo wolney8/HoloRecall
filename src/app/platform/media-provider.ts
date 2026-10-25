@@ -14,6 +14,7 @@ interface NativeMediaModules {
   core:{Capacitor:{isNativePlatform():boolean;getPlatform():string;convertFileSrc(uri:string):string}};
   filesystem:{Directory:{LibraryNoCloud:unknown};Filesystem:{
     stat(options:{path:string;directory:unknown}):Promise<{size:number}>;
+    readFile(options:{path:string;directory:unknown}):Promise<{data:string|Blob}>;
     writeFile(options:{path:string;data:string;directory:unknown;recursive:boolean}):Promise<{uri:string}>;
     getUri(options:{path:string;directory:unknown}):Promise<{uri:string}>;
     readdir(options:{path:string;directory:unknown}):Promise<{files:Array<{name:string;type:'file'|'directory'}>}>;
@@ -37,6 +38,31 @@ function contentPath(asset:LocalAsset):string|undefined{
   return hash?`${MEDIA_ROOT}/${hash}.${extension[asset.mime]}`:undefined;
 }
 
+function expectedHash(asset:LocalAsset):string|undefined{return asset.contentHash?.match(/^sha256:([a-f0-9]{64})$/)?.[1];}
+
+function decodeBase64(value:string):Uint8Array{
+  const payload=value.includes(',')?value.slice(value.indexOf(',')+1):value,binary=atob(payload),bytes=new Uint8Array(binary.length);
+  for(let index=0;index<binary.length;index++)bytes[index]=binary.charCodeAt(index);
+  return bytes;
+}
+
+async function nativeBytes(data:string|Blob):Promise<Uint8Array>{return typeof data==='string'?decodeBase64(data):new Uint8Array(await data.arrayBuffer());}
+
+async function sha256(bytes:Uint8Array):Promise<string>{
+  const digest=await crypto.subtle.digest('SHA-256',bytes as Uint8Array<ArrayBuffer>);
+  return[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+}
+
+async function nativeMirrorMatches(asset:LocalAsset,path:string,directory:unknown,modules:NativeMediaModules):Promise<boolean>{
+  const hash=expectedHash(asset);if(!hash)return false;
+  let size:number;try{size=(await modules.filesystem.Filesystem.stat({path,directory})).size;}catch{return false;}
+  if(asset.byteLength!==undefined&&size!==asset.byteLength)return false;
+  // A verification read failure is indeterminate, not proof of corruption.
+  // Propagate it so fallback preserves a potentially valid referenced file.
+  const bytes=await nativeBytes((await modules.filesystem.Filesystem.readFile({path,directory})).data);
+  return(asset.byteLength===undefined||bytes.byteLength===asset.byteLength)&&await sha256(bytes)===hash;
+}
+
 /** Mirrors validated media into one app-owned persistent directory and returns
  * WKWebView-safe URLs. Domain/card references remain stable asset IDs. */
 export async function synchronizeNativeMedia(assets:readonly LocalAsset[],modules:NativeMediaModules):Promise<Map<string,string>>{
@@ -44,10 +70,11 @@ export async function synchronizeNativeMedia(assets:readonly LocalAsset[],module
   const directory=modules.filesystem.Directory.LibraryNoCloud,expected=new Set<string>(),byPath=new Map<string,LocalAsset[]>(),urls=new Map<string,string>();
   for(const asset of assets){const path=contentPath(asset);if(!path)continue;expected.add(path.slice(MEDIA_ROOT.length+1));byPath.set(path,[...(byPath.get(path)??[]),asset]);}
   for(const [path,matching] of byPath){
-    const asset=matching[0]!,expectedBytes=asset.byteLength;
-    let currentSize:number|undefined;
-    try{currentSize=(await modules.filesystem.Filesystem.stat({path,directory})).size;}catch{currentSize=undefined;}
-    if(currentSize===undefined||expectedBytes!==undefined&&currentSize!==expectedBytes)await modules.filesystem.Filesystem.writeFile({path,data:base64Payload(asset),directory,recursive:true});
+    const asset=matching[0]!;
+    if(!await nativeMirrorMatches(asset,path,directory,modules)){
+      await modules.filesystem.Filesystem.writeFile({path,data:base64Payload(asset),directory,recursive:true});
+      if(!await nativeMirrorMatches(asset,path,directory,modules))throw new Error(`Persistent media mirror failed integrity verification for ${asset.name}.`);
+    }
     const uri=(await modules.filesystem.Filesystem.getUri({path,directory})).uri,url=modules.core.Capacitor.convertFileSrc(uri);
     for(const item of matching)urls.set(item.id,url);
   }

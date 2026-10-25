@@ -442,6 +442,38 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("native-imported-mp3-wav-playback")
     }
 
+    func testSupportedSizeImportedMediaReconcilesAndPlays() throws {
+        openMore("Exchange")
+        tapButton("Import")
+        tapScrollableButton("Anki · Import Anki .apkg decks")
+        let packageInput = app.descendants(matching: .any).matching(identifier: "Anki package").firstMatch
+        XCTAssertTrue(packageInput.waitForExistence(timeout: 8))
+        packageInput.tap()
+
+        let fixture = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'native-media-supported-size' AND label CONTAINS[c] '.apkg'")).firstMatch
+        if !fixture.waitForExistence(timeout: 2) {
+            let browse = app.tabBars["Tab Bar"].buttons["Browse"]
+            XCTAssertTrue(browse.waitForExistence(timeout: 8))
+            browse.tap()
+            let onMyIPhone = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'On My iPhone'")).firstMatch
+            XCTAssertTrue(onMyIPhone.waitForExistence(timeout: 8))
+            onMyIPhone.tap()
+        }
+        XCTAssertTrue(fixture.waitForExistence(timeout: 15), "The generated supported-size APKG was unavailable\n\(app.debugDescription)")
+        let started = Date()
+        fixture.tap()
+        let importResult = app.descendants(matching: .any).matching(identifier: "Anki import result").firstMatch
+        XCTAssertTrue(importResult.waitForExistence(timeout: 60))
+        tapScrollableButton("Import 5 supported cards", timeout: 30)
+        XCTAssertTrue(app.staticTexts["IMPORT COMPLETE"].waitForExistence(timeout: 60))
+        print("HR_NATIVE_08C_IMPORT_SECONDS=\(Date().timeIntervalSince(started))")
+        tapButton("Study now")
+        XCTAssertTrue(app.buttons["Play front audio 1"].waitForExistence(timeout: 20))
+        app.buttons["Play front audio 1"].tap()
+        XCTAssertTrue(app.buttons["Pause front audio 1"].waitForExistence(timeout: 12), "Supported-size WAV did not enter the production playing state")
+        attachScreenshot("native-supported-size-media-playback")
+    }
+
     func testCollectionSubviewNavigation() throws {
         tapButton("Collection")
         XCTAssertTrue(app.staticTexts["Collection"].waitForExistence(timeout: 8))
