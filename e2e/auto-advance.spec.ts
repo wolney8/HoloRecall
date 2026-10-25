@@ -14,15 +14,17 @@ async function enableAutoAdvance(page: Parameters<typeof openApp>[0], revealSeco
 test('Auto Advance pauses safely, auto-reveals, requires a rating and waits for owned presentation',async({page})=>{
   await openApp(page);await enableAutoAdvance(page);
   await navigate(page,'Study');await page.getByRole('button',{name:'Check for due cards'}).click();
+  const initial=await snapshot(page),ratedCardId=initial.session!.queue[0]!;
   await expect(page.getByRole('button',{name:'Pause auto'})).toBeVisible();await page.getByRole('button',{name:'Pause auto'}).click();
-  await page.waitForTimeout(1_250);await expect(page.getByRole('button',{name:/Check answer/})).toBeVisible();expect((await snapshot(page)).events).toEqual([]);
+  await page.waitForTimeout(1_250);await expect(page.getByRole('button',{name:/Check answer/})).toBeVisible();expect(await snapshot(page)).toMatchObject({events:[],rewardEvents:[]});
   await page.reload();await expect(page.getByRole('button',{name:'Resume auto'})).toBeVisible();await page.getByRole('button',{name:'Resume auto'}).click();
-  await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible({timeout:5_000});const revealedAt=Date.now();expect((await snapshot(page)).events).toEqual([]);
+  await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible({timeout:5_000});const revealedAt=Date.now();expect(await snapshot(page)).toMatchObject({events:[],rewardEvents:[]});
   const answer=page.getByRole('heading',{name:'il limone',exact:true});await expect(answer).toBeVisible();await page.getByRole('button',{name:/4 Good Confident/}).click();
   await page.waitForTimeout(1_000);await expect(answer).toBeVisible();await expect(page.getByRole('region',{name:'Current flashcard'}).locator('img')).toHaveAttribute('src','/art/caffe.svg',{timeout:2_500});expect(Date.now()-revealedAt).toBeGreaterThanOrEqual(1_700);
-  const saved=await snapshot(page);expect(saved.events).toHaveLength(1);expect(saved.events[0]).toMatchObject({kind:'review',rating:4});
+  const saved=await snapshot(page);expect(saved.events).toHaveLength(1);expect(saved.events[0]).toMatchObject({kind:'review',cardId:ratedCardId,rating:4});expect(saved.states[ratedCardId]).toMatchObject({reps:1});expect(saved.rewardEvents).toHaveLength(2);expect(saved.rewardEvents.map(event=>event.kind)).toEqual(['contribution','unlock']);expect(new Set(saved.rewardEvents.map(event=>event.reviewEventId))).toEqual(new Set([saved.events[0]!.id]));
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});await expect(page.locator('html')).toHaveClass(/app-inactive/);await expect(page.getByRole('button',{name:'Resume auto'})).toBeVisible();await page.waitForTimeout(1_200);await expect(page.getByRole('button',{name:/Check answer/})).toBeVisible();
-  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));});await expect(page.getByRole('button',{name:'Resume auto'})).toBeVisible();expect((await snapshot(page)).events).toHaveLength(1);
+  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));});await expect(page.getByRole('button',{name:'Resume auto'})).toBeVisible();const resumed=await snapshot(page);expect(resumed.events).toEqual(saved.events);expect(resumed.rewardEvents).toEqual(saved.rewardEvents);expect(resumed.states[ratedCardId]).toEqual(saved.states[ratedCardId]);
+  await navigate(page,'Progress');await expect(page.getByText('Confidence 4 · Good',{exact:true})).toHaveCount(1);
 });
 
 test('Auto Advance uses the shared Practice player without creating scheduled progress',async({page})=>{

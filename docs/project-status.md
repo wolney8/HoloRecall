@@ -1,10 +1,17 @@
 # Current restart point
 
+## 25 October 2026 — HR-NATIVE-03A accepted-review Auto Advance lifecycle verified in Simulator
+
+- **Contract/evidence:** the packaged iPhone 17 Pro / iOS 26.5 journey passes **1/1 in 88.257 s** through Decks → Italian essentials → production Study Settings → Auto Advance → Study. Auto-reveal leaves progress at zero until the explicit `4 Good` rating; Home during the accepted-review feedback/deal period settles on the visible incoming card, does not progress while inactive, and returns with Auto Advance paused. Explicit Resume reveals the next card. After termination/relaunch, Progress reports one review and History shows exactly one `Confidence 4 · Good` row with a New → Learning scheduling transition.
+- **Exact-once supplement:** focused Chromium and desktop WebKit pass **2/2**. The review event, card scheduling state, contribution and genuine unlock are unchanged across lifecycle interruption; Auto Advance creates none of them before rating. Focused Study/store tests pass **87/87**. The native smoke uses visible production progress as the accepted-review boundary and does not inspect or inject storage.
+- **Correction:** History previously exposed the numeric FSRS grade (`Confidence 4 · 3`) beside the learner-facing confidence. It now uses the existing Again/Hard/Good/Easy vocabulary, producing readable persisted evidence without changing stored review data.
+- **Remaining HR-NATIVE-03 scope:** Practice and natural session exhaustion with complete Results accuracy remain Simulator-verifiable gaps. Reduced-motion and software-keyboard native evidence remain separate checklist items; physical-device acceptance remains deferred. HR-NATIVE-03 stays `VERIFY`. Recommended next bounded slice: `HR-NATIVE-03B — Practice and natural Session Results native smoke`.
+
 ## 25 October 2026 — HR-NATIVE-08 browser/Simulator feasibility scope closed
 
 - **Decision:** HR-NATIVE-08A/B/C satisfy the useful browser and iPhone Simulator feasibility scope: stable asset identities, authoritative IndexedDB storage, the persistent SHA-256-verified iOS mirror, MP3/WAV import/playback/relaunch, foreground-only lifecycle ownership, corruption recovery, fallback, deduplication, cleanup and supported-size evidence. No HR-NATIVE-08D is required.
 - **Deferred evidence:** physical-device acoustic/codec/memory behavior, calls/Siri/alarms, Bluetooth/headphone routing, hardware volume and physical VoiceOver acceptance remain pre-release work. They are not current development blockers. Approximate Simulator RSS is evidence from the demonstrated journey, not a peak-memory ceiling or SLA. HR-NATIVE-08 remains `VERIFY`.
-- **Next existing P0 item:** `HR-NATIVE-03 — Native smoke journey`, focused on the remaining Simulator-verifiable Practice, Auto Advance, complete Results and accepted-review lifecycle paths. Do not begin it automatically.
+- **Next existing P0 item:** `HR-NATIVE-03 — Native smoke journey`; HR-NATIVE-03A now closes the Auto Advance and accepted-review lifecycle gap. Practice and natural session exhaustion with complete Results remain. Do not begin the next slice automatically.
 
 ## 25 October 2026 — HR-NATIVE-08C persistent media mirror integrity verified in Simulator
 

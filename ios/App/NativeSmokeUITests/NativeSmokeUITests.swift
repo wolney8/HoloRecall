@@ -76,6 +76,91 @@ final class NativeSmokeUITests: XCTestCase {
         attachScreenshot("lifecycle-resumed-study")
     }
 
+    func testNativeAutoAdvanceAcceptedReviewLifecycle() throws {
+        tapButton("Decks")
+        XCTAssertTrue(app.staticTexts["Italian essentials"].waitForExistence(timeout: 8))
+
+        let actions = app.buttons["More deck actions"]
+        XCTAssertTrue(actions.waitForExistence(timeout: 8))
+        actions.tap()
+        let studySettings = app.menuItems["Study settings"]
+        XCTAssertTrue(studySettings.waitForExistence(timeout: 8))
+        studySettings.tap()
+        XCTAssertTrue(app.staticTexts["Study settings"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Italian essentials"].exists)
+
+        let autoAdvanceSummary = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Auto Advance'" )).firstMatch
+        XCTAssertTrue(autoAdvanceSummary.waitForExistence(timeout: 8), "Auto Advance settings were unavailable\n\(app.debugDescription)")
+        scrollToHittable(autoAdvanceSummary)
+        autoAdvanceSummary.tap()
+        let autoAdvance = app.switches["Auto Advance"]
+        XCTAssertTrue(autoAdvance.waitForExistence(timeout: 8))
+        if (autoAdvance.value as? String) != "1" { autoAdvance.tap() }
+        XCTAssertEqual(autoAdvance.value as? String, "1")
+        let revealDelay = app.textFields["Reveal question after"]
+        XCTAssertTrue(revealDelay.waitForExistence(timeout: 8))
+        scrollToHittable(revealDelay)
+        revealDelay.tap()
+        revealDelay.typeText(XCUIKeyboardKey.delete.rawValue + "1")
+        let keyboardDone = app.toolbars.buttons["Done"]
+        XCTAssertTrue(keyboardDone.waitForExistence(timeout: 3))
+        keyboardDone.tap()
+        tapScrollableButton("Save study settings")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'Study preset saved'" )).firstMatch.waitForExistence(timeout: 8))
+
+        tapButton("Decks")
+        XCTAssertTrue(app.staticTexts["Italian essentials"].waitForExistence(timeout: 8))
+        let studies = app.buttons.matching(identifier: "Study")
+        XCTAssertGreaterThanOrEqual(studies.count, 2)
+        let deckStudy = studies.allElementsBoundByIndex.first { $0.isHittable && $0.frame.minY < app.frame.height - 120 }
+        XCTAssertNotNil(deckStudy, "The deterministic deck Study action was not reachable\n\(app.debugDescription)")
+        deckStudy!.tap()
+        XCTAssertTrue(app.switches["Pause auto"].waitForExistence(timeout: 8), "The deck Study action did not start the Auto Advance session\n\(app.debugDescription)")
+        XCTAssertEqual(app.switches["Pause auto"].value as? String, "1")
+
+        XCTAssertTrue(app.staticTexts["Rate your recall"].waitForExistence(timeout: 8), "Auto Advance did not reveal the first card\n\(app.debugDescription)")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Undo'" )).firstMatch.exists, "Auto reveal created a review before the learner rated")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '0 /'" )).firstMatch.exists)
+
+        let rating = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '4 Good'" )).firstMatch
+        XCTAssertTrue(rating.waitForExistence(timeout: 5))
+        rating.tap()
+        let acceptedProgress = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '1 /'" )).firstMatch
+        XCTAssertTrue(acceptedProgress.waitForExistence(timeout: 1), "The accepted review did not update visible session progress before interruption\n\(app.debugDescription)")
+
+        XCUIDevice.shared.press(.home)
+        sleep(2) // Longer than the configured one-second reveal delay; inactivity must not advance the card.
+        app.activate()
+
+        let resume = app.switches["Resume auto"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10), "Auto Advance did not remain explicitly paused after foreground restoration\n\(app.debugDescription)")
+        XCTAssertEqual(resume.value as? String, "0")
+        let incoming = revealableCard()
+        XCTAssertTrue(incoming.waitForExistence(timeout: 10), "The accepted-review transition did not settle on a visible incoming card\n\(app.debugDescription)")
+        XCTAssertFalse(app.staticTexts["Rate your recall"].exists, "Auto Advance progressed while HoloRecall was inactive")
+        XCTAssertTrue(acceptedProgress.exists)
+        attachScreenshot("native-auto-advance-lifecycle-settled")
+
+        resume.tap()
+        XCTAssertTrue(app.switches["Pause auto"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Rate your recall"].waitForExistence(timeout: 8), "Explicit Auto Advance resume did not reveal the next card\n\(app.debugDescription)")
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 15))
+        openMore("Progress")
+        XCTAssertTrue(app.staticTexts["Progress"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["1 reviews"].waitForExistence(timeout: 8), "Progress did not report the single persisted review\n\(app.debugDescription)")
+        let historyRating = app.staticTexts["Confidence 4 · Good"]
+        XCTAssertTrue(historyRating.waitForExistence(timeout: 8), "History did not expose the persisted rating\n\(app.debugDescription)")
+        XCTAssertEqual(app.staticTexts.matching(identifier: "Confidence 4 · Good").count, 1)
+        let scheduling = app.buttons["Scheduling details"].firstMatch
+        XCTAssertTrue(scheduling.waitForExistence(timeout: 8))
+        scheduling.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'New' AND label CONTAINS 'Learning'" )).firstMatch.waitForExistence(timeout: 8), "History did not expose the persisted scheduling transition\n\(app.debugDescription)")
+        attachScreenshot("native-auto-advance-review-history")
+    }
+
     func testNativeOrientationAndFileSurfaces() throws {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.staticTexts["Study dashboard"].waitForExistence(timeout: 8))

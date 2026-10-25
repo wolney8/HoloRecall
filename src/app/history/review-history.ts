@@ -7,6 +7,7 @@ import { LocalStudyStore } from '../data/study-store';
 import type { AdministrativeEvent,CardState,ReviewEvent } from '../../domain/models';
 import { dayKey } from '../../domain/time';
 import { administrativeUndoStatus } from '../../domain/administrative';
+import { mapRating,RATING_OPTIONS } from '../../domain/study';
 
 @Component({selector:'hr-review-history',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule],templateUrl:'./review-history.html',styleUrl:'./review-history.css'})
 export class ReviewHistoryComponent{
@@ -17,6 +18,7 @@ export class ReviewHistoryComponent{
  readonly administrative=computed(()=>{const id=this.cardId();return (this.store.data()?.administrativeEvents??[]).filter(event=>(!id||event.cardId===id)&&this.inRange(event.timestamp)).sort((a,b)=>b.timestamp.localeCompare(a.timestamp));});
  readonly rows=computed(()=>[...this.reviews().map(event=>({timestamp:event.timestamp,id:event.id,type:'Review' as const,event})),...this.administrative().map(event=>({timestamp:event.timestamp,id:event.id,type:'Management' as const,event}))].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,this.limit()));
  state(value:CardState):string{return ['New','Learning','Review','Relearning'][value.state]??'Unavailable';}date(value:string):string{return new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZone:this.store.data()?.preferences.timeZone??'Europe/London'}).format(new Date(value));}duration(ms?:number):string{return ms===undefined?'Unavailable':`${(ms/1000).toFixed(1)} s`;}
+ grade(value:ReviewEvent['grade']):string{return RATING_OPTIONS.find(option=>mapRating(option.rating)===value)?.grade??'Unavailable';}
  async manage(action:'set-due'|'reset'|'bury'|'unbury'|'suspend'|'unsuspend'):Promise<void>{const id=this.cardId();if(!id)return;try{if(action==='set-due'&&!this.due)throw new Error('Choose a due date.');await this.store.manageCards([id],action,action==='set-due'?`${this.due}T12:00:00.000Z`:undefined);this.confirmReset.set(false);this.message.set(action==='reset'?'Card returned to New. Review history was preserved.':'Card schedule updated.');this.error.set('');}catch(error){this.error.set(error instanceof Error?error.message:'Could not update the card.');}}
  administrativeLabel(event:AdministrativeEvent):string{return event.action==='undo'?`Undid ${event.detail??'management change'}`:event.action.replace('-',' ');}
  isUndone(event:AdministrativeEvent):boolean{return !!this.store.data()?.administrativeEvents.some(item=>item.action==='undo'&&item.reversesEventId===event.id);}
