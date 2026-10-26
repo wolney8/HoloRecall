@@ -1,6 +1,6 @@
 # Canonical work-item tracker
 
-Updated: 25 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 26 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
@@ -10,18 +10,19 @@ Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items r
 
 ## Owner-reported product corrections — registered 25 October 2026
 
-These items preserve the owner's reported behavior and remain unimplemented. Existing completed navigation, hierarchy and Design Suite work is prior evidence, not proof that the newly reported behavior is resolved.
+These items preserve the owner's reported behavior; each item's current implementation state is recorded below. Existing completed navigation, hierarchy and Design Suite work is prior evidence, not proof that a newly reported behavior is resolved.
 
 ### HR-BUG-DECK-01 — Restore top-level and subdeck presentation semantics
 
 - **Product area / milestone / priority:** Deck domain, import and organisation / Product correction / P0
-- **Status:** BACKLOG
+- **Status:** VERIFY
 - **Source:** Owner report, 25 October 2026
 - **Dependencies:** HR-ORG-03, HR-BUG-ANKI-02, stable `Deck.parentId`, branch-scoped Study and content-format hierarchy
 - **Requirement:** A parent deck is the top-level container for its descendants. Imported subdecks must not also appear as independent top-level Decks; intentionally standalone decks remain top level. The reported `Italian - Lesson 1 - Introductions - 22 September 2026` branch with five children is the primary reproduction target.
-- **Current finding:** The domain, APKG conversion and portable/XLSX contracts carry `parentId`; Dashboard and Decks currently call `topDecks()` and nested rows use `deckRows()`. Existing fixtures prove ordinary Anki `::` hierarchy. The owner report therefore identifies a regression or data-specific missing/dangling parent relationship; the exact fixture is required to determine whether import/apply, persisted model data, query/presentation, or more than one layer is responsible. Do not delete, merge, flatten or rename deck identities to hide it.
+- **Current finding:** Modern Anki stores machine hierarchy with U+001F, while HoloRecall previously split only legacy/display `::`; the five reported source paths therefore became independent roots before presentation. One domain normalizer now accepts both separators and stores canonical `::` paths. Missing ancestors receive deterministic path-derived identities while numeric leaf IDs remain unchanged. State schema 11 repairs an unchanged retained-source group atomically; any local rename/reparent or conflicting parent leaves the whole group untouched for the existing conflict preview rather than overwriting learner organisation.
 - **Acceptance:** Reproduce the exact branch and inspect stored IDs/parents before rendering. Each child exists once under its parent and never as a top-level tile while that parent exists; standalone roots remain roots. Parent Study aggregates descendants; child Study remains scoped; direct/recursive counts, due/progress and media are accurate; deletion/edit/move preserve explicit hierarchy; no card or deck duplication occurs. APKG and portable ZIP retain hierarchy, XLSX retains its documented parent contract, repeat import is stable, and Dashboard/Decks/Progress agree.
 - **Regression risks:** Source update/repair, selected-branch import, missing-parent recovery, parent deletion/promotion, queue limits, Progress/history snapshots, Dashboard counts and content round trips.
+- **Verification evidence:** The exact five-child shape passes clean U+001F and legacy `::` conversion, missing-parent synthesis, repeat analysis/import preview, schema-10 persisted-state repair, idempotence and local-conflict refusal. Leaf/card identities, assignments, scheduling, reviews, practice, rewards, assets and immutable historical review snapshots remain unchanged. Domain coverage proves one root, five children, recursive Progress inventory, deletion scope and parent/child Study scope; the production Chromium import journey proves Dashboard/Decks nesting after reload. Focused APKG, portable ZIP and XLSX tests preserve hierarchy without synthesizing a duplicate parent. No owner profile was mutated.
 
 ### HR-NAV-02 — Persistent accessible access to core destinations
 

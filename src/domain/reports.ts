@@ -2,6 +2,7 @@ import { fsrs } from 'ts-fsrs';
 import type { ConfidenceRating, State } from './models';
 import { activeReviews, dayKey, dueCards, hydrateCard } from './study';
 import { rewardProgress } from './rewards';
+import { descendantDeckIds } from './library';
 
 export interface DateRange { from?: string; to?: string }
 /** Event metrics are filtered by learner calendar dates; inventory and model estimates are current. */
@@ -30,7 +31,7 @@ export function buildReport(state: State, now: Date, range: DateRange = {}) {
   const estimates = Object.values(state.states).filter(card => card.reps > 0 && card.last_review).map(card => scheduler.get_retrievability(hydrateCard(card), now, false)).filter(Number.isFinite);
   const recallSuccess = reviews.length ? reviews.filter(review => review.rating >= 2).length / reviews.length : null;
   const perDeck = state.decks.map(deck => {
-    const cards = state.cards.filter(card => card.deckId === deck.id);
+    const branch = descendantDeckIds(state,[deck.id]),cards = state.cards.filter(card => branch.has(card.deckId));
     return { id: deck.id, name: deck.name, total: cards.length, introduced: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0).length,
       due: cards.filter(card => (state.states[card.id]?.reps ?? 0) > 0 && Date.parse(state.states[card.id]!.due) <= now.getTime() && !card.suspended && !deck.suspended).length,
       earned: cards.filter(card => rewardProgress(state, card.id).earned).length };

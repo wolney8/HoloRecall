@@ -155,6 +155,12 @@ The structured projection keeps the principal template answer in `answer`, dedic
 
 Apply commits cards, decks, durable assets, exact enrichment mappings, and the normalized source snapshot in one optimistic transaction. It never writes scheduler/history/reward state.
 
+## Deck hierarchy normalization and repair
+
+Anki hierarchy enters through one domain path contract. Modern/internal U+001F and legacy/display `::` separators both normalize to canonical `::` segments before preview, conversion, retained-source storage, `Subdeck` projection and update/repair analysis. When a package contains `Parent\x1fChild` rows but omits an explicit `Parent` row, HoloRecall creates one deterministic path-derived synthetic ancestor. Numeric Anki leaf IDs remain the stable leaf identities, repeat import reuses the same parent, parent Study includes descendants and a selected child remains child-scoped.
+
+State schema 11 applies the same contract to retained schema-10 sources. Automatic repair is deliberately whole-group and conservative: every affected deck must be Anki-backed, its retained source path must prove the relationship, its imported hierarchy fields must remain at their recorded baseline, and the target identity must not conflict. A safe repair changes only source-owned deck hierarchy/provenance and retained snapshot references; card assignments, reviews, scheduling, practice, rewards, media and immutable historical review paths are not rewritten. A local rename, reparent or collision prevents automatic repair and is reported through the existing update/repair conflict flow.
+
 ## Front and back semantic fidelity
 
 The safe template projection applies a coverage contract to both faces. Every meaningful rendered source block is classified or retained; optional semantic enrichment may improve placement, but it cannot make source content disappear.

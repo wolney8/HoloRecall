@@ -24,6 +24,14 @@ async function languageMetadataApkg(answer='Mi chiamo',multiple=false):Promise<B
   const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
 }
 
+async function modernHierarchyApkg():Promise<Buffer>{
+  const SQL=await initSqlJs(),db=new SQL.Database();
+  db.run('create table col (models text, decks text)');db.run('create table notes (id integer, guid text, mid integer, tags text, flds text)');db.run('create table cards (id integer, nid integer, did integer, ord integer)');
+  const parent='Italian - Lesson 1 - Introductions - 22 September 2026',leaves=['01 Greetings & farewells','02 Introductions','03 Tu and Lei','04 Italian foundations & vowels','05 Sentence & pattern practice'],ids=[1790604003849,1790604003850,1790604003851,1790604003852,1790604003853],models={1:{name:'Basic',type:0,flds:[{name:'Front'},{name:'Back'}],tmpls:[{name:'Card 1',qfmt:'{{Front}}',afmt:'{{FrontSide}}<hr>{{Back}}'}]}},decks=Object.fromEntries(ids.map((id,index)=>[id,{name:`${parent}\x1f${leaves[index]}`} ]));
+  db.run('insert into col values (?,?)',[JSON.stringify(models),JSON.stringify(decks)]);ids.forEach((id,index)=>{db.run('insert into notes values (?,?,?,?,?)',[100+index,`hierarchy-guid-${index}`,1,'',`Prompt ${index+1}\x1fAnswer ${index+1}`]);db.run('insert into cards values (?,?,?,?)',[200+index,100+index,id,0]);});
+  const zip=new JSZip();zip.file('collection.anki2',db.export());zip.file('media','{}');db.close();return Buffer.from(await zip.generateAsync({type:'uint8array'}));
+}
+
 async function importOfficial(page:Parameters<typeof openApp>[0]):Promise<void>{
   await navigate(page,'Exchange');
   await page.getByLabel('Anki · Import Anki .apkg decks').click();
@@ -71,6 +79,10 @@ test('HR-BUG-ANKI-02 imported parents are aggregate journeys with scoped subdeck
   await parent.getByRole('button',{name:'Study',exact:true}).first().click();expect((await snapshot(page)).session?.queue).toHaveLength(7);
   await page.getByRole('button',{name:'End session'}).click();await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Decks',exact:true}).click();
   await parent.locator('.subdeck-row').getByRole('button',{name:'Study',exact:true}).click();expect((await snapshot(page)).session?.queue).toHaveLength(7);
+});
+
+test('HR-BUG-DECK-01 normalizes modern Anki hierarchy into one visible parent journey',async({page})=>{
+  const parentName='Italian - Lesson 1 - Introductions - 22 September 2026',leaves=['01 Greetings & farewells','02 Introductions','03 Tu and Lei','04 Italian foundations & vowels','05 Sentence & pattern practice'];await openApp(page);await navigate(page,'Exchange');await page.getByLabel('Anki · Import Anki .apkg decks').click();await page.locator('#anki-import').setInputFiles({name:'modern-hierarchy.apkg',mimeType:'application/zip',buffer:await modernHierarchyApkg()});await page.getByRole('button',{name:'Import 5 supported cards'}).click();await navigate(page,'Dashboard');await expect(page.locator('.deck-tile').filter({has:page.getByRole('heading',{name:parentName,exact:true})})).toHaveCount(1);await page.reload();await navigate(page,'Decks');const parent=page.locator('.deck-journey').filter({has:page.getByRole('heading',{name:parentName,exact:true})});await expect(parent).toHaveCount(1);await expect(parent).toContainText('5 cards · 5 ready · 5 subdecks');await parent.getByRole('button',{name:'Show 5 subdecks'}).click();for(const leaf of leaves)await expect(parent.getByRole('heading',{name:leaf,exact:true})).toBeVisible();const data=await snapshot(page),root=data.decks.find(deck=>deck.name===parentName)!,children=data.decks.filter(deck=>deck.parentId===root.id);expect(data.decks.filter(deck=>!deck.parentId&&deck.name.startsWith(parentName))).toEqual([root]);expect(children.map(deck=>deck.name)).toEqual(leaves);expect(children.map(deck=>deck.id)).toEqual(['anki-deck-1790604003849','anki-deck-1790604003850','anki-deck-1790604003851','anki-deck-1790604003852','anki-deck-1790604003853']);expect(data.cards.filter(card=>children.some(child=>child.id===card.deckId))).toHaveLength(5);await parent.getByRole('button',{name:'Study',exact:true}).first().click();expect((await snapshot(page)).session?.queue).toHaveLength(5);
 });
 
 test('HR-BUG-STUDY-01 consecutive imported cards settle visible after every deal',async({page},testInfo)=>{

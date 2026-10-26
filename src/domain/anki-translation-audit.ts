@@ -1,6 +1,7 @@
 import type { AnkiBehaviourAdapter, AnkiConversionConcern, AnkiSemanticVariant, AnkiSourceSnapshot, AnkiTranslationAudit, CardContent } from './models';
 import { answerOnlyMarkup, renderAnkiTemplate } from './anki-template';
 import {semanticVariantMatches} from './anki-semantic-variant';
+import {normalizeAnkiDeckPath} from './anki-deck-path';
 
 type Coverage=AnkiTranslationAudit['representativeCoverage'][number];
 const clean=(value?:string)=>value?.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().toLocaleLowerCase()??'';
@@ -29,7 +30,7 @@ export function auditAnkiTemplateTranslation(snapshot:AnkiSourceSnapshot,model:A
     if(!sourceCard||!note||!provenance){findings.add('missing-provenance');continue;}
     const matches=variants.filter(variant=>semanticVariantMatches(variant,note.fields)),selected=provenance.semanticVariantId,selectedVariant=matches.length===1?matches[0]:undefined;if(matches.length>1||matches.length===1&&selected!==matches[0]!.id||!matches.length&&selected)findings.add('inconsistent-template');
     if(matches.length===1){const variant=matches[0]!,result=variantAudits.find(item=>item.id===variant.id)!;result.matchedCardCount++;const expected=clean(note.fields[variant.overrides.primaryAnswerField]),primary=blocks.find(block=>block.side==='back'&&block.source===variant.overrides.primaryAnswerField&&block.classification==='primary-answer');if(!same(card.answer,expected)||!primary){result.findings.push('wrong-side-content');findings.add('wrong-side-content');}}
-    const sourceDeck=snapshot.sourceDecks.find(item=>item.id===sourceCard.sourceDeckId),special={Tags:note.tags.join(' '),Type:model.name,Deck:sourceDeck?.path??'',Subdeck:sourceDeck?.path.split('::').at(-1)??'',Card:template.name},clozeOrdinal=model.cloze?sourceCard.templateOrdinal+1:undefined;
+    const sourceDeck=snapshot.sourceDecks.find(item=>item.id===sourceCard.sourceDeckId),special={Tags:note.tags.join(' '),Type:model.name,Deck:sourceDeck?.path??'',Subdeck:sourceDeck?normalizeAnkiDeckPath(sourceDeck.path).leaf:'',Card:template.name},clozeOrdinal=model.cloze?sourceCard.templateOrdinal+1:undefined;
     const front=renderAnkiTemplate(template.question,{fields:note.fields,clozeOrdinal,answerSide:false,special}),back=renderAnkiTemplate(answerOnlyMarkup(template.answer),{fields:note.fields,frontSide:front.markup,clozeOrdinal,answerSide:true,special});
     const expectedFront=front.referencedFields.filter(name=>clean(note.fields[name])).flatMap(name=>{const subroles=blocks.filter(block=>block.side==='front'&&block.sourceKind==='field-subrole'&&block.sourceField===name);return subroles.length?subroles.map(block=>({side:'front' as const,source:block.source})):[{side:'front' as const,source:name}];});
     const expected=[...expectedFront,...back.referencedFields.filter(name=>clean(note.fields[name])).map(source=>({side:'back' as const,source})),...front.staticBlocks.map((_block,index)=>({side:'front' as const,source:`template-static:front:${index}`})),...back.staticBlocks.map((_block,index)=>({side:'back' as const,source:`template-static:back:${index}`})),...(/{{FrontSide}}/i.test(template.answer)?[{side:'back' as const,source:'FrontSide'}]:[])];

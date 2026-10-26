@@ -337,7 +337,7 @@ export interface AdministrativeEvent {
 }
 
 export interface State {
-  schemaVersion: 10;
+  schemaVersion: 11;
   version: number;
   userId: string;
   decks: Deck[];

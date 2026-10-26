@@ -344,6 +344,8 @@ describe('Anki content-only import', () => {
     const audio = analysis.cards.find(card => card.answer.includes('buonasera'))!;
     expect(audio.frontAudio).toHaveLength(1); expect(audio.backAudio).toHaveLength(1);
     expect(analysis.assets.find(asset => asset.mime === 'audio/mpeg')?.dataUrl).toMatch(/^data:audio\/mpeg;base64,/);
+    const root=analysis.decks.find(deck=>deck.name==='HoloRecall Fixture')!,child=analysis.decks.find(deck=>deck.name==='Italian')!;
+    expect(child.parentId).toBe(root.id);expect(analysis.decks.filter(deck=>!deck.parentId).map(deck=>deck.name)).toEqual(['HoloRecall Fixture']);
     const schema = analysis.modelSchemas.find(model => model.name === 'HoloRecall Custom Audio')!;
     const mapped = await analyseAnkiPackage(bytes, path.split('/').at(-1)!, undefined, undefined, [{ id: 'custom-audio', version: 1, name: 'Italian audio', sourceSignature: schema.signature, modelName: schema.name, fields: { Prompt: 'front', Response: 'answer', Pronunciation: 'pronunciation', NaturalMeaning: 'meaning', Context: 'notes', QuestionSound: 'front-media', AnswerSound: 'back-media' } }]);
     const mappedAudio = mapped.cards.find(card => card.answer === 'buonasera')!;
