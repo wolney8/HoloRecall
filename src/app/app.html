@@ -4,21 +4,21 @@
   <aside class="sidebar">
     <a class="brand" href="#dashboard" (click)="$event.preventDefault();go('dashboard')" aria-label="HoloRecall dashboard"><img src="brand/holorecall-mark.svg" alt=""><span>HoloRecall<span class="brand-dot">.</span></span></a>
     <nav aria-label="Main navigation">
-      @for(item of navigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span>{{item.label}}</button>}
+      @for(item of navigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span class="nav-label">{{item.label}}</span></button>}
     </nav>
     <div class="sidebar-footer"><span class="status-chip"><span class="status-dot"></span> Local prototype</span><p>Saved in this browser.<br>No cloud account or sync.</p></div>
   </aside>
   <header class="mobile-header">
     @if(mobileHasBack()){<button mat-icon-button type="button" class="mobile-back" (click)="mobileBack()" [attr.aria-label]="'Back from '+mobileTitle()"><span aria-hidden="true">‹</span></button>}
     <span class="mobile-context-title">@if(mobileParentTitle()){<small>{{mobileParentTitle()}}</small>}<strong>{{mobileTitle()}}</strong></span>
-    <button mat-icon-button type="button" class="mobile-header-more" (click)="toggleMobileMore()" aria-label="Open more navigation" [attr.aria-expanded]="mobileMoreOpen()"><span aria-hidden="true">•••</span></button>
+    <button mat-icon-button type="button" class="mobile-header-more" (click)="toggleMobileMore($event)" aria-label="Open more navigation" aria-haspopup="dialog" aria-controls="mobile-more-navigation" [attr.aria-expanded]="mobileMoreOpen()"><span aria-hidden="true">•••</span></button>
   </header>
   @if(mobileMoreOpen()){
-    <div class="mobile-more-scrim" (click)="mobileMoreOpen.set(false)" aria-hidden="true"></div>
-    <section class="mobile-more-sheet" aria-label="More destinations">
+    <div class="mobile-more-scrim" (click)="closeMobileMore()" aria-hidden="true"></div>
+    <section id="mobile-more-navigation" class="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="More destinations">
       <h2>More</h2>
       <nav aria-label="Secondary navigation">
-        @for(item of mobileSecondaryNavigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}
+        @for(item of screen()==='study'||screen()==='results'?immersiveNavigation:mobileSecondaryNavigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}
       </nav>
     </section>
   }
@@ -153,5 +153,5 @@
       @if(message() && message()!==store.error() && (screen()!=='study' || messageError())){<div class="toast" [class.error]="messageError()" [attr.role]="messageError()?'alert':'status'"><span>{{message()}}</span><button mat-button aria-label="Dismiss notification" (click)="message.set('');messageError.set(false)">Dismiss</button></div>}
     </main>
   </div>
-  <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" (click)="item.id==='more'?toggleMobileMore():go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
+  <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" [attr.aria-haspopup]="item.id==='more'?'dialog':null" [attr.aria-controls]="item.id==='more'?'mobile-more-navigation':null" [attr.aria-expanded]="item.id==='more'?mobileMoreOpen():null" (click)="item.id==='more'?toggleMobileMore($event):go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
 </div>

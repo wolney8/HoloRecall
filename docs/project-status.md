@@ -1,5 +1,11 @@
 # Current restart point
 
+## 26 October 2026 — HR-NAV-02 adaptive navigation implemented and headless verified
+
+- **Shared shell:** the existing Material navigation now uses one destination model across a persistent expanded sidebar, a 104 px medium rail and a compact Dashboard/Decks/Study/More bar. Focused Study and compact Results retain their immersive presentation while exposing Dashboard, Settings and the remaining destinations through the same keyboard-contained More dialog.
+- **Progress:** the former continuous report is divided by explicit Overview, Deck progress, Insights and History tabs. Stable `#progress/<section>` routes support direct selection and Back/Forward; only the selected report section mounts, while the existing progressive reveal motion remains intact.
+- **Evidence boundary:** headless Chromium/WebKit responsive coverage exercises 200% text, no horizontal overflow, focus containment/restoration, `aria-current`, keyboard tab traversal, compact/medium/expanded layouts, immersive-route exits and History API navigation. Focused Progress regressions, application type-check and production build pass. Owner visual review, physical VoiceOver, native safe-area/Back behavior and touch quality are deliberately unverified. HR-NAV-02 remains `VERIFY`; Design Studio dirty-route protection remains a separate HR-DESIGN-17 dependency.
+
 ## 26 October 2026 — Modern Anki hierarchy normalization and safe repair implemented
 
 - **Root cause and contract:** modern Anki machine deck names use U+001F while the importer previously understood only legacy/display `::`. One domain path normalizer now accepts both and stores canonical `::`; all retained-source analysis, synthetic ancestors, leaf display names, template `Subdeck` projection and import conversion use that contract.

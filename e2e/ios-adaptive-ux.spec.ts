@@ -5,7 +5,7 @@ test('HR-IOS-UX phone navigation and tap-to-reveal keep Study stable @ios-large'
   const primary = page.getByRole('navigation', { name: 'Primary navigation' });
   await expect(primary.getByRole('button')).toHaveCount(4);
   const labels = (await primary.getByRole('button').allInnerTexts()).map(value => value.replace(/[^A-Za-z ]/g, '').trim());
-  expect(labels).toEqual(['Decks', 'Study', 'Collection', 'More']);
+  expect(labels).toEqual(['Dashboard', 'Decks', 'Study', 'More']);
   const tracks = await primary.getByRole('button').evaluateAll(buttons => buttons.map(button => {
     const box = button.getBoundingClientRect(), label = button.querySelector('span:last-child') as HTMLElement;
     return { width: box.width, labelContained: label.scrollWidth <= label.clientWidth, whiteSpace: getComputedStyle(label).whiteSpace };

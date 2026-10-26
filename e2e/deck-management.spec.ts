@@ -27,7 +27,7 @@ test('HR-DECK-MANAGEMENT-01 dialog exposes scope, safe focus and parent-only pro
   await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(trigger).toBeFocused();
   await trigger.click();await page.getByRole('checkbox',{name:'I understand this cannot be undone.'}).check();await page.getByRole('button',{name:'Delete permanently'}).click();await expect(page.getByText(/Child decks were promoted/)).toBeVisible();
   const after=await snapshot(page);expect(after.decks.find(deck=>deck.id==='parent')).toBeUndefined();expect(after.decks.find(deck=>deck.id==='child')?.parentId).toBeUndefined();expect(after.decks.find(deck=>deck.id==='grandchild')?.parentId).toBe('child');expect(after.cards.map(item=>item.id)).toEqual(['child-card','grandchild-card','other-card']);
-  await navigate(page,'Progress');await expect(page.getByRole('heading',{name:'Current deck inventory'})).toBeVisible();await expect(page.getByRole('heading',{name:'Historical reviews by deck'})).toBeVisible();await expect(page.getByRole('row',{name:/Parent > Child/})).toBeVisible();
+  await navigate(page,'Progress');await page.getByRole('tab',{name:'Deck progress'}).click();await expect(page.getByRole('heading',{name:'Current deck inventory'})).toBeVisible();await expect(page.getByRole('heading',{name:'Historical reviews by deck'})).toBeVisible();await expect(page.getByRole('row',{name:/Parent > Child/})).toBeVisible();
 });
 
 test('HR-DECK-MANAGEMENT-01 simple deck deletion and cancellation are explicit',async({page})=>{

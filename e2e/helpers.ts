@@ -25,7 +25,7 @@ export async function navigate(page: Page, name: string): Promise<void> {
   const primary = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name, exact: false });
   if (await primary.isVisible()) { await primary.click(); return; }
   const more = page.getByRole('navigation', { name: 'Primary navigation' }).getByRole('button', { name: 'More', exact: true });
-  const secondaryDestination = ['Dashboard', 'Focus', 'Progress', 'Design Studio', 'Exchange', 'Settings'].some(item => name.startsWith(item));
+  const secondaryDestination = ['Focus', 'Collection', 'Progress', 'Design Studio', 'Exchange', 'Settings'].some(item => name.startsWith(item));
   if (secondaryDestination && await more.isVisible()) {
     await more.click();
     const secondary = page.getByRole('navigation', { name: 'Secondary navigation' }).getByRole('button', { name, exact: false });

@@ -27,13 +27,14 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### HR-NAV-02 — Persistent accessible access to core destinations
 
 - **Product area / milestone / priority:** Navigation and accessibility / Product correction / P0
-- **Status:** BACKLOG
+- **Status:** VERIFY
 - **Source:** Owner report, 25 October 2026
 - **Dependencies:** HR-NAV-01, HR-IOS-UX-11, current wide sidebar, compact bottom bar/More sheet and immersive Study/Results exceptions
 - **Requirement:** Core destinations remain discoverable and directly reachable without long-page scrolling. Preserve useful page-reveal/progressive disclosure; do not make scrolling the primary route between major areas or duplicate every destination on every screen.
-- **Current finding:** Wide layouts have a fixed, scrollable primary sidebar; compact layouts have a fixed four-item Material navigation bar plus More sheet, active-state semantics and contextual sticky header. Study and Results intentionally suppress the compact destination bar. Audit long pages and viewport transitions for actual reachability, focus restoration and any surface where shell navigation is absent or obscured before changing the established information architecture.
+- **Current implementation:** One canonical destination model now adapts to a persistent expanded sidebar, a 104 px medium rail and a compact Dashboard/Decks/Study/More bar. The More dialog exposes Focus, Collection, Design Studio, Progress, Exchange and Settings; focused Study and compact Results use the same destination model with Dashboard and Settings available as explicit exits. Progress now has Overview, Deck progress, Insights and History tabs with stable hash routes instead of mounting one continuous report. Existing progressive reveal motion remains presentation within the selected section.
 - **Acceptance:** Define the core destination map for Dashboard, Decks/Collection, Study/Practice, Progress/History, Design Studio and Settings by context. Use the existing Material 3 sidebar/rail/bar/drawer patterns at desktop, tablet and phone widths; retain intentional immersive exceptions with a clear exit. Keyboard and touch users can reach every applicable destination without content scrolling; current destination uses semantic `aria-current`; opening/closing compact navigation moves and restores focus predictably; skip-link, back/context and 200% text behavior remain valid; no horizontal overflow or duplicated competing navigation appears.
 - **Regression risks:** Native Back, deep links, overlays, safe areas, landscape/short viewports, Study/Results completion, focus order and responsive breakpoints.
+- **Verification evidence:** Headless Chromium and WebKit cover compact 200%-text navigation, focus containment/restoration, semantic current state, the 721–1020 px rail, expanded navigation, focused Study and compact Results exits, Progress section keyboard selection, stable deep links and browser Back/Forward. Existing adaptive-navigation, Progress, reveal-motion, Study and production-build checks remain the regression boundary. Owner visual acceptance, physical VoiceOver, native safe-area/Back behavior and touch quality remain unverified. Design Studio dirty-route protection is unchanged and remains under HR-DESIGN-17.
 
 ### HR-COPY-01 — Replace learner-visible prototype and workspace copy
 

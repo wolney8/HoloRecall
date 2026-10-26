@@ -12,6 +12,7 @@ test('HR-UX-12 visible blocks animate, offscreen progress waits, and settled blo
   await page.setViewportSize({ width: 900, height: 520 });
   await openApp(page);
   await navigate(page, 'Progress');
+  await page.getByRole('tab', { name: 'Insights' }).click();
 
   const heading = page.locator('hr-progress .page-heading.hr-reveal');
   await expect(heading).toHaveAttribute('data-reveal-state', 'active');
@@ -51,7 +52,7 @@ test('HR-UX-12 page inventory uses shared block motion without touching Study or
     ['Decks', '.deck-journey.hr-reveal', 1],
     ['Collection', 'hr-collection .hr-reveal', 5],
     ['Design Studio', 'hr-design-studio .hr-reveal', 3],
-    ['Progress', 'hr-progress .hr-reveal', 10],
+    ['Progress', 'hr-progress .hr-reveal', 4],
     // Exchange renders one heading and one focused active view; inactive Import/Export/Templates views are not mounted together.
     ['Exchange', 'hr-exchange .hr-reveal', 2],
     ['Settings', '.settings-grid .hr-reveal', 2],

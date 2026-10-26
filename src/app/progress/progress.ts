@@ -1,4 +1,4 @@
-import { Component, computed, EventEmitter, inject, Output, signal } from '@angular/core';
+import { Component, computed, EventEmitter, HostListener, inject, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,17 +11,30 @@ import { RARITIES } from '../../domain/rewards';
 import type { Rarity } from '../../domain/models';
 import { PageRevealDirective } from '../motion/page-reveal';
 import { ReviewHistoryComponent } from '../history/review-history';
+import { SubviewNavigationComponent, type SubviewNavigationItem } from '../navigation/subview-navigation';
 
-@Component({selector:'hr-progress',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective,ReviewHistoryComponent],templateUrl:'./progress.html'})
+type ProgressSection='overview'|'decks'|'insights'|'history';
+
+@Component({selector:'hr-progress',standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatProgressBarModule,PageRevealDirective,ReviewHistoryComponent,SubviewNavigationComponent],templateUrl:'./progress.html'})
 export class ProgressComponent {
   @Output() readonly practiceCards=new EventEmitter<string[]>();
   readonly Math=Math;
   readonly store=inject(LocalStudyStore);
   readonly from=signal('');readonly to=signal('');
+  readonly sections:readonly SubviewNavigationItem<ProgressSection>[]=[
+    {id:'overview',label:'Overview',panelId:'progress-overview'},
+    {id:'decks',label:'Deck progress',panelId:'progress-decks'},
+    {id:'insights',label:'Insights',panelId:'progress-insights'},
+    {id:'history',label:'History',panelId:'progress-history'},
+  ];
+  readonly section=signal<ProgressSection>(this.sectionFromLocation());
   readonly report=computed(()=>buildReport(this.store.data()!,new Date(),{from:this.from()||undefined,to:this.to()||undefined}));
   readonly maxActivity=computed(()=>Math.max(1,...this.report().activity.map(day=>day.count)));
   readonly activitySummary=computed(()=>this.report().activity.map(day=>`${day.date}: ${day.count} reviews`).join('; ')||'No scheduled reviews in this period.');
   readonly next=computed(()=>this.report().cosmetics.filter(item=>!item.earned).sort((a,b)=>(b.days/b.required)-(a.days/a.required)).slice(0,6));
+  selectSection(section:ProgressSection):void{if(section===this.section())return;this.section.set(section);history.pushState(null,'',`#progress/${section}`);window.scrollTo({top:0,behavior:'instant'});queueMicrotask(()=>document.getElementById(`progress-${section}`)?.focus({preventScroll:true}));}
+  @HostListener('window:popstate') syncSection():void{this.section.set(this.sectionFromLocation());}
+  private sectionFromLocation():ProgressSection{const value=location.hash.split('/')[1];return['overview','decks','insights','history'].includes(value)?value as ProgressSection:'overview';}
   percent(value:number|null):string{return value===null?'—':`${Math.round(value*100)}%`;}
   duration(ms:number):string{const seconds=Math.floor(ms/1000);return seconds>=60?`${Math.floor(seconds/60)}m ${seconds%60}s`:`${seconds}s`;}
   tier(id:Rarity):string{return RARITIES.find(t=>t.id===id)?.label??id;}

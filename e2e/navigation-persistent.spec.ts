@@ -1,0 +1,96 @@
+import {expect,openApp,test} from './helpers';
+
+test('HR-NAV-02 Progress exposes deliberate sections and global destinations on expanded layouts',async({page})=>{
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto('/#progress/overview');
+  const global=page.getByRole('navigation',{name:'Main navigation'});
+  expect((await global.getByRole('button').allInnerTexts()).map(value=>value.replace(/[^A-Za-z ]/g,'').trim())).toEqual(['Dashboard','Decks','Study','Focus','Collection','Design Studio','Progress','Exchange','Settings']);
+  await expect(global.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(global.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+  await expect(global.getByRole('button',{name:'Progress',exact:true})).toHaveAttribute('aria-current','page');
+  const sections=page.getByRole('tablist',{name:'Progress sections'});
+  await expect(sections.getByRole('tab')).toHaveCount(4);
+  await expect(page.getByRole('tabpanel',{name:'Overview'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Current deck inventory'})).toHaveCount(0);
+  await sections.getByRole('tab',{name:'Overview'}).press('ArrowRight');
+  await expect(page).toHaveURL(/#progress\/decks$/);
+  await sections.getByRole('tab',{name:'Deck progress'}).click();
+  await expect(page).toHaveURL(/#progress\/decks$/);
+  await expect(page.getByRole('tabpanel',{name:'Deck progress'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Current deck inventory'})).toBeVisible();
+  await sections.getByRole('tab',{name:'History'}).click();
+  await expect(page.getByRole('tabpanel',{name:'History'})).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('tab',{name:'Deck progress'})).toHaveAttribute('aria-selected','true');
+  await page.goForward();
+  await expect(page.getByRole('tab',{name:'History'})).toHaveAttribute('aria-selected','true');
+  await global.getByRole('button',{name:'Dashboard',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Study dashboard'})).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('tab',{name:'History'})).toHaveAttribute('aria-selected','true');
+  await global.getByRole('button',{name:'Settings',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible();
+});
+
+test('HR-NAV-02 compact navigation keeps Dashboard direct and More keyboard-contained at 200% text',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await openApp(page);
+  await page.addStyleTag({content:'html{font-size:200%;-webkit-text-size-adjust:200%;text-size-adjust:200%}'});
+  const primary=page.getByRole('navigation',{name:'Primary navigation'});
+  const labels=(await primary.getByRole('button').allInnerTexts()).map(value=>value.replace(/[^A-Za-z ]/g,'').trim());
+  expect(labels).toEqual(['Dashboard','Decks','Study','More']);
+  await expect(primary.getByRole('button',{name:/Dashboard/})).toHaveAttribute('aria-current','page');
+  const more=primary.getByRole('button',{name:/More/});
+  await more.click();
+  const dialog=page.getByRole('dialog',{name:'More destinations'}),secondary=dialog.getByRole('navigation',{name:'Secondary navigation'});
+  await expect(secondary.getByRole('button',{name:'Collection',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button',{name:'Progress',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button',{name:'Design Studio',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button').first()).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(secondary.getByRole('button').last()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(more).toBeFocused();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1)).toBe(true);
+  await more.click();
+  await secondary.getByRole('button',{name:'Progress',exact:true}).click();
+  await expect(page.getByRole('tablist',{name:'Progress sections'})).toBeVisible();
+  await expect(more).toHaveAttribute('aria-current','page');
+  await more.click();
+  await expect(secondary.getByRole('button',{name:'Progress',exact:true})).toHaveAttribute('aria-current','page');
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1)).toBe(true);
+});
+
+test('HR-NAV-02 medium navigation is a persistent rail and immersive Study retains an exit menu',async({page})=>{
+  await page.setViewportSize({width:740,height:800});
+  await openApp(page);
+  const sidebar=page.locator('.sidebar'),global=page.getByRole('navigation',{name:'Main navigation'});
+  await expect(sidebar).toBeVisible();
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(104);
+  await expect(global.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(global.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/Start studying/}).click();
+  await expect(sidebar).toBeHidden();
+  const header=page.locator('.mobile-header');
+  await expect(header).toBeVisible();
+  const more=header.getByRole('button',{name:'Open more navigation'});
+  await more.click();
+  const secondary=page.getByRole('navigation',{name:'Secondary navigation'});
+  await expect(secondary.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+});
+
+test('HR-NAV-02 compact Results retains Dashboard and Settings exits',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await openApp(page);
+  await page.getByRole('button',{name:/Start studying/}).click();
+  await page.getByRole('button',{name:'End session',exact:true}).click();
+  await expect(page.getByRole('heading',{name:/Study saved|Nice work/})).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
+  await page.getByRole('button',{name:'Open more navigation'}).click();
+  const secondary=page.getByRole('navigation',{name:'Secondary navigation'});
+  await expect(secondary.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(secondary.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+});

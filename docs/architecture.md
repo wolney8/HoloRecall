@@ -1,5 +1,13 @@
 # Architecture
 
+## Decision 022: one adaptive application navigation model
+
+HoloRecall uses one ordered destination model across viewport classes: Dashboard, Decks, Study, Focus, Collection, Design Studio, Progress, Exchange and Settings. Expanded layouts render it as the existing persistent sidebar. Medium layouts render the same model as a 104 px navigation rail. Compact layouts keep Dashboard, Decks and Study in the persistent bottom navigation bar and place the remaining destinations in a labelled More dialog. Dashboard and Settings remain reachable from focused Study and compact Results through that same dialog; these routes retain their useful immersive layout without trapping the learner.
+
+Navigation updates the existing hash routes with History API entries, so deep links and browser Back/Forward retain SPA state rather than reloading the document. Current destinations use `aria-current`; the compact dialog traps keyboard focus while open, closes with Escape or its scrim and restores focus to its opener. Existing card-authoring discard protection remains authoritative. Design Studio still has no general dirty-draft route guard; HR-DESIGN-17 owns that separate product decision.
+
+Progress is a single destination with four explicit subsections derived from its existing content: Overview, Deck progress, Insights and History. The shared accessible tab component owns selection and keyboard traversal, and each choice has a stable `#progress/<section>` deep link. Only the selected section is mounted, avoiding the former requirement to scroll through the entire report. Existing reveal motion remains within the selected content and continues to respect reduced-motion policy.
+
 ## Decision 021: portable content packages remain separate from learner backups
 
 HoloRecall portable format v11 extends the existing literal XLSX/ZIP exchange rather than introducing another container. One content package contains `deck.xlsx`, exact referenced Design Sets, bounded local media, referenced normalized Anki source snapshots, and the Mapping/Conversion Profiles required to preserve update and repair identity. A required inert manifest declares package identity, selected roots, counts and SHA-256/byte-length integrity for every payload. One selected deck becomes a self-contained root and includes descendants; inherited presentation is materialised only at that cut boundary. Stable content IDs are retained, matching IDs are previewed as unchanged or updates, and apply remains one version-checked state/media transaction. Formats v1–v10 remain readable.
