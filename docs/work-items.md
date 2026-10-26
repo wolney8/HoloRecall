@@ -1,12 +1,74 @@
 # Canonical work-item tracker
 
-Updated: 23 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
+Updated: 25 October 2026. This file is the canonical local execution tracker. The product charter sets direction, `product-brief.md` records long-range capability coverage, and `project-status.md` is the current restart handoff. GitHub Issues are not in use; if introduced later, they must mirror this tracker rather than form a second source of truth.
 
 ## Lifecycle
 
 `BACKLOG` → `PLANNED` → `IN_PROGRESS` → `VERIFY` → `DONE`.
 
 Exceptional states are `BLOCKED`, `DEFERRED`, and `CANCELLED`. Completed items remain in this file with their evidence and commits.
+
+## Owner-reported product corrections — registered 25 October 2026
+
+These items preserve the owner's reported behavior and remain unimplemented. Existing completed navigation, hierarchy and Design Suite work is prior evidence, not proof that the newly reported behavior is resolved.
+
+### HR-BUG-DECK-01 — Restore top-level and subdeck presentation semantics
+
+- **Product area / milestone / priority:** Deck domain, import and organisation / Product correction / P0
+- **Status:** BACKLOG
+- **Source:** Owner report, 25 October 2026
+- **Dependencies:** HR-ORG-03, HR-BUG-ANKI-02, stable `Deck.parentId`, branch-scoped Study and content-format hierarchy
+- **Requirement:** A parent deck is the top-level container for its descendants. Imported subdecks must not also appear as independent top-level Decks; intentionally standalone decks remain top level. The reported `Italian - Lesson 1 - Introductions - 22 September 2026` branch with five children is the primary reproduction target.
+- **Current finding:** The domain, APKG conversion and portable/XLSX contracts carry `parentId`; Dashboard and Decks currently call `topDecks()` and nested rows use `deckRows()`. Existing fixtures prove ordinary Anki `::` hierarchy. The owner report therefore identifies a regression or data-specific missing/dangling parent relationship; the exact fixture is required to determine whether import/apply, persisted model data, query/presentation, or more than one layer is responsible. Do not delete, merge, flatten or rename deck identities to hide it.
+- **Acceptance:** Reproduce the exact branch and inspect stored IDs/parents before rendering. Each child exists once under its parent and never as a top-level tile while that parent exists; standalone roots remain roots. Parent Study aggregates descendants; child Study remains scoped; direct/recursive counts, due/progress and media are accurate; deletion/edit/move preserve explicit hierarchy; no card or deck duplication occurs. APKG and portable ZIP retain hierarchy, XLSX retains its documented parent contract, repeat import is stable, and Dashboard/Decks/Progress agree.
+- **Regression risks:** Source update/repair, selected-branch import, missing-parent recovery, parent deletion/promotion, queue limits, Progress/history snapshots, Dashboard counts and content round trips.
+
+### HR-NAV-02 — Persistent accessible access to core destinations
+
+- **Product area / milestone / priority:** Navigation and accessibility / Product correction / P0
+- **Status:** BACKLOG
+- **Source:** Owner report, 25 October 2026
+- **Dependencies:** HR-NAV-01, HR-IOS-UX-11, current wide sidebar, compact bottom bar/More sheet and immersive Study/Results exceptions
+- **Requirement:** Core destinations remain discoverable and directly reachable without long-page scrolling. Preserve useful page-reveal/progressive disclosure; do not make scrolling the primary route between major areas or duplicate every destination on every screen.
+- **Current finding:** Wide layouts have a fixed, scrollable primary sidebar; compact layouts have a fixed four-item Material navigation bar plus More sheet, active-state semantics and contextual sticky header. Study and Results intentionally suppress the compact destination bar. Audit long pages and viewport transitions for actual reachability, focus restoration and any surface where shell navigation is absent or obscured before changing the established information architecture.
+- **Acceptance:** Define the core destination map for Dashboard, Decks/Collection, Study/Practice, Progress/History, Design Studio and Settings by context. Use the existing Material 3 sidebar/rail/bar/drawer patterns at desktop, tablet and phone widths; retain intentional immersive exceptions with a clear exit. Keyboard and touch users can reach every applicable destination without content scrolling; current destination uses semantic `aria-current`; opening/closing compact navigation moves and restores focus predictably; skip-link, back/context and 200% text behavior remain valid; no horizontal overflow or duplicated competing navigation appears.
+- **Regression risks:** Native Back, deep links, overlays, safe areas, landscape/short viewports, Study/Results completion, focus order and responsive breakpoints.
+
+### HR-COPY-01 — Replace learner-visible prototype and workspace copy
+
+- **Product area / milestone / priority:** Product voice and release UX / Product correction / P1
+- **Status:** BACKLOG
+- **Source:** Owner report, 25 October 2026
+- **Dependencies:** Local-first product contract; future account/sync decisions remain separate
+- **Requirement:** Learner-facing surfaces must speak as a finished local-first HoloRecall product rather than a test harness. Replace development-stage copy without making false cloud, account, sync or durability claims.
+- **Current finding:** Learner-visible matches include `Local prototype`, `LOCAL WORKSPACE`, `Loading local workspace` and the IndexedDB failure text `use this local prototype`. The adjacent `Saved in this browser. No cloud account or sync.` statement is technically meaningful but needs consumer wording. Effects Lab developer copy is on a dev-only route and internal source comments plus canonical historical/product-planning references are not learner UI; retain them. Any ambiguous runtime diagnostics require review before replacement.
+- **Acceptance:** Audit rendered strings and reachable error/empty/loading states. Replace learner-visible prototype/scaffolding language in the established HoloRecall voice while preserving accurate local-storage and no-sync disclosure; retain developer-only logs, tests, comments and historical documentation. Verify Light/Dark, compact/desktop, 200% text, screen-reader announcements and error recovery without changing storage semantics.
+- **Regression risks:** Storage-error guidance, offline/local-first disclosure, native packaged loading, tests that assert copy and developer-only Effects Lab isolation.
+
+### HR-DASH-01 — Contextual post-login Dashboard hero
+
+- **Product area / milestone / priority:** Dashboard and first-run experience / Product correction / P1
+- **Status:** BACKLOG
+- **Source:** Owner report, 25 October 2026
+- **Dependencies:** HR-BUG-DECK-01 hierarchy truth, review history, deck/card media provider and Dashboard Study scope decision
+- **Requirement:** The post-login landing state must be visually neutral or use meaningful deck-specific imagery. Prefer the most recently studied relevant deck, then a deterministically identified recently added relevant deck; never invent a random promotional hero. Preserve useful Dashboard actions and progress.
+- **Current finding:** Dashboard always renders `Italian essentials` with bundled `italian-still-life.svg`, regardless of current content. Decks have `coverImage`; cards have `createdAt`; accepted reviews retain timestamp plus immutable deck ancestry. Decks have no creation timestamp, so insertion order alone must not be presented as a precise creation date without an explicit model decision. The active session can identify a current scope.
+- **Acceptance:** Specify a deterministic priority using existing truthful signals (active session or latest accepted review/deck snapshot, then a documented safe fallback). Use the selected deck cover or a representative referenced image only when meaningful and available; otherwise render a neutral HoloRecall surface. Hero title, ready/due counts and Study action share the same deck/branch scope; missing/deleted/archived decks and empty libraries fall back safely. Meaningful images have deck-specific accessible text, decorative treatment uses empty alt text, and layouts retain actions/progress at phone, tablet, desktop and 200% text.
+- **Regression risks:** Hierarchy aggregation, stale historical deck references, archived/deleted decks, media cleanup, empty/new profiles, active-session resume and Dashboard count semantics.
+
+### HR-DESIGN-17 — Design Studio capability and workflow closure
+
+- **Product area / milestone / priority:** Design Studio, authoring and accessibility / Product correction / P1
+- **Status:** BACKLOG
+- **Source:** Owner report, 25 October 2026
+- **Dependencies:** HR-DESIGN-03–16, shared card renderer, media registry, Image Occlusion and portable format v11
+- **Requirement:** Turn the existing strong Design Suite foundation into a complete, efficient product workflow without becoming a general-purpose graphics editor or executing arbitrary imported templates.
+- **Current finding:** HoloRecall already provides reusable inherited Design Sets, deck assignment and per-card overrides, nine declarative compositions, palette and rarity variants, uploaded backgrounds/frames/textures, focal/crop/mask/surface controls, Light/Dark and representative live preview, generated art, artwork guide export and portable asset preservation. The bounded gaps are explicit undo/reset/dirty-state safety, deletion/duplication/version workflow, typography controls, clearer inherited-versus-override scope, audio/Image Occlusion preview coverage, and systematic keyboard/200%-text/contrast validation. Design Set editing currently mutates an in-memory draft until Save, but exposes no explicit reset or undo history.
+- **Benchmark boundary:** Anki is the project's functional reference for reusable front/back templates, fields, live preview, typography/media and broad styling; Quizlet supplies a deliberately simple term/definition, language, image and formatting workflow; RemNote supplies structured reusable templates plus rich flashcard/media and Image Occlusion authoring. HoloRecall should retain its safer declarative Design Set model, shared renderer and inheritance rather than copy arbitrary HTML/CSS/JavaScript, social publishing, AI generation, a document outliner or a general canvas.
+- **Acceptance:** Produce a prioritized gap matrix and then implement only an approved bounded slice. At minimum, editing has explicit unsaved/reset/undo or equivalent recovery semantics; typography and media choices remain readable and portable; inherited, rarity and card override effects are explained and previewed; preview covers Recall/Answer, representative content, audio presence, Image Occlusion and responsive Light/Dark states where applicable; keyboard, focus, labels, contrast, 200% text and touch pass; import/export preserves supported Design Set references and assets without copying presentation into every card.
+- **Regression risks:** Card readability, Design Set inheritance, rarity/finish separation, media reference cleanup, export/import compatibility, Collection/Study renderer parity, performance and capability-policy enforcement.
+
+**Priority order:** HR-BUG-DECK-01, HR-NAV-02, HR-COPY-01, HR-DASH-01, HR-DESIGN-17. Resolve the hierarchy defect first because it may affect identity, branch Study, aggregation and every hierarchy-capable exchange path. Dashboard selection depends on trustworthy roots; navigation and copy are broad release UX corrections; the Design Studio audit is important but builds on an already capable foundation.
 
 ## Completed milestone — HR-EXPORT-02
 

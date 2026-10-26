@@ -1,5 +1,12 @@
 # Current restart point
 
+## 25 October 2026 — Owner-reported product corrections registered
+
+- **Checkpoint boundary:** HR-NATIVE-03B is committed separately as `f29b1cc` with native Focus Practice isolation and natural scheduled-session Results evidence. No production behavior changed in that checkpoint.
+- **New canonical backlog:** `HR-BUG-DECK-01` records the reported parent/subdeck duplication as the first P0 investigation; `HR-NAV-02` records persistent accessible destination reachability; `HR-COPY-01` records removal of learner-visible prototype scaffolding; `HR-DASH-01` records a truthful deck-contextual or neutral Dashboard hero; and `HR-DESIGN-17` records the bounded Design Studio capability/workflow audit. All five remain `BACKLOG`; none is implemented or verified.
+- **Current findings:** hierarchy is represented by `Deck.parentId`, ordinary Anki/APKG and portable/XLSX tests preserve it, and current Dashboard/Decks root selectors are intended to suppress children, so the exact owner fixture must establish the data-specific regression before repair. Existing wide and compact shell navigation already uses Material sidebar/bottom-bar/More patterns. Dashboard still hard-codes Italian hero content. Learner UI still contains `Local prototype`/`LOCAL WORKSPACE` copy. Design Studio has a substantial declarative Design Set foundation but lacks explicit undo/reset workflow and several product/a11y closure checks.
+- **Priority:** reproduce and correct `HR-BUG-DECK-01` first. It has greater identity, Study-scope, progress-aggregation and import/export risk than the presentation-only corrections; no new product item has started.
+
 ## 25 October 2026 — HR-NATIVE-03B Practice and natural Results verified in Simulator
 
 - **Practice evidence:** a fresh packaged iPhone 17 Pro / iOS 26.5 run enters Focus → Preview new cards through production UI, records `Again` and `Easy`, and reaches partial Practice Results. Progress then reports two practice events, zero scheduled reviews and all 16 cards still New; normal scheduled Study still opens its complete ten-card queue. Practice creates no FSRS, scheduled-review or collectible-progress mutation.
