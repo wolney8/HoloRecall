@@ -75,6 +75,19 @@ These items preserve the owner's reported behavior; each item's current implemen
 - **Implemented:** The hard-coded Italian hero is removed. A featured child retains its own Study scope and parent context; artwork resolves only from that deck, its ancestor covers or its inherited Design Set before using a neutral branded treatment. Hero artwork is decorative beside the explicit deck heading and uses empty alt text. Scope-specific due/new/card counts and actions stay coherent; Resume navigates to the existing session without recreating it, and viewing/navigating the Dashboard does not write learner state.
 - **Verification evidence:** Selector tests cover active/recent/global/neutral priority, stale and archived references, absence of creation-order inference and artwork order. Focused headless Chromium/WebKit journeys cover neutral first load, hierarchy-aware recent Study, existing-session resume, missing media, direct/default Dashboard routing and no learner-state mutation. Compact WebKit at 200% text plus medium/expanded Light/Dark checks retain actions, focus and no horizontal overflow. Owner visual acceptance is recorded for this milestone; physical screen-reader/native acceptance remains unverified.
 
+### HR-THEME-01 — Persistent Light / Dark / System quick theme control
+
+- **Product area / milestone / priority:** Application shell and appearance / Product correction / P1
+- **Status:** BACKLOG
+- **Source:** Owner visual acceptance follow-up for HR-DASH-01, 27 October 2026
+- **Dependencies:** Existing persisted theme preference and adaptive shell/navigation; Appearance Settings remains a synchronized secondary configuration surface
+- **Requirement:** Provide a genuine quick Light, Dark and System control in persistent application chrome across major learner-facing routes. Switching theme must never require navigating to, scrolling through or opening Appearance Settings, and the application must not duplicate independent theme state.
+- **Adaptive placement:** Expanded layouts use an obvious top-level shell action with a concise three-option Material 3 menu or equivalent rather than three noisy permanent buttons. Medium layouts expose the same capability from the persistent rail/shell action area or its immediate menu. Compact layouts place it as a first-level action in the persistent More/menu surface, showing the current mode without nesting under Settings or requiring scrolling. Immersive Study/Results exposes it through the existing escape/menu affordance without abandoning Study or interfering with its primary controls.
+- **Control contract:** Expose exactly `Light`, `Dark` and `System`, retaining System as the existing follow-system/default behavior. A change applies immediately without reload, persists through the existing preference mechanism, updates all mounted Material 3 surfaces and stays synchronized with Appearance Settings. There is one theme preference with multiple UI entry points.
+- **Accessibility acceptance:** Provide a clear accessible name, selected/current semantics, meaningful labels or tooltips for icons, keyboard operation, visible focus, adequate touch targets, non-colour-only selection and usable layout at 200% text across compact, medium and expanded shells.
+- **Regression risks:** Initial theme paint, preference persistence, compact More focus handling, immersive Study/Results navigation, responsive shell density, Light/Dark/System synchronization and accidental duplicate controls.
+- **Next action:** Immediate product follow-up after the HR-DASH-01 checkpoint; implementation remains separate.
+
 ### HR-BUG-SETTINGS-01 — Remove Settings overflow at 200% text
 
 - **Product area / milestone / priority:** Settings accessibility / Product correction / P1

@@ -1,5 +1,11 @@
 # Current restart point
 
+## 27 October 2026 — HR-THEME-01 persistent quick theme control registered
+
+- **Owner requirement:** Light, Dark and System switching is a quick appearance action in persistent adaptive chrome across major routes. It must be top-level in expanded and medium shell actions and first-level in the compact/immersive More menu; learners must not navigate to or through Settings to switch. Appearance Settings may retain the same preference as a synchronized secondary surface, never the primary or only route.
+- **Contract:** Reuse the single existing persisted theme preference and its System default/follow-system behavior. The eventual Material 3 control applies immediately without reload, exposes current selection accessibly, updates mounted surfaces and supports keyboard, touch and 200% text without duplicating theme state.
+- **Status and boundary:** `HR-THEME-01` is `BACKLOG` and is the immediate next product task. This entry registers acceptance, accessibility and responsive-shell scope only; no theme UI, preference, navigation or Settings implementation changed in the HR-DASH-01 checkpoint.
+
 ## 27 October 2026 — HR-DASH-01 contextual Dashboard hero headless verified
 
 - **Selection contract:** one read-only domain selector features a valid resumable Study scope, otherwise the latest valid accepted-review scope, otherwise a neutral Dashboard. It rejects missing, archived, suspended, dangling and cyclic hierarchy references. Unscoped multi-deck sessions remain global. HoloRecall does not claim a recently added deck because no trustworthy persisted deck-addition timestamp exists.
