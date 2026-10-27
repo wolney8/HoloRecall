@@ -47,12 +47,14 @@ import { PlatformPresentation } from './platform/platform-presentation';
 import { conciseStudyContext } from '../domain/study-context';
 import { EffectsLabComponent } from './effects-lab/effects-lab';
 import { CardMotionViewportComponent } from './card-motion-viewport';
+import { dashboardImageCandidates, dashboardScopeCardCount, resolveDashboardFeature, type DashboardFeature, type DashboardImageCandidate } from '../domain/dashboard-feature';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings' | 'effects-lab';
 type LibrarySubview = 'decks' | 'search';
 type CollectionSubview = 'overview' | 'sets' | 'cards';
 interface NavigationContext { label: string; screen: Screen; deckId?: string }
 interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;rarity:Rarity;label:string;prestigeLevel:number }
+interface DashboardHeroView { title:string; parentLabel:string; status:string; description:string; action:'Resume study'|'Resume practice'|'Start studying'|'View decks'; deckId?:string; active:boolean }
 @Component({
   selector:'app-root', standalone:true,
   imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,CardMotionViewportComponent,DesignStudioComponent,CollectionComponent,CollectionDeskComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
@@ -103,6 +105,7 @@ export class AppComponent {
   readonly cardAudioPlaying=signal(false);
   readonly openRatingHelp=signal<number|null>(null);
   readonly mobileMoreOpen=signal(false);
+  readonly failedDashboardImage=signal('');
   readonly searchResultIndex=signal(0);
   readonly focusLaunch=signal<FocusLaunch|undefined>(undefined);
   readonly settingsDeckId=signal('');
@@ -137,6 +140,31 @@ export class AppComponent {
   readonly reviewDue=computed(()=>this.ready().filter(c=>(this.data()?.states[c.id]?.reps??0)>0).length);
   readonly newReady=computed(()=>this.ready().length-this.reviewDue());
   readonly session=computed(()=>this.data()?.session??null);
+  readonly dashboardFeature=computed<DashboardFeature>(()=>this.data()?resolveDashboardFeature(this.data()!):{kind:'neutral',reason:'no-reliable-context'});
+  readonly dashboardHero=computed<DashboardHeroView>(()=>{
+    const state=this.data(),feature=this.dashboardFeature();
+    if(!state)return{title:'Your study dashboard',parentLabel:'',status:'Getting ready',description:'Loading your study data.',action:'View decks',active:false};
+    if(feature.kind==='deck'){
+      const deckId=feature.deck.id,parentLabel=feature.parentPath.map(deck=>deck.name).join(' › ');
+      if(feature.reason==='active-session'){
+        const session=state.session!,remaining=session.queue.length;
+        return{title:feature.deck.name,parentLabel,status:'Current study session',description:`${session.completed} reviewed · ${remaining} remaining in this study scope.`,action:session.mode==='practice'?'Resume practice':'Resume study',deckId,active:true};
+      }
+      const ready=dueCards(state,this.now(),deckId),reviews=ready.filter(card=>(state.states[card.id]?.reps??0)>0).length,newCards=ready.length-reviews,total=dashboardScopeCardCount(state,deckId);
+      return{title:feature.deck.name,parentLabel,status:'Recently studied',description:`${reviews} due reviews · ${newCards} new cards ready · ${total} cards in this study scope.`,action:ready.length?'Start studying':'View decks',deckId,active:false};
+    }
+    if(feature.kind==='global-session'){
+      const session=state.session!,remaining=session.queue.length;
+      return{title:'Your current study session',parentLabel:'',status:'Study in progress',description:`${session.completed} reviewed · ${remaining} remaining across your selected decks.`,action:session.mode==='practice'?'Resume practice':'Resume study',active:true};
+    }
+    const ready=this.ready();
+    return{title:'Your study dashboard',parentLabel:'',status:ready.length?`${ready.length} ready now`:'Ready when you are',description:ready.length?`${this.reviewDue()} due reviews and ${this.newReady()} new cards are ready across your decks.`:'Choose a deck to study, or create a card to begin.',action:ready.length?'Start studying':'View decks',active:false};
+  });
+  readonly dashboardHeroImage=computed<(DashboardImageCandidate&{url:string})|null>(()=>{
+    const state=this.data();if(!state)return null;
+    for(const candidate of dashboardImageCandidates(state,this.dashboardFeature())){const url=this.store.mediaUrl(candidate.ref);if(url&&url!==this.failedDashboardImage())return{...candidate,url};}
+    return null;
+  });
   readonly selectedStudyMode=computed(()=>this.data()?.preferences.studyMode??'mastery');
   readonly current=computed(()=>this.data()?.cards.find(c=>c.id===this.session()?.queue[0])??null);
   readonly currentPreset=computed(()=>{const data=this.data(),card=this.studyPresentationCard()??this.current();return data?effectiveStudyPreset(data,card?.deckId??this.session()?.scopeDeckId,new Date()):null;});
@@ -314,6 +342,7 @@ export class AppComponent {
   deckReady(id:string):number{return this.data()?dueCards(this.data()!,this.now(),id).length:0;}
   filteredCards():CardContent[]{return this.library.page().items.map(item=>item.card);}
   deckPath(id:string):string{return this.data()?deckPath(this.data()!,id):'';}
+  dashboardStudy():void{const hero=this.dashboardHero();if(hero.action==='View decks'){if(hero.deckId){this.selectedDeck=hero.deckId;for(const deck of this.deckContext(hero.deckId))this.expandedDecks.add(deck.id);}this.go('library');if(hero.deckId)setTimeout(()=>document.getElementById(`deck-${hero.deckId}`)?.scrollIntoView({block:'start'}));return;}if(hero.active){this.go('study');return;}void this.study(hero.deckId);}
   setLibrarySearch(value:string):void{this.search=value;this.searchResultIndex.set(0);this.library.setQuery(value);}
   toggleFilter(key:'deckIds'|'tags'|'rarities'|'designSetIds'|'finishes'|'studyStates'|'media',value:string):void{this.library.toggleListFilter(key,value as never);}
   chooseSearchResult(result:SearchResult):void{this.library.selectResult(result);if(result.kind==='card'){const card=this.data()?.cards.find(item=>item.id===result.cardId);if(card)this.edit(card);}else this.go('library');}

@@ -1,5 +1,11 @@
 # Current restart point
 
+## 27 October 2026 — HR-DASH-01 contextual Dashboard hero headless verified
+
+- **Selection contract:** one read-only domain selector features a valid resumable Study scope, otherwise the latest valid accepted-review scope, otherwise a neutral Dashboard. It rejects missing, archived, suspended, dangling and cyclic hierarchy references. Unscoped multi-deck sessions remain global. HoloRecall does not claim a recently added deck because no trustworthy persisted deck-addition timestamp exists.
+- **Coherent hero:** the hard-coded `Italian essentials` title and still-life hero are removed. Title, ancestry, ready/due/card counts and action share one deck branch. Child activity stays child-scoped while valid ancestor cover or inherited Design Set artwork may supply decorative presentation; unresolved media uses a neutral branded surface. Resume preserves the current session rather than calling session creation, and Dashboard viewing does not mutate reviews, scheduling, rewards, Practice or session state.
+- **Evidence and boundary:** focused selector tests pass **8/8**. Headless Chromium, desktop WebKit and compact WebKit journeys cover empty and neutral/default routing, valid recent hierarchy, exact active-session resume, missing-media fallback, keyboard focus and compact 200% text; medium/expanded Light/Dark layouts retain actions without horizontal overflow. Production build passes. Owner visual acceptance is recorded for this milestone. HR-DASH-01 remains `VERIFY` pending physical screen-reader/native review; no readiness claim is made.
+
 ## 27 October 2026 — HR-BUG-SETTINGS-01 compact Settings reflow corrected
 
 - **Root cause and correction:** the Study grids already collapsed at compact widths, but Angular Material outlined form-field internals still contributed intrinsic width at 200% text. Compact fields now contain that intrinsic layout contribution at the public `mat-form-field` host without clipping or private Material selectors. The bounded audit also found and corrected the Appearance theme/motion group by stacking its choices at compact widths. Local data/backup and reward settings already reflowed correctly.
