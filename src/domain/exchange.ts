@@ -284,7 +284,7 @@ export async function makePortableBundle(source: ContentBundle, rasterize: Raste
   for (const ref of new Set(refs)) {
     const rendered = await rasterize(ref); let assetId = `bundled-${ref.split('/').pop()!.replace('.svg', '')}`;
     while (bundle.assets.some(asset => asset.id === assetId && asset.dataUrl !== rendered.dataUrl)) assetId += '-copy';
-    if (!bundle.assets.some(asset => asset.id === assetId)) bundle.assets.push({ id: assetId, name: ref.split('/').pop()!.replace('.svg', '.png'), mime: 'image/png', ...rendered, credit: 'HoloRecall original illustration', source: 'Bundled demonstration artwork', license: 'Original HoloRecall project artwork' });
+    if (!bundle.assets.some(asset => asset.id === assetId)) bundle.assets.push({ id: assetId, name: ref.split('/').pop()!.replace('.svg', '.png'), mime: 'image/png', ...rendered, credit: 'HoloRecall original illustration', source: 'Bundled HoloRecall artwork', license: 'Original HoloRecall project artwork' });
     replacements.set(ref, `asset:${assetId}`);
   }
   const replace = (ref: string | undefined) => ref ? replacements.get(ref) ?? ref : undefined;

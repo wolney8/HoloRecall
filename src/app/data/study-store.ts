@@ -56,7 +56,7 @@ export class LocalStudyStore {
     } catch (error) { this.report(error); throw error; }
   }
 
-  private report(error: unknown): void { this.error.set(error instanceof Error ? error.message : 'Local storage failed. No progress was discarded.'); }
+  private report(error: unknown): void { this.error.set(error instanceof Error ? error.message : "HoloRecall couldn't access your local data. No progress was discarded."); }
 
   private change(transform: (data: State) => State): Promise<void> {
     const result = this.pendingChange.then(() => this.performChange(transform));
@@ -332,7 +332,7 @@ export class LocalStudyStore {
 
   private assertRestoreTargetUntouched(data:State):void{
     const initial=createInitialState(SEED_DECKS,SEED_CARDS);
-    if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(initial.cards) || JSON.stringify(data.decks) !== JSON.stringify(initial.decks)) throw new Error('Restore is supported only in an untouched browser profile. Export this profile first; use a fresh browser/profile to restore without replacing existing study data.');
+    if (data.events.length || data.assets.length || data.designs.length || data.cards.some(card => card.revision > 1) || JSON.stringify(data.cards) !== JSON.stringify(initial.cards) || JSON.stringify(data.decks) !== JSON.stringify(initial.decks)) throw new Error('This backup can only be restored into an untouched HoloRecall profile. Export this profile first, then restore into a profile with no existing study data.');
   }
 
   async previewRestoreJson(json:string):Promise<BackupRestorePreview>{

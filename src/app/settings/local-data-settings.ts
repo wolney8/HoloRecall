@@ -10,7 +10,7 @@ import { fileIntegrity,type FileIntegrity } from '../platform/file-integrity';
 @Component({selector:'hr-local-data-settings',standalone:true,imports:[FormsModule,MatButtonModule,MatCheckboxModule],template:`
   <h2>Local media</h2><p>{{store.unusedAssets().length}} unreferenced media files. Cleanup never removes an asset used by a card or design.</p>
   <button mat-stroked-button (click)="clean()" [disabled]="!store.unusedAssets().length">Review and remove unused media</button>
-  <h2>Full progress backup</h2><p>Includes cards, designs, uploaded images, schedules, reward events and review history. Keep it private.</p>
+  <h2>Full progress backup</h2><p>Your HoloRecall data is stored on this device and is not synced to a cloud account. Backups include cards, designs, uploaded images, schedules, reward events and review history. Keep them private.</p>
   <button mat-stroked-button (click)="export()">Download JSON backup ↓</button>
   @if(exportIntegrity();as artifact){<div class="artifact-integrity" aria-label="Generated full backup integrity"><span class="eyebrow">GENERATED FILE</span><strong>{{artifact.name}} · {{artifact.byteLength}} bytes</strong><code>SHA-256 {{artifact.sha256}}</code></div>}
   <label class="upload-field">Restore full backup<input type="file" accept="application/json,.json" (change)="selectBackup($event)"></label>

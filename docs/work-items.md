@@ -52,13 +52,15 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### HR-COPY-01 — Replace learner-visible prototype and workspace copy
 
 - **Product area / milestone / priority:** Product voice and release UX / Product correction / P1
-- **Status:** BACKLOG
+- **Status:** VERIFY
 - **Source:** Owner report, 25 October 2026
 - **Dependencies:** Local-first product contract; future account/sync decisions remain separate
 - **Requirement:** Learner-facing surfaces must speak as a finished local-first HoloRecall product rather than a test harness. Replace development-stage copy without making false cloud, account, sync or durability claims.
 - **Current finding:** Learner-visible matches include `Local prototype`, `LOCAL WORKSPACE`, `Loading local workspace` and the IndexedDB failure text `use this local prototype`. The adjacent `Saved in this browser. No cloud account or sync.` statement is technically meaningful but needs consumer wording. Effects Lab developer copy is on a dev-only route and internal source comments plus canonical historical/product-planning references are not learner UI; retain them. Any ambiguous runtime diagnostics require review before replacement.
 - **Acceptance:** Audit rendered strings and reachable error/empty/loading states. Replace learner-visible prototype/scaffolding language in the established HoloRecall voice while preserving accurate local-storage and no-sync disclosure; retain developer-only logs, tests, comments and historical documentation. Verify Light/Dark, compact/desktop, 200% text, screen-reader announcements and error recovery without changing storage semantics.
 - **Regression risks:** Storage-error guidance, offline/local-first disclosure, native packaged loading, tests that assert copy and developer-only Effects Lab isolation.
+- **Implemented:** The shell now says `Stored on this device`, retains the explicit no-account/no-sync limitation and points to backup export in Settings; the backup panel carries the same disclosure at compact widths. Startup says `Loading HoloRecall`; ordinary storage and size-limit errors use product-level local-data terms; the Collection Desk accessible label no longer calls the feature a workspace; bundled export attribution says `Bundled HoloRecall artwork`. Storage behavior and limits are unchanged.
+- **Evidence boundary:** Focused source-audit and headless Chromium/WebKit route coverage prevent the known production phrases from returning and exercise the unavailable-storage error. Internal identifiers/comments, developer-only Effects Lab text, technical format/security terms and dated historical records remain unchanged. Owner visual review and physical screen-reader acceptance remain unverified.
 
 ### HR-DASH-01 — Contextual post-login Dashboard hero
 
@@ -70,6 +72,15 @@ These items preserve the owner's reported behavior; each item's current implemen
 - **Current finding:** Dashboard always renders `Italian essentials` with bundled `italian-still-life.svg`, regardless of current content. Decks have `coverImage`; cards have `createdAt`; accepted reviews retain timestamp plus immutable deck ancestry. Decks have no creation timestamp, so insertion order alone must not be presented as a precise creation date without an explicit model decision. The active session can identify a current scope.
 - **Acceptance:** Specify a deterministic priority using existing truthful signals (active session or latest accepted review/deck snapshot, then a documented safe fallback). Use the selected deck cover or a representative referenced image only when meaningful and available; otherwise render a neutral HoloRecall surface. Hero title, ready/due counts and Study action share the same deck/branch scope; missing/deleted/archived decks and empty libraries fall back safely. Meaningful images have deck-specific accessible text, decorative treatment uses empty alt text, and layouts retain actions/progress at phone, tablet, desktop and 200% text.
 - **Regression risks:** Hierarchy aggregation, stale historical deck references, archived/deleted decks, media cleanup, empty/new profiles, active-session resume and Dashboard count semantics.
+
+### HR-BUG-SETTINGS-01 — Remove Settings overflow at 200% text
+
+- **Product area / milestone / priority:** Settings accessibility / Product correction / P1
+- **Status:** BACKLOG
+- **Source:** Headless HR-COPY-01 compact verification, 27 October 2026
+- **Requirement:** At a 390 px viewport with 200% text, Settings must not create horizontal page overflow. The observed 427 px document width originates in existing Study Settings form controls; the HR-COPY-01 local-data disclosure itself remains within its 316 px container.
+- **Acceptance:** Study Settings fields, deck assignments and action rows reflow without horizontal document overflow at compact widths and 200% text while retaining readable labels, touch targets, keyboard order and Material form semantics. Verify headless Chromium/WebKit without changing scheduling behavior.
+- **Regression risks:** Material outlined-label sizing, deck assignment selects, daily workload number fields, ordinary phone sizing and desktop form density.
 
 ### HR-DESIGN-17 — Design Studio capability and workflow closure
 

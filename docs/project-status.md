@@ -1,5 +1,12 @@
 # Current restart point
 
+## 27 October 2026 — HR-COPY-01 learner-facing prototype copy removed
+
+- **Product copy:** the persistent shell now describes data as `Stored on this device`, states that no cloud account or sync exists and directs learners to backup export in Settings; the backup panel retains that disclosure on compact layouts. Startup uses `Loading HoloRecall`; learner-facing local-data/storage failures and the existing backup/media size limits no longer describe the product as a prototype. The Collection Desk accessible name no longer calls the feature a workspace, and bundled export attribution uses finished product wording.
+- **Boundary:** this is copy-only. Storage architecture, limits, navigation, Dashboard hero behavior and Design Studio capability are unchanged. Developer/test identifiers, developer-only Effects Lab language, security terms and historical documentation retain technically meaningful uses of `prototype`, `workspace`, `test` and related vocabulary.
+- **Evidence:** focused copy-audit unit coverage and headless Chromium/WebKit route/error checks verify the replacement text, truthful local/no-sync disclosure and removal of the known production-facing phrases. Angular production compilation/build passes. Repository-wide standalone `tsc --noEmit` remains red on existing test/script typing defects outside this change. HR-COPY-01 remains `VERIFY` pending owner visual review and physical screen-reader acceptance.
+- **Separate defect:** compact WebKit at 200% text exposes pre-existing Study Settings form overflow (427 px document width in a 390 px viewport). The new local-data disclosure fits its 316 px container. `HR-BUG-SETTINGS-01` records the layout correction; no layout code changed in this copy milestone.
+
 ## 26 October 2026 — HR-TABLE-01 scalable record paging implemented and headless verified
 
 - **Policy:** unbounded record views use one controlled Material paginator; similar dense tables default to 25 rows with 10/25/50 choices, Collection grids use 12/24/48 according to density, and dataset shrink/filtering clamps or resets the current page. Filtering and sorting occur before slicing. Paging remains local presentation state and does not change Study, Practice, import/export or bulk-operation scope.

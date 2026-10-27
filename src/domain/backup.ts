@@ -187,7 +187,7 @@ export function exportBackup(data: State, now: Date): string {
 }
 
 export function parseBackup(json: string, bundledCards: CardContent[] = []): State {
-  if (json.length > 100_000_000) fail('backup exceeds the 100 MB prototype limit.');
+  if (json.length > 100_000_000) fail('backup exceeds the 100 MB backup limit.');
   let parsed: unknown;
   try { parsed = JSON.parse(json); } catch { return fail('the file is not valid JSON.'); }
   const backup = object(parsed);
@@ -287,7 +287,7 @@ function validateExtensions(data: Record<string, unknown>): void {
   validateRewardConfig(data['rewardConfig']);
   const assets = data['assets'] as LocalAsset[], designs = data['designs'] as DesignSet[];
   if (new Set(assets.map(item => item.id)).size !== assets.length || new Set(designs.map(item => item.id)).size !== designs.length) fail('duplicate asset or design IDs.');
-  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > 80_000_000) fail('uploaded media exceed the 60 MB local prototype limit.');
+  if (assets.reduce((sum, asset) => sum + asset.dataUrl.length, 0) > 80_000_000) fail('uploaded media exceed the 60 MB local media limit.');
   if (data['session'] !== null) {
     const session = object(data['session']);
     if (!id(session['id']) || !Array.isArray(session['queue']) || !session['queue'].every(id) || new Set(session['queue']).size !== session['queue'].length || !integer(session['total']) || !integer(session['completed']) || session['completed'] > session['total'] || session['queue'].length + session['completed'] !== session['total'] || typeof session['revealed'] !== 'boolean' || !integer(session['activeMs']) || session['activeMs'] > 120000) fail('invalid persisted study session.');
