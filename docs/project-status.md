@@ -1,5 +1,11 @@
 # Current restart point
 
+## 27 October 2026 — HR-BUG-SETTINGS-01 compact Settings reflow corrected
+
+- **Root cause and correction:** the Study grids already collapsed at compact widths, but Angular Material outlined form-field internals still contributed intrinsic width at 200% text. Compact fields now contain that intrinsic layout contribution at the public `mat-form-field` host without clipping or private Material selectors. The bounded audit also found and corrected the Appearance theme/motion group by stacking its choices at compact widths. Local data/backup and reward settings already reflowed correctly.
+- **Evidence:** focused headless Chromium/WebKit passes **4/4** at 390 px and 320 px with 200% text, expanded deck assignments, Auto Advance and Advanced controls. Measured root scroll/client widths are **375/390** and **305/320** in Chromium, and **390/390** and **320/320** in WebKit; individual visible controls remain within the viewport. Keyboard select, dependent Auto Advance timing fields, save/reload semantics, compact More focus/current state and local-data disclosure pass. Focused study/store tests pass **53/53**, the existing compact Settings regression passes, application type-check and production build pass.
+- **Boundary:** no Settings business, scheduling, navigation or storage behavior changed. This evidence does not establish broad WCAG conformance. Owner visual acceptance and physical VoiceOver, touch and native text scaling remain unverified; HR-BUG-SETTINGS-01 is `VERIFY`.
+
 ## 27 October 2026 — HR-COPY-01 learner-facing prototype copy removed
 
 - **Product copy:** the persistent shell now describes data as `Stored on this device`, states that no cloud account or sync exists and directs learners to backup export in Settings; the backup panel retains that disclosure on compact layouts. Startup uses `Loading HoloRecall`; learner-facing local-data/storage failures and the existing backup/media size limits no longer describe the product as a prototype. The Collection Desk accessible name no longer calls the feature a workspace, and bundled export attribution uses finished product wording.

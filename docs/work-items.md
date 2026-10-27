@@ -76,11 +76,13 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### HR-BUG-SETTINGS-01 — Remove Settings overflow at 200% text
 
 - **Product area / milestone / priority:** Settings accessibility / Product correction / P1
-- **Status:** BACKLOG
+- **Status:** VERIFY
 - **Source:** Headless HR-COPY-01 compact verification, 27 October 2026
 - **Requirement:** At a 390 px viewport with 200% text, Settings must not create horizontal page overflow. The observed 427 px document width originates in existing Study Settings form controls; the HR-COPY-01 local-data disclosure itself remains within its 316 px container.
 - **Acceptance:** Study Settings fields, deck assignments and action rows reflow without horizontal document overflow at compact widths and 200% text while retaining readable labels, touch targets, keyboard order and Material form semantics. Verify headless Chromium/WebKit without changing scheduling behavior.
 - **Regression risks:** Material outlined-label sizing, deck assignment selects, daily workload number fields, ordinary phone sizing and desktop form density.
+- **Implemented:** Compact Study form fields contain Material's intrinsic outlined-field width at the public component host after the existing grids collapse; compact Appearance theme/motion choices stack instead of forcing a three-option row. No field markup, validation, persistence or scheduling behavior changed.
+- **Verification evidence:** Focused headless Chromium/WebKit passes **4/4** at 390 px and 320 px with 200% text, expanded deck assignments, Auto Advance and Advanced settings. Root scroll/client widths are **375/390** and **305/320** in Chromium, and **390/390** and **320/320** in WebKit. Individual controls remain inside the viewport; keyboard select, dependent timing fields, save/reload, compact More navigation and truthful local-data disclosure pass. Focused study/store tests pass **53/53**, the existing compact Settings regression passes, application type-check and production build pass. Owner visual acceptance and physical VoiceOver/touch/native text scaling remain unverified.
 
 ### HR-DESIGN-17 — Design Studio capability and workflow closure
 
