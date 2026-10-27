@@ -13,6 +13,9 @@ import { buildLibraryIndex, deckPath } from '../../domain/library';
 import { effectiveStudyPreset } from '../../domain/study-settings';
 import { dayKey } from '../../domain/time';
 import type { FocusCriteria, FocusOrder, FocusPreset, FocusSessionRequest, FocusStudyState, StudyMode } from '../../domain/models';
+import type { PageEvent } from '@angular/material/paginator';
+import { DataPaginationComponent } from '../navigation/data-pagination';
+import { clampPageIndex,pageItems } from '../navigation/data-page';
 
 export interface FocusLaunch {
   deckId?: string;
@@ -24,7 +27,7 @@ export interface FocusLaunch {
 @Component({
   selector: 'hr-focus',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatSelectModule, PageRevealDirective],
+  imports: [FormsModule, MatButtonModule, MatButtonToggleModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatSelectModule, PageRevealDirective, DataPaginationComponent],
   templateUrl: './focus.html',
   styleUrl: './focus.css',
 })
@@ -82,6 +85,9 @@ export class FocusComponent {
   readonly decks = computed(() => this.store.decks().filter(deck => !deck.archived));
   readonly tags = computed(() => [...new Set(this.store.cards().flatMap(card => card.tags))].sort((a, b) => a.localeCompare(b)));
   readonly presets = computed(() => this.store.data()?.focusPresets ?? []);
+  readonly presetPageIndex=signal(0);readonly presetPageSize=signal(10);
+  readonly validPresetPage=computed(()=>clampPageIndex(this.presetPageIndex(),this.presetPageSize(),this.presets().length));
+  readonly visiblePresets=computed(()=>pageItems(this.presets(),this.validPresetPage(),this.presetPageSize()));
   readonly libraryIndex = computed(() => { const state=this.store.data();return state?buildLibraryIndex(state,new Date()):null; });
   readonly request = computed<FocusSessionRequest>(() => ({
     mode: this.mode(),
@@ -102,6 +108,7 @@ export class FocusComponent {
     const preset = effectiveStudyPreset(state, deckId, new Date());
     return { newCards: preset.newCardsPerDay, reviews: preset.maxReviewsPerDay };
   });
+  setPresetPage(event:PageEvent):void{this.presetPageIndex.set(event.pageIndex);this.presetPageSize.set(event.pageSize);}
 
   constructor() {
     effect(() => {

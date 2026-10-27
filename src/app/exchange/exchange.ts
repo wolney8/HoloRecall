@@ -23,13 +23,16 @@ import { cardCapabilities } from '../../domain/card-capabilities';
 import { automaticMappingProfile, previewAnkiExport, SEMANTIC_ROLES, writeAnkiTextExport, type AnkiExportPreview, type AnkiExportProfile, type MappingProfileInput } from '../../domain/anki-interop';
 import { SubviewNavigationComponent, type SubviewNavigationItem } from '../navigation/subview-navigation';
 import { fileIntegrity, type FileIntegrity } from '../platform/file-integrity';
+import type { PageEvent } from '@angular/material/paginator';
+import { DataPaginationComponent } from '../navigation/data-pagination';
+import { pageItems } from '../navigation/data-page';
 
 export interface ExchangeCompletionAction { action:'review'|'deck'|'search'|'study';deckId:string;deckIds:string[];label:string }
 type ExchangeView='import'|'export'|'templates';
 
 @Component({
   selector: 'hr-exchange', standalone: true,
-  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatCheckboxModule, SubviewNavigationComponent, PageRevealDirective],
+  imports: [FormsModule, MatButtonModule, MatProgressSpinnerModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatCheckboxModule, SubviewNavigationComponent, PageRevealDirective, DataPaginationComponent],
   templateUrl: './exchange.html',
   styleUrl: './exchange.css',
   styles: [`
@@ -72,6 +75,8 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   readonly ankiAnalysis = signal<AnkiAnalysis | null>(null); readonly ankiPreview = signal<AnkiImportPreview | null>(null);
   preserveAnkiEdits = true; acceptAnkiIssues = false;ankiStudyPresetId=BALANCED_PRESET_ID; private ankiAbort?: AbortController; private ankiBytes?: Uint8Array; private ankiPackageName = '';
   readonly conflictsResolved=signal(true);
+  readonly changedPage=signal(0);readonly changedPageSize=signal(25);readonly conflictPage=signal(0);readonly conflictPageSize=signal(25);readonly deckConflictPage=signal(0);readonly deckConflictPageSize=signal(25);
+  readonly mediaPage=signal(0);readonly mediaPageSize=signal(25);readonly hierarchyPage=signal(0);readonly hierarchyPageSize=signal(25);readonly removedPage=signal(0);readonly removedPageSize=signal(25);
   readonly showAdvancedMapping=signal(false);
   readonly usingStoredSource=signal(false);
   readonly ankiRunning = signal(false); readonly mappingDrafts = new Map<string, AnkiMappingPreset>();
@@ -86,6 +91,15 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   exportDeckId='';
   readonly showAdvancedDetails=signal(false);readonly showAdvancedIssueIds=signal(false);
   private readonly exchangePopState=()=>this.syncExchangeView();
+
+  paged<T>(items:readonly T[],pageIndex:number,pageSize:number):readonly T[]{return pageItems(items,pageIndex,pageSize);}
+  setChangedPage(event:PageEvent):void{this.changedPage.set(event.pageIndex);this.changedPageSize.set(event.pageSize);}
+  setConflictPage(event:PageEvent):void{this.conflictPage.set(event.pageIndex);this.conflictPageSize.set(event.pageSize);}
+  setDeckConflictPage(event:PageEvent):void{this.deckConflictPage.set(event.pageIndex);this.deckConflictPageSize.set(event.pageSize);}
+  setMediaPage(event:PageEvent):void{this.mediaPage.set(event.pageIndex);this.mediaPageSize.set(event.pageSize);}
+  setHierarchyPage(event:PageEvent):void{this.hierarchyPage.set(event.pageIndex);this.hierarchyPageSize.set(event.pageSize);}
+  setRemovedPage(event:PageEvent):void{this.removedPage.set(event.pageIndex);this.removedPageSize.set(event.pageSize);}
+  private resetUpdatePages():void{this.changedPage.set(0);this.conflictPage.set(0);this.deckConflictPage.set(0);this.mediaPage.set(0);this.hierarchyPage.set(0);this.removedPage.set(0);}
 
   ngOnInit():void{if(!this.updateDeckId){this.syncExchangeView();window.addEventListener('popstate',this.exchangePopState);}if(this.sourceMode==='mapping')this.showAdvancedDetails.set(true);if(this.initialAnkiFile)void this.analyseAnkiFile(this.initialAnkiFile);else if(this.updateDeckId&&this.sourceMode!=='update'&&this.sourceMode!=='manage')void this.loadStoredSource();}
   ngOnChanges(changes:SimpleChanges):void{if(!changes['initialAnkiFile']?.firstChange&&this.initialAnkiFile)void this.analyseAnkiFile(this.initialAnkiFile);}
@@ -165,7 +179,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   }
   private storedSource(){const data=this.store.data();if(!data)return undefined;const branch=new Set([this.updateDeckId]);let changed=true;while(changed){changed=false;for(const deck of data.decks)if(deck.parentId&&branch.has(deck.parentId)&&!branch.has(deck.id)){branch.add(deck.id);changed=true;}}const id=data.cards.find(card=>branch.has(card.deckId)&&card.ankiSource?.sourceSnapshotId)?.ankiSource?.sourceSnapshotId;return data.ankiSources.find(source=>source.id===id);}
   private async loadStoredSource():Promise<void>{const source=this.storedSource();if(!source)return;this.failure.set('');this.message.set('');this.busy.set('Rendering the retained Anki source…');try{const {analyseAnkiSourceSnapshot}=await import('../../domain/anki'),analysis=analyseAnkiSourceSnapshot(source,this.eligibleStoredMappings(),this.store.data()?.ankiConversionProfiles??[]);this.usingStoredSource.set(true);await this.acceptAnalysis(analysis);}catch(error){this.failure.set(this.errorMessage(error));}finally{this.busy.set('');}}
-  async refreshAnkiPreview(): Promise<void> { const analysis = this.ankiAnalysis(), state = this.store.data(); if (!analysis || !state) return;const {previewAnkiImport}=await import('../../domain/anki');this.ankiPreview.set(previewAnkiImport(analysis,state,this.preserveAnkiEdits,this.updateDeckId||undefined,this.sourceMode==='update'?'update':this.sourceMode==='repair'||this.sourceMode==='mapping'?'repair':'import')); }
+  async refreshAnkiPreview(): Promise<void> { const analysis = this.ankiAnalysis(), state = this.store.data(); if (!analysis || !state) return;const {previewAnkiImport}=await import('../../domain/anki');this.ankiPreview.set(previewAnkiImport(analysis,state,this.preserveAnkiEdits,this.updateDeckId||undefined,this.sourceMode==='update'?'update':this.sourceMode==='repair'||this.sourceMode==='mapping'?'repair':'import'));this.resetUpdatePages(); }
   async setConflictPolicy(preserve:boolean):Promise<void>{this.busy.set('Updating preview…');this.conflictsResolved.set(false);this.preserveAnkiEdits=preserve;try{await this.refreshAnkiPreview();this.conflictsResolved.set(true);}finally{this.busy.set('');}}
   comparisonCards(){const preview=this.ankiPreview();if(!preview)return[];return preview.transaction.cards.filter(row=>preview.update.changedCards.includes(row.cardId)).slice(0,3).map(row=>({id:row.cardId,before:row.current,after:row.conflictFields.length&&!this.conflictsResolved()?row.proposed:row.selected,proposed:row.conflictFields.length&&!this.conflictsResolved()}));}
   detailSummary(card?:CardContent):string{return card?.details?.map(detail=>`${detail.label}\n${detail.content}`).join('\n\n')??'';}
@@ -228,7 +242,7 @@ export class ExchangeComponent implements OnChanges, OnDestroy, OnInit {
   }
   private profileKey(profile:Pick<MappingProfileInput,'sourceSignature'|'templateId'>):string{return `${profile.sourceSignature}::${profile.templateId}`;}
   mappingProfiles(analysis:AnkiAnalysis):MappingProfileInput[]{return analysis.modelSchemas.flatMap(model=>model.templateSchemas.map(template=>({sourceSignature:model.signature,modelName:model.name,templateId:template.id,templateName:template.name,fields:model.fields,questionFields:template.questionFields,answerFields:template.answerFields,fieldSamples:model.fieldSamples})));}
-  private async acceptAnalysis(analysis:AnkiAnalysis):Promise<void>{this.ankiAnalysis.set(analysis);this.mappingDrafts.clear();for(const profile of this.mappingProfiles(analysis)){const effective=analysis.effectiveMappings.find(mapping=>mapping.sourceSignature===profile.sourceSignature&&(mapping.templateId===profile.templateId||!mapping.templateId));this.mappingDrafts.set(this.profileKey(profile),structuredClone(effective??automaticMappingProfile(profile)));}this.activeMappings=analysis.effectiveMappings.map(mapping=>structuredClone(mapping));const { previewAnkiImport } = await import('../../domain/anki'); const preview=previewAnkiImport(analysis, this.store.data()!, this.preserveAnkiEdits,this.updateDeckId||undefined,this.sourceMode==='update'?'update':this.sourceMode==='repair'||this.sourceMode==='mapping'?'repair':'import');this.ankiPreview.set(preview);this.conflictsResolved.set(!(preview.update.conflicts.length||preview.update.deckConflicts.length));this.acceptAnkiIssues=false;}
+  private async acceptAnalysis(analysis:AnkiAnalysis):Promise<void>{this.ankiAnalysis.set(analysis);this.mappingDrafts.clear();for(const profile of this.mappingProfiles(analysis)){const effective=analysis.effectiveMappings.find(mapping=>mapping.sourceSignature===profile.sourceSignature&&(mapping.templateId===profile.templateId||!mapping.templateId));this.mappingDrafts.set(this.profileKey(profile),structuredClone(effective??automaticMappingProfile(profile)));}this.activeMappings=analysis.effectiveMappings.map(mapping=>structuredClone(mapping));const { previewAnkiImport } = await import('../../domain/anki'); const preview=previewAnkiImport(analysis, this.store.data()!, this.preserveAnkiEdits,this.updateDeckId||undefined,this.sourceMode==='update'?'update':this.sourceMode==='repair'||this.sourceMode==='mapping'?'repair':'import');this.ankiPreview.set(preview);this.resetUpdatePages();this.conflictsResolved.set(!(preview.update.conflicts.length||preview.update.deckConflicts.length));this.acceptAnkiIssues=false;}
   mappingDraft(profile: MappingProfileInput): AnkiMappingPreset { return this.mappingDrafts.get(this.profileKey(profile)) ?? automaticMappingProfile(profile); }
   savedMapping(profile: MappingProfileInput): AnkiMappingPreset | undefined { return this.store.data()?.ankiMappings.find(item => item.sourceSignature === profile.sourceSignature&&(item.templateId===profile.templateId||!item.templateId)); }
   mappingStatus(profile:MappingProfileInput):string{const saved=this.savedMapping(profile);return!saved?'Automatic suggestion':saved.origin==='user-confirmed'?'User-confirmed mapping':saved.origin==='legacy-unclassified'||!saved.origin?'Legacy mapping · review required':(saved.policyVersion??0)<ANKI_MAPPING_POLICY_VERSION?'Previous automatic mapping · review required':'Current automatic mapping';}

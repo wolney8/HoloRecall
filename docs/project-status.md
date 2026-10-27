@@ -1,5 +1,11 @@
 # Current restart point
 
+## 26 October 2026 — HR-TABLE-01 scalable record paging implemented and headless verified
+
+- **Policy:** unbounded record views use one controlled Material paginator; similar dense tables default to 25 rows with 10/25/50 choices, Collection grids use 12/24/48 according to density, and dataset shrink/filtering clamps or resets the current page. Filtering and sorting occur before slicing. Paging remains local presentation state and does not change Study, Practice, import/export or bulk-operation scope.
+- **Paginated surfaces:** Review History; Progress activity, current inventory and historical deck reports; Collection sets, scoped collectible sequence and owned cards; Focus preset management; Anki update structured-upgrade and conflict detail lists. Deck/card library search retains its existing Worker-backed 60-item incremental rendering, Settings assignments reveal bounded groups of 30, and Collection Desk retains its 12-card fan pages.
+- **Deliberately simple surfaces:** bounded Dashboard/Results/reward summaries, fixed confidence and recent-item groups, sampled import/authoring previews, authored answer-detail tables, and form/navigation collections remain unpaginated. Headless Chromium/WebKit pass a deterministic 53-record responsive journey, shared paging unit tests pass, and production type-check/build pass. Owner visual acceptance covers History and Collection, with Progress accepted provisionally. HR-TABLE-01 remains `VERIFY` pending physical VoiceOver/touch acceptance and any later visual review of the specialist Focus/Exchange paging surfaces.
+
 ## 26 October 2026 — HR-NAV-02 adaptive navigation implemented and headless verified
 
 - **Shared shell:** the existing Material navigation now uses one destination model across a persistent expanded sidebar, a 104 px medium rail and a compact Dashboard/Decks/Study/More bar. Focused Study and compact Results retain their immersive presentation while exposing Dashboard, Settings and the remaining destinations through the same keyboard-contained More dialog.

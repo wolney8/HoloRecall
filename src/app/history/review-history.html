@@ -9,4 +9,4 @@
   </li>
  }@empty{<li class="empty-inline">No review history yet.</li>}
 </ol>
-@if(rows().length<reviews().length+administrative().length){<button mat-stroked-button (click)="limit.update(value=>value+50)">Load 50 more</button>}</section>
+@if(allRows().length){<hr-data-pagination [length]="allRows().length" [pageIndex]="validPageIndex()" [pageSize]="pageSize()" [pageSizeOptions]="[10,25,50]" ariaLabel="Review history pages" (page)="setPage($event)"/>}</section>
