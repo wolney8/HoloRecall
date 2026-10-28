@@ -11,7 +11,10 @@
   <header class="mobile-header">
     @if(mobileHasBack()){<button mat-icon-button type="button" class="mobile-back" (click)="mobileBack()" [attr.aria-label]="'Back from '+mobileTitle()"><span aria-hidden="true">‹</span></button>}
     <span class="mobile-context-title">@if(mobileParentTitle()){<small>{{mobileParentTitle()}}</small>}<strong>{{mobileTitle()}}</strong></span>
-    <button mat-icon-button type="button" class="mobile-header-more" (click)="toggleMobileMore($event)" aria-label="Open more navigation" aria-haspopup="dialog" aria-controls="mobile-more-navigation" [attr.aria-expanded]="mobileMoreOpen()"><span aria-hidden="true">•••</span></button>
+    <span class="mobile-header-actions">
+      <button mat-icon-button type="button" class="theme-quick-trigger" [matMenuTriggerFor]="themeMenu" [attr.aria-label]="'Choose theme. Current: '+themeLabel()" aria-haspopup="menu" matTooltip="Choose theme"><span class="theme-quick-icon" aria-hidden="true">{{themeIcon()}}</span></button>
+      <button mat-icon-button type="button" class="mobile-header-more" (click)="toggleMobileMore($event)" aria-label="Open more navigation" aria-haspopup="dialog" aria-controls="mobile-more-navigation" [attr.aria-expanded]="mobileMoreOpen()"><span aria-hidden="true">•••</span></button>
+    </span>
   </header>
   @if(mobileMoreOpen()){
     <div class="mobile-more-scrim" (click)="closeMobileMore()" aria-hidden="true"></div>
@@ -23,7 +26,7 @@
     </section>
   }
   <div class="workspace">
-    <header class="topbar"><span class="workspace-label">HOLORECALL</span></header>
+    <header class="topbar"><span class="workspace-label">HOLORECALL</span><button mat-icon-button type="button" class="theme-quick-trigger" [matMenuTriggerFor]="themeMenu" [attr.aria-label]="'Choose theme. Current: '+themeLabel()" aria-haspopup="menu" matTooltip="Choose theme"><span class="theme-quick-icon" aria-hidden="true">{{themeIcon()}}</span></button></header>
     <main id="main-content" tabindex="-1">
       @if(store.error()){<div class="error-banner" role="alert"><span>{{store.error()}}</span><button mat-button (click)="store.init()">Reload local data</button></div>}
       @if(!data()){<section class="empty-state"><h1>Loading HoloRecall</h1><p>Opening your cards and study history.</p></section>}
@@ -153,5 +156,8 @@
       @if(message() && message()!==store.error() && (screen()!=='study' || messageError())){<div class="toast" [class.error]="messageError()" [attr.role]="messageError()?'alert':'status'"><span>{{message()}}</span><button mat-button aria-label="Dismiss notification" (click)="message.set('');messageError.set(false)">Dismiss</button></div>}
     </main>
   </div>
+  <mat-menu #themeMenu="matMenu" aria-label="Theme">
+    @for(option of themeOptions;track option.id){<button mat-menu-item type="button" role="menuitemradio" [attr.aria-checked]="theme.choice()===option.id" (click)="selectTheme(option.id)"><span class="theme-menu-icon" aria-hidden="true">{{option.icon}}</span><span>{{option.label}}</span><span class="theme-menu-check" aria-hidden="true">{{theme.choice()===option.id?'✓':''}}</span></button>}
+  </mat-menu>
   <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" [attr.aria-haspopup]="item.id==='more'?'dialog':null" [attr.aria-controls]="item.id==='more'?'mobile-more-navigation':null" [attr.aria-expanded]="item.id==='more'?mobileMoreOpen():null" (click)="item.id==='more'?toggleMobileMore($event):go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
 </div>

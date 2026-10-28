@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { firstValueFrom } from 'rxjs';
 import { LocalStudyStore } from './data/study-store';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
@@ -48,6 +49,7 @@ import { conciseStudyContext } from '../domain/study-context';
 import { EffectsLabComponent } from './effects-lab/effects-lab';
 import { CardMotionViewportComponent } from './card-motion-viewport';
 import { dashboardImageCandidates, dashboardScopeCardCount, resolveDashboardFeature, type DashboardFeature, type DashboardImageCandidate } from '../domain/dashboard-feature';
+import { ThemeService, type ThemeChoice } from './theme.service';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings' | 'effects-lab';
 type LibrarySubview = 'decks' | 'search';
@@ -57,7 +59,7 @@ interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;ra
 interface DashboardHeroView { title:string; parentLabel:string; status:string; description:string; action:'Resume study'|'Resume practice'|'Start studying'|'View decks'; deckId?:string; active:boolean }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,FlashcardComponent,CardMotionViewportComponent,DesignStudioComponent,CollectionComponent,CollectionDeskComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,MatMenuModule,FlashcardComponent,CardMotionViewportComponent,DesignStudioComponent,CollectionComponent,CollectionDeskComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
   templateUrl:'./app.html',
 })
 export class AppComponent {
@@ -71,6 +73,7 @@ export class AppComponent {
   private readonly destroyRef=inject(DestroyRef);
   private readonly cardInspection=inject(CardInspectionService);
   readonly platform=inject(PlatformPresentation);
+  readonly theme=inject(ThemeService);
   readonly data=this.store.data;
   private readonly motionMedia=window.matchMedia('(prefers-reduced-motion: reduce)');
   readonly systemMotionReduced=signal(this.motionMedia.matches);
@@ -115,6 +118,13 @@ export class AppComponent {
   readonly collectionLabel=signal('');
   readonly ratingOptions=RATING_OPTIONS;
   readonly tiers=RARITIES;
+  readonly themeOptions:readonly {id:ThemeChoice;label:string;icon:string}[]=[
+    {id:'system',label:'System',icon:'◐'},
+    {id:'light',label:'Light',icon:'☀'},
+    {id:'dark',label:'Dark',icon:'☾'},
+  ];
+  readonly themeIcon=computed(()=>this.themeOptions.find(option=>option.id===this.theme.choice())?.icon??'◐');
+  readonly themeLabel=computed(()=>this.themeOptions.find(option=>option.id===this.theme.choice())?.label??'System');
   readonly Math=Math;
   readonly navigation:{id:Screen;label:string;icon:string}[]=[
     {id:'dashboard',label:'Dashboard',icon:'▦'},{id:'library',label:'Decks',icon:'▤'},
@@ -376,6 +386,7 @@ export class AppComponent {
   unlock(card:CardContent){return rewardProgress(this.data()!,card.id);}
   prestige(card:CardContent){return prestigeProgress(this.data()!,card.id);}
   async chooseStudyMode(mode:StudyExperienceMode):Promise<void>{try{await this.store.updatePreferences({studyMode:mode});}catch(error){this.fail(error);}}
+  async selectTheme(choice:ThemeChoice):Promise<void>{try{await this.theme.select(choice);}catch(error){this.fail(error);}}
   studyModeLabel(mode=this.session()?.experienceMode??this.selectedStudyMode()):string{return mode==='anki'?'Anki mode':mode==='free-revision'?'Free revision':'Mastery mode';}
   studyModeHelp(mode=this.selectedStudyMode()):string{return mode==='anki'?'Scheduled study with learning and relearning repeats.':mode==='free-revision'?'Practice without FSRS, due-date or reward changes.':'Scheduled study with HoloRecall confidence, mastery progress and collectible rewards.';}
   async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId,this.selectedStudyMode());this.prepareAutoAdvanceSession();this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}

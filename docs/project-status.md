@@ -1,5 +1,11 @@
 # Current restart point
 
+## 28 October 2026 — HR-THEME-01 persistent quick theme control headless verified
+
+- **Shell contract:** one visible top-right icon action opens exactly System, Light and Dark with radio semantics and a visible check. Expanded and medium shells keep it in the sticky top app bar; compact, immersive Study and compact Results keep it directly in the top-right header beside More. Appearance Settings uses the same `ThemeService` preference and remains synchronized rather than owning separate state.
+- **Persistence and startup:** selecting a mode updates mounted Material surfaces and IndexedDB/local startup state without reload; reload retains the choice. System remains stored as `system`, follows live `prefers-color-scheme`, and is not collapsed to a resolved Light or Dark value. The existing pre-Angular startup application remains intact.
+- **Evidence and boundary:** focused store tests pass **29/29**; focused headless Chromium/WebKit theme journeys pass **10/10** and navigation regressions pass **8/8**. Coverage includes all major routes plus Study/Results, keyboard/Escape/outside dismissal, sticky scrolling, medium placement, 320/390 px at 200% text, no overflow, Settings synchronization and representative Light/Dark token contrast. Typecheck and production build pass. The owner accepts current placement and switching for this milestone. The icon-plus-menu implementation does **not** claim visual or interaction parity with the Material website's `mio-toggle-switch` reference; physical/native VoiceOver and touch acceptance are not claimed.
+
 ## 27 October 2026 — HR-THEME-01 persistent quick theme control registered
 
 - **Owner requirement:** Light, Dark and System switching is a quick appearance action in persistent adaptive chrome across major routes. It must be top-level in expanded and medium shell actions and first-level in the compact/immersive More menu; learners must not navigate to or through Settings to switch. Appearance Settings may retain the same preference as a synchronized secondary surface, never the primary or only route.

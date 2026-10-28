@@ -218,3 +218,19 @@ hr-collection-desk .user-pile img{-webkit-user-drag:none}
 }
 
 hr-progress .progress-section{outline:none}
+
+/* One persisted appearance preference, exposed from persistent adaptive chrome. */
+.topbar{position:sticky;top:0;z-index:18;background:color-mix(in srgb,var(--mat-sys-surface) 96%,transparent);backdrop-filter:saturate(1.2) blur(12px)}
+.theme-quick-trigger{flex:0 0 48px;color:var(--mat-sys-on-surface)}
+.theme-quick-icon{display:grid;place-items:center;width:24px;height:24px;font-size:21px;line-height:1}
+.theme-menu-icon{display:inline-grid;place-items:center;width:24px;margin-right:12px;font-size:19px}
+.theme-menu-check{display:inline-block;width:24px;margin-left:auto;text-align:right;font-weight:700}
+.mobile-header-actions{display:flex;grid-column:3;grid-row:1;align-items:center;justify-content:flex-end;min-width:0}
+@media(max-width:720px), (max-height:600px) and (pointer:coarse){
+  .mobile-header{grid-template-columns:48px minmax(0,1fr) 96px}
+  .mobile-header .mobile-header-more{grid-column:auto;grid-row:auto}
+}
+@media(min-width:721px){
+  .study-mode .mobile-header{grid-template-columns:48px minmax(0,1fr) 96px}
+  .study-mode .mobile-header .mobile-header-more{grid-column:auto;grid-row:auto}
+}

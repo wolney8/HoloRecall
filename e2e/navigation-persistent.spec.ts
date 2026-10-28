@@ -25,7 +25,7 @@ test('HR-NAV-02 Progress exposes deliberate sections and global destinations on 
   await page.goForward();
   await expect(page.getByRole('tab',{name:'History'})).toHaveAttribute('aria-selected','true');
   await global.getByRole('button',{name:'Dashboard',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Study dashboard'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Study dashboard',exact:true})).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('tab',{name:'History'})).toHaveAttribute('aria-selected','true');
   await global.getByRole('button',{name:'Settings',exact:true}).click();
