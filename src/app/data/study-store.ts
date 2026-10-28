@@ -273,6 +273,22 @@ export class LocalStudyStore {
     validateDesign(design);
     await this.change(data => ({ ...data, version: data.version + 1, designs: data.designs.some(item => item.id === design.id) ? data.designs.map(item => item.id === design.id ? structuredClone(design) : item) : [...data.designs, structuredClone(design)] }));
   }
+  async duplicateDesign(id: string): Promise<string> {
+    const copyId = `design-${crypto.randomUUID()}`;
+    const { designCopyName } = await import('../../domain/design-system');
+    await this.change(data => {
+      const source = data.designs.find(design => design.id === id);
+      if (!source) throw new Error('The Design Set no longer exists.');
+      const duplicate = { ...structuredClone(source), id: copyId, name: designCopyName(data.designs, source.name) };
+      validateDesign(duplicate);
+      return { ...data, version: data.version + 1, designs: [...data.designs, duplicate] };
+    });
+    return copyId;
+  }
+  async deleteDesign(id: string): Promise<void> {
+    const { deleteDesignSet } = await import('../../domain/design-system');
+    await this.change(data => deleteDesignSet(data, id));
+  }
   async saveAnkiMapping(mapping: AnkiMappingPreset): Promise<void> {
     await this.saveAnkiMappings([mapping]);
   }

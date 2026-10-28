@@ -30,6 +30,28 @@ export interface ResolvedDesign {
   sourceDeckId?: string;
 }
 
+export interface DesignDeletionImpact { deckReferences: number; cardReferences: number; }
+export function designDeletionImpact(state: Pick<State, 'decks' | 'cards'>, designId: string): DesignDeletionImpact {
+  return { deckReferences: state.decks.filter(deck => deck.designSetId === designId).length, cardReferences: state.cards.filter(card => card.designSetId === designId).length };
+}
+
+/** Remove one reusable presentation definition and return its references to inheritance. */
+export function deleteDesignSet(state: State, designId: string): State {
+  if (!state.designs.some(design => design.id === designId)) return state;
+  const clear = <T extends { designSetId?: string }>(item: T): T => {
+    if (item.designSetId !== designId) return item;
+    const next = { ...item }; delete next.designSetId; return next;
+  };
+  return { ...state, version: state.version + 1, designs: state.designs.filter(design => design.id !== designId), decks: state.decks.map(clear), cards: state.cards.map(clear) };
+}
+
+export function designCopyName(existing: readonly DesignSet[], sourceName: string): string {
+  const names = new Set(existing.map(design => design.name.trim().toLocaleLowerCase('en')));
+  let name = `${sourceName.trim()} copy`, suffix = 2;
+  while (names.has(name.toLocaleLowerCase('en'))) name = `${sourceName.trim()} copy ${suffix++}`;
+  return name;
+}
+
 export function inheritedDesignId(decks: readonly Deck[], deckId: string): { id?: string; deckId?: string } {
   const byId = new Map(decks.map(deck => [deck.id, deck]));
   const visited = new Set<string>();

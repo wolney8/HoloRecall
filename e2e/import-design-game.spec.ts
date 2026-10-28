@@ -120,7 +120,7 @@ test('HR-DESIGN-07/12 previews curated composition and rarity finish settings an
   await page.getByRole('button', { name: 'Show recall face' }).click(); await expect(preview.getByText('Why does spaced recall work?')).toBeVisible();
   await page.getByRole('button', { name: 'Show answer face' }).click(); await expect(preview.getByRole('heading', { name: 'Retrieval strengthens memory' })).toBeVisible();
   await page.getByLabel('Preview content').click(); await page.getByRole('option', { name: 'Generated art' }).click(); await expect(preview).toHaveAttribute('data-composition', 'illustration-window'); await expect(preview.locator('.missing-image')).toHaveCount(0); await expect(preview.locator('[aria-label="Generated text artwork"]')).toBeVisible();
-  await page.getByTestId('design-art-upload').setInputFiles(await smileyArtwork(page)); await expect(page.getByRole('status')).toContainText('palette was derived');
+  await page.getByTestId('design-art-upload').setInputFiles(await smileyArtwork(page)); await expect(page.getByTestId('design-notice')).toContainText('palette was derived');
   await expect(page.getByLabel('Surface style')).toHaveText(/Balanced printed/); await expect(preview).toHaveAttribute('data-art-treatment', 'embedded'); await expect(preview.locator('.background-layer img')).toBeVisible();
   await expect.poll(() => preview.locator('.background-layer img').evaluate(element => getComputedStyle(element).mixBlendMode)).toBe('multiply');
   await expect.poll(() => preview.locator('.card-copy').evaluate(element => getComputedStyle(element, '::before').borderTopColor)).not.toBe('rgba(0, 0, 0, 0)');
@@ -129,7 +129,7 @@ test('HR-DESIGN-07/12 previews curated composition and rarity finish settings an
   await page.getByLabel('Use one composition').check(); await page.getByText('Full Bleed', { exact: true }).click(); await expect(preview).toHaveAttribute('data-composition', 'full-bleed');
   await page.getByText('Rarity variants', { exact: true }).click(); await page.getByLabel('Finish').click(); await page.getByRole('option', { name: 'Aurora premium' }).click(); await expect(preview).toHaveAttribute('data-finish', 'aurora');
   await page.screenshot({ path: testInfo.outputPath('design-suite-foundation.png'), fullPage: true });
-  await page.getByRole('button', { name: 'Collection' }).click(); await expect(page.getByText('NEXT UNLOCK', { exact: true })).toBeVisible(); await expect(page.locator('.next-unlock mat-progress-bar')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Collection' }).click();await expect(page.getByRole('heading',{name:'Unsaved Design Set changes'})).toBeVisible();await page.getByRole('button',{name:'Discard changes'}).click(); await expect(page.getByText('NEXT UNLOCK', { exact: true })).toBeVisible(); await expect(page.locator('.next-unlock mat-progress-bar')).toHaveCount(1);
 });
 
 test('HR-DESIGN-16 keeps printed surfaces coherent and learning copy dominant across content and accessibility modes', async ({ page }, testInfo) => {

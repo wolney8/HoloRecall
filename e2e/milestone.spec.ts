@@ -53,7 +53,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
   await page.getByLabel('Licence / permission').fill('Permission for personal study');
   const artwork = await localArtwork(page);
   await page.getByLabel('Upload or reimport artwork').setInputFiles(artwork);
-  await expect(page.getByRole('status')).toContainText('Artwork uploaded locally');
+  await expect(page.getByTestId('design-notice')).toContainText('Artwork uploaded locally');
   await expect(page.getByRole('button', { name: 'Save Design Set', exact: true })).toBeEnabled();
   await page.getByLabel('Upload rarity frame').setInputFiles(artwork);
   await expect(page.locator('.studio-card .frame-layer img')).toHaveAttribute('src', /^data:image\/png;base64,/);
@@ -61,7 +61,7 @@ test('uploaded design artwork survives assignment, reload and a portable full-pr
   await page.getByLabel('Focal point X').focus(); await page.getByLabel('Focal point X').press('ArrowRight');
   await selectMaterial(page, 'Deck', 'Italian essentials');
   await page.getByRole('button', { name: 'Save and assign', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Design Set saved and assigned');
+  await expect(page.getByTestId('design-notice')).toContainText('Design Set saved and assigned');
   const saved = await snapshot(page);
   expect(saved.designs).toHaveLength(1); expect(saved.assets).toHaveLength(1);
   expect(saved.decks[0].designSetId).toBe(saved.designs[0].id);

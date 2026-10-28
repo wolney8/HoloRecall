@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DESIGN_SET, deriveDesignPalette, rarityVariant, resolveCardDesign } from './design-system';
+import { DEFAULT_DESIGN_SET, deleteDesignSet, deriveDesignPalette, designCopyName, designDeletionImpact, rarityVariant, resolveCardDesign } from './design-system';
 import type { CardContent, Deck, DesignSet } from './models';
+import { createInitialState } from './study';
 
 const card=(patch:Partial<CardContent>={}):CardContent=>({id:'card',deckId:'child',kind:'text',front:'Question',answer:'Answer',pronunciation:'',meaning:'',notes:'',tags:[],revision:1,suspended:false,...patch});
 const designs:DesignSet[]=[{id:'course-set',name:'Course',backgroundFit:'cover',backgroundPositionX:50,backgroundPositionY:50,frameFit:'contain',credit:'',source:'',license:'',palette:{primary:'#112233',secondary:'#223344',surface:'#101010',onSurface:'#ffffff'}},{id:'override',name:'Override',backgroundFit:'contain',backgroundPositionX:50,backgroundPositionY:50,frameFit:'cover',credit:'',source:'',license:''}];
@@ -30,5 +31,22 @@ describe('Design Set domain',()=>{
   it('uses an accessible integrated surface as the global default',()=>{
     expect(DEFAULT_DESIGN_SET.artwork).toMatchObject({treatment:'embedded',mask:'rounded-window',edgeFade:24,backgroundBleed:30});
     expect(DEFAULT_DESIGN_SET.palette?.onSurface).toBeTruthy();
+  });
+});
+
+describe('Design Set library safety',()=>{
+  it('returns deleted references to inheritance without changing learner state',()=>{
+    const state=createInitialState([{id:'deck',name:'Deck',description:'',suspended:false}],[{...card(),deckId:'deck'}]);
+    state.designs.push({id:'shared',name:'Shared',backgroundFit:'cover',backgroundPositionX:50,backgroundPositionY:50,frameFit:'contain',credit:'',source:'',license:''});
+    state.decks[0]!.designSetId='shared';state.cards[0]!.designSetId='shared';
+    const learner={events:structuredClone(state.events),states:structuredClone(state.states),rewards:structuredClone(state.rewardEvents),assets:structuredClone(state.assets)};
+    expect(designDeletionImpact(state,'shared')).toEqual({deckReferences:1,cardReferences:1});
+    const result=deleteDesignSet(state,'shared');
+    expect(result.designs).toEqual([]);expect(result.decks[0]!.designSetId).toBeUndefined();expect(result.cards[0]!.designSetId).toBeUndefined();
+    expect(result.events).toEqual(learner.events);expect(result.states).toEqual(learner.states);expect(result.rewardEvents).toEqual(learner.rewards);expect(result.assets).toEqual(learner.assets);
+  });
+  it('creates a deterministic available copy label',()=>{
+    const sets=[{...DEFAULT_DESIGN_SET,id:'one',name:'Forest'},{...DEFAULT_DESIGN_SET,id:'two',name:'Forest copy'}];
+    expect(designCopyName(sets,'Forest')).toBe('Forest copy 2');
   });
 });

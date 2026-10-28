@@ -17,6 +17,7 @@ import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, I
 import { FlashcardComponent, type CardInspectionRequest } from './card';
 import { CardInspectionService } from './card-inspection';
 import { DesignStudioComponent } from './design-studio/design-studio';
+import { DesignStudioExitGuard } from './design-studio/design-studio-exit-guard';
 import { CollectionComponent } from './collection/collection';
 import { CollectionDeskComponent } from './collection/collection-desk';
 import { ProgressComponent } from './progress/progress';
@@ -72,6 +73,7 @@ export class AppComponent {
   private readonly injector=inject(Injector);
   private readonly destroyRef=inject(DestroyRef);
   private readonly cardInspection=inject(CardInspectionService);
+  private readonly designStudioExit=inject(DesignStudioExitGuard);
   readonly platform=inject(PlatformPresentation);
   readonly theme=inject(ThemeService);
   readonly data=this.store.data;
@@ -231,7 +233,7 @@ export class AppComponent {
   private clueRemainingMs=10_000;
   private clueCardKey='';
   private ankiSourceDeckId='';
-  private readonly appPopState=()=>this.syncNavigationFromLocation();
+  private readonly appPopState=()=>{const target=this.initialScreen();if(this.screen()==='studio'&&target!=='studio'&&this.designStudioExit.dirty()){history.pushState(null,'','#studio');void this.designStudioExit.confirm('leave').then(leave=>{if(!leave)return;this.designStudioExit.approveExit();setTimeout(()=>history.back());});return;}this.syncNavigationFromLocation();};
   readonly expandedDecks=new Set<string>();
   constructor(){
     const syncSystemMotion=()=>window.setTimeout(()=>this.systemMotionReduced.set(this.motionMedia.matches),0);
@@ -298,7 +300,8 @@ export class AppComponent {
   toggleAutoAdvance():void{void (this.autoAdvancePaused()?this.resumeAutoAdvance():this.pauseAutoAdvance());}
   onCardAudioPlaying(playing:boolean):void{this.cardAudioPlaying.set(playing);}
   private async waitForAnswerDwell(run:number):Promise<void>{const seconds=this.currentPreset()?.autoAdvanceEnabled?this.currentPreset()?.autoAnswerSeconds??0:0;if(!seconds||!this.answerRevealedAt)return;const remaining=Math.max(0,seconds*1000-(performance.now()-this.answerRevealedAt));if(!remaining)return;this.settleAnswerDwell();await new Promise<void>(resolve=>{this.answerDwellResolve=resolve;this.answerDwellTimer=window.setTimeout(()=>this.settleAnswerDwell(),Math.min(120000,remaining));});if(run!==this.studyPresentationRun)return;}
-  go(screen:Screen,primary=false):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.clearRecallPeek();this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');if(screen==='collection'){this.collectionSubview.set('overview');this.collectionDeckId.set('');this.collectionCardId.set('');this.collectionDesk.set(false);this.collectionLabel.set('');}if(screen==='exchange'&&this.screen()!=='library')this.selectedDeck='';if(screen==='library'&&(primary||this.screen()!=='library'))this.librarySubview.set('decks');this.mobileMoreOpen.set(false);this.screen.set(screen);const route=screen==='library'?`#library/${this.librarySubview()}`:screen==='collection'?'#collection/overview':`#${screen}`;if(location.hash!==route)history.pushState(null,'',route);else history.replaceState(null,'',route);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
+  go(screen:Screen,primary=false):void{if(this.screen()==='studio'&&screen!=='studio'&&this.designStudioExit.dirty()){void this.designStudioExit.confirm('leave').then(leave=>{if(leave){this.designStudioExit.approveExit();this.commitNavigation(screen,primary);}});return;}this.commitNavigation(screen,primary);}
+  private commitNavigation(screen:Screen,primary=false):void{if(screen!=='library'&&this.hasUnsavedCard()&&!confirm('Discard the unsaved card changes?'))return;void this.checkpoint();if(this.screen()==='results'&&screen!=='results'){this.clearResultMotion();this.resultsIntroPlaying.set(false);}if(this.screen()==='study'&&screen!=='study'){this.clearAutoAdvanceTimer(true);this.clearRecallPeek();this.cancelStudyPresentation();}if(screen!=='library')this.selectedCardIds=new Set();if(screen!=='focus')this.focusLaunch.set(undefined);if(screen==='settings')this.settingsDeckId.set('');if(screen==='collection'){this.collectionSubview.set('overview');this.collectionDeckId.set('');this.collectionCardId.set('');this.collectionDesk.set(false);this.collectionLabel.set('');}if(screen==='exchange'&&this.screen()!=='library')this.selectedDeck='';if(screen==='library'&&(primary||this.screen()!=='library'))this.librarySubview.set('decks');this.mobileMoreOpen.set(false);this.screen.set(screen);const route=screen==='library'?`#library/${this.librarySubview()}`:screen==='collection'?'#collection/overview':`#${screen}`;if(location.hash!==route)history.pushState(null,'',route);else history.replaceState(null,'',route);this.editor=null;this.editorBaseline='';this.deckEditor=null;this.message.set('');this.messageError.set(false);window.scrollTo({top:0,behavior:'instant'});setTimeout(()=>document.getElementById('main-content')?.focus({preventScroll:true}));}
   selectLibrarySubview(view:LibrarySubview):void{if(view===this.librarySubview())return;this.librarySubview.set(view);history.pushState(null,'',`#library/${view}`);}
   navigationContext():NavigationContext[]{
     const screen=this.screen(),deckId=this.editor?.deckId||this.deckEditor?.id||this.settingsDeckId()||(screen==='collection'?this.collectionDeckId():'')||(screen==='study'||screen==='results'?this.current()?.deckId||this.session()?.scopeDeckId:'')||(screen==='exchange'?this.selectedDeck:'');
