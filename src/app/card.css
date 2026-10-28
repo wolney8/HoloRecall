@@ -31,9 +31,58 @@
 /* Design Suite contract: palette, composition and art integration affect presentation only. */
 .secondary{font-size:14px;line-height:1.4;margin:0 0 3px;font-weight:500}.interpretation{font-size:13px;line-height:1.4;margin:8px 0 0;color:var(--card-muted)}.compact .secondary{font-size:11px}.compact .interpretation{font-size:11px}
 .memory-card{--card-surface:var(--design-surface,var(--mat-sys-surface-container-low,#f5f0e3));--card-ink:var(--design-on-surface,var(--mat-sys-on-surface,#193a33));--frame-color:var(--design-accent,var(--mat-sys-outline-variant,#aeb7a9))}.memory-card.has-native-art .background-layer{background:radial-gradient(circle at 18% 14%,color-mix(in srgb,var(--design-primary,hsl(var(--art-hue) 72% 76%)) 66%,transparent),transparent 38%),radial-gradient(circle at 86% 75%,color-mix(in srgb,var(--design-secondary,hsl(var(--art-accent) 70% 70%)) 44%,transparent),transparent 46%),linear-gradient(145deg,color-mix(in srgb,var(--design-primary,#dce9e4) 32%,var(--card-surface)),var(--card-surface))}
-.memory-card[data-composition=full-bleed],.memory-card.full-bleed-art{padding:10px}.memory-card[data-composition=full-bleed] .illustration-layer,.memory-card.full-bleed-art .illustration-layer{margin:-10px -10px 0;width:calc(100% + 20px);border-radius:0}.memory-card[data-composition=typographic-showcase] .illustration-layer,.memory-card[data-composition=symbolic-generated] .illustration-layer{background:transparent;border:0}.memory-card[data-composition=minimal-prestige] .card-heading{opacity:.72}.memory-card[data-composition=split-art-content]{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr auto}.memory-card[data-composition=split-art-content] .card-heading,.memory-card[data-composition=split-art-content] footer{grid-column:1/-1}.memory-card[data-composition=split-art-content] .illustration-layer{grid-column:1}.memory-card[data-composition=split-art-content] .card-copy{grid-column:2;max-height:none}
+.memory-card[data-composition=full-bleed],.memory-card.full-bleed-art{padding:10px}
+.memory-card[data-composition=full-bleed] .illustration-layer,.memory-card.full-bleed-art .illustration-layer{margin:-10px -10px 0;width:calc(100% + 20px);flex-basis:62%;border-radius:0}
+.memory-card[data-composition=full-bleed] .card-copy{max-height:34%}
+
+/* The nine Design Set compositions are structural choices. Palette, rarity and
+   finish remain independent material layers over these layouts. */
+.memory-card[data-composition=framed-art]{padding:clamp(15px,5.2%,23px)}
+.memory-card[data-composition=framed-art] .illustration-layer{width:84%;margin:clamp(5px,2%,10px) auto 0;flex-basis:54%;border:5px double color-mix(in srgb,var(--frame-color) 72%,var(--card-surface));border-radius:4px;box-shadow:0 0 0 3px color-mix(in srgb,var(--card-surface) 82%,transparent),0 5px 13px color-mix(in srgb,var(--card-ink) 16%,transparent)}
+.memory-card[data-composition=framed-art] .card-copy{width:88%;align-self:center;max-height:34%}
+
+.memory-card[data-composition=illustration-window] .illustration-layer{width:88%;margin-inline:auto;flex-basis:54%;border-width:2px;box-shadow:inset 0 0 0 5px color-mix(in srgb,var(--card-surface) 34%,transparent),0 4px 12px color-mix(in srgb,var(--card-ink) 13%,transparent)}
+.memory-card[data-composition=illustration-window][data-art-mask=none] .illustration-layer{border-radius:46% 46% var(--mat-sys-corner-medium,12px) var(--mat-sys-corner-medium,12px)/24% 24% var(--mat-sys-corner-medium,12px) var(--mat-sys-corner-medium,12px)}
+.memory-card[data-composition=illustration-window] .card-copy{width:94%;align-self:center;max-height:36%}
+
+.memory-card[data-composition=split-art-content]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
+.memory-card[data-composition=split-art-content] .card-heading,.memory-card[data-composition=split-art-content] footer{grid-column:1/-1}
+.memory-card[data-composition=split-art-content] .illustration-layer{grid-column:1;min-width:0}
+.memory-card[data-composition=split-art-content] .card-copy{grid-column:2;max-height:none;text-align:start;align-items:flex-start}
+
+.memory-card[data-composition=typographic-showcase] .illustration-layer,.memory-card[data-composition=symbolic-generated] .illustration-layer{background:transparent;border:0}
+.memory-card[data-composition=typographic-showcase] .illustration-layer:not(.no-illustration){width:58%;margin-inline:auto;flex:0 1 34%}
+.memory-card[data-composition=typographic-showcase] .card-copy{flex:1 1 auto;max-height:none}
+
+.memory-card[data-composition=minimal-prestige]{gap:clamp(16px,5%,26px);padding:clamp(20px,7%,32px)}
+.memory-card[data-composition=minimal-prestige] :is(.card-heading,footer){opacity:.76;padding-inline:0}
+.memory-card[data-composition=minimal-prestige] :is(.card-heading,footer,.card-copy)::before{border:0;background:transparent;box-shadow:none;backdrop-filter:none}
+.memory-card[data-composition=minimal-prestige] .illustration-layer:not(.no-illustration){width:70%;margin-inline:auto;flex:0 1 36%;border:0;border-radius:0;box-shadow:none}
+.memory-card[data-composition=minimal-prestige] .card-copy{width:84%;align-self:center;flex:1 1 auto;max-height:none;padding-inline:0}
+.memory-card[data-composition=minimal-prestige] .card-copy h3{text-wrap:balance}
+
+.memory-card[data-composition=diagram-technical]{--technical-line:color-mix(in srgb,var(--frame-color) 24%,transparent)}
+.memory-card[data-composition=diagram-technical] .illustration-layer{flex-basis:58%;border:2px solid color-mix(in srgb,var(--frame-color) 64%,transparent);border-radius:3px;background:linear-gradient(var(--technical-line) 1px,transparent 1px),linear-gradient(90deg,var(--technical-line) 1px,transparent 1px),var(--material-raised);background-size:18px 18px}
+.memory-card[data-composition=diagram-technical] .illustration-layer img{object-fit:contain!important}
+.memory-card[data-composition=diagram-technical] .card-copy{max-height:36%;align-items:flex-start;text-align:start;border-inline-start:3px solid var(--frame-color);border-radius:2px;padding-inline:clamp(11px,4%,18px)}
+.memory-card[data-composition=diagram-technical] .card-copy :is(h3,p){text-align:start}
+
+.memory-card[data-composition=photo-focus] .illustration-layer{flex:1 1 68%;min-height:52%;border-radius:var(--mat-sys-corner-large,16px);box-shadow:0 6px 18px color-mix(in srgb,var(--card-ink) 18%,transparent)}
+.memory-card[data-composition=photo-focus] .card-copy{flex:0 1 auto;max-height:29%;min-height:0;padding-block:clamp(8px,3%,13px)}
+.memory-card[data-composition=photo-focus] .illustration-layer.no-illustration + .card-copy{flex:1 1 auto;max-height:none}
+
+.memory-card[data-composition=symbolic-generated] .illustration-layer:not(.no-illustration){width:66%;max-height:43%;aspect-ratio:1;margin:clamp(4px,2%,10px) auto 0;flex:0 1 43%;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--material-raised) 86%,transparent) 0 56%,color-mix(in srgb,var(--design-primary,var(--frame-color)) 18%,transparent) 57% 68%,transparent 69%);box-shadow:0 0 0 1px color-mix(in srgb,var(--frame-color) 42%,transparent)}
+.memory-card[data-composition=symbolic-generated] .card-copy{width:88%;align-self:center;flex:1 1 auto;max-height:none}
 .memory-card[data-art-mask=soft-oval] .illustration-layer{border-radius:50%;-webkit-mask-image:radial-gradient(ellipse,#000 55%,transparent 78%);mask-image:radial-gradient(ellipse,#000 55%,transparent 78%)}.memory-card[data-art-mask=frame-window] .illustration-layer{border:4px double var(--frame-color)}.memory-card[data-art-treatment=edge-fade] .illustration-layer{-webkit-mask-image:radial-gradient(ellipse,#000 55%,transparent 82%);mask-image:radial-gradient(ellipse,#000 55%,transparent 82%)}.memory-card[data-art-treatment=duotone] .illustration-layer{filter:grayscale(1) sepia(.25) saturate(1.5);mix-blend-mode:multiply}.memory-card[data-art-treatment=embedded] .illustration-layer{filter:saturate(.88) contrast(.96);box-shadow:inset var(--art-emboss) var(--art-emboss) calc(var(--art-emboss)*2) #fff6,inset calc(var(--art-emboss)*-1) calc(var(--art-emboss)*-1) calc(var(--art-emboss)*2) #0003,0 var(--art-depth) calc(var(--art-depth)*2) #0002}.memory-card[data-art-treatment=background-bleed] .illustration-layer{box-shadow:0 0 28px color-mix(in srgb,var(--design-primary,#285c50) 42%,transparent)}.memory-card .illustration-layer:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 38px rgb(0 0 0/calc(var(--art-vignette)*.35));background:linear-gradient(color-mix(in srgb,var(--design-primary,transparent) calc(var(--art-texture)*20%),transparent),transparent)}
-@media(max-width:360px){.memory-card[data-composition=split-art-content]{display:flex}.memory-card[data-composition=split-art-content] .illustration-layer{max-height:45%}}
+@media(max-width:360px){
+  .memory-card[data-composition=split-art-content]{display:flex}
+  .memory-card[data-composition=split-art-content] .illustration-layer{max-height:42%}
+  .memory-card[data-composition=framed-art]{padding:13px}
+  .memory-card[data-composition=framed-art] .illustration-layer,.memory-card[data-composition=illustration-window] .illustration-layer{width:90%}
+  .memory-card[data-composition=minimal-prestige]{gap:11px;padding:16px}
+  .memory-card[data-composition=diagram-technical] .illustration-layer{flex-basis:52%}
+  .memory-card[data-composition=symbolic-generated] .illustration-layer:not(.no-illustration){width:60%;max-height:38%}
+}
 
 /* HR-DESIGN-16: one palette-derived material joins art, frame and protected copy. */
 .memory-card{
@@ -59,6 +108,11 @@
 .illustration-layer{background:linear-gradient(145deg,color-mix(in srgb,var(--material-base) 64%,transparent),color-mix(in srgb,var(--design-primary,var(--frame-color)) 16%,transparent));border-color:var(--material-line);box-shadow:inset 0 1px 0 var(--material-shine),0 1px 0 color-mix(in srgb,var(--design-secondary,#000) 12%,transparent)}
 .image-occlusion-overlay{position:absolute;inset:0;z-index:2;width:100%;height:100%;pointer-events:none}.image-occlusion-overlay :is(rect,ellipse,polygon){fill:color-mix(in srgb,var(--design-primary,#244f48) 88%,#101815);stroke:color-mix(in srgb,var(--frame-color) 78%,#fff);stroke-width:3;vector-effect:non-scaling-stroke;filter:drop-shadow(0 2px 2px rgb(0 0 0/.3))}.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .image-occlusion-card .illustration-layer{flex:1 1 auto;min-height:0}.image-occlusion-card .card-copy{display:none}.image-occlusion-card .effects-layer{display:none}.occlusion-prompt{position:absolute;z-index:3;inset:8px auto auto 8px;max-width:calc(100% - 64px);padding:5px 8px;border:1px solid color-mix(in srgb,var(--frame-color) 50%,transparent);border-radius:999px;background:color-mix(in srgb,var(--card-surface) 90%,transparent);color:var(--card-ink);font:600 10px/1.25 Roboto,Arial,sans-serif;box-shadow:0 2px 8px rgb(0 0 0/.14);backdrop-filter:blur(5px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.expand-image{position:absolute;z-index:9;inset:60px 16px auto auto;display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid color-mix(in srgb,var(--frame-color) 58%,transparent);border-radius:50%;background:color-mix(in srgb,var(--card-surface) 91%,transparent);color:var(--card-ink);font:700 22px/1 Roboto,Arial,sans-serif;box-shadow:0 2px 9px rgb(0 0 0/.18);backdrop-filter:blur(5px);cursor:pointer}.expand-image:focus-visible{outline:3px solid var(--mat-sys-primary);outline-offset:2px}.compact+.expand-image{inset:50px 14px auto auto;width:40px;height:40px}.compact .occlusion-prompt{inset:6px auto auto 6px;max-width:calc(100% - 56px);font-size:8px}
+/* Image Occlusion remains task-first regardless of the surrounding Design Set.
+   Composition may style the collectible frame, never reduce or obstruct the task. */
+.memory-card.image-occlusion-card{display:flex;padding:clamp(13px,4.7%,21px)}
+.memory-card.image-occlusion-card .illustration-layer{width:100%;max-width:none;max-height:none;aspect-ratio:auto;margin:0;flex:1 1 auto;border-radius:var(--mat-sys-corner-medium,12px);box-shadow:inset 0 1px 0 var(--material-shine),0 1px 0 color-mix(in srgb,var(--design-secondary,#000) 12%,transparent);-webkit-mask-image:none;mask-image:none;filter:none!important}
+.memory-card.image-occlusion-card .illustration-layer::after{display:none}.memory-card.image-occlusion-card .illustration-layer img{mix-blend-mode:normal!important;filter:none!important;opacity:1!important}
 .memory-card[data-art-treatment=embedded] :is(.background-layer img,.illustration-layer img){mix-blend-mode:multiply;filter:saturate(.9) contrast(.97);opacity:.94}
 .memory-card[data-art-treatment=embedded] .illustration-layer{box-shadow:inset var(--art-emboss) var(--art-emboss) calc(var(--art-emboss)*2) color-mix(in srgb,#fff 36%,transparent),inset calc(var(--art-emboss)*-1) calc(var(--art-emboss)*-1) calc(var(--art-emboss)*2) color-mix(in srgb,var(--design-secondary,#000) 22%,transparent),0 var(--art-depth) calc(var(--art-depth)*1.6) color-mix(in srgb,var(--design-secondary,#000) 16%,transparent)}
 .memory-card[data-art-treatment=edge-fade] .illustration-layer{-webkit-mask-image:radial-gradient(ellipse,#000 54%,rgb(0 0 0/calc(1 - var(--art-edge-fade))) 72%,transparent 92%);mask-image:radial-gradient(ellipse,#000 54%,rgb(0 0 0/calc(1 - var(--art-edge-fade))) 72%,transparent 92%)}

@@ -317,7 +317,19 @@ One base Design Set derives a coherent family across all authored rarities throu
 
 ### 11.5 Layout and generated-art templates
 
-The curated initial composition family is Full Bleed, Framed Art, Illustration Window, Split Art / Content, Typographic Showcase, Minimal Prestige, Diagram / Technical, Photo Focus, and Symbolic / Generated Art. A Design Set may lock one layout or permit a deterministic suggestion that the learner can override. Media-free art is local, deterministic, portable and derived from stable card/deck/topic/type/rarity/Design Set inputs; it is not generic network AI clip-art.
+The curated composition family has nine stable identifiers. Each controls structure while palette, rarity and finish remain separate:
+
+- **Full Bleed** gives artwork an edge-to-edge leading region above protected learning content.
+- **Framed Art** presents artwork inside a bounded gallery frame with a distinct supporting copy region.
+- **Illustration Window** balances an inset story window with recall content without becoming a photo layout.
+- **Split Art / Content** gives media and explanation separate side-by-side regions, collapsing safely on narrow cards.
+- **Typographic Showcase** centres a text-led hierarchy; optional art acts as a supporting ornament.
+- **Minimal Prestige** uses deliberate whitespace, restrained chrome and a quiet central hierarchy.
+- **Diagram / Technical** contains uncropped technical media and start-aligns structured explanation.
+- **Photo Focus** makes photographic media dominant while keeping supporting copy readable.
+- **Symbolic / Generated Art** treats deterministic generated motifs as a centred emblem paired with concise recall.
+
+A Design Set may lock one composition or permit a deterministic suggestion that the learner can override. Media-free art is local, deterministic, portable and derived from stable card/deck/topic/type/rarity/Design Set inputs; it is not generic network AI clip-art. Image Occlusion always retains its task-first, uncropped production layout; the selected composition may style its surrounding collectible frame but cannot reduce or cover the interactive task.
 
 Typographic Showcase is an intentionally centred composition. Its primary prompt, concise cue, situation/context, guidance and hint share the same content axis and compatible maximum width; symmetric rules may separate context without shifting it. Split Art / Content, Diagram / Technical and image-led compositions retain alignment suited to their own structure.
 

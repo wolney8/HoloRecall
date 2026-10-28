@@ -9,6 +9,7 @@ import type { ContentBundle } from './exchange';
 import type { LocalAsset, State } from './models';
 import { exportBackup, parseBackup } from './backup';
 import { acceptScheduledReview } from '../test/scheduled-review';
+import { CARD_COMPOSITIONS } from './design-system';
 
 const state = (): State => createInitialState(SEED_DECKS, SEED_CARDS);
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aamkAAAAASUVORK5CYII=';
@@ -53,6 +54,19 @@ describe('versioned content exchange', () => {
     expect(preview.bundle.cards[0]).toEqual(original.cards[0]); expect(preview.bundle.designs).toEqual(original.designs);
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
     expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
+  });
+  it('preserves every existing composition identifier through ZIP, XLSX and full backup without a format change', async () => {
+    const original=sample();
+    original.designs=CARD_COMPOSITIONS.map((composition,index)=>({...original.designs[0]!,id:`composition-${index}`,name:composition,composition}));
+    original.cards[0]!.designSetId=original.designs[0]!.id;original.decks[1]!.designSetId=original.designs[0]!.id;
+    const target=state();target.assets=structuredClone(original.assets);
+    const portable=await readContentFile(await writePortableZip(original,{exportedAt:new Date(0),packageId:'composition-matrix'}),'compositions.zip',target);
+    const workbook=await readContentFile(await writeWorkbook(original),'compositions.xlsx',target);
+    expect(portable.errors).toEqual([]);expect(workbook.errors).toEqual([]);
+    expect(portable.bundle.designs.map(design=>design.composition)).toEqual(CARD_COMPOSITIONS);
+    expect(workbook.bundle.designs.map(design=>design.composition)).toEqual(CARD_COMPOSITIONS);
+    const backupState=state();backupState.designs=structuredClone(original.designs);backupState.assets=structuredClone(original.assets);
+    expect(parseBackup(exportBackup(backupState,new Date(0))).designs.map(design=>design.composition)).toEqual(CARD_COMPOSITIONS);
   });
   it('preserves parent and child identities through XLSX hierarchy round trip',async()=>{const original=sample(),target=state();target.assets=structuredClone(original.assets);const preview=await readContentFile(await writeWorkbook(original),'hierarchy.xlsx',target);expect(preview.errors).toEqual([]);expect(preview.bundle.decks.map(deck=>[deck.id,deck.parentId])).toEqual(original.decks.map(deck=>[deck.id,deck.parentId]));expect(preview.bundle.cards.map(card=>[card.id,card.deckId])).toEqual(original.cards.map(card=>[card.id,card.deckId]));});
   it('round trips inert Anki source identities, dependencies, subject presentation, Design Sets and deck covers',async()=>{const original=sourceSample();original.ankiMappings=[{id:'mapping',version:4,name:'Basic',sourceSignature:'anki-model-v1-abcd',modelName:'Basic',templateId:'template-0',fields:{Front:'front',Back:'answer'},origin:'user-confirmed'}];original.ankiConversionProfiles=[{id:'conversion',version:1,sourceSignature:'anki-model-v1-abcd',modelName:'Basic',templateId:'template-0',templateName:'Card 1',mappingProfileId:'mapping',behaviour:'basic',presentationPolicy:'text-first',status:'user-approved',concerns:[],origin:'user-confirmed'}];const preview=await readContentFile(await writePortableZip(original,{exportedAt:new Date(0),packageId:'portable-test'}),'source.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.decks[0]!.ankiSource).toEqual(original.decks[0]!.ankiSource);expect(preview.bundle.decks[0]!.coverImage).toBe('asset:test-art');expect(preview.bundle.cards[0]).toMatchObject({secondary:'Coffee noun',interpretation:'A common café order.',ankiSource:original.cards[0]!.ankiSource,art:original.cards[0]!.art,choices:original.cards[0]!.choices,answerLabel:'Noun phrase',details:original.cards[0]!.details,presentation:original.cards[0]!.presentation});expect(preview.bundle.decks[1]!.studyArtPolicy).toBe('auto');expect(preview.bundle.designs[0]).toEqual(original.designs[0]);expect(preview.bundle.ankiSources).toEqual(original.ankiSources);expect(preview.bundle.ankiMappings).toEqual(original.ankiMappings);expect(preview.bundle.ankiConversionProfiles).toEqual(original.ankiConversionProfiles);expect(preview.manifest).toMatchObject({format:'holorecall-portable-content',formatVersion:11,packageId:'portable-test',counts:{decks:2,cards:1,designSets:1,media:2,ankiSources:1,mappings:1,conversionProfiles:1}});});

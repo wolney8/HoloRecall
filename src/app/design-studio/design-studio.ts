@@ -22,11 +22,11 @@ import { DesignStudioExitGuard } from './design-studio-exit-guard';
 
 type PreviewCase = 'real' | 'text' | 'image' | 'generated' | 'technical' | 'long';
 const LAYOUTS: ReadonlyArray<{ id: CardCompositionId; label: string; description: string }> = [
-  { id: 'full-bleed', label: 'Full Bleed', description: 'Artwork surrounds protected content.' }, { id: 'framed-art', label: 'Framed Art', description: 'Classic art window and strong frame.' },
-  { id: 'illustration-window', label: 'Illustration Window', description: 'Balanced art and recall content.' }, { id: 'split-art-content', label: 'Split Art / Content', description: 'Clear split for diagrams and explanations.' },
-  { id: 'typographic-showcase', label: 'Typographic Showcase', description: 'Words, symbols and formulas become art.' }, { id: 'minimal-prestige', label: 'Minimal Prestige', description: 'Quiet space and restrained premium detail.' },
-  { id: 'diagram-technical', label: 'Diagram / Technical', description: 'Structured technical content.' }, { id: 'photo-focus', label: 'Photo Focus', description: 'Photography leads without obscuring the prompt.' },
-  { id: 'symbolic-generated', label: 'Symbolic / Generated Art', description: 'Stable offline motifs without images.' },
+  { id: 'full-bleed', label: 'Full Bleed', description: 'Edge-to-edge artwork leads above protected content.' }, { id: 'framed-art', label: 'Framed Art', description: 'A bounded gallery frame gives artwork formal focus.' },
+  { id: 'illustration-window', label: 'Illustration Window', description: 'An inset story window balances art and recall.' }, { id: 'split-art-content', label: 'Split Art / Content', description: 'Art and explanation share distinct side-by-side regions.' },
+  { id: 'typographic-showcase', label: 'Typographic Showcase', description: 'A centred text hierarchy makes words and formulas the focus.' }, { id: 'minimal-prestige', label: 'Minimal Prestige', description: 'Deliberate whitespace and restrained detail create quiet focus.' },
+  { id: 'diagram-technical', label: 'Diagram / Technical', description: 'Contained diagrams and start-aligned explanation support precision.' }, { id: 'photo-focus', label: 'Photo Focus', description: 'A dominant photographic region leads supporting text.' },
+  { id: 'symbolic-generated', label: 'Symbolic / Generated Art', description: 'A centred emblem pairs generated motifs with concise recall.' },
 ];
 
 @Component({ selector: 'hr-design-studio', standalone: true, imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonToggleModule, FlashcardComponent, CardMotionViewportComponent, PageRevealDirective], templateUrl: './design-studio.html', styleUrl: './design-studio.css' })
