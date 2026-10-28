@@ -91,6 +91,17 @@ These items preserve the owner's reported behavior; each item's current implemen
 - **Design boundary:** The accepted icon-plus-menu control does not claim visual or interaction parity with the Material website's `mio-toggle-switch` reference. Any closer visual treatment is separate refinement work and must retain System rather than reducing the preference to a binary value.
 - **Next action:** Checkpoint the accepted functional implementation; track visual refinement separately.
 
+### HR-THEME-02 — Material-style inline theme toggle refinement
+
+- **Product area / milestone / priority:** Application shell and appearance / Visual refinement / P2
+- **Status:** BACKLOG
+- **Source:** Owner visual acceptance follow-up for HR-THEME-01, 28 October 2026
+- **Dependencies:** HR-THEME-01 persisted preference and adaptive shell; public Material 3 guidance and investigation of the Material website `mio-toggle-switch` reference
+- **Requirement:** Refine the persistent top-right appearance action toward the compact, understandable and polished qualities of the owner's `mio-toggle-switch` reference without claiming parity with, copying private implementation details from or becoming dependent on that site. Preserve direct shell access and the single existing theme preference.
+- **Acceptance:** First establish how a compact control truthfully represents all three supported modes: System, Light and Dark. The selected pattern uses Material 3 shape, motion and colour tokens, gives immediate current-state feedback, persists and synchronizes with Appearance Settings, works throughout adaptive and immersive shells, supports keyboard and screen readers, respects reduced motion and never requires Settings. A binary-looking treatment must not hide or remove System.
+- **Decision boundary:** Investigate an inline Light/Dark toggle with adjacent System affordance, a compact three-state control and a toggle with a secondary System option before selecting one. Do not implement a pattern until its three-state semantics, compact reflow and accessibility behavior are resolved.
+- **Regression risks:** Theme discoverability, System-mode ambiguity, duplicate preference state, startup paint, shell density, compact reflow, reduced motion, focus semantics and conflict with the accepted HR-THEME-01 fallback control.
+
 ### HR-BUG-SETTINGS-01 — Remove Settings overflow at 200% text
 
 - **Product area / milestone / priority:** Settings accessibility / Product correction / P1

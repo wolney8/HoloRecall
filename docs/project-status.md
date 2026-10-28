@@ -1,5 +1,11 @@
 # Current restart point
 
+## 28 October 2026 — HR-THEME-02 Material-style inline refinement registered
+
+- **Owner reference:** the accepted HR-THEME-01 icon-plus-menu control is functionally sufficient but does not claim visual or interaction parity with the Material website's `mio-toggle-switch`. `HR-THEME-02` records a separate P2 refinement investigation; no shell, theme, Settings, CSS or test implementation changed in this registration.
+- **Acceptance boundary:** investigate a compact Material 3 treatment that keeps System, Light and Dark understandable, uses the existing single persisted preference, remains directly available in adaptive/immersive shell chrome, supports keyboard and screen readers and respects reduced motion. Do not imitate a binary reference by hiding System.
+- **Priority:** this refinement is not the next product implementation. The remaining P1 product backlog gives `HR-DESIGN-17` priority over this P2 visual refinement.
+
 ## 28 October 2026 — HR-THEME-01 persistent quick theme control headless verified
 
 - **Shell contract:** one visible top-right icon action opens exactly System, Light and Dark with radio semantics and a visible check. Expanded and medium shells keep it in the sticky top app bar; compact, immersive Study and compact Results keep it directly in the top-right header beside More. Appearance Settings uses the same `ThemeService` preference and remains synchronized rather than owning separate state.
