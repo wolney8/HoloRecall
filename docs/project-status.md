@@ -1,5 +1,12 @@
 # Current restart point
 
+## 29 October 2026 — BETA-01 blocked by production portable-ZIP round trip
+
+- **Real artifact and isolation:** A disposable headless schema-11 profile under ignored `.runtime/beta-01/` imported the genuine 117,391-byte `Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg` (SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`) through the production Exchange UI. The owner profile was not opened or mutated.
+- **Verified product path:** Preview was 254 Ready / 0 Needs review / 0 Cannot import. The result is 254 unique cards in 24 decks: three roots and 21 valid children, with no false roots or duplicate card identities. Representative Unicode, multiline, tags, answers, generated source-panel art and Anki provenance survived. The genuine package contains no binary media, so this run proves the zero-media contract rather than image/audio import. Spaced Review, Confidence Study and Free Practice retained their distinct review/scheduling/Practice behavior; Results, Progress and History were exercised with learner-facing terminology. A real imported card used the production Design Studio renderer and an assigned Full Bleed Design Set without modifying card content.
+- **Round trips:** XLSX reimports 254 cards, 24 decks and one Design Set. Full backup v6 restores 254 cards, 24 decks, two reviews, one Practice event and one Design Set. Generated APKG reimports 254 cards after its expected explicit conversion approval. Portable ZIP v11 generation succeeds at 313,806 bytes (SHA-256 `3300adc0e4ecfa2a7b63c2e5968030120abf2981e2a5fdd8d39cf65f0c177c6b`) but the production importer rejects it because empty optional Design Set maps differ between `designs.json` and the workbook representation.
+- **Stop condition:** `HR-BUG-EXCHANGE-01` records the P1 safe-backup/export blocker. No repair was started. iOS Simulator real-deck validation was not run after the stop condition, and no visible GUI was activated. Beta-01 is `BLOCKED`, not release acceptance.
+
 ## 29 October 2026 — HR-MODE-07 HoloRecall-native Study terminology headless verified
 
 - **Public contract:** Dashboard, Decks, active Study and Results now use one shared presentation map: `anki` → **Spaced Review**, `mastery` → **Confidence Study**, and `free-revision` → **Free Practice**. Approved learner descriptions are owned by the same map. Anki remains visible for APKG import/export, source management, conversion and compatibility only.
