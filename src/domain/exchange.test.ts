@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { SEED_CARDS, SEED_DECKS } from '../app/seed';
 import { createInitialState } from './study';
 import { bundleTables, contentFromState, inspectZip, makePortableBundle, makePreview, parseTables, readContentFile, writePortableZip, writeWorkbook } from './exchange';
@@ -25,6 +26,11 @@ function sample(): ContentBundle {
 }
 
 function sourceSample():ContentBundle{const bundle=sample(),sourceId='anki-source-test';bundle.decks[0]!.ankiSource={kind:'anki',sourceDeckId:'10',sourcePath:'Italiano',importedContentHash:'1234abcd'};bundle.cards[0]!.ankiSource={kind:'anki',noteGuid:'guid',noteId:'100',templateOrdinal:0,modelName:'Basic',templateName:'Card 1',modelSignature:'anki-model-v1-abcd',sourceSnapshotId:sourceId,sourceTemplateId:'template-0',importedContentHash:'89abcdef'};bundle.ankiSources=[{id:sourceId,version:1,packageVariant:'legacy-anki2',sourceDecks:[{id:'10',path:'Italiano'}],noteTypes:[{id:'model-1',name:'Basic',cloze:false,fields:[{id:'field-front',name:'Front',ordinal:0},{id:'field-back',name:'Back',ordinal:1}],templates:[{id:'template-0',name:'Card 1',ordinal:0,question:'{{Front}}',answer:'{{FrontSide}}<hr id=answer>{{Back}}'}],signature:'anki-model-v1-abcd'}],notes:[{id:'100',guid:'guid',noteTypeId:'model-1',fields:{Front:'Question',Back:'Answer'},tags:[]}],cards:[{id:bundle.cards[0]!.id,noteId:'100',templateId:'template-0',templateOrdinal:0,sourceDeckId:'10'}],media:[],contentHash:'anki-source-snapshot-v1-1234abcd'}];return bundle;}
+
+async function replacePortableDesigns(bytes:Uint8Array,change:(designs:ContentBundle['designs'])=>ContentBundle['designs']):Promise<Uint8Array>{
+  const zip=await JSZip.loadAsync(bytes),designs=change(JSON.parse(await zip.file('designs.json')!.async('string'))),payload=Buffer.from(JSON.stringify(designs,null,2));
+  zip.file('designs.json',payload);const manifest=JSON.parse(await zip.file('manifest.json')!.async('string')),entry=manifest.files.find((item:{path:string})=>item.path==='designs.json');entry.byteLength=payload.byteLength;entry.sha256=`sha256:${createHash('sha256').update(payload).digest('hex')}`;zip.file('manifest.json',JSON.stringify(manifest,null,2));return zip.generateAsync({type:'uint8array'});
+}
 
 describe('versioned content exchange', () => {
   it('ships valid downloadable workbooks and a self-contained sixteen-illustration example', async () => {
@@ -54,6 +60,25 @@ describe('versioned content exchange', () => {
     expect(preview.bundle.cards[0]).toEqual(original.cards[0]); expect(preview.bundle.designs).toEqual(original.designs);
     expect(preview.bundle.assets).toEqual(original.assets); expect(preview.bundle.decks).toEqual(original.decks);
     expect(preview.bundle.decks.find(deck=>deck.id==='exchange-italian')?.parentId).toBe('exchange-course');expect(preview.bundle.cards[0].siblingGroupId).toBe('exchange-caffe-note');
+  });
+  it('canonicalizes only semantically empty optional Design Set maps across ZIP and XLSX',async()=>{
+    const original=sample(),design=original.designs[0]!;design.frames={};design.finishes={};design.rarityVariants={};
+    const bytes=await writePortableZip(original,{exportedAt:new Date(0),packageId:'empty-design-maps'}),zip=await JSZip.loadAsync(bytes),definitions=JSON.parse(await zip.file('designs.json')!.async('string'));
+    expect(definitions[0]).not.toHaveProperty('frames');expect(definitions[0]).not.toHaveProperty('finishes');expect(definitions[0]).not.toHaveProperty('rarityVariants');
+    let preview=await readContentFile(bytes,'empty-design-maps.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.designs[0]).not.toHaveProperty('frames');expect(preview.bundle.designs[0]).not.toHaveProperty('finishes');expect(preview.bundle.designs[0]).not.toHaveProperty('rarityVariants');
+    const legacy=await replacePortableDesigns(bytes,items=>items.map(item=>({...item,frames:{},finishes:{},rarityVariants:{common:{}}})));preview=await readContentFile(legacy,'legacy-empty-design-maps.zip',state());expect(preview.errors).toEqual([]);expect(preview.bundle.designs[0]).not.toHaveProperty('rarityVariants');
+    const tables=bundleTables(original);tables.Designs[0]![19]='{}';tables.Designs[0]![22]=JSON.stringify({rarityVariants:{}});const parsed=parseTables(tables,state(),original.assets);expect(parsed.designs[0]).not.toHaveProperty('frames');expect(parsed.designs[0]).not.toHaveProperty('finishes');expect(parsed.designs[0]).not.toHaveProperty('rarityVariants');
+    const backupState=state();backupState.designs=[structuredClone(design)];backupState.assets=structuredClone(original.assets);expect(parseBackup(exportBackup(backupState,new Date(0))).designs[0]).toMatchObject({frames:{},finishes:{},rarityVariants:{}});
+  });
+  it.each([
+    ['identity',(design:ContentBundle['designs'][number])=>({...design,id:'different-design'})],
+    ['composition',(design:ContentBundle['designs'][number])=>({...design,composition:'photo-focus' as const})],
+    ['palette',(design:ContentBundle['designs'][number])=>({...design,palette:{...design.palette!,primary:'#123456'}})],
+    ['non-empty rarity finish',(design:ContentBundle['designs'][number])=>({...design,finishes:{...design.finishes,rare:'aurora' as const}})],
+    ['frame reference',(design:ContentBundle['designs'][number])=>({...design,frame:'asset:different-frame'})],
+    ['artwork',(design:ContentBundle['designs'][number])=>({...design,artwork:{...design.artwork!,focalX:80}})],
+  ])('rejects a genuine %s mismatch after manifest integrity succeeds',async(_,change)=>{
+    const bytes=await replacePortableDesigns(await writePortableZip(sample(),{exportedAt:new Date(0),packageId:'design-mismatch'}),designs=>designs.map(change));const preview=await readContentFile(bytes,'design-mismatch.zip',state());expect(preview.errors).toEqual(['designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.']);
   });
   it('preserves every existing composition identifier through ZIP, XLSX and full backup without a format change', async () => {
     const original=sample();

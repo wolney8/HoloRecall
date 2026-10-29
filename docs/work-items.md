@@ -15,23 +15,24 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### BETA-01 — First controlled real-deck validation
 
 - **Product area / milestone / priority:** Cross-product beta validation / Pre-beta / P0
-- **Status:** BLOCKED
+- **Status:** READY TO RESUME
 - **Source:** Controlled real-deck validation, 29 October 2026
 - **Isolation:** A fresh headless Playwright context used a disposable empty schema-11 profile under ignored `.runtime/beta-01/`; it did not open or write the owner's live browser or native profile.
 - **Artifact:** Genuine previously used `Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg`, 117,391 bytes, SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`.
 - **Verified scope:** The production Anki UI preview reported 254 Ready, zero Needs review and zero Cannot import. Import produced 24 decks, 254 unique cards, three roots and 21 correctly parented children with no false roots. Representative Unicode, multiline, tag, answer, generated source-panel art and source-identity data survived. The source contains no binary media, so zero assets is contractually accurate rather than media-loss evidence. Small production journeys verified Spaced Review, Confidence Study and Free Practice ownership, learner-facing Results, Progress and History, and Design Studio assignment through the production renderer without changing imported card content.
-- **Round-trip evidence:** XLSX reimports 254 cards, 24 decks and one Design Set into a second isolated profile. Full backup v6 restores 254 cards, 24 decks, two reviews, one Practice event and one Design Set through the production untouched-profile flow. Generated APKG reimports all 254 cards after the normal explicit conversion-review approval. Portable ZIP v11 generation succeeds but its own production importer rejects the package; see `HR-BUG-EXCHANGE-01`.
-- **Boundary:** iOS Simulator real-deck validation did not run after the safe-backup/export stop condition. No visible application was launched. This is not release acceptance, and Beta-01 cannot pass while the portable package remains unrestorable.
+- **Round-trip evidence:** XLSX reimports 254 cards, 24 decks and one Design Set into a second isolated profile. Full backup v6 restores 254 cards, 24 decks, two reviews, one Practice event and one Design Set through the production untouched-profile flow. Generated APKG reimports all 254 cards after the normal explicit conversion-review approval. After `HR-BUG-EXCHANGE-01`, the production-generated portable ZIP reimports the complete 254-card/24-deck hierarchy, Design Set, assigned branch and source dependencies; a second export/reimport retains the same canonical Design Set semantics.
+- **Boundary:** iOS Simulator real-deck validation was not run after the original safe-backup/export stop condition. No visible application was launched. The blocker is repaired and Beta-01 is ready to resume that unfinished phase, but it has not passed and this is not release acceptance.
 
 ### HR-BUG-EXCHANGE-01 — Portable ZIP rejects exporter-generated empty Design Set maps
 
 - **Product area / milestone / priority:** Exchange and backup portability / Beta defect / P1 stop-ship
-- **Status:** BLOCKED
+- **Status:** VERIFY
 - **Source:** BETA-01 production-generated round trip, 29 October 2026
 - **Reproduction:** Import the genuine Italian APKG, create and assign a Design Set with empty optional rarity maps, export portable ZIP v11, then select that ZIP in the production workbook/portable importer in a second empty profile. Import stops before preview with `designs.json must exactly match the workbook Designs sheet. No executable design content is allowed.`
 - **Root cause:** The exporter writes empty `rarityVariants`, `frames` and `finishes` maps to `designs.json`. Workbook parsing intentionally omits an empty `finishes` object, while the exact cross-file equality check retains it, so two representations generated from the same Design Set compare unequal. The 313,806-byte package hash is `3300adc0e4ecfa2a7b63c2e5968030120abf2981e2a5fdd8d39cf65f0c177c6b`.
 - **Acceptance:** A production-generated portable ZIP with empty or populated optional Design Set maps must pass the existing inert cross-file integrity check and reimport the complete 24-deck/254-card hierarchy and Design Set without weakening tamper detection. Add focused exporter-to-importer regression coverage for canonical optional-map normalization and retain exact media, dependency, count and manifest validation.
 - **Regression risks:** Treating absent and empty optional maps inconsistently, weakening `designs.json` tamper detection, changing XLSX schema semantics, losing Design Set assignments or allowing executable content.
+- **Repair / evidence:** One exchange-boundary canonicalizer treats absent and empty `frames`, `finishes` and `rarityVariants` maps, including empty per-rarity override records, as equivalent without changing persisted Design Sets. Palette, artwork, identities, assignments, composition and every non-empty override remain exact. The redundant workbook/JSON check still rejects changed identity, composition, palette, non-empty rarity finish, frame reference and artwork after manifest integrity succeeds. The regenerated genuine Beta ZIP is 313,808 bytes (SHA-256 `0bdb91dfe2d45ffc1244dda04da42a482fa03d98719456480105bd1b7e1f856e`) and reimports 254 cards, 24 decks, three roots, 21 children, one Design Set and all source dependencies; its second semantic round trip also passes. Format 11, state schema 11 and backup envelope 6 are unchanged.
 
 ### HR-MODE-07 — HoloRecall-native Study mode terminology
 
