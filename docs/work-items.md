@@ -15,13 +15,40 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### BETA-01 — First controlled real-deck validation
 
 - **Product area / milestone / priority:** Cross-product beta validation / Pre-beta / P0
-- **Status:** READY TO RESUME
+- **Status:** BLOCKED — genuine-deck native import/render/export/lifecycle evidence passes; manual learning-mode validation is paused and resumes after P1 `HR-MOBILE-UX-01A` and `HR-MOBILE-UX-01B`
 - **Source:** Controlled real-deck validation, 29 October 2026
 - **Isolation:** A fresh headless Playwright context used a disposable empty schema-11 profile under ignored `.runtime/beta-01/`; it did not open or write the owner's live browser or native profile.
 - **Artifact:** Genuine previously used `Italian_Lessons_1-3_Clear_Prompts_v3_UPDATE.apkg`, 117,391 bytes, SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`.
 - **Verified scope:** The production Anki UI preview reported 254 Ready, zero Needs review and zero Cannot import. Import produced 24 decks, 254 unique cards, three roots and 21 correctly parented children with no false roots. Representative Unicode, multiline, tag, answer, generated source-panel art and source-identity data survived. The source contains no binary media, so zero assets is contractually accurate rather than media-loss evidence. Small production journeys verified Spaced Review, Confidence Study and Free Practice ownership, learner-facing Results, Progress and History, and Design Studio assignment through the production renderer without changing imported card content.
 - **Round-trip evidence:** XLSX reimports 254 cards, 24 decks and one Design Set into a second isolated profile. Full backup v6 restores 254 cards, 24 decks, two reviews, one Practice event and one Design Set through the production untouched-profile flow. Generated APKG reimports all 254 cards after the normal explicit conversion-review approval. After `HR-BUG-EXCHANGE-01`, the production-generated portable ZIP reimports the complete 254-card/24-deck hierarchy, Design Set, assigned branch and source dependencies; a second export/reimport retains the same canonical Design Set semantics.
-- **Boundary:** iOS Simulator real-deck validation was not run after the original safe-backup/export stop condition. No visible application was launched. The blocker is repaired and Beta-01 is ready to resume that unfinished phase, but it has not passed and this is not release acceptance.
+- **iOS Simulator evidence:** A disposable iPhone 17 Pro / iOS 26.5 Simulator selected the genuine artifact through native Files and matched its 117,391-byte receipt and SHA-256. Preview/import retained 254 cards, 24 decks, three roots, 21 children and root counts 83/126/45. Design Studio rendered the real `io vengo` card through the production renderer in Recall/Answer and Light/Dark states. Persistent navigation/theme controls, Home/activate, terminate/relaunch, Dashboard persistence and Progress inventory passed. Native Share → Save to Files produced a 312,715-byte portable ZIP v11 and 4,821,133-byte full backup v6.
+- **Boundary:** The Material Study-mode select accepts focus but its options are not exposed to background XCUITest in WKWebView. The no-visible-GUI rule therefore leaves genuine-deck Spaced Review, Confidence Study, Free Practice, Results and History unverified, along with middle/final representative cards and Design Set assignment/inheritance/Undo/Revert. This is an automation limitation rather than a demonstrated product defect. Owner-supplied Simulator evidence subsequently identified P1 mobile shell and Study-rating problems; manual mode validation is paused until 01A/01B pass, without invalidating completed Beta evidence. Beta-01 has not passed and this is not release acceptance; no owner profile was touched and the disposable Simulator was deleted.
+
+### HR-MOBILE-UX-01A — Mobile shell, safe areas and overflow surfaces
+
+- **Product area / milestone / priority:** Mobile shell and navigation / Beta-01 gate / P1
+- **Status:** PLANNED — blocks resuming Beta-01 manual Study-mode validation
+- **Scope:** Establish one Light/Dark surface owner through iOS top and bottom safe areas; separate the immersive top-bar ellipsis from bottom-navigation overflow; replace the Study/Results two-column modal grid with a compact anchored vertical menu that remains inside the safe viewport.
+- **Acceptance:** No opposing-theme safe-area strips; Dashboard and Settings remain directly reachable; the menu originates at the ellipsis, identifies the current route, needs no scrolling, dismisses by selection/outside action/Escape, restores trigger focus and preserves active Study and unsaved-work safeguards.
+
+### HR-MOBILE-UX-01B — Study rating interaction
+
+- **Product area / milestone / priority:** Study interaction / Beta-01 gate / P1
+- **Status:** PLANNED — blocks resuming Beta-01 manual Study-mode validation
+- **Scope:** Replace the dense five outlined rating cards with equal, lighter controls using distinct learner labels `Forgot`, `Hard`, `Hesitant`, `Confident` and `Easy`; move rating explanations behind contextual help and preserve the stored 1–5 and FSRS Again/Hard/Good/Good/Easy contracts.
+- **Acceptance:** Equal geometry and baseline at compact width; accessible 44 pt targets, focus and selected feedback; usable 200% text reflow; help is transient and returns focus; exactly one production review is committed with no scheduling, reward or Auto Advance contract change.
+
+### HR-MOBILE-UX-01C — Compact content-surface refinement
+
+- **Product area / milestone / priority:** Cross-product compact presentation / Post-gate refinement / P2
+- **Status:** BACKLOG
+- **Scope:** Regularise compact spacing, action hierarchy and temporary-surface choices across Decks, Collection, Focus, Results, Design Studio, Exchange and Settings without changing domain behavior, pagination or dirty-state safeguards.
+
+### HR-MOBILE-UX-01D — Mobile accessibility and native consistency gate
+
+- **Product area / milestone / priority:** Compact accessibility and native acceptance / Pre-release / P1
+- **Status:** BACKLOG
+- **Scope:** Complete headless compact regression plus owner/native Light/Dark, portrait/landscape, safe-area, 200% text, focus, reading-order, contrast and reduced-motion acceptance; retain physical VoiceOver/touch as explicit pre-release evidence until exercised.
 
 ### HR-BUG-EXCHANGE-01 — Portable ZIP rejects exporter-generated empty Design Set maps
 
