@@ -53,7 +53,7 @@ Rules:
 - Prestige should visually evolve the existing card rather than invent endless higher rarity tiers.
 - Prestige is implemented as ten event-derived cosmetic cycles. The authored-rarity unlock is the mastery ceiling; only later eligible scheduled reviews contribute to Prestige.
 - Cycle thresholds for P1–P10 are 3, 3, 4, 4, 5, 5, 6, 6, 7 and 8 qualifying days. They are a versioned product constant (`prestige-days-v1`), not scheduler mathematics.
-- Anki Mode and Mastery Mode use genuine scheduled review events and are eligible. Free Revision is practice-only and ineligible.
+- Spaced Review and Confidence Study use genuine scheduled review events and are eligible. Free Practice is practice-only and ineligible.
 
 Possible prestige rewards:
 - prestige star / pip / crest

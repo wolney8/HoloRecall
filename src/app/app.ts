@@ -13,7 +13,8 @@ import { LocalStudyStore } from './data/study-store';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '../domain/rewards';
-import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode } from '../domain/models';
+import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode, StudySession } from '../domain/models';
+import { publicSessionLabel, STUDY_MODE_OPTIONS, studyModePresentation } from '../domain/study-mode-presentation';
 import { FlashcardComponent, type CardInspectionRequest } from './card';
 import { CardInspectionService } from './card-inspection';
 import { DesignStudioComponent } from './design-studio/design-studio';
@@ -178,6 +179,7 @@ export class AppComponent {
     return null;
   });
   readonly selectedStudyMode=computed(()=>this.data()?.preferences.studyMode??'mastery');
+  readonly studyModeOptions=STUDY_MODE_OPTIONS;
   readonly current=computed(()=>this.data()?.cards.find(c=>c.id===this.session()?.queue[0])??null);
   readonly currentPreset=computed(()=>{const data=this.data(),card=this.studyPresentationCard()??this.current();return data?effectiveStudyPreset(data,card?.deckId??this.session()?.scopeDeckId,new Date()):null;});
   readonly displayedCard=computed(()=>this.studyPresentationCard()??this.current());
@@ -390,8 +392,9 @@ export class AppComponent {
   prestige(card:CardContent){return prestigeProgress(this.data()!,card.id);}
   async chooseStudyMode(mode:StudyExperienceMode):Promise<void>{try{await this.store.updatePreferences({studyMode:mode});}catch(error){this.fail(error);}}
   async selectTheme(choice:ThemeChoice):Promise<void>{try{await this.theme.select(choice);}catch(error){this.fail(error);}}
-  studyModeLabel(mode=this.session()?.experienceMode??this.selectedStudyMode()):string{return mode==='anki'?'Anki mode':mode==='free-revision'?'Free revision':'Mastery mode';}
-  studyModeHelp(mode=this.selectedStudyMode()):string{return mode==='anki'?'Scheduled study with learning and relearning repeats.':mode==='free-revision'?'Practice without FSRS, due-date or reward changes.':'Scheduled study with HoloRecall confidence, mastery progress and collectible rewards.';}
+  studyModeLabel(mode=this.session()?.experienceMode??this.selectedStudyMode()):string{return studyModePresentation(mode).label;}
+  studyModeHelp(mode=this.selectedStudyMode()):string{return studyModePresentation(mode).description;}
+  sessionContextLabel(session:StudySession):string{const label=publicSessionLabel(session),mode=this.studyModeLabel(session.experienceMode);return label===mode?(session.mode==='practice'?'Practice':'Scheduled study'):label;}
   async study(deckId?:string):Promise<void>{this.busy.set(true);try{await this.store.startSession(deckId,this.selectedStudyMode());this.prepareAutoAdvanceSession();this.elapsedMs=this.session()?.activeMs??0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}
   openFocus(launch:FocusLaunch={}):void{this.focusLaunch.set(launch);this.go('focus');}
   async startFocus(request:FocusSessionRequest):Promise<void>{this.busy.set(true);try{await this.store.startFocusSession(request);this.prepareAutoAdvanceSession();this.elapsedMs=0;this.lastActivity=performance.now();this.go(this.current()?'study':'results');if(!this.current())this.startResultsPresentation();}catch(e){this.fail(e);}finally{this.busy.set(false);}}

@@ -16,6 +16,7 @@ import { resolveCardDesign, type ResolvedDesign } from '../../domain/design-syst
 import type { JsonAuthoringPreview } from '../../domain/json-authoring';
 import { resolveCardPresentation, type ResolvedCardPresentation } from '../../domain/card-presentation';
 import { MEDIA_PROVIDER, PlatformMediaProvider, type MediaProvider } from '../platform/media-provider';
+import { studyModePresentation } from '../../domain/study-mode-presentation';
 
 const ankiMappingKey=(mapping:AnkiMappingPreset)=>`${mapping.sourceSignature}:${mapping.templateId??''}`;
 
@@ -220,8 +221,8 @@ export class LocalStudyStore {
       const recoveredMode=reconciled.session?.experienceMode??(reconciled.session?.mode==='practice'?'free-revision':'mastery');
       if (recoveredMode===selected && !reconciled.session?.focus && reconciled.session?.queue.length && reconciled.session.scopeDeckId===deckId) return reconciled === data ? data : { ...reconciled, version: data.version + 1 };
       const mode=selected==='free-revision'?'practice' as const:'scheduled' as const;
-      const queue=selected==='free-revision'?focusPreview!(data,{mode:'practice',label:'Free revision',criteria:{version:1,...(deckId?{deckId}:{})},order:'deck',limit:10_000,seed:`revision-${crypto.randomUUID()}`},now).cards.map(card=>card.id):dueCards(data,now,deckId).map(card=>card.id);
-      const label=selected==='anki'?'Anki mode':selected==='mastery'?'Mastery mode':'Free revision';
+      const label=studyModePresentation(selected).label;
+      const queue=selected==='free-revision'?focusPreview!(data,{mode:'practice',label,criteria:{version:1,...(deckId?{deckId}:{})},order:'deck',limit:10_000,seed:`revision-${crypto.randomUUID()}`},now).cards.map(card=>card.id):dueCards(data,now,deckId).map(card=>card.id);
       return { ...data, version: data.version + 1,preferences:{...data.preferences,studyMode:selected}, session: { id: crypto.randomUUID(), mode,experienceMode:selected,label, queue, total: queue.length, plannedTotal: queue.length, completed: 0, revealed: false, activeMs: 0, cardStartedAt: now.toISOString(), startedAt: now.toISOString(),autoAdvancePaused:false,...(deckId?{scopeDeckId:deckId}:{}) } };
     });
   }

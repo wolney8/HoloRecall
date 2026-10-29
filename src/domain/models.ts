@@ -527,7 +527,7 @@ export interface StudySession {
   label?: string;
   focus?: FocusSessionRequest;
   lastPracticeEventId?: string;
-  /** Scheduled cards intentionally queued again by Anki-style learning/relearning steps. */
+  /** Scheduled cards intentionally queued again by same-session learning/relearning steps. */
   repetitionDue?: Record<string,string>;
   /** Interruption-safe presentation state. A recovered paused timer resumes only by learner action. */
   autoAdvancePaused?: boolean;

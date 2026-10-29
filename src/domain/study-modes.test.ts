@@ -12,14 +12,14 @@ function session(mode:StudyExperienceMode):State{
 }
 
 describe('Study Mode domain boundary',()=>{
-  it('repeats learning and relearning cards in Anki mode using the real preset-backed FSRS transition',()=>{
+  it('repeats learning and relearning cards in the legacy internal anki mode using the real preset-backed FSRS transition',()=>{
     const before=session('anki'),after=applyScheduledReview(before,{id:'anki-again',cardId:'ciao',sessionId:'anki-session',rating:1,now});
     expect(after.session).toMatchObject({experienceMode:'anki',queue:['ciao'],completed:1,total:2});
     expect(after.session?.repetitionDue?.['ciao']).toBe(after.states['ciao']!.due);
     expect(after.events).toHaveLength(1);
   });
 
-  it('orders multiple Anki learning repeats by their actual FSRS step due time',()=>{
+  it('orders multiple spaced-review learning repeats by their actual FSRS step due time',()=>{
     let state=createInitialState([{id:'lesson',name:'Lesson',description:'',suspended:false}],[card,{...card,id:'buongiorno',answer:'Buongiorno!'}]);
     state.session={id:'anki-steps',mode:'scheduled',experienceMode:'anki',label:'Anki mode',queue:['ciao','buongiorno'],total:2,plannedTotal:2,completed:0,revealed:true,activeMs:0,scopeDeckId:'lesson'};
     state=applyScheduledReview(state,{id:'hard-first',cardId:'ciao',sessionId:'anki-steps',rating:2,now});
@@ -29,7 +29,7 @@ describe('Study Mode domain boundary',()=>{
     expect(state.session?.queue).toEqual(['buongiorno','ciao']);
   });
 
-  it('keeps Mastery mode on the genuine scheduled-review and reward path',()=>{
+  it('keeps Confidence Study on the genuine scheduled-review and reward path',()=>{
     const before=session('mastery'),after=applyScheduledReview(before,{id:'mastery-hard',cardId:'ciao',sessionId:'mastery-session',rating:2,now});
     expect(after.session).toMatchObject({experienceMode:'mastery',queue:[],completed:1,total:1});
     expect(after.events).toHaveLength(1);
@@ -45,7 +45,7 @@ describe('Study Mode domain boundary',()=>{
     expect(after.rewardEvents.some(event=>event.kind==='contribution'&&event.reviewEventId===`${mode}-eligible`)).toBe(true);
   });
 
-  it('keeps Free Revision entirely outside FSRS, due dates and rewards',()=>{
+  it('keeps Free Practice entirely outside FSRS, due dates and rewards',()=>{
     const before=session('free-revision'),after=recordPracticeRating(before,{id:'free-rating',cardId:'ciao',sessionId:'free-revision-session',rating:5,now});
     expect(after.practiceEvents).toHaveLength(1);
     expect(after.events).toEqual([]);

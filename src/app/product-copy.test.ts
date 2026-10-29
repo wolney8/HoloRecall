@@ -10,6 +10,11 @@ const shippedLearnerCopySources = [
   new URL('../domain/backup.ts', import.meta.url),
   new URL('../domain/exchange.ts', import.meta.url),
 ];
+const shippedStudyModeCopySources = [
+  new URL('./app.html', import.meta.url),
+  new URL('./app.ts', import.meta.url),
+  new URL('./data/study-store.ts', import.meta.url),
+];
 
 describe('learner-facing product copy', () => {
   it('does not reintroduce known prototype or workspace scaffolding', () => {
@@ -26,5 +31,10 @@ describe('learner-facing product copy', () => {
     expect(shell).toContain('Export backups from Settings.');
     const settings = readFileSync(new URL('./settings/local-data-settings.ts', import.meta.url), 'utf8');
     expect(settings).toContain('stored on this device and is not synced to a cloud account');
+  });
+
+  it('does not reintroduce former public Study mode names into learner-facing surfaces', () => {
+    const shippedCopy = shippedStudyModeCopySources.map(source => readFileSync(source, 'utf8')).join('\n');
+    for (const phrase of ['Anki mode', 'Mastery mode', 'Free revision']) expect(shippedCopy, phrase).not.toContain(phrase);
   });
 });
