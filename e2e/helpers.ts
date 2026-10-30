@@ -78,7 +78,7 @@ export async function ownCards(page:Page,count=1):Promise<void>{
 export async function confidentReview(page: Page): Promise<void> {
   await revealCard(page);
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /4 Good Confident/ }).click();
+  await page.getByRole('button', { name: /4, Confident/ }).click();
   await expect(page.locator('.session-bar')).toContainText('1 / 10');
 }
 export async function revealCard(page: Page): Promise<void> {

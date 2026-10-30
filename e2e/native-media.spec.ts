@@ -45,7 +45,7 @@ test('HR-NATIVE-08A imports, persists and plays MP3 and WAV through the producti
     await expect.poll(()=>page.evaluate(()=>(window as typeof window&{__hrLastAudio?:HTMLAudioElement}).__hrLastAudio?.readyState??0)).toBeGreaterThanOrEqual(2);
     await expect.poll(()=>page.evaluate(()=>(window as typeof window&{__hrLastAudio?:HTMLAudioElement}).__hrLastAudio?.currentTime??0)).toBeGreaterThan(0);
     await page.getByRole('button',{name:/Check answer/}).click();
-    await page.getByRole('button',{name:/4 Good Confident/}).click();
+    await page.getByRole('button',{name:/4, Confident/}).click();
   }
 });
 
@@ -116,7 +116,7 @@ test('HR-NATIVE-08B stops active card audio across lifecycle and navigation boun
   await page.getByRole('button',{name:'Play front audio 1'}).click();
   await expect(page.getByRole('button',{name:'Pause front audio 1'})).toBeVisible();
   await page.getByRole('button',{name:/Check answer/}).click();
-  await page.getByRole('button',{name:/4 Good Confident/}).click();
+  await page.getByRole('button',{name:/4, Confident/}).click();
   expect(await page.evaluate(()=>{
     const audio=(window as typeof window&{__hrCardAudio?:HTMLAudioElement}).__hrCardAudio;
     return {paused:audio?.paused,source:audio?.getAttribute('src')};

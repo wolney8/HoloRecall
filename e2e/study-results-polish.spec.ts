@@ -46,7 +46,7 @@ test('HR-STUDY-RESULTS revealed card supports temporary Recall Peek without lear
   const revealed=await snapshot(page);await motion.click();await expect(motion).toHaveAttribute('aria-label','Show card answer');await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible();
   await expect(motion).toHaveAttribute('aria-label','Show card front',{timeout:3500});expect((await snapshot(page)).events).toEqual(revealed.events);expect((await snapshot(page)).practiceEvents).toEqual(revealed.practiceEvents);
   await motion.focus();await motion.press('Space');await expect(motion).toHaveAttribute('aria-label','Show card answer');await motion.press('Enter');await expect(motion).toHaveAttribute('aria-label','Show card front');await page.waitForTimeout(2700);await expect(motion).toHaveAttribute('aria-label','Show card front');
-  await motion.click();await expect(motion).toHaveAttribute('aria-label','Show card answer');await page.getByRole('button',{name:/3 Good Some hesitation/}).click();await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible({timeout:5000});expect((await snapshot(page)).practiceEvents.length).toBe(revealed.practiceEvents.length+1);
+  await motion.click();await expect(motion).toHaveAttribute('aria-label','Show card answer');await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible({timeout:5000});expect((await snapshot(page)).practiceEvents.length).toBe(revealed.practiceEvents.length+1);
 });
 
 test('HR-STUDY-RESULTS structured support and Recall Peek reflow @ios-compact @ios-landscape',async({page})=>{

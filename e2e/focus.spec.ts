@@ -9,7 +9,7 @@ test('HR-FOCUS practice from Collection never mutates FSRS, limits or rewards an
   await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);await ownFirstCard(page);const before=await snapshot(page);
   await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('tab',{name:'Cards'}).click();await page.getByRole('button',{name:/Inspect /}).first().click();await page.getByRole('button',{name:'Practice this card'}).click();
   await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Collection cards');
-  await revealCard(page);await page.getByRole('button',{name:/1 Again Forgot/}).click();
+  await revealCard(page);await page.getByRole('button',{name:/1, Forgot/}).click();
   await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();const after=await snapshot(page);
   expect(after.practiceEvents).toHaveLength(1);expect(after.events).toEqual(before.events);expect(after.states).toEqual(before.states);expect(after.rewardEvents).toEqual(before.rewardEvents);expect(after.cardControls).toEqual(before.cardControls);expect(after.todayOverrides).toEqual(before.todayOverrides);
   await expect(page.getByText(/1 card is still at Confidence 1 or 2/)).toBeVisible();await expect(page.getByRole('heading',{name:'Cosmetic progress'})).toHaveCount(0);
@@ -34,7 +34,7 @@ test('HR-FOCUS consecutive Practice ratings retain visible cards and never creat
   await openApp(page);await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Focus',exact:true}).click();await page.getByRole('button',{name:/Preview new cards/}).click();
   await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();
   const total=(await snapshot(page)).session!.total;
-  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/3 Good Some hesitation/}).click();await expect(page.locator('.session-bar')).toContainText(`${index+1} / ${total}`,{timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
+  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.locator('.session-bar')).toContainText(`${index+1} / ${total}`,{timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
   const state=await snapshot(page);expect(state.practiceEvents).toHaveLength(2);expect(state.events).toHaveLength(0);expect(state.rewardEvents).toHaveLength(0);
 });
 

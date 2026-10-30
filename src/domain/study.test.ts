@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Rating } from 'ts-fsrs';
 import type { CardContent, State } from './models';
-import { activeReviews, applyReview, createInitialState, dayKey, dueCards, mapRating, undoLatestReview } from './study';
+import { activeReviews, applyReview, createInitialState, dayKey, dueCards, mapRating, ratingPresentation, RATING_OPTIONS, undoLatestReview } from './study';
 import { exportBackup, parseBackup, validateState } from './backup';
 import { acceptScheduledReview } from '../test/scheduled-review';
 
@@ -13,6 +13,21 @@ const fresh = () => createInitialState([{ id: 'italian', name: 'Italian', descri
 const review = (data: State, rating: 1 | 2 | 3 | 4 | 5 = 3, id = 'review-one', cardId = 'one', at = now) => acceptScheduledReview(data, { id, cardId, sessionId: 'session-one', rating, now: at });
 
 describe('FSRS review domain', () => {
+  it('keeps the five public confidence labels distinct from the four scheduler grades', () => {
+    expect(RATING_OPTIONS.map(({ rating, label }) => [rating, label])).toEqual([
+      [1, 'Forgot'], [2, 'Hard'], [3, 'Hesitant'], [4, 'Confident'], [5, 'Easy'],
+    ]);
+    expect(RATING_OPTIONS.map(option => option.help)).toEqual([
+      "Couldn't recall the answer.",
+      'Recalled only with significant effort.',
+      'Recalled with some hesitation.',
+      'Recalled clearly.',
+      'Recalled immediately and effortlessly.',
+    ]);
+    expect(ratingPresentation(3).grade).toBe('Good');
+    expect(ratingPresentation(4).grade).toBe('Good');
+  });
+
   it('maps five self-ratings to four FSRS grades while preserving the original rating', () => {
     expect([1, 2, 3, 4, 5].map(value => mapRating(value as 1 | 2 | 3 | 4 | 5))).toEqual([Rating.Again, Rating.Hard, Rating.Good, Rating.Good, Rating.Easy]);
     const three = review(fresh(), 3);

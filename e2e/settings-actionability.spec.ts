@@ -30,7 +30,8 @@ test('review presentation settings change the authoritative Study player', async
   await expect(page.locator('.session-bar > strong')).toHaveCount(0);
   await expect(page.getByLabel('Visible card timer')).toHaveText('0:00');
   await page.getByRole('button', { name: /Check answer/ }).click();
-  await expect(page.getByRole('button', { name: /1 Again Forgot/ }).locator('small')).toHaveText(/Soon|day/);
+  await page.getByRole('button',{name:'About the ratings'}).click();
+  await expect(page.getByRole('dialog',{name:'About the ratings'}).getByText(/Next review: (Soon|.*day)/).first()).toBeVisible();
 
   const state = await snapshot(page);
   expect(state.studyPresets.find(preset => preset.id === 'balanced')).toMatchObject({

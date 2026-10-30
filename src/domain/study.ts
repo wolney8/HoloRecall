@@ -15,12 +15,18 @@ export const SCHEDULER_PARAMETERS = generatorParameters({
 });
 
 export const RATING_OPTIONS: ReadonlyArray<{ rating: ConfidenceRating; grade: 'Again' | 'Hard' | 'Good' | 'Easy'; label: string; help: string }> = [
-  { rating: 1, grade: 'Again', label: 'Forgot', help: 'Incorrect or needed the answer.' },
-  { rating: 2, grade: 'Hard', label: 'With effort', help: 'Correct, but with substantial effort.' },
-  { rating: 3, grade: 'Good', label: 'Some hesitation', help: 'Correct, with some hesitation.' },
-  { rating: 4, grade: 'Good', label: 'Confident', help: 'Correct and confident.' },
-  { rating: 5, grade: 'Easy', label: 'Effortless', help: 'Correct immediately and effortlessly.' },
+  { rating: 1, grade: 'Again', label: 'Forgot', help: "Couldn't recall the answer." },
+  { rating: 2, grade: 'Hard', label: 'Hard', help: 'Recalled only with significant effort.' },
+  { rating: 3, grade: 'Good', label: 'Hesitant', help: 'Recalled with some hesitation.' },
+  { rating: 4, grade: 'Good', label: 'Confident', help: 'Recalled clearly.' },
+  { rating: 5, grade: 'Easy', label: 'Easy', help: 'Recalled immediately and effortlessly.' },
 ];
+
+export function ratingPresentation(rating: ConfidenceRating) {
+  const option=RATING_OPTIONS.find(item=>item.rating===rating);
+  if(!option)throw new Error('Choose a confidence rating from 1 to 5.');
+  return option;
+}
 
 export function createInitialState(decks: Deck[], cards: CardContent[]): State {
   return {

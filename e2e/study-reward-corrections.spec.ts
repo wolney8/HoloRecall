@@ -1,6 +1,6 @@
 import { test, expect, openApp, revealCard, snapshot } from './helpers';
 
-test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with accessible help', async ({ page }) => {
+test('HR-MOBILE-UX-01B wide Study keeps equal rating actions and bounded shared help', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await openApp(page);
   await page.getByRole('button', { name: /Start studying/ }).click();
@@ -13,26 +13,22 @@ test('HR-UX-13 wide Study reserves an aligned right-hand rating panel with acces
   await revealCard(page);
   const after = await stage.boundingBox();
   expect(after).toEqual(before);
-  const rows = page.locator('.rating-row');
-  await expect(rows).toHaveCount(5);
-  const columns = await rows.evaluateAll(items => items.map(item => {
-    const button = item.querySelector('.rating-choice')!, number = item.querySelector('.rating-number')!, grade = item.querySelector('.rating-grade')!, label = item.querySelector('.rating-label')!, info = item.querySelector('.rating-info')!;
-    return [button, number, grade, label, info].map(node => Math.round(node.getBoundingClientRect().x));
-  }));
-  expect(new Set(columns.map(value => value.join(':'))).size).toBe(1);
-  expect(await page.locator('.rating-content small').count()).toBe(0);
+  const group=page.getByRole('group',{name:'Rate your recall'}),choices=group.getByRole('button');
+  await expect(choices).toHaveCount(5);
+  for(const name of ['1, Forgot','2, Hard','3, Hesitant','4, Confident','5, Easy'])await expect(group.getByRole('button',{name,exact:true})).toBeVisible();
+  const geometry=await choices.evaluateAll(items=>items.map(item=>{const box=item.getBoundingClientRect(),number=item.querySelector('.rating-number')!.getBoundingClientRect(),label=item.querySelector('.rating-label')!.getBoundingClientRect();return{y:Math.round(box.y),width:Math.round(box.width),height:Math.round(box.height),numberY:Math.round(number.y),labelY:Math.round(label.y)};}));
+  expect(new Set(geometry.map(item=>`${item.y}:${item.width}:${item.height}:${item.numberY}:${item.labelY}`)).size).toBe(1);
+  expect(await group.locator('small,.rating-grade').count()).toBe(0);
 
-  const info = page.getByRole('button', { name: 'About rating 4: Confident' });
-  await info.hover();
-  await expect(page.locator('.mat-mdc-tooltip')).toContainText('Correct and confident.');
-  await page.mouse.move(20, 20);
-  await info.focus();
-  await expect(info).toHaveAttribute('aria-description','Correct and confident.');
-  await info.click();
-  await expect(page.locator('.mat-mdc-tooltip')).toContainText('Correct and confident.');
+  const help=page.getByRole('button',{name:'About the ratings',exact:true});
+  await help.click();
+  const dialog=page.getByRole('dialog',{name:'About the ratings'});
+  await expect(dialog).toBeVisible();
+  for(const wording of ["Couldn't recall the answer.",'Recalled only with significant effort.','Recalled with some hesitation.','Recalled clearly.','Recalled immediately and effortlessly.'])await expect(dialog.getByText(wording,{exact:true})).toBeVisible();
   expect((await snapshot(page)).events).toHaveLength(0);
   await page.keyboard.press('Escape');
-  await expect(page.locator('.mat-mdc-tooltip')).toBeHidden();
+  await expect(dialog).toBeHidden();
+  await expect(help).toBeFocused();
 });
 
 test('HR-UX-14 accepted feedback retains the rated card before the next deal', async ({ page }) => {
@@ -41,7 +37,7 @@ test('HR-UX-14 accepted feedback retains the rated card before the next deal', a
   await page.getByRole('button', { name: /Check answer/ }).click();
   const answer = page.locator('.study-card-area .answer h3, .study-card-area .answer-text').first();
   const original = await answer.textContent();
-  const rating = page.getByRole('button', { name: /4 Good Confident/ });
+  const rating = page.getByRole('button', { name: /4, Confident/ });
   await rating.click();
   await expect.poll(async () => (await snapshot(page)).events.length).toBe(1);
   await expect(page.locator('.study-card-area .rating-facets.rating-4 i')).toHaveCount(4);await expect(page.locator('.confidence-feedback')).toHaveCount(0);
@@ -62,7 +58,7 @@ test('HR-UX-14 last-card feedback completes before Results and reduced motion se
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click();
   await page.getByRole('button', { name: /Start studying/ }).click();
   await page.getByRole('button', { name: /Check answer/ }).click();
-  await page.getByRole('button', { name: /5 Easy Effortless/ }).click();
+  await page.getByRole('button', { name: /5, Easy/ }).click();
   await expect(page.locator('.study-card-area .rating-facets.rating-5 i')).toHaveCount(6);await expect(page.locator('.confidence-feedback')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible({ timeout: 4_000 });
@@ -83,7 +79,7 @@ test('HR-UX-15 real unlock waits for completed progress and Results stay present
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click();
   await page.getByRole('button', { name: /Start studying/ }).click();
   await page.getByRole('button', { name: /Check answer/ }).click();
-  await page.getByRole('button', { name: /4 Good Confident/ }).click();
+  await page.getByRole('button', { name: /4, Confident/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work', exact: true })).toBeVisible();
   const stored = await snapshot(page), eventCount = stored.events.length, rewardCount = stored.rewardEvents.length;
   const progress = page.locator('[data-result-section="cosmetics"]');
@@ -119,7 +115,7 @@ test('HR-UX-15 queues multiple real unlocks and Collection reuses their persiste
   await openApp(page); await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByLabel('New cards per day').fill('2'); await page.getByRole('button', { name: 'Save study settings' }).click();
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click(); await page.getByRole('button', { name: /Start studying/ }).click();
-  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Check answer/ }).click(); await page.getByRole('button', { name: /4 Good Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
+  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Check answer/ }).click(); await page.getByRole('button', { name: /4, Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible(); const before = await snapshot(page); expect(before.rewardEvents.filter(event => event.kind === 'unlock')).toHaveLength(2);
   await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 1 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
   await page.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 2 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
@@ -134,6 +130,6 @@ test('HR-UX-13 @ios-compact stacks readable controls below the stable card at 20
   await revealCard(page);
   const controlsTop = await page.locator('.study-controls').evaluate(node => node.getBoundingClientRect().top + scrollY);
   expect(controlsTop).toBeGreaterThan(stageBottom - 2);
-  await expect(page.locator('.rating-row')).toHaveCount(5);
+  await expect(page.locator('.rating-choice')).toHaveCount(5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
 });

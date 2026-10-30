@@ -24,19 +24,19 @@ test('HR-IOS-UX phone navigation and tap-to-reveal keep Study stable @ios-large'
   const before = await stage.boundingBox();
   const scrollBefore = await page.evaluate(() => scrollY);
   await stage.locator('[role="button"]').click({ position: { x: 120, y: 120 } });
-  await expect(page.getByRole('button', { name: /1 Again Forgot/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /1, Forgot/ })).toBeVisible();
   await page.waitForTimeout(850);
   const after = await stage.boundingBox();
   expect(after).toEqual(before);
   expect(await page.evaluate(() => scrollY)).toBe(scrollBefore);
   await expect(page.getByRole('button', { name: /Check answer/ })).toBeHidden();
   for (const rating of [1, 2, 3, 4, 5]) {
-    const choice = page.getByRole('button', { name: new RegExp(`^${rating} `) });
+    const choice = page.getByRole('button', { name: new RegExp(`^${rating}, `) });
     await expect(choice).toBeVisible();
     expect((await choice.boundingBox())!.height).toBeGreaterThanOrEqual(48);
   }
   await expectNoOverflow(page);
-  await page.getByRole('button', { name: /3 Good Some hesitation/ }).click();
+  await page.getByRole('button', { name: /3, Hesitant/ }).click();
   await expect(page.getByTestId('study-deck-stage').locator('[role="button"]')).toBeVisible();
   await page.getByRole('button', { name: 'End session' }).click();
   await expect(page.getByRole('heading', { name: /Study saved|Nice work/ })).toBeVisible();

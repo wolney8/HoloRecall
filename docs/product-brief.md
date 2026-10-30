@@ -20,15 +20,15 @@ Keep tasks short and focused on one recall target. The original seed deck includ
 
 Use maintained, pinned `ts-fsrs` through a domain adapter. HoloRecall's proposed five-button interface maps onto four native FSRS outcomes:
 
-| Rating | Meaning after attempting recall | FSRS outcome |
-| --- | --- | --- |
-| 1 | Forgot, incorrect, or needed the answer | Again |
-| 2 | Correct, with substantial effort | Hard |
-| 3 | Correct, with some hesitation | Good |
-| 4 | Correct and confident | Good |
-| 5 | Correct immediately and effortlessly | Easy |
+| Rating | Public label | Meaning after attempting recall | FSRS outcome |
+| --- | --- | --- | --- |
+| 1 | Forgot | Could not recall the answer | Again |
+| 2 | Hard | Recalled only with significant effort | Hard |
+| 3 | Hesitant | Recalled with some hesitation | Good |
+| 4 | Confident | Recalled clearly | Good |
+| 5 | Easy | Recalled immediately and effortlessly | Easy |
 
-Preserve the original rating for analytics. This is HoloRecall's proposed mapping, not a validated Brainscape equivalent. Validate wording with users. A wrong or unrecalled answer must not become Hard because it feels familiar after reveal. No copied Anki source or invented SM-2/FSRS hybrid is needed.
+Preserve the original rating for analytics. The public labels are presentation vocabulary; stored values remain 1–5, and ratings 3 and 4 both continue to map to FSRS Good. This is HoloRecall's proposed mapping, not a validated Brainscape equivalent. Validate wording with users. A wrong or unrecalled answer must not become Hard because it feels familiar after reveal. No copied Anki source or invented SM-2/FSRS hybrid is needed.
 
 Keep scheduling separate from effects and rewards. Save all required scheduler state and versioned parameters. Store UTC instants; use a configurable IANA zone, initially `Europe/London`, for days and streaks. Inject clocks and control randomness in tests. Prioritise due work and make review/new-card limits configurable. Practice is distinct from scheduled study.
 

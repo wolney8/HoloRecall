@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, isDevMode, QueryList, signal, ViewChildren } from '@angular/core';
+import { Component, computed, DestroyRef, effect, HostListener, inject, Injector, isDevMode, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,11 +6,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { firstValueFrom } from 'rxjs';
 import { LocalStudyStore } from './data/study-store';
-import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, RATING_OPTIONS } from '../domain/study';
+import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, ratingPresentation, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '../domain/rewards';
 import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode, StudySession } from '../domain/models';
@@ -65,7 +65,6 @@ interface DashboardHeroView { title:string; parentLabel:string; status:string; d
   templateUrl:'./app.html',
 })
 export class AppComponent {
-  @ViewChildren('ratingTip') private ratingTips!: QueryList<MatTooltip>;
   readonly store=inject(LocalStudyStore);
   readonly lifecycle=inject(AppLifecycle);
   readonly library=inject(LibraryViewService);
@@ -109,7 +108,6 @@ export class AppComponent {
   readonly resultCardSide=signal('');
   readonly autoAdvancePaused=signal(false);
   readonly cardAudioPlaying=signal(false);
-  readonly openRatingHelp=signal<number|null>(null);
   readonly mobileMoreOpen=signal(false);
   readonly failedDashboardImage=signal('');
   readonly searchResultIndex=signal(0);
@@ -200,7 +198,7 @@ export class AppComponent {
   readonly resultRecall=computed(()=>{const values=this.resultEvents().flatMap(event=>event.recallMs===undefined?[]:[event.recallMs]);return{sample:values.length,average:values.length?values.reduce((a,b)=>a+b,0)/values.length:null};});
   readonly resultUnique=computed(()=>new Set(this.resultEvents().map(event=>event.cardId)).size);
   readonly practiceLowCards=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionPracticeEvents().filter(event=>event.rating<=2).map(event=>event.cardId));return state.cards.filter(card=>ids.has(card.id));});
-  readonly practiceDistribution=computed(()=>[1,2,3,4,5].map(rating=>({rating,count:this.sessionPracticeEvents().filter(event=>event.rating===rating).length})));
+  readonly practiceDistribution=computed(()=>([1,2,3,4,5] as const).map(rating=>({rating,count:this.sessionPracticeEvents().filter(event=>event.rating===rating).length})));
   readonly resultRewardRows=computed(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id)),active=activeRewardEvents(state);const contributions=active.filter(event=>event.kind==='contribution'&&ids.has(event.reviewEventId)),prestigeContributions=active.filter(event=>event.kind==='prestige-contribution'&&ids.has(event.reviewEventId)),unlocks=active.filter(event=>event.kind==='unlock'&&ids.has(event.reviewEventId)),promotions=active.filter((event):event is PrestigePromotion=>event.kind==='prestige-promotion'&&ids.has(event.reviewEventId));return [...new Set(this.sessionReviews().map(event=>event.cardId))].map(cardId=>{const card=state.cards.find(item=>item.id===cardId)!;const progress=rewardProgress(state,cardId),prestige=prestigeProgress(state,cardId),promotion=promotions.filter(event=>event.cardId===cardId&&event.kind==='prestige-promotion').at(-1);const gained=contributions.filter(event=>event.cardId===cardId).length,masteryUnlocked=unlocks.some(event=>event.cardId===cardId&&event.kind==='unlock'&&event.rarity===(card.rarity??'common')),prestigeGained=prestigeContributions.filter(event=>event.cardId===cardId).length,prestigeRequired=promotion?.required??prestige.required,prestigeDays=promotion?.required??prestige.days;return{card,progress,prestige,promotion,gained,prestigeGained,prestigeRequired,prestigeDays,showPrestige:progress.earned&&!masteryUnlocked,before:Math.max(0,progress.days-gained),prestigeBefore:promotion?Math.max(0,promotion.required-prestigeGained):Math.max(0,prestige.days-prestigeGained)};});});
   readonly resultUnlocks=computed<ResultAward[]>(()=>{const state=this.data();if(!state)return[];const ids=new Set(this.sessionReviews().map(event=>event.id)),result:ResultAward[]=[];for(const event of activeRewardEvents(state)){const card=state.cards.find(item=>item.id===event.cardId);if(!card||!ids.has(event.reviewEventId))continue;if(event.kind==='unlock')result.push({event,card,rarity:event.rarity,label:`${this.rarityLabel(event.rarity)} · Unlocked`,prestigeLevel:prestigeProgress(state,card.id).level});else if(event.kind==='prestige-promotion')result.push({event,card,rarity:card.rarity??'common',label:`Prestige ${this.roman(event.level)}`,prestigeLevel:event.level});}return result;});
   readonly activeResultUnlock=computed(()=>this.resultUnlocks()[this.unlockRevealIndex()]??null);
@@ -457,7 +455,15 @@ export class AppComponent {
   private beginUnlockReveal():void{if(!this.resultUnlocks().length||this.unlockRevealPhase()!=='waiting')return;if(!this.motionEnabled()||this.resultsSkipped()){this.unlockRevealPhase.set('settled');this.resultHapticsArmed=false;return;}this.resultTimers.push(window.setTimeout(()=>this.unlockRevealPhase.set('complete'),1120),window.setTimeout(()=>this.unlockRevealPhase.set('rise'),1360),window.setTimeout(()=>this.unlockRevealPhase.set('turn'),1720),window.setTimeout(()=>{this.unlockRevealPhase.set('revealed');this.hapticForActiveUnlock();},2280));}
   private hapticForActiveUnlock():void{const unlock=this.activeResultUnlock();if(!this.resultHapticsArmed||!unlock||this.unlockHapticEvents.has(unlock.event.id))return;this.unlockHapticEvents.add(unlock.event.id);this.feedback('cosmeticUnlock');}
   private clearResultMotion():void{this.resultHapticsArmed=false;for(const unobserve of this.resultUnobserve)unobserve();this.resultUnobserve=[];for(const timer of this.resultTimers)window.clearTimeout(timer);this.resultTimers=[];this.activeResultSections.set(0);}
-  toggleRatingHelp(rating:number,tip:MatTooltip,event:MouseEvent):void{event.stopPropagation();const close=this.openRatingHelp()===rating;this.ratingTips.forEach(item=>item.hide(0));this.openRatingHelp.set(close?null:rating);if(!close)tip.show(0);}
+  ratingLabel(rating:1|2|3|4|5):string{return ratingPresentation(rating).label;}
+  async showRatingHelp(event:Event):Promise<void>{
+    const opener=event.currentTarget as HTMLElement;
+    const [{MatDialog},{RatingHelpDialogComponent}]=await Promise.all([import('@angular/material/dialog'),import('./rating-help-dialog')]);
+    const intervals=this.currentPreset()?.showNextReviewTimes?Object.fromEntries(this.ratingOptions.map(option=>[option.rating,this.predictedInterval(option.rating)])):undefined;
+    const dialog=this.injector.get(MatDialog),ref=dialog.open(RatingHelpDialogComponent,{data:{intervals},autoFocus:'dialog',restoreFocus:false,width:'min(32rem, calc(100vw - 24px))',maxWidth:'calc(100vw - 24px)',maxHeight:'calc(100dvh - 24px)',panelClass:'rating-help-dialog-panel'});
+    await firstValueFrom(ref.afterClosed());
+    if(opener.isConnected)opener.focus();
+  }
   private async playConfidenceFeedback(rating:1|2|3|4|5):Promise<void>{
     if(!this.motionEnabled()||!this.data()?.preferences.effects){this.studyTransition.set('feedback');await new Promise<void>(resolve=>window.setTimeout(resolve,40));return;}
     this.studyTransition.set('feedback');this.confidenceFeedback.set(rating);
@@ -519,8 +525,7 @@ export class AppComponent {
   private fail(error:unknown):void{this.feedback('error');this.messageError.set(true);this.message.set(error instanceof Error?error.message:String(error));}
   private feedback(cue:'cardReveal'|'ratingAccepted'|'cardDeal'|'sessionComplete'|'cosmeticUnlock'|'error',rating?:1|2|3|4|5):void{this.feedbackService??=import('./platform/interaction-feedback').then(module=>this.injector.get(module.InteractionFeedback));void this.feedbackService.then(service=>cue==='ratingAccepted'?service.ratingAccepted(rating!):service[cue]()).catch(()=>undefined);}
   private handleNativeBack():boolean{if(this.mobileMoreOpen()){this.closeMobileMore();return true;}if(this.editor){this.cancelCardEditor();return true;}if(this.deckEditor){this.cancelDeckEditor();return true;}if(this.screen()==='dashboard')return false;if(this.screen()==='study'){this.go('library');return true;}this.go('dashboard');return true;}
-  @HostListener('document:pointerdown',['$event']) dismissRatingHelp(event:PointerEvent):void{if(!(event.target as HTMLElement).closest('.rating-info')){this.openRatingHelp.set(null);this.ratingTips?.forEach(tip=>tip.hide(0));}}
-  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.openRatingHelp.set(null);this.closeMobileMore();this.ratingTips?.forEach(tip=>tip.hide(0));return;}if(this.mobileMoreOpen()&&event.key==='Tab')this.trapMobileMoreFocus(event);const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="button"],[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='z'){if(!this.desktopStudyGuidance()||!this.currentFaceHasInspectableImage()||this.busy()||this.studyTransition()!=='idle'||this.studyCardMotionActive()||this.cardInspection.active()||document.querySelector('[role="dialog"]'))return;const card=this.displayedCard(),opener=document.querySelector<HTMLElement>('.study-card-area .expand-image.available:not(:disabled)');if(card&&opener){event.preventDefault();void this.openCardInspection(card,{revealed:this.studyCardFaceRevealed(),opener});}return;}if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if((event.code==='Space'||event.key==='Enter')&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
+  @HostListener('document:keydown',['$event']) key(event:KeyboardEvent):void{if(event.key==='Escape'){this.closeMobileMore();return;}if(this.mobileMoreOpen()&&event.key==='Tab')this.trapMobileMoreFocus(event);const target=event.target as HTMLElement;if(this.screen()!=='study'||target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="button"],[role="combobox"]')||event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;if(event.key.toLocaleLowerCase()==='z'){if(!this.desktopStudyGuidance()||!this.currentFaceHasInspectableImage()||this.busy()||this.studyTransition()!=='idle'||this.studyCardMotionActive()||this.cardInspection.active()||document.querySelector('[role="dialog"]'))return;const card=this.displayedCard(),opener=document.querySelector<HTMLElement>('.study-card-area .expand-image.available:not(:disabled)');if(card&&opener){event.preventDefault();void this.openCardInspection(card,{revealed:this.studyCardFaceRevealed(),opener});}return;}if(event.key.toLocaleLowerCase()==='a'&&this.currentPreset()?.autoAdvanceEnabled){event.preventDefault();this.toggleAutoAdvance();return;}if((event.code==='Space'||event.key==='Enter')&&!this.revealed()){event.preventDefault();void this.reveal();}if(this.revealed()&&/^[1-5]$/.test(event.key)){event.preventDefault();void this.rate(Number(event.key)as 1|2|3|4|5);}}
   edit(card?:CardContent,deckId?:string):void{this.go('library');if(this.screen()!=='library')return;this.tagInput=card?.tags.join(', ')??'';this.creatorChoices=card?.choices?.join('\n')??'';this.authorPreset=card?.imageOcclusion?'image-occlusion':card?.kind==='visual'?'image-first':'basic';this.authorPreviewRevealed=false;if(card){const resolved=this.presentationFor(card);this.editor=structuredClone({...card,presentation:{...card.presentation,profile:card.presentation?.profile??resolved.profile,artRole:card.presentation?.artRole??resolved.artRole}});}else this.editor=this.blankCard(deckId);this.editorBaseline=this.editorSnapshot();setTimeout(()=>document.getElementById('card-front')?.focus());}
   duplicateCard(card:CardContent):void{this.edit({...structuredClone(card),id:crypto.randomUUID(),revision:0},card.deckId);this.message.set('Duplicate draft created. Review it before saving.');}
   setAuthorPreset(preset:'basic'|'image-first'|'reversible'|'image-occlusion'):void{if(!this.editor)return;this.authorPreset=preset;this.editor.kind=preset==='image-first'||preset==='image-occlusion'?'visual':'text';if(preset==='image-occlusion'&&!this.editor.imageOcclusion)this.editor.imageOcclusion={version:1,source:'holorecall-native',mode:'hide-all-guess-one',activeGroupId:'mask-1',shapes:[],header:this.editor.front||undefined,imageDescription:this.editor.imageDescription};if(preset!=='image-occlusion'&&this.editor.imageOcclusion)delete this.editor.imageOcclusion;this.editor={...this.editor};}

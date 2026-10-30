@@ -17,7 +17,7 @@ test('HR-IOS lifecycle interruption checkpoints time and never duplicates an acc
   expect((await snapshot(page)).session!.activeMs).toBe(pausedAt);
   await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
   await page.getByRole('button', { name: /Check answer/ }).click();
-  await page.getByRole('button', { name: /4 Good Confident/ }).click();
+  await page.getByRole('button', { name: /4, Confident/ }).click();
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible();
   const accepted = await snapshot(page);
   expect(accepted.events.filter(event => event.kind === 'review')).toHaveLength(1);
@@ -38,7 +38,7 @@ test('HR-IOS loaded-page offline Study remains usable in WebKit and recovery kee
   await page.getByRole('button', { name: /Start studying/ }).click();
   await context.setOffline(true);
   await page.getByTestId('study-deck-stage').locator('[role="button"]').click({ position: { x: 100, y: 100 } });
-  await page.getByRole('button', { name: /4 Good Confident/ }).click();
+  await page.getByRole('button', { name: /4, Confident/ }).click();
   expect((await snapshot(page)).events.filter(event => event.kind === 'review')).toHaveLength(1);
   await context.setOffline(false);
   await page.reload();
@@ -68,7 +68,7 @@ test('HR-IOS compact portrait preserves safe-area layout, stable reveal and touc
   expect(await page.evaluate(() => scrollY)).toBe(scrollBefore);
   expect(await page.evaluate(() => CSS.supports('padding-top', 'env(safe-area-inset-top)'))).toBe(true);
   await expectNoOverflow(page);
-  expect((await page.getByRole('button', { name: /1 Again Forgot/ }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect((await page.getByRole('button', { name: /1, Forgot/ }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
 
 test('HR-IOS large portrait supports 200 percent text and keyboard-sized viewport changes @ios-large', async ({ page }) => {

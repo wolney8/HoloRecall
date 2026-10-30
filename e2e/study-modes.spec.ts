@@ -3,21 +3,22 @@ import {expect,test,navigate,openApp,replaceSnapshot,revealCard,selectMaterial,s
 test('Spaced Review repeats a failed learning card without changing the assigned Study preset',async({page})=>{
   await openApp(page);await selectMaterial(page,'Study mode','Spaced Review');await page.getByRole('button',{name:/Start studying/}).click();
   await expect(page.locator('.session-bar')).toContainText('Spaced Review');const before=await snapshot(page),cardId=before.session!.queue[0]!;
-  await revealCard(page);await page.getByRole('button',{name:/1 Again Forgot/}).click();await expect.poll(async()=>(await snapshot(page)).events.length).toBe(1);
+  await revealCard(page);await page.getByRole('button',{name:/1, Forgot/}).click();await expect.poll(async()=>(await snapshot(page)).events.length).toBe(1);
   const after=await snapshot(page);expect(after.session?.experienceMode).toBe('anki');expect(after.session?.queue.at(-1)).toBe(cardId);expect(after.session?.repetitionDue?.[cardId]).toBe(after.states[cardId]!.due);expect(after.decks.find(deck=>deck.id===after.cards.find(card=>card.id===cardId)!.deckId)?.studyPresetId).toBe(before.decks.find(deck=>deck.id===before.cards.find(card=>card.id===cardId)!.deckId)?.studyPresetId);
 });
 
 test('Confidence Study uses the genuine scheduled-review and collectible progression path',async({page})=>{
   await openApp(page);await selectMaterial(page,'Study mode','Confidence Study');await page.getByRole('button',{name:/Start studying/}).click();await expect(page.locator('.session-bar')).toContainText('Confidence Study');const cardId=(await snapshot(page)).session!.queue[0]!;
-  await revealCard(page);await page.getByRole('button',{name:/2 Hard With effort/}).click();await expect.poll(async()=>(await snapshot(page)).events.length).toBe(1);
+  await revealCard(page);await page.getByRole('button',{name:/2, Hard/}).click();await expect.poll(async()=>(await snapshot(page)).events.length).toBe(1);
   const after=await snapshot(page);expect(after.session?.experienceMode).toBe('mastery');expect(after.practiceEvents).toEqual([]);expect(after.states[cardId]).toBeDefined();expect(after.session?.queue).not.toContain(cardId);
   const end=page.getByRole('button',{name:'End session',exact:true});await expect(end).toBeEnabled();await end.click();await expect(page.locator('.results-heading')).toContainText('Confidence Study');
 });
 
 test('Free Practice is visibly practice-only and never mutates FSRS or rewards',async({page})=>{
   await openApp(page);await selectMaterial(page,'Study mode','Free Practice');const before=await snapshot(page);await page.getByRole('button',{name:/Start studying/}).click();await expect(page.locator('.session-bar')).toContainText('Free Practice');
-  await revealCard(page);await page.getByRole('button',{name:/5 Easy Effortless/}).click();await expect.poll(async()=>(await snapshot(page)).practiceEvents.length).toBe(1);
+  await revealCard(page);await page.getByRole('button',{name:/5, Easy/}).click();await expect.poll(async()=>(await snapshot(page)).practiceEvents.length).toBe(1);
   const after=await snapshot(page);expect(after.session?.mode).toBe('practice');expect(after.session?.experienceMode).toBe('free-revision');expect(after.events).toEqual(before.events);expect(after.states).toEqual(before.states);expect(after.rewardEvents).toEqual(before.rewardEvents);
+  await page.getByRole('button',{name:'End session',exact:true}).click();await expect(page.getByLabel('Practice confidence distribution')).toContainText('5 · Easy');
 });
 
 test('legacy generated labels use public terminology while custom Focus labels remain intact',async({page})=>{
