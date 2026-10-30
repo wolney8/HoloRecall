@@ -27,9 +27,10 @@ These items preserve the owner's reported behavior; each item's current implemen
 ### HR-MOBILE-UX-01A — Mobile shell, safe areas and overflow surfaces
 
 - **Product area / milestone / priority:** Mobile shell and navigation / Beta-01 gate / P1
-- **Status:** PLANNED — blocks resuming Beta-01 manual Study-mode validation
+- **Status:** VERIFY — focused Chromium/WebKit shell and persistent-navigation checks pass 16/16; owner/Simulator safe-area acceptance remains pending and Beta-01 stays blocked on 01B
 - **Scope:** Establish one Light/Dark surface owner through iOS top and bottom safe areas; separate the immersive top-bar ellipsis from bottom-navigation overflow; replace the Study/Results two-column modal grid with a compact anchored vertical menu that remains inside the safe viewport.
 - **Acceptance:** No opposing-theme safe-area strips; Dashboard and Settings remain directly reachable; the menu originates at the ellipsis, identifies the current route, needs no scrolling, dismisses by selection/outside action/Escape, restores trigger focus and preserves active Study and unsaved-work safeguards.
+- **Evidence:** The document/app-shell/workspace and compact bars share opaque active-theme surfaces. System follows emulated OS preference at startup and during changes. Bottom More is a vertical modal navigation sheet; Study/Results use a separate anchored four-item menu outside document flow. Chromium/WebKit checks pass 16/16 at 320/390 px and 200% text plus medium/expanded regression; TypeScript and production build pass. Simulator/owner visual and physical accessibility evidence remain unverified.
 
 ### HR-MOBILE-UX-01B — Study rating interaction
 

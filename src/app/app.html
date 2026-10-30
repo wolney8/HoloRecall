@@ -8,12 +8,12 @@
     </nav>
     <div class="sidebar-footer"><span class="status-chip"><span class="status-dot"></span> Stored on this device</span><p>No cloud account or sync.<br>Export backups from Settings.</p></div>
   </aside>
-  <header class="mobile-header">
+  <header class="mobile-header" [class.immersive-header]="screen()==='study'||screen()==='results'">
     @if(mobileHasBack()){<button mat-icon-button type="button" class="mobile-back" (click)="mobileBack()" [attr.aria-label]="'Back from '+mobileTitle()"><span aria-hidden="true">‹</span></button>}
     <span class="mobile-context-title">@if(mobileParentTitle()){<small>{{mobileParentTitle()}}</small>}<strong>{{mobileTitle()}}</strong></span>
     <span class="mobile-header-actions">
       <button mat-icon-button type="button" class="theme-quick-trigger" [matMenuTriggerFor]="themeMenu" [attr.aria-label]="'Choose theme. Current: '+themeLabel()" aria-haspopup="menu" matTooltip="Choose theme"><span class="theme-quick-icon" aria-hidden="true">{{themeIcon()}}</span></button>
-      <button mat-icon-button type="button" class="mobile-header-more" (click)="toggleMobileMore($event)" aria-label="Open more navigation" aria-haspopup="dialog" aria-controls="mobile-more-navigation" [attr.aria-expanded]="mobileMoreOpen()"><span aria-hidden="true">•••</span></button>
+      @if(screen()==='study'||screen()==='results'){<button mat-icon-button type="button" class="mobile-header-more" [matMenuTriggerFor]="immersiveMenu" (click)="rememberImmersiveMenuOpener($event)" aria-label="More options" aria-haspopup="menu"><span aria-hidden="true">•••</span></button>}
     </span>
   </header>
   @if(mobileMoreOpen()){
@@ -21,7 +21,7 @@
     <section id="mobile-more-navigation" class="mobile-more-sheet" role="dialog" aria-modal="true" aria-label="More destinations">
       <h2>More</h2>
       <nav aria-label="Secondary navigation">
-        @for(item of screen()==='study'||screen()==='results'?immersiveNavigation:mobileSecondaryNavigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}
+        @for(item of mobileSecondaryNavigation;track item.id){<button mat-button [class.active]="screen()===item.id" [attr.aria-current]="screen()===item.id?'page':null" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}
       </nav>
     </section>
   }
@@ -158,6 +158,9 @@
   </div>
   <mat-menu #themeMenu="matMenu" aria-label="Theme">
     @for(option of themeOptions;track option.id){<button mat-menu-item type="button" role="menuitemradio" [attr.aria-checked]="theme.choice()===option.id" (click)="selectTheme(option.id)"><span class="theme-menu-icon" aria-hidden="true">{{option.icon}}</span><span>{{option.label}}</span><span class="theme-menu-check" aria-hidden="true">{{theme.choice()===option.id?'✓':''}}</span></button>}
+  </mat-menu>
+  <mat-menu #immersiveMenu="matMenu" class="immersive-overflow-menu" backdropClass="immersive-menu-backdrop" aria-label="More options" xPosition="before" yPosition="below" [overlapTrigger]="false" [hasBackdrop]="true" (closed)="restoreImmersiveMenuFocus()">
+    @for(item of immersiveOverflowNavigation;track item.id){<button mat-menu-item class="immersive-overflow-item" type="button" (click)="go(item.id)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}
   </mat-menu>
   <nav class="mobile-bottom-nav" aria-label="Primary navigation">@for(item of mobilePrimaryNavigation;track item.id){<button mat-button type="button" [class.active]="mobileNavActive(item.id)" [attr.aria-current]="mobileNavActive(item.id)?'page':null" [attr.aria-haspopup]="item.id==='more'?'dialog':null" [attr.aria-controls]="item.id==='more'?'mobile-more-navigation':null" [attr.aria-expanded]="item.id==='more'?mobileMoreOpen():null" (click)="item.id==='more'?toggleMobileMore($event):go(item.id,true)"><span class="nav-symbol" aria-hidden="true">{{item.icon}}</span><span>{{item.label}}</span></button>}</nav>
 </div>

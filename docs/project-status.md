@@ -1,5 +1,11 @@
 # Current restart point
 
+## 29 October 2026 — HR-MOBILE-UX-01A shell and overflow browser gate verified
+
+- **Surface ownership:** `html`, `body`, `app-root`, the application shell and workspace now paint the active Material surface. Compact top and bottom bars use opaque theme tokens through their owned safe-area padding, and System resolves the current OS preference at first paint and while mounted. No hard-coded Dark background or native business-logic fork was introduced.
+- **Distinct overflow patterns:** Bottom-navigation More is a vertical, focus-contained global navigation sheet. Study and Results use a separate Angular Material menu anchored to the top ellipsis with Dashboard, Decks, Progress and Settings only. It remains outside document flow, uses a single aligned list, has an explicit backdrop, dismisses by outside action/Escape/selection and restores trigger focus without changing review, reward or session state.
+- **Evidence and boundary:** Focused Chromium/WebKit shell plus persistent-navigation checks pass **16/16** across 320/390 px, 200% text and medium/expanded cases. Light/Dark/System surfaces, viewport-constrained anchoring, stable document height, dismissal, navigation and horizontal overflow pass. Type-check and production build pass; the initial bundle is **968.98 kB** against the existing 900 kB warning. `HR-MOBILE-UX-01A` moves to `VERIFY`; owner visual, Simulator safe-area and physical touch/VoiceOver evidence remain unverified. Beta-01 remains `BLOCKED` pending P1 `HR-MOBILE-UX-01B`.
+
 ## 29 October 2026 — BETA-01 genuine-deck iOS Simulator phase partially verified; manual Study validation paused
 
 - **Native import and hierarchy:** A disposable iPhone 17 Pro / iOS 26.5 Simulator selected the genuine 117,391-byte Italian APKG through the production native Files picker. The selected receipt matched SHA-256 `02f537522f25dfc0060011e391ba6fe3a98dddf9427b14f23505d80b5f75247a`; preview reported 254 Ready and zero warnings/conflicts. Import produced 254 cards in 24 decks with three roots, 21 children and recursive root counts 83/126/45. No child appeared as a false root.

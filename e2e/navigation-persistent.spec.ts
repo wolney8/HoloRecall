@@ -75,11 +75,11 @@ test('HR-NAV-02 medium navigation is a persistent rail and immersive Study retai
   await expect(sidebar).toBeHidden();
   const header=page.locator('.mobile-header');
   await expect(header).toBeVisible();
-  const more=header.getByRole('button',{name:'Open more navigation'});
+  const more=header.getByRole('button',{name:'More options'});
   await more.click();
-  const secondary=page.getByRole('navigation',{name:'Secondary navigation'});
-  await expect(secondary.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
-  await expect(secondary.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+  const overflow=page.getByRole('menu',{name:'More options'});
+  await expect(overflow.getByRole('menuitem',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(overflow.getByRole('menuitem',{name:'Settings',exact:true})).toBeVisible();
 });
 
 test('HR-NAV-02 compact Results retains Dashboard and Settings exits',async({page})=>{
@@ -89,8 +89,8 @@ test('HR-NAV-02 compact Results retains Dashboard and Settings exits',async({pag
   await page.getByRole('button',{name:'End session',exact:true}).click();
   await expect(page.getByRole('heading',{name:/Study saved|Nice work/})).toBeVisible();
   await expect(page.getByRole('navigation',{name:'Primary navigation'})).toBeHidden();
-  await page.getByRole('button',{name:'Open more navigation'}).click();
-  const secondary=page.getByRole('navigation',{name:'Secondary navigation'});
-  await expect(secondary.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
-  await expect(secondary.getByRole('button',{name:'Settings',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'More options'}).click();
+  const overflow=page.getByRole('menu',{name:'More options'});
+  await expect(overflow.getByRole('menuitem',{name:'Dashboard',exact:true})).toBeVisible();
+  await expect(overflow.getByRole('menuitem',{name:'Settings',exact:true})).toBeVisible();
 });

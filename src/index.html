@@ -15,7 +15,7 @@
       var theme = 'system';
       try { var saved = localStorage.getItem('holorecall-theme'); if (saved === 'light' || saved === 'dark') theme = saved; } catch (_) {}
       document.documentElement.dataset.theme = theme;
-      document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme;
+      document.documentElement.style.colorScheme = theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
     }());
   </script>
   <style>html,body{background:light-dark(#f7faf3,#101510);color:light-dark(#191d18,#e1e4dc);margin:0}html{color-scheme:light dark}</style>
