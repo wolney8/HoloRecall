@@ -29,8 +29,8 @@ test('Auto Advance pauses safely, auto-reveals, requires a rating and waits for 
 
 test('Auto Advance uses the shared Practice player without creating scheduled progress',async({page})=>{
   await openApp(page);await enableAutoAdvance(page,1,0);await navigate(page,'Focus');
-  await page.getByRole('button',{name:/Preview new cards/}).click();await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible({timeout:2_500});const before=await snapshot(page);await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.locator('.session-bar')).toContainText('1 /');
+  await page.getByRole('button',{name:/Preview new cards/}).click();await expect(page.getByTestId('study-mode-label')).toHaveText('Free Practice');
+  await expect(page.getByRole('heading',{name:'Rate your recall'})).toBeVisible({timeout:2_500});const before=await snapshot(page);await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.getByRole('progressbar',{name:/Study progress, 1 of/})).toBeVisible();
   const after=await snapshot(page);expect(after.events).toEqual(before.events);expect(after.states).toEqual(before.states);expect(after.rewardEvents).toEqual(before.rewardEvents);expect(after.practiceEvents).toHaveLength(1);
 });
 

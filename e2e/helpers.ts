@@ -34,7 +34,7 @@ export async function navigate(page: Page, name: string): Promise<void> {
     return;
   }
   // Focused Study intentionally hides navigation. End it explicitly so tests follow the real user path.
-  if (name === 'Study' && await page.getByRole('heading', { name: 'Study', exact: true }).isVisible()) return;
+  if (name === 'Study' && await page.getByRole('region', { name: 'Current flashcard', exact: true }).isVisible()) return;
   const end = page.getByRole('button', { name: 'End session', exact: true });
   if (await end.isVisible()) {
     await end.click();
@@ -79,7 +79,7 @@ export async function confidentReview(page: Page): Promise<void> {
   await revealCard(page);
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   await page.getByRole('button', { name: /4, Confident/ }).click();
-  await expect(page.locator('.session-bar')).toContainText('1 / 10');
+  await expect(page.getByRole('progressbar',{name:/Study progress, 1 of 10 cards/})).toBeVisible();
 }
 export async function revealCard(page: Page): Promise<void> {
   const visibleAction = page.getByRole('button', { name: /Check answer/ });

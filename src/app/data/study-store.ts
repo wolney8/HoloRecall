@@ -42,7 +42,10 @@ export class LocalStudyStore {
   }
 
   async init(): Promise<void> {
-    try { await this.refresh(); await this.ensureAssetMetadata(); } catch { /* error signal presents the storage failure; never fall back to volatile progress. */ }
+    // The boot coordinator owns presentation and retry. Reject so a known storage
+    // failure can never become an indefinite loading screen.
+    await this.refresh();
+    await this.ensureAssetMetadata();
   }
 
   async refresh(): Promise<void> {

@@ -92,7 +92,7 @@ test('revealed session and selected scheduler order recover from reload without 
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   expect((await snapshot(page)).session).toMatchObject({ id: start.session!.id, revealed: true, queue: start.session!.queue });
   await page.locator('body').press('4'); await page.locator('body').press('4');
-  await expect(page.locator('.session-bar')).toContainText('1 / 10');
+  await expect(page.getByRole('progressbar',{name:'Study progress, 1 of 10 cards'})).toBeVisible();
   const graded = await snapshot(page);
   expect(graded.events).toHaveLength(1); expect(graded.session!.queue).toEqual(start.session!.queue.slice(1));
   expect(graded.rewardEvents.filter(event => event.kind === 'contribution')).toHaveLength(1);

@@ -98,7 +98,7 @@ test('HR-THEME-01 action remains in persistent chrome across major and immersive
   expect((await visibleThemeButton(page).boundingBox())!.y).toBeCloseTo(headerButtonY,0);
   await page.goto('/#dashboard');
   await page.getByRole('button',{name:/Start studying/}).click();
-  await expect(page.getByRole('heading',{name:'Study',exact:true})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Current flashcard',exact:true})).toBeVisible();
   await expect(visibleThemeButton(page)).toHaveCount(1);
   await page.getByRole('button',{name:'End session',exact:true}).click();
   await expect(page.getByRole('heading',{name:/Study saved|Nice work/})).toBeVisible();

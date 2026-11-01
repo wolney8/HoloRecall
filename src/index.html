@@ -18,7 +18,14 @@
       document.documentElement.style.colorScheme = theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme;
     }());
   </script>
-  <style>html,body{background:light-dark(#f7faf3,#101510);color:light-dark(#191d18,#e1e4dc);margin:0}html{color-scheme:light dark}</style>
+  <style>
+    html,body{min-height:100%;background:light-dark(#f7faf3,#101510);color:light-dark(#191d18,#e1e4dc);margin:0}html{color-scheme:light dark}
+    .preboot{box-sizing:border-box;display:grid;min-height:100vh;min-height:100dvh;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));place-content:center;justify-items:center;gap:18px;font-family:Roboto,Arial,sans-serif;text-align:center;background:inherit;color:inherit}
+    .preboot img{width:72px;height:72px}.preboot strong{font-size:1.45rem;letter-spacing:-.025em}.preboot i{width:28px;height:28px;border:3px solid color-mix(in srgb,currentColor 18%,transparent);border-top-color:#427363;border-radius:50%;animation:preboot-spin .9s linear infinite}
+    .preboot-error button{min-height:44px;padding:0 22px;border:0;border-radius:999px;background:#244f42;color:#fff;font:600 1rem Roboto,Arial,sans-serif;cursor:pointer}.preboot-error button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+    @keyframes preboot-spin{to{transform:rotate(1turn)}}
+    @media(prefers-reduced-motion:reduce){.preboot i{animation:none;border-color:#427363;border-right-color:transparent}}
+  </style>
 </head>
-<body><app-root></app-root></body>
+<body><app-root><main class="preboot" aria-busy="true" aria-labelledby="preboot-title"><img src="brand/holorecall-mark.svg" alt=""><i aria-hidden="true"></i><strong id="preboot-title">Loading HoloRecall</strong><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)" role="status">HoloRecall is starting.</span></main></app-root></body>
 </html>

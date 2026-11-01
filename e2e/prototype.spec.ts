@@ -14,7 +14,7 @@ test('visual reveal, five-point rating and FSRS state survive a reload', async (
   await expect(page.getByRole('button', { name: /4, Confident/ })).toHaveCount(0);
 
   await confidentReview(page);
-  await expect(page.locator('.session-bar')).toContainText('1 / 10');
+  await expect(page.getByRole('progressbar',{name:'Study progress, 1 of 10 cards'})).toBeVisible();
   await expect(flashcard.locator('img')).toHaveAttribute('src', '/art/caffe.svg');
   const saved = await snapshot(page);
   expect(saved.events).toHaveLength(1);
@@ -67,7 +67,7 @@ test('undo preserves the review and appends a reversal while correcting counts',
   await page.getByRole('button', { name: /Start studying/ }).click();
   await confidentReview(page);
   await page.getByRole('button', { name: /Undo/ }).click();
-  await expect(page.locator('.session-bar')).toContainText('0 / 10');
+  await expect(page.getByRole('progressbar',{name:'Study progress, 0 of 10 cards'})).toBeVisible();
   await expect(page.getByRole('region', { name: 'Current flashcard' }).locator('img')).toHaveAttribute('src', '/art/limone.svg');
   const saved = await snapshot(page);
   expect(saved.events).toHaveLength(2);
@@ -146,7 +146,7 @@ test('keyboard reveal and rating use the same persisted review path', async ({ p
   await page.locator('body').press('Space');
   await expect(page.getByRole('heading', { name: 'il limone', exact: true })).toBeVisible();
   await page.locator('body').press('3');
-  await expect(page.locator('.session-bar')).toContainText('1 / 10');
+  await expect(page.getByRole('progressbar',{name:'Study progress, 1 of 10 cards'})).toBeVisible();
   const saved = await snapshot(page);
   expect(saved.events).toHaveLength(1);
   expect(saved.events[0]).toMatchObject({ rating: 3, grade: 3 });

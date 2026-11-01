@@ -13,7 +13,7 @@ import { LocalStudyStore } from './data/study-store';
 import { activeReviews, dayKey, dueCards, hydrateCard, mapRating, ratingPresentation, RATING_OPTIONS } from '../domain/study';
 import { createEmptyCard,fsrs } from 'ts-fsrs';
 import { activeRewardEvents, prestigeProgress, RARITIES, rewardProgress } from '../domain/rewards';
-import type { CardContent, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode, StudySession } from '../domain/models';
+import type { CardContent, ConfidenceRating, Deck, DesignSet, FinishPreset, FocusSessionRequest, ImageOcclusionContent, PrestigePromotion, Rarity, RewardUnlock, StudyExperienceMode, StudySession } from '../domain/models';
 import { publicSessionLabel, STUDY_MODE_OPTIONS, studyModePresentation } from '../domain/study-mode-presentation';
 import { FlashcardComponent, type CardInspectionRequest } from './card';
 import { CardInspectionService } from './card-inspection';
@@ -52,6 +52,8 @@ import { EffectsLabComponent } from './effects-lab/effects-lab';
 import { CardMotionViewportComponent } from './card-motion-viewport';
 import { dashboardImageCandidates, dashboardScopeCardCount, resolveDashboardFeature, type DashboardFeature, type DashboardImageCandidate } from '../domain/dashboard-feature';
 import { ThemeService, type ThemeChoice } from './theme.service';
+import { StudyRatingGestureDirective } from './study-rating-gesture';
+import { BootCoordinator } from './platform/boot-coordinator';
 
 type Screen = 'dashboard' | 'library' | 'focus' | 'study' | 'results' | 'collection' | 'studio' | 'progress' | 'exchange' | 'settings' | 'effects-lab';
 type LibrarySubview = 'decks' | 'search';
@@ -61,11 +63,12 @@ interface ResultAward { event:RewardUnlock|PrestigePromotion;card:CardContent;ra
 interface DashboardHeroView { title:string; parentLabel:string; status:string; description:string; action:'Resume study'|'Resume practice'|'Start studying'|'View decks'; deckId?:string; active:boolean }
 @Component({
   selector:'app-root', standalone:true,
-  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,MatMenuModule,FlashcardComponent,CardMotionViewportComponent,DesignStudioComponent,CollectionComponent,CollectionDeskComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
+  imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,MatSelectModule,MatProgressBarModule,MatCheckboxModule,MatTooltipModule,MatMenuModule,FlashcardComponent,CardMotionViewportComponent,StudyRatingGestureDirective,DesignStudioComponent,CollectionComponent,CollectionDeskComponent,ProgressComponent,ExchangeComponent,StudySettingsComponent,FocusComponent,AppearanceSettingsComponent,LocalDataSettingsComponent,RewardSettingsComponent,DeckSourceControlsComponent,CardListRowComponent,CardSourceControlsComponent,DeckAnkiActionsComponent,DeckJourneyActionsComponent,SubdeckRowComponent,SubdeckDisclosureComponent,JsonAuthoringComponent,AnswerSupportComponent,ImageOcclusionEditorComponent,SubviewNavigationComponent,PageRevealDirective,EffectsLabComponent],
   templateUrl:'./app.html',
 })
 export class AppComponent {
   readonly store=inject(LocalStudyStore);
+  readonly boot=inject(BootCoordinator);
   readonly lifecycle=inject(AppLifecycle);
   readonly library=inject(LibraryViewService);
   private readonly viewportCoordinator=inject(VisualViewportCoordinator);
@@ -101,6 +104,8 @@ export class AppComponent {
   readonly studyTransition=signal<'idle'|'feedback'|'deal'>('idle');
   readonly studyRecallPeek=signal(false);
   readonly studyCardMotionActive=signal(false);
+  readonly studyGesturePreview=signal<ConfidenceRating|null>(null);
+  readonly ratingDockCentre=signal<ConfidenceRating>(2);
   readonly clueState=signal<'waiting'|'available'|'displayed'|'removing'>('waiting');
   readonly clueAnnouncement=signal('');
   readonly clueFlagVisible=computed(()=>this.clueState()==='available');
@@ -185,6 +190,7 @@ export class AppComponent {
   readonly revealed=computed(()=>this.session()?.revealed??false);
   readonly displayedRevealed=computed(()=>this.studyPresentationCard()?true:this.revealed());
   readonly studyCardFaceRevealed=computed(()=>this.displayedRevealed()&&!this.studyRecallPeek());
+  readonly studyRatingEnabled=computed(()=>!!this.current()&&!!this.session()&&this.revealed()&&this.studyCardFaceRevealed()&&!this.busy()&&this.studyTransition()==='idle'&&this.lifecycle.active()&&this.lifecycle.focused());
   readonly currentClue=computed(()=>this.current()?this.presentationFor(this.current()!).hint?.trim()??'':'');
   readonly desktopStudyGuidance=computed(()=>!this.platform.nativeIos()&&!this.platform.coarsePointer());
   readonly currentFaceHasInspectableImage=computed(()=>{const card=this.displayedCard();if(!card)return false;const presentation=this.presentationFor(card);if(presentation.artRole==='hidden'||(!this.studyCardFaceRevealed()&&presentation.effectiveArtPolicy==='text-first'))return false;const ref=this.studyCardFaceRevealed()?(card.backImage||card.image):card.image;return !!this.store.mediaUrl(ref);});
@@ -240,7 +246,7 @@ export class AppComponent {
     const syncSystemMotion=()=>window.setTimeout(()=>this.systemMotionReduced.set(this.motionMedia.matches),0);
     this.motionMedia.addEventListener('change',syncSystemMotion);
     this.destroyRef.onDestroy(()=>this.motionMedia.removeEventListener('change',syncSystemMotion));
-    void this.store.init();
+    void this.boot.start();
     effect(()=>{
       const cardId=this.current()?`${this.current()!.id}:${this.current()!.revision}`:'';
       if(cardId!==this.timedCard){this.clearRecallPeek();this.timedCard=cardId;this.elapsedMs=this.session()?.activeMs??0;this.lastTick=performance.now();}
@@ -320,6 +326,11 @@ export class AppComponent {
   mobileTitle():string{return this.navigationContext().at(-1)?.label??'HoloRecall';}
   breadcrumbAncestors():NavigationContext[]{return this.navigationContext().slice(0,-1);}
   mobileParentTitle():string{return this.navigationContext().at(-2)?.label??'';}
+  studyHeaderParent():string{const path=this.studyHeaderDeckPath();return path.length>1?path[0]!.name:'';}
+  studyHeaderTitle():string{const path=this.studyHeaderDeckPath();return path.at(-1)?.name??(this.session()?.mode==='practice'?'Practice':'Study');}
+  studyHeaderLabel():string{const parent=this.studyHeaderParent(),title=this.studyHeaderTitle();return parent?`${parent}, ${title}`:title;}
+  studyProgressLabel(session:StudySession):string{return `Study progress, ${session.completed} of ${session.total} cards`;}
+  private studyHeaderDeckPath():Deck[]{const deckId=this.displayedCard()?.deckId||this.current()?.deckId||this.session()?.scopeDeckId;return deckId?this.deckContext(deckId):[];}
   mobileHasBack():boolean{return this.navigationContext().length>1||!!this.editor||!!this.deckEditor;}
   mobileBack():void{if(this.editor){this.cancelCardEditor();return;}if(this.deckEditor){this.cancelDeckEditor();return;}const trail=this.navigationContext(),parent=trail.at(-2);if(parent)this.navigateContext(parent);else this.go('dashboard');}
   navigateContext(item:NavigationContext):void{if(item.deckId){this.selectedDeck=item.deckId;for(const deck of this.deckContext(item.deckId))this.expandedDecks.add(deck.id);this.go('library');setTimeout(()=>document.getElementById(`deck-${item.deckId}`)?.scrollIntoView({block:'start'}));return;}this.go(item.screen);}
@@ -403,16 +414,20 @@ export class AppComponent {
   practiceMissedAgain():void{const cards=this.practiceLowCards();if(!cards.length)return;this.openFocus({explicitCardIds:cards.map(card=>card.id),sourceLabel:'Low-confidence cards'});}
   viewPracticeCards():void{this.go('collection');}
   returnFromPractice():void{this.go('library');}
-  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearRecallPeek();this.clearClueDelay(true);this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.feedback('cardReveal');this.answerRevealedAt=performance.now();setTimeout(()=>document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true}));}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  async reveal():Promise<void>{if(!this.current()||this.busy())return;this.clearRecallPeek();this.clearClueDelay(true);this.clearAutoAdvanceTimer(false);this.busy.set(true);try{await this.store.revealSession(Math.round(this.elapsedMs));this.feedback('cardReveal');this.answerRevealedAt=performance.now();this.ratingDockCentre.set(2);setTimeout(()=>{this.centerRatingDock(2);document.querySelector<HTMLElement>('.study-card-area .answer h3, .study-card-area .answer-text')?.focus({preventScroll:true});});}catch(e){this.fail(e);}finally{this.busy.set(false);}}
+  centerRatingDock(rating:ConfidenceRating):void{const rail=document.querySelector<HTMLElement>('.rating-rail'),button=rail?.querySelector<HTMLElement>(`[data-rating="${rating}"]`);if(!rail||!button)return;rail.scrollTo({left:button.offsetLeft-(rail.clientWidth-button.offsetWidth)/2,behavior:'instant'});this.ratingDockCentre.set(rating);this.updateRatingRailAvailability(rail);}
+  updateRatingDockCentre(event:Event):void{const rail=event.currentTarget as HTMLElement,centre=rail.scrollLeft+rail.clientWidth/2;let nearest:ConfidenceRating=2,distance=Infinity;for(const item of Array.from(rail.querySelectorAll<HTMLElement>('[data-rating]'))){const next=Math.abs(item.offsetLeft+item.offsetWidth/2-centre);if(next<distance){distance=next;nearest=Number(item.dataset['rating']) as ConfidenceRating;}}this.ratingDockCentre.set(nearest);this.updateRatingRailAvailability(rail);}
+  private updateRatingRailAvailability(rail:HTMLElement):void{const frame=rail.parentElement!,max=rail.scrollWidth-rail.clientWidth;frame.toggleAttribute('data-before',rail.scrollLeft>2);frame.toggleAttribute('data-after',rail.scrollLeft<max-2);}
+  ratingDockOpacity(rating:ConfidenceRating):number{return rating===this.ratingDockCentre()?1:(Math.abs(rating-this.ratingDockCentre())===1 ? .72 : .5);}
   async rate(rating:1|2|3|4|5):Promise<void>{
-    const card=this.current(),session=this.session();if(!card||!session||!this.revealed()||this.busy())return;this.clearRecallPeek();this.clearAutoAdvanceTimer(false);
-    this.settleAnswerDwell();const run=++this.studyPresentationRun;this.busy.set(true);this.studyPresentationCard.set(card);
+    const card=this.current(),session=this.session();if(!card||!session||!this.studyRatingEnabled())return;this.studyGesturePreview.set(null);this.clearRecallPeek();this.clearAutoAdvanceTimer(false);
+    this.settleAnswerDwell();const run=++this.studyPresentationRun;this.busy.set(true);this.studyPresentationCard.set(card);this.studyPresentationRating.set(rating);
     try{
       if(session.mode==='practice')await this.store.practice(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));
       else await this.store.review(card.id,rating,session.id,crypto.randomUUID(),Math.round(this.elapsedMs));
       if(run!==this.studyPresentationRun)return;
       this.feedback('ratingAccepted',rating);
-      document.querySelector('.study-card-area hr-card')?.dispatchEvent(new Event('stop-card-audio'));this.studyPresentationRating.set(rating);this.elapsedMs=0;this.now.set(new Date());this.message.set('');
+      document.querySelector('.study-card-area hr-card')?.dispatchEvent(new Event('stop-card-audio'));this.elapsedMs=0;this.now.set(new Date());this.message.set('');
       await this.playConfidenceFeedback(rating);
       if(run!==this.studyPresentationRun)return;
       await this.waitForAnswerDwell(run);
@@ -460,9 +475,17 @@ export class AppComponent {
     const opener=event.currentTarget as HTMLElement;
     const [{MatDialog},{RatingHelpDialogComponent}]=await Promise.all([import('@angular/material/dialog'),import('./rating-help-dialog')]);
     const intervals=this.currentPreset()?.showNextReviewTimes?Object.fromEntries(this.ratingOptions.map(option=>[option.rating,this.predictedInterval(option.rating)])):undefined;
-    const dialog=this.injector.get(MatDialog),ref=dialog.open(RatingHelpDialogComponent,{data:{intervals},autoFocus:'dialog',restoreFocus:false,width:'min(32rem, calc(100vw - 24px))',maxWidth:'calc(100vw - 24px)',maxHeight:'calc(100dvh - 24px)',panelClass:'rating-help-dialog-panel'});
+    const scrollX=window.scrollX,scrollY=window.scrollY,dialog=this.injector.get(MatDialog);
+    const motion=this.motionEnabled();
+    const ref=dialog.open(RatingHelpDialogComponent,{data:{intervals},autoFocus:'first-tabbable',restoreFocus:false,scrollStrategy:this.ratingHelpScrollStrategy(),width:'min(32rem, calc(100vw - 24px))',maxWidth:'calc(100vw - 24px)',maxHeight:'calc(100dvh - 24px)',panelClass:'rating-help-dialog-panel',backdropClass:['rating-help-dialog-backdrop',...(motion?[]:['motion-reduced'])],enterAnimationDuration:motion?'160ms':'0ms',exitAnimationDuration:motion?'120ms':'0ms'});
     await firstValueFrom(ref.afterClosed());
-    if(opener.isConnected)opener.focus();
+    if(window.scrollX!==scrollX||window.scrollY!==scrollY)window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'});
+    if(opener.isConnected)opener.focus({preventScroll:true});
+  }
+  private ratingHelpScrollStrategy(){
+    let enabled=false;
+    const protect=(event:Event)=>{if(!(event.target as Element|null)?.closest?.('.rating-help-dialog-panel'))event.preventDefault();};
+    return{attach:()=>undefined,enable:()=>{if(enabled)return;enabled=true;window.addEventListener('wheel',protect,{capture:true,passive:false});window.addEventListener('touchmove',protect,{capture:true,passive:false});},disable:()=>{if(!enabled)return;enabled=false;window.removeEventListener('wheel',protect,true);window.removeEventListener('touchmove',protect,true);}};
   }
   private async playConfidenceFeedback(rating:1|2|3|4|5):Promise<void>{
     if(!this.motionEnabled()||!this.data()?.preferences.effects){this.studyTransition.set('feedback');await new Promise<void>(resolve=>window.setTimeout(resolve,40));return;}
@@ -474,7 +497,7 @@ export class AppComponent {
     this.studyTransition.set('deal');
     const stage=document.querySelector<HTMLElement>('[data-testid="study-deck-stage"]');
     if(!stage)return;
-    const outgoing=stage.animate([{opacity:1,transform:'translateX(0) rotate(0)'},{opacity:0,transform:'translateX(-34px) rotate(-1.5deg)'}],{duration:180,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    const outgoing=stage.animate([{opacity:1,transform:'translateX(0)'},{opacity:0,transform:'translateX(-12px)'}],{duration:170,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
     let owned:Animation=outgoing;
     this.studyDealAnimation=outgoing;
     try{
@@ -487,10 +510,10 @@ export class AppComponent {
       // animation releases its temporary effect.
       outgoing.cancel();
       if(this.current()){
-        const incoming=stage.animate([{opacity:0,transform:'translateX(32px) rotate(1.5deg)'},{opacity:1,transform:'translateX(0) rotate(0)'}],{duration:260,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'});
+        const incoming=stage.animate([{opacity:0,transform:'translateX(12px)'},{opacity:1,transform:'translateX(0)'}],{duration:200,easing:'cubic-bezier(.16,1,.3,1)',fill:'both'});
         owned=incoming;
         this.studyDealAnimation=incoming;
-        await Promise.race([incoming.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,340))]);
+        await Promise.race([incoming.finished.catch(()=>undefined),new Promise(resolve=>window.setTimeout(resolve,280))]);
         if(run===this.studyPresentationRun&&this.lifecycle.active()&&this.lifecycle.focused())this.feedback('cardDeal');
       }
     }finally{

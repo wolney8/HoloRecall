@@ -54,7 +54,7 @@ test('recent child activity keeps one hierarchy-aware scope for artwork, counts 
   await expect(hero).toContainText('1 due reviews');
   const image=hero.locator(':scope > img');await expect(image).toHaveAttribute('src',/art\/caffe\.svg$/);await expect(image).toHaveAttribute('alt','');
   await hero.getByRole('button',{name:/Start studying/}).click();
-  await expect(page.getByRole('heading',{name:'Study',exact:true})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Current flashcard',exact:true})).toBeVisible();
   const started=await snapshot(page);expect(started.session?.scopeDeckId).toBe('dashboard-lesson');expect(started.session?.queue).toContain(cardId);
   expect(started.session?.queue.every(id=>started.cards.find(card=>card.id===id)?.deckId==='dashboard-lesson')).toBe(true);
 });
@@ -64,7 +64,7 @@ test('active session wins and Resume preserves the existing session',async({page
   fixture.state.session={id:'existing-dashboard-session',queue:[fixture.cardId],total:1,completed:0,revealed:false,activeMs:0,mode:'scheduled',scopeDeckId:'dashboard-lesson'};
   await replaceSnapshot(page,fixture.state);await page.reload();
   const hero=page.getByTestId('dashboard-hero');await expect(hero).toContainText('Current study session');await expect(hero.getByRole('heading',{name:'Introductions'})).toBeVisible();
-  await hero.getByRole('button',{name:/Resume study/}).click();await expect(page.getByRole('heading',{name:'Study',exact:true})).toBeVisible();
+  await hero.getByRole('button',{name:/Resume study/}).click();await expect(page.getByRole('region',{name:'Current flashcard',exact:true})).toBeVisible();
   expect((await snapshot(page)).session?.id).toBe('existing-dashboard-session');
 });
 

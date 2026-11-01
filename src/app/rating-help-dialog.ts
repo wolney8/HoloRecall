@@ -20,8 +20,12 @@ export interface RatingHelpDialogData { intervals?:Partial<Record<ConfidenceRati
           <li><span class="rating-help-number" aria-hidden="true">{{option.rating}}</span><span><strong>{{option.label}}</strong><small>{{option.help}}</small>@if(data?.intervals?.[option.rating];as interval){<small class="rating-help-interval">Next review: {{interval}}</small>}</span></li>
         }
       </ol>
+      <section class="gesture-help" aria-labelledby="gesture-help-title">
+        <h3 id="gesture-help-title">Card gestures</h3>
+        <p>After revealing the answer: swipe down for Forgot, left for Hard, hold for Hesitant, right for Confident, or up for Easy. You can always tap a rating instead.</p>
+      </section>
     </mat-dialog-content>
-    <mat-dialog-actions align="end"><button mat-flat-button type="button" mat-dialog-close>Close</button></mat-dialog-actions>
+    <mat-dialog-actions align="end"><button mat-flat-button type="button" mat-dialog-close cdkFocusInitial>Close</button></mat-dialog-actions>
   `,
   styles:[`
     :host{display:block;color:var(--mat-sys-on-surface)}
@@ -32,6 +36,9 @@ export interface RatingHelpDialogData { intervals?:Partial<Record<ConfidenceRati
     .rating-help-list strong,.rating-help-list small{display:block}
     .rating-help-list small{margin-top:2px;color:var(--mat-sys-on-surface-variant);font:var(--mat-sys-body-small);line-height:1.35}
     .rating-help-interval{font-variant-numeric:tabular-nums}
+    .gesture-help{margin-top:var(--space-4);padding:var(--space-3);border-radius:var(--mat-sys-corner-medium);background:var(--mat-sys-surface-container-low)}
+    .gesture-help h3{margin:0 0 var(--space-2);font:var(--mat-sys-title-medium)}
+    .gesture-help p{margin:0;color:var(--mat-sys-on-surface-variant);font:var(--mat-sys-body-small);line-height:1.45}
     @media(max-width:420px){mat-dialog-content{padding-inline:var(--space-3)}.rating-help-list li{padding-inline:var(--space-2)}}
   `],
 })

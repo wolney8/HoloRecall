@@ -46,7 +46,7 @@ test('HR-UX-14 accepted feedback retains the rated card before the next deal', a
   await page.waitForTimeout(500);
   await expect(answer).toContainText(original!.trim());
   await expect(page.locator('.study-layout')).toHaveAttribute('data-study-transition', 'feedback');
-  await expect.poll(async () => (await page.locator('.session-bar').textContent()) ?? '', { timeout: 4_000 }).toContain('1 / 10');
+  await expect(page.getByRole('progressbar',{name:'Study progress, 1 of 10 cards'})).toBeVisible({timeout:4_000});
   await expect(page.locator('.study-layout')).toHaveAttribute('data-study-transition', 'idle');
 });
 
@@ -115,7 +115,7 @@ test('HR-UX-15 queues multiple real unlocks and Collection reuses their persiste
   await openApp(page); await page.getByRole('button', { name: 'Settings', exact: false }).click();
   await page.getByLabel('New cards per day').fill('2'); await page.getByRole('button', { name: 'Save study settings' }).click();
   await page.getByRole('button', { name: 'Dashboard', exact: false }).click(); await page.getByRole('button', { name: /Start studying/ }).click();
-  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Check answer/ }).click(); await page.getByRole('button', { name: /4, Confident/ }).click(); if (!review) await expect(page.locator('.session-bar')).toContainText('1 / 2'); }
+  for (let review = 0; review < 2; review++) { await page.getByRole('button', { name: /Check answer/ }).click(); await page.getByRole('button', { name: /4, Confident/ }).click(); if (!review) await expect(page.getByRole('progressbar',{name:'Study progress, 1 of 2 cards'})).toBeVisible(); }
   await expect(page.getByRole('heading', { name: 'Nice work' })).toBeVisible(); const before = await snapshot(page); expect(before.rewardEvents.filter(event => event.kind === 'unlock')).toHaveLength(2);
   await page.locator('[data-result-section="cosmetics"]').scrollIntoViewIfNeeded(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 1 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });
   await page.getByRole('button', { name: 'Continue', exact: true }).click(); await expect(page.locator('.unlock-reveal')).toContainText('UNLOCK 2 OF 2'); await expect(page.locator('.unlock-reveal')).toHaveAttribute('data-unlock-phase', 'revealed', { timeout: 5_000 });

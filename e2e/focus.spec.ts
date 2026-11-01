@@ -8,12 +8,12 @@ async function ownFirstCard(page:Page):Promise<void>{let state=await snapshot(pa
 test('HR-FOCUS practice from Collection never mutates FSRS, limits or rewards and recovers on reload',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await openApp(page);await ownFirstCard(page);const before=await snapshot(page);
   await page.getByRole('button',{name:'Collection',exact:true}).click();await page.getByRole('tab',{name:'Cards'}).click();await page.getByRole('button',{name:/Inspect /}).first().click();await page.getByRole('button',{name:'Practice this card'}).click();
-  await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();await expect(page.locator('.session-bar')).toContainText('Collection cards');
+  await expect(page.getByTestId('study-mode-label')).toHaveText('Free Practice');await expect(page.getByTestId('study-session-label')).toHaveText('Collection cards');
   await revealCard(page);await page.getByRole('button',{name:/1, Forgot/}).click();
   await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();const after=await snapshot(page);
   expect(after.practiceEvents).toHaveLength(1);expect(after.events).toEqual(before.events);expect(after.states).toEqual(before.states);expect(after.rewardEvents).toEqual(before.rewardEvents);expect(after.cardControls).toEqual(before.cardControls);expect(after.todayOverrides).toEqual(before.todayOverrides);
   await expect(page.getByText(/1 card is still at Confidence 1 or 2/)).toBeVisible();await expect(page.getByRole('heading',{name:'Cosmetic progress'})).toHaveCount(0);
-  await expect(page.getByLabel('Practice confidence distribution')).toContainText('Confidence 1');await expect(page.getByRole('button',{name:'View cards'})).toBeVisible();await expect(page.getByRole('button',{name:'Return to decks'})).toBeVisible();
+  await expect(page.getByLabel('Practice confidence distribution')).toContainText('Forgot');await expect(page.getByRole('button',{name:'View cards'})).toBeVisible();await expect(page.getByRole('button',{name:'Return to decks'})).toBeVisible();
   await page.reload();await expect(page.getByRole('heading',{name:'Practice complete'})).toBeVisible();expect((await snapshot(page)).practiceEvents).toHaveLength(1);
   await page.getByRole('button',{name:'Practice missed again'}).click();await expect(page.getByRole('heading',{name:'Focus',exact:true})).toBeVisible();
 });
@@ -23,7 +23,7 @@ test('HR-FOCUS builder saves criteria, scheduled mode stays eligible, and today 
   const initial=await snapshot(page),deck=initial.decks[0]!;await page.getByLabel('Deck or journey').click();await page.getByRole('option',{name:deck.name,exact:true}).click();
   const oldLimit=initial.studyPresets.find(item=>item.id===(deck.studyPresetId??'balanced'))!.newCardsPerDay;
   await page.getByLabel('Add cards').fill('2');await page.getByRole('button',{name:'Apply and study'}).first().click();
-  await expect(page.getByRole('heading',{name:'Study',exact:true})).toBeVisible();const limited=await snapshot(page);expect(limited.session?.mode).toBe('scheduled');expect(limited.session?.label).toBe('More new cards today');expect(limited.todayOverrides.find(item=>item.deckId===deck.id)?.newCardsPerDay).toBe(oldLimit+2);
+  await expect(page.getByRole('region',{name:'Current flashcard'})).toBeVisible();const limited=await snapshot(page);expect(limited.session?.mode).toBe('scheduled');expect(limited.session?.label).toBe('More new cards today');expect(limited.todayOverrides.find(item=>item.deckId===deck.id)?.newCardsPerDay).toBe(oldLimit+2);
   await page.getByRole('button',{name:'End session'}).click();await page.getByRole('button',{name:'Focus',exact:true}).click();await page.getByLabel('Deck or journey').click();await page.getByRole('option',{name:deck.name,exact:true}).click();await page.getByRole('button',{name:'Build custom session'}).click();
   await page.getByLabel('Session name').fill('Italian weak cards');await page.getByLabel('Maximum cards').fill('3');await page.getByLabel('Focus preset name').fill('Italian weak cards');await page.getByRole('button',{name:'Save preset'}).click();
   await expect(page.getByText('Focus preset saved. It will rerun these criteria against current cards.')).toBeVisible();await expect(page.getByText('Practice · up to 3 cards')).toBeVisible();
@@ -32,9 +32,9 @@ test('HR-FOCUS builder saves criteria, scheduled mode stays eligible, and today 
 
 test('HR-FOCUS consecutive Practice ratings retain visible cards and never create scheduled reviews',async({page})=>{
   await openApp(page);await page.getByRole('navigation',{name:'Main navigation'}).getByRole('button',{name:'Focus',exact:true}).click();await page.getByRole('button',{name:/Preview new cards/}).click();
-  await expect(page.getByRole('heading',{name:'Practice',exact:true})).toBeVisible();
+  await expect(page.getByTestId('study-mode-label')).toHaveText('Free Practice');
   const total=(await snapshot(page)).session!.total;
-  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.locator('.session-bar')).toContainText(`${index+1} / ${total}`,{timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
+  for(let index=0;index<2;index++){await page.getByRole('button',{name:/Check answer/}).click();await page.getByRole('button',{name:/3, Hesitant/}).click();await expect(page.getByRole('progressbar',{name:`Study progress, ${index+1} of ${total} cards`})).toBeVisible({timeout:4_000});const stage=page.getByTestId('study-deck-stage');await expect(stage.locator('hr-card')).toBeVisible();expect(await stage.evaluate(node=>({opacity:getComputedStyle(node).opacity,visibility:getComputedStyle(node).visibility,display:getComputedStyle(node).display}))).toEqual({opacity:'1',visibility:'visible',display:'block'});}
   const state=await snapshot(page);expect(state.practiceEvents).toHaveLength(2);expect(state.events).toHaveLength(0);expect(state.rewardEvents).toHaveLength(0);
 });
 
